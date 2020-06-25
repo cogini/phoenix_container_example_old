@@ -5,12 +5,14 @@ defmodule PhoenixContainerExample.MixProject do
     [
       app: :phoenix_container_example,
       version: "0.1.0",
-      elixir: "~> 1.7",
+      elixir: "~> 1.9",
       elixirc_paths: elixirc_paths(Mix.env()),
       compilers: [:phoenix, :gettext] ++ Mix.compilers(),
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
-      deps: deps()
+      deps: deps(),
+      default_release: :container,
+      releases: releases()
     ]
   end
 
@@ -20,13 +22,24 @@ defmodule PhoenixContainerExample.MixProject do
   def application do
     [
       mod: {PhoenixContainerExample.Application, []},
-      extra_applications: [:logger, :runtime_tools]
+      # extra_applications: [:logger, :runtime_tools]
+      extra_applications: [:logger, :runtime_tools, :ssl]
     ]
   end
 
   # Specifies which paths to compile per environment.
   defp elixirc_paths(:test), do: ["lib", "test/support"]
   defp elixirc_paths(_), do: ["lib"]
+
+  defp releases do
+    [
+      container: [
+        include_executables_for: [:unix],
+        # Don't need to tar if we are just going to copy it
+        # steps: [:assemble, :tar]
+      ],
+    ]
+  end
 
   # Specifies your project dependencies.
   #
