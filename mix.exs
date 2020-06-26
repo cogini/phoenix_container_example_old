@@ -11,7 +11,7 @@ defmodule PhoenixContainerExample.MixProject do
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       deps: deps(),
-      default_release: :container,
+      default_release: :app,
       releases: releases()
     ]
   end
@@ -33,7 +33,7 @@ defmodule PhoenixContainerExample.MixProject do
 
   defp releases do
     [
-      container: [
+      app: [
         include_executables_for: [:unix],
         # Don't need to tar if we are just going to copy it
         # steps: [:assemble, :tar]
