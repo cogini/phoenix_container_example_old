@@ -1,0 +1,147 @@
+# syntax=docker/dockerfile:1.0-experimental
+# syntax=docker/dockerfile:experimental
+#
+# Dockerfile to buile an Elixir Phoenix app.
+#
+# It takes advantage of caching and parallel build support in BuildKit.
+# It can build in less than 5s after the initial build.
+#
+# The "syntax" line must be the first thing in the file, as it enables the
+# new syntax for caching, etc. see
+# https://docs.docker.com/develop/develop-images/build_enhancements/
+# https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/experimental.md
+
+##########################################################################
+# Fetch dependencies
+
+ARG MIX_ENV=prod
+
+# Name of release
+ARG RELEASE=app
+
+FROM elixir:1.10.3-alpine AS deps
+
+ARG http_proxy
+ARG https_proxy=$http_proxy
+
+ARG MIX_ENV
+
+WORKDIR /app
+
+COPY config ./config
+COPY mix.exs mix.lock ./
+
+# Mount hex and rebar cache directories as type=cache
+RUN --mount=type=cache,target=~/.hex/packages/hexpm,sharing=locked \
+    --mount=type=cache,target=~/.cache/rebar3,sharing=locked \
+      mix do local.rebar --force, local.hex --force, deps.get --only $MIX_ENV
+
+
+##########################################################################
+# Build Phoenix assets
+# Using stretch because it has Python
+
+FROM node:14.4-stretch AS assets
+WORKDIR /app/assets
+
+# Copy deps to get assets from phoenix
+COPY --from=deps /app/deps /app/deps/
+
+COPY assets/package.json assets/package-lock.json ./
+
+# Cache npm cache directory as type=cache
+RUN --mount=type=cache,target=~/.npm,sharing=locked \
+      npm --prefer-offline --no-audit --progress=false \
+      --loglevel=error ci
+
+COPY assets/ ./
+
+RUN npm run deploy
+
+
+##########################################################################
+# Create Phoenix digest
+
+FROM deps AS digest
+
+ARG MIX_ENV
+
+COPY --from=assets /app/priv ./priv
+RUN mix phx.digest
+
+# This does a partial compile.
+# Doing "mix do compile, phx.digest, release" in a single stage is worse,
+# because a single line of code changed causes a complete recompile.
+# With the stages separated most of the compilation is cached.
+
+
+##########################################################################
+# Create release
+
+FROM digest AS release
+
+ARG MIX_ENV
+ARG RELEASE
+
+# Instead of copying sources, could could use bind mount, e.g.
+# RUN --mount=target=.
+# see https://adoptingerlang.org/docs/production/docker/#efficient-caching
+COPY lib ./lib
+COPY rel ./rel
+
+RUN mix do compile, release $RELEASE
+
+
+##########################################################################
+# Create actual image that is deployed
+
+FROM alpine:3.12 as deploy
+
+ARG MIX_ENV
+ARG RELEASE
+
+# Set environment vars used by the app
+# SECRET_KEY_BASE and DATABASE_URL env vars should be set when running the application
+# maybe set COOKIE and other things
+ENV LANG=C.UTF-8 \
+    HOME=/app \
+    RELEASE_TMP=/run/app \
+    SECRET_KEY_BASE=\
+    DATABASE_URL=\
+    PORT=4000
+
+# Install openssl, allowing the app to listen on HTTPS.
+# May not be needed if handled outside the application (e.g. in Kubernetes ingress).
+RUN --mount=type=cache,target=/var/cache/apk,sharing=locked \
+      apk add openssl ncurses-libs
+
+# Create user and group to run under with specific uid
+RUN addgroup -g 1000 -S app \
+ && adduser -u 1000 -S app -G app
+
+RUN mkdir -p /run/app \
+ && chown app:app /run/app
+
+USER app
+
+# Setting WORKDIR after USER makes directory be owned by the user.
+# The app needs to be able to write to a tmp directory on startup, which by default
+# is under the release. This could be changed by setting RELEASE_TMP to /tmp or
+# (probably better) /run/foo
+WORKDIR /app
+
+# chown files while copying to make them owned by nobody
+# "RUN chown -R nobody: /app" after the copy would add an extra layer which is about 10Mb
+# Considering the image for a new phoenix app is around 20Mb, that's a huge difference
+
+# TODO: change specific files to have group read/execute permissions while
+# leaving them owned by root
+
+COPY --from=release --chown=app:app /app/_build/$MIX_ENV/rel/$RELEASE ./
+
+EXPOSE $PORT
+
+ENTRYPOINT ["bin/app"]
+
+# Run app in foreground
+CMD ["start"]
