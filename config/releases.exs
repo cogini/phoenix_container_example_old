@@ -11,6 +11,8 @@ database_url =
     For example: ecto://USER:PASS@HOST/DATABASE
     """
 
+IO.inspect("database_url: #{database_url}")
+
 config :phoenix_container_example, PhoenixContainerExample.Repo,
   # ssl: true,
   show_sensitive_data_on_connection_error: true,
@@ -23,6 +25,8 @@ secret_key_base =
     environment variable SECRET_KEY_BASE is missing.
     You can generate one by calling: mix phx.gen.secret
     """
+
+IO.inspect("secret_key_base: #{secret_key_base}")
 
 config :phoenix_container_example, PhoenixContainerExampleWeb.Endpoint,
   http: [
