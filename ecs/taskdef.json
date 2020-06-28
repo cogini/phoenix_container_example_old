@@ -1,0 +1,86 @@
+{
+    "family": "<NAME>",
+    "taskRoleArn": "<TASK_ROLE_ARN>",
+    "executionRoleArn": "<EXECUTION_ROLE_ARN>",
+    "networkMode": "awsvpc",
+    "cpu": "<CPU>",
+    "memory": "<MEMORY>",
+    "requiresCompatibilities": ["FARGATE"],
+    "containerDefinitions": [
+        {
+            "cpu": 0,
+            "environment": [
+                {
+                    "name": "CONFIG_S3_PREFIX",
+                    "value": "<CONFIG_S3_PREFIX>"
+                },
+                {
+                    "name": "CONFIG_S3_BUCKET",
+                    "value": "<CONFIG_S3_BUCKET>"
+                }
+            ],
+            "essential": true,
+            "image": "<IMAGE1_NAME>",
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-create-group": "true",
+                    "awslogs-group": "<AWSLOGS_GROUP>",
+                    "awslogs-region": "<AWSLOGS_REGION>",
+                    "awslogs-stream-prefix": "<AWSLOGS_STREAM_PREFIX>"
+                },
+                "secretOptions": []
+            },
+            "mountPoints": [],
+            "name": "<NAME>",
+            "portMappings": [
+                {
+                    "containerPort": <PORT>,
+                    "hostPort": <PORT>,
+                    "protocol": "tcp"
+                }
+            ],
+            "readonlyRootFilesystem": false,
+            "secrets": [
+                {
+                    "name": "SECRET_KEY_BASE",
+                    "valueFrom": "arn:aws:ssm:<AWS_REGION>:<AWS_ACCOUNT_ID>:parameter/cogini/foo/dev/app/secret_key_base"
+                },
+                {
+                    "name": "DATABASE_URL",
+                    "valueFrom": "arn:aws:ssm:<AWS_REGION>:<AWS_ACCOUNT_ID>:parameter/cogini/foo/dev/app/db/url"
+                }
+            ],
+            "startTimeout": 30,
+            "stopTimeout": 30,
+            "volumesFrom": []
+        },
+        {
+            "name": "xray-daemon",
+            "image": "amazon/aws-xray-daemon",
+            "cpu": 0,
+            "memoryReservation": 256,
+            "portMappings": [
+                {
+                    "containerPort": 2000,
+                    "hostPort": 2000,
+                    "protocol": "udp"
+                }
+            ],
+            "essential": false,
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-create-group": "true",
+                    "awslogs-group": "<AWSLOGS_GROUP>",
+                    "awslogs-region": "<AWSLOGS_REGION>",
+                    "awslogs-stream-prefix": "<AWSLOGS_STREAM_PREFIX>"
+                },
+                "secretOptions": []
+            },
+            "startTimeout": 30,
+            "stopTimeout": 30,
+            "readonlyRootFilesystem": false
+        }
+    ]
+}

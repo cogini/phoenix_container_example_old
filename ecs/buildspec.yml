@@ -1,0 +1,77 @@
+---
+# Build app in Docker and push to repo
+#
+# https://docs.aws.amazon.com/AmazonECS/latest/userguide/ecs-cd-pipeline.html
+# Environment vars:
+#   REPO_URI: ECS app repository URI
+#   CONTAINER_NAME: container name in service task definition
+# https://docs.aws.amazon.com/codebuild/latest/userguide/build-env-ref-env-vars.html
+#   AWS_DEFAULT_REGION
+#   CODEBUILD_RESOLVED_SOURCE_VERSION
+# https://docs.aws.amazon.com/codebuild/latest/userguide/build-spec-ref.html
+version: 0.2
+env:
+  variables:
+    TEMPLATE_DIR: ecs
+    DOCKER_BUILDKIT: 1
+    DOCKER_CLI_EXPERIMENTAL: enabled
+phases:
+  install:
+    commands:
+      - /usr/sbin/service docker start
+  pre_build:
+    commands:
+      - echo Build started on `date`
+      - aws --version
+      - docker --version
+      - echo "Logging in to Amazon ECR..."
+      - $(aws ecr get-login --region $AWS_DEFAULT_REGION --no-include-email)
+      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      - IMAGE_TAG=${COMMIT_HASH:=latest}
+  build:
+    commands:
+      - echo "Starting build phase"
+      # - docker buildx create --name mybuilder --use
+      - docker buildx build -t $CONTAINER_NAME:latest -t $REPO_URI:latest -t $REPO_URI:$IMAGE_TAG -f $TEMPLATE_DIR/Dockerfile --push --progress=plain "."
+      # - docker buildx build --progress=plain --cache-from=type=registry,ref=$CACHE_REPO_URI --cache-to=type=registry,ref=$CACHE_REPO_URI,mode=max -t $CONTAINER_NAME:latest -t $REPO_URI:latest -t $REPO_URI:$IMAGE_TAG -f $TEMPLATE_DIR/Dockerfile --push --progress=plain "."
+  post_build:
+    commands:
+      - echo "Writing image definition files..."
+      # https://docs.aws.amazon.com/codepipeline/latest/userguide/file-reference.html
+      # Generate imagedefinitions.json file for standard ECS deploy action
+      - printf '[{"name":"%s","imageUri":"%s"}]' "$CONTAINER_NAME" "$REPO_URI:$IMAGE_TAG" | tee imagedefinitions.json
+      # Generate imageDetail.json file for CodeDeploy ECS blue/green deploy action
+      - printf '{"ImageURI":"%s"}' "$REPO_URI:$IMAGE_TAG" | tee imageDetail.json
+
+      - sed -i 's!<NAME>!'$CONTAINER_NAME'!g' $TEMPLATE_DIR/appspec.yml $TEMPLATE_DIR/taskdef.json
+      - sed -i 's!<PORT>!'$PORT'!g' ecs/appspec.yml $TEMPLATE_DIR/taskdef.json
+      - sed -i 's!<TASK_ROLE_ARN>!'$TASK_ROLE_ARN'!g' $TEMPLATE_DIR/taskdef.json
+      - sed -i 's!<EXECUTION_ROLE_ARN>!'$EXECUTION_ROLE_ARN'!g' $TEMPLATE_DIR/taskdef.json
+      - sed -i 's!<CPU>!'$CPU'!g' $TEMPLATE_DIR/taskdef.json
+      - sed -i 's!<MEMORY>!'$MEMORY'!g' $TEMPLATE_DIR/taskdef.json
+      - sed -i 's!<AWSLOGS_GROUP>!'$AWSLOGS_GROUP'!g' $TEMPLATE_DIR/taskdef.json
+      - sed -i 's!<AWSLOGS_REGION>!'$AWS_REGION'!g' $TEMPLATE_DIR/taskdef.json
+      - sed -i 's!<AWSLOGS_STREAM_PREFIX>!'$AWSLOGS_STREAM_PREFIX'!g' $TEMPLATE_DIR/taskdef.json
+
+      - sed -i 's!<CONFIG_S3_BUCKET>!'$CONFIG_S3_BUCKET'!g' $TEMPLATE_DIR/taskdef.json
+      - sed -i 's!<CONFIG_S3_PREFIX>!'$CONFIG_S3_PREFIX'!g' $TEMPLATE_DIR/taskdef.json
+      - sed -i 's!<AWS_REGION>!'$AWS_REGION'!g' $TEMPLATE_DIR/taskdef.json
+      - sed -i 's!<AWS_ACCOUNT_ID>!'$AWS_ACCOUNT_ID'!g' $TEMPLATE_DIR/taskdef.json
+
+      - cat $TEMPLATE_DIR/appspec.yml
+      - cat $TEMPLATE_DIR/taskdef.json
+      - cp $TEMPLATE_DIR/appspec.yml .
+      - cp $TEMPLATE_DIR/taskdef.json .
+
+      - echo Build completed on `date`
+artifacts:
+  files:
+    - imagedefinitions.json
+    - imageDetail.json
+    - appspec.yml
+    - taskdef.json
+# cache:
+#   paths:
+#     - '/var/lib/docker/**/*'
+#     # - '.cache/**/*'
+#     # - '.virtualenv/**/*'
