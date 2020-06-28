@@ -4,7 +4,7 @@
 # remember to add this file to your .gitignore.
 import Config
 
-IO.inspect("env: #{System.get_env()}")
+IO.inspect("env: #{inspect(System.get_env())}")
 
 database_url =
   System.get_env("DATABASE_URL") ||
