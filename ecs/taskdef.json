@@ -41,16 +41,6 @@
                 }
             ],
             "readonlyRootFilesystem": false,
-            "secrets": [
-                {
-                    "name": "SECRET_KEY_BASE",
-                    "valueFrom": "arn:aws:ssm:<AWS_REGION>:<AWS_ACCOUNT_ID>:parameter/cogini/foo/dev/app/secret_key_base"
-                },
-                {
-                    "name": "DATABASE_URL",
-                    "valueFrom": "arn:aws:ssm:<AWS_REGION>:<AWS_ACCOUNT_ID>:parameter/cogini/foo/dev/app/db/url"
-                }
-            ],
             "startTimeout": 30,
             "stopTimeout": 30,
             "volumesFrom": []
