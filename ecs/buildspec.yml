@@ -40,6 +40,7 @@ phases:
   post_build:
     commands:
       - echo "Writing image definition files..."
+      - env
       # https://docs.aws.amazon.com/codepipeline/latest/userguide/file-reference.html
       # Generate imagedefinitions.json file for standard ECS deploy action
       - printf '[{"name":"%s","imageUri":"%s"}]' "$CONTAINER_NAME" "$REPO_URI:$IMAGE_TAG" | tee imagedefinitions.json
