@@ -41,6 +41,7 @@
                 }
             ],
             "readonlyRootFilesystem": false,
+            "secrets": [],
             "startTimeout": 30,
             "stopTimeout": 30,
             "volumesFrom": []
