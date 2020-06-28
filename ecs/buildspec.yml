@@ -31,7 +31,7 @@ phases:
   build:
     commands:
       - echo "Starting build phase"
-      # - docker buildx create --name mybuilder --use
+      - docker buildx create --name mybuilder --use
       # - docker buildx build -t $CONTAINER_NAME:latest -t $REPO_URI:latest -t $REPO_URI:$IMAGE_TAG -f $TEMPLATE_DIR/Dockerfile --push --progress=plain "."
       - docker buildx build -t $REPO_URI:latest -t $REPO_URI:$IMAGE_TAG -f deploy/Dockerfile.alpine --progress=plain "."
       - docker push ${REPO_URI}:latest
