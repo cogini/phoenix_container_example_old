@@ -106,9 +106,10 @@ ARG RELEASE
 ENV LANG=C.UTF-8 \
     HOME=/app \
     RELEASE_TMP=/run/app \
-    SECRET_KEY_BASE=\
-    DATABASE_URL=\
     PORT=4000
+
+    # SECRET_KEY_BASE=\
+    # DATABASE_URL=\
 
 # Install openssl, allowing the app to listen on HTTPS.
 # May not be needed if handled outside the application (e.g. in Kubernetes ingress).
