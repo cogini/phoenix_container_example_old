@@ -47,7 +47,7 @@
                     "valueFrom": "arn:aws:ssm:<AWS_REGION>:<AWS_ACCOUNT_ID>:parameter/cogini/foo/dev/app/db/url"
                 },
                 {
-                    "name": "DATABASE_URL",
+                    "name": "COOKIE",
                     "valueFrom": "arn:aws:ssm:<AWS_REGION>:<AWS_ACCOUNT_ID>:parameter/cogini/foo/dev/app/erlang_cookie"
                 },
                 {
