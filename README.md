@@ -1,5 +1,45 @@
 # phoenix_container_example
 
+This is a full-featured example of deploying an Elixir / Phoenix app
+to AWS ECS.
+
+* Docker BuildKit for parallel builds and better caching.
+* Supports Alpine and Debian
+* CodeBuild CI
+* CodeDeploy deployment to ECS using Blue/Green deployments
+* AWS Parameter Store
+
+Performance
+
+With local caching, it build in less than 5 seconds.
+
+    Debian --no-cache build 289.7s
+    Alpine --no-cache build 286.5s
+
+TODO:
+* BuildKit cache sharing ECR
+* DB migrations
+
+# aws ecr docker buildx manifest cache-from cache-to
+https://github.com/aws/containers-roadmap/issues/505
+docker buildx build --cache-to=type=registry,ref=450076236152.dkr.ecr.eu-west-1.amazonaws.com/repo,mode=max --push .
+https://github.com/moby/buildkit/issues/1509
+
+
+## BuildKit / buildx
+
+BuildKit is a new back end for Docker that builds tasks in parallel.
+It also supports caching of files outside of the image, particularly useful
+for downloads such as Hex, JS or OS packages.
+
+`buildx` is the new CLI which allows e.g. `docker build` to take advantage
+of features in the back end.
+
+* https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/experimental.md
+* https://github.com/docker/buildx
+* https://medium.com/titansoft-engineering/docker-build-cache-sharing-on-multi-hosts-with-buildkit-and-buildx-eb8f7005918e
+
+
 ## Links
 * https://hexdocs.pm/phoenix/releases.html#containers
 * Elixir config:
@@ -12,9 +52,6 @@
 * Overview of alternate build systems:
   https://blog.alexellis.io/building-containers-without-docker/
 
-https://hex.pm/packages/dockerize
-https://github.com/qhwa/dockerize
-
 Useful but old
 https://semaphoreci.com/community/tutorials/dockerizing-elixir-and-phoenix-applications
 
@@ -24,19 +61,7 @@ https://floriank.github.io/post/using-phoenix-with-docker-part-1-introduction/
 http://blog.scottlogic.com/2016/01/25/playing-with-docker-compose-and-erlang.html
 https://github.com/trenpixster/elixir-dockerfile/blob/master/Dockerfile
 
-
-https://medium.com/titansoft-engineering/docker-build-cache-sharing-on-multi-hosts-with-buildkit-and-buildx-eb8f7005918e
-
-Performance
-
-    Debian --no-cache build 289.7s
-    Alpine --no-cache build 286.5s
-
-BuildKit
-
-    https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/experimental.md
-    https://github.com/docker/buildx
-    DOCKER_CLI_EXPERIMENTAL=enabled
+* https://hex.pm/packages/dockerize
 
 Official images
 
@@ -46,12 +71,10 @@ Official images
     https://hub.docker.com/_/debian/
     https://hub.docker.com/_/alpine/
 
-Docker
+## Installing Docker in CI
 
-Install
-
-    https://docs.docker.com/engine/install/ubuntu/
-    https://www.linode.com/docs/applications/containers/install-docker-ce-ubuntu-1804/
+* https://docs.docker.com/engine/install/ubuntu/
+* https://www.linode.com/docs/applications/containers/install-docker-ce-ubuntu-1804/
 
 View approximate size of a running container:
 
@@ -75,35 +98,34 @@ ASDF
     asdf global elixir 1.10.3
     asdf install
 
-Phoenix
+## Step by step
 
-Create initial project
+1. Create initial project
 
     mix archive.install hex phx_new
     mix phx.new phoenix_container_example
 
-cd assets && npm install && node node_modules/webpack/bin/webpack.js --mode development
-mix phx.digest
-
-# Environment vars
-DATABASE_URL=ecto://USER:PASS@HOST/DATABASE
-DATABASE_URL="ecto://doadmin:SECRET@db-postgresql-sfo2-xxxxx-do-user-yyyyyy-0.db.ondigitalocean.com:25060/defaultdb?ssl=true"
-DATABASE_URL=ecto://postgres:postgres@localhost/phoenix_container_example_dev
-POOL_SIZE=10
-mix phx.gen.secret
-SECRET_KEY_BASE="4FbgzFky9n8tpfQFZ8GxPEiHU9mjnrVpYuAZ1qDS16FeDFESsiefWsss8tSHhUre"
-PORT=4000
-
-https://hexdocs.pm/mix/Mix.Tasks.Release.html
-
-Generate templates to customize release
-Not necessary unless using e.g. env.sh.eex to run migrations
+2. Generate templates to customize release
+Not necessary unless using e.g. `env.sh.eex` to run migrations
 
     mix release.init
 
     * creating rel/vm.args.eex
     * creating rel/env.sh.eex
     * creating rel/env.bat.eex
+
+
+mix phx.digest
+
+# Environment vars
+DATABASE_URL=ecto://USER:PASS@HOST/DATABASE
+POOL_SIZE=10
+SECRET_KEY_BASE="4FbgzFky9n8tpfQFZ8GxPEiHU9mjnrVpYuAZ1qDS16FeDFESsiefWsss8tSHhUre"
+PORT=4000
+
+    mix phx.gen.secret
+
+https://hexdocs.pm/mix/Mix.Tasks.Release.html
 
 # Generate assets/package-lock.json
 $ cd assets && npm install && node node_modules/webpack/bin/webpack.js --mode development
@@ -124,14 +146,8 @@ Comment out import in in config/prod.exs
     import_config "prod.secret.exs"
 
 
-# aws ecr docker buildx manifest cache-from cache-to
-https://medium.com/titansoft-engineering/docker-build-cache-sharing-on-multi-hosts-with-buildkit-and-buildx-eb8f7005918e
-https://github.com/aws/containers-roadmap/issues/505
-docker buildx build --cache-to=type=registry,ref=450076236152.dkr.ecr.eu-west-1.amazonaws.com/repo,mode=max --push .
-https://github.com/moby/buildkit/issues/1509
 
 npm run --prefix ./assets deploy
-
 
 docker-compose.yml
     https://docs.docker.com/compose/compose-file/
