@@ -34,13 +34,10 @@ phases:
       - docker buildx create --name mybuilder --use
       # - docker buildx build -t $CONTAINER_NAME:latest -t $REPO_URI:latest -t $REPO_URI:$IMAGE_TAG -f $TEMPLATE_DIR/Dockerfile --push --progress=plain "."
       - docker buildx build --push -t $REPO_URI:latest -t $REPO_URI:$IMAGE_TAG -f deploy/Dockerfile.alpine --progress=plain "."
-      # - docker push ${REPO_URI}:latest
-      # - docker push ${REPO_URI}:${IMAGE_TAG}
       # - docker buildx build --progress=plain --cache-from=type=registry,ref=$CACHE_REPO_URI --cache-to=type=registry,ref=$CACHE_REPO_URI,mode=max -t $CONTAINER_NAME:latest -t $REPO_URI:latest -t $REPO_URI:$IMAGE_TAG -f $TEMPLATE_DIR/Dockerfile --push --progress=plain "."
   post_build:
     commands:
       - echo "Writing image definition files..."
-      - env
       # https://docs.aws.amazon.com/codepipeline/latest/userguide/file-reference.html
       # Generate imagedefinitions.json file for standard ECS deploy action
       - printf '[{"name":"%s","imageUri":"%s"}]' "$CONTAINER_NAME" "$REPO_URI:$IMAGE_TAG" | tee imagedefinitions.json
