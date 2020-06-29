@@ -1,23 +1,26 @@
 # phoenix_container_example
 
 This is a full-featured example of deploying an Elixir / Phoenix app
-to AWS ECS.
+to containers, focusing on AWS ECS.
 
-* Docker BuildKit for parallel builds and better caching.
-* Supports Alpine and Debian
-* CodeBuild CI
-* CodeDeploy deployment to ECS using Blue/Green deployments
-* AWS Parameter Store
+* Docker BuildKit for parallel builds and better caching
+* Alpine and Debian
+* CodeBuild for CI
+* CodeDeploy for deployment to ECS Blue/Green deployment
+* AWS Parameter Store for configuration
+* CloudWatch for logs
+* X-Ray for tracing
 
 Performance
 
-With local caching, it build in less than 5 seconds.
+With local caching, rebuilds in less than 5 seconds.
 
     Debian --no-cache build 289.7s
     Alpine --no-cache build 286.5s
 
 TODO:
 * BuildKit cache sharing ECR
+* Testing
 * DB migrations
 
 # aws ecr docker buildx manifest cache-from cache-to
@@ -52,8 +55,7 @@ of features in the back end.
 * Overview of alternate build systems:
   https://blog.alexellis.io/building-containers-without-docker/
 
-Useful but old
-https://semaphoreci.com/community/tutorials/dockerizing-elixir-and-phoenix-applications
+* Useful but old: https://semaphoreci.com/community/tutorials/dockerizing-elixir-and-phoenix-applications
 
 https://github.com/shortishly/erlang-in-docker-from-scratch
 https://github.com/psyeugenic/docker-erlang
@@ -63,6 +65,9 @@ https://github.com/trenpixster/elixir-dockerfile/blob/master/Dockerfile
 
 * https://hex.pm/packages/dockerize
 
+
+## Docker
+
 Official images
 
     https://hub.docker.com/_/erlang/
@@ -71,10 +76,14 @@ Official images
     https://hub.docker.com/_/debian/
     https://hub.docker.com/_/alpine/
 
-## Installing Docker in CI
+Installing
 
 * https://docs.docker.com/engine/install/ubuntu/
 * https://www.linode.com/docs/applications/containers/install-docker-ce-ubuntu-1804/
+
+Optimizing size
+
+dive
 
 View approximate size of a running container:
 
@@ -92,12 +101,6 @@ See details about images, including sizes of each layer:
 
     docker image inspect my_image:tag
 
-ASDF
-
-    asdf global erlang 23.0
-    asdf global elixir 1.10.3
-    asdf install
-
 ## Step by step
 
 1. Create initial project
@@ -114,14 +117,14 @@ Not necessary unless using e.g. `env.sh.eex` to run migrations
     * creating rel/env.sh.eex
     * creating rel/env.bat.eex
 
+## Environment vars
 
-mix phx.digest
+`mix phx.digest`
 
-# Environment vars
-DATABASE_URL=ecto://USER:PASS@HOST/DATABASE
-POOL_SIZE=10
 SECRET_KEY_BASE="4FbgzFky9n8tpfQFZ8GxPEiHU9mjnrVpYuAZ1qDS16FeDFESsiefWsss8tSHhUre"
 PORT=4000
+DATABASE_URL=ecto://USER:PASS@HOST/DATABASE
+POOL_SIZE=10
 
     mix phx.gen.secret
 
@@ -146,7 +149,6 @@ Comment out import in in config/prod.exs
     import_config "prod.secret.exs"
 
 
-
 npm run --prefix ./assets deploy
 
 docker-compose.yml
@@ -163,13 +165,22 @@ https://towardsdatascience.com/slimming-down-your-docker-images-275f0ca9337e
 
 docker run -p 4000:4000 --env SECRET_KEY_BASE="4FbgzFky9n8tpfQFZ8GxPEiHU9mjnrVpYuAZ1qDS16FeDFESsiefWsss8tSHhUre" --env DATABASE_URL=ecto://postgres:postgres@host.docker.internal/phoenix_container_example_dev phoenix-container-example
 
-docker image ls phoenix-container-example
-
 MIX_ENV=prod mix release --path ../my_app_release
 
 https://github.com/adoptingerlang/service_discovery
 
+Alpine create user
+
+    https://github.com/mhart/alpine-node/issues/48
+
+ASDF
+
+    asdf global erlang 23.0
+    asdf global elixir 1.10.3
+    asdf install
+
 https://github.com/asdf-vm/asdf-erlang
+
 These are build dependencies
 
 16.04 LTS
@@ -220,7 +231,3 @@ Ready to run in production? Please [check our deployment guides](https://hexdocs
   * Docs: https://hexdocs.pm/phoenix
   * Forum: https://elixirforum.com/c/phoenix-forum
   * Source: https://github.com/phoenixframework/phoenix
-
-Alpine create user
-
-    https://github.com/mhart/alpine-node/issues/48
