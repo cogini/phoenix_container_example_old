@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:experimental
 #
-# Create a custom build image for CodeBuild with
-# Docker BuildKit
+# Create custom build image for CodeBuild with latest Docker
+# so we can use BuildKit
 
 FROM ubuntu:bionic
 
@@ -54,7 +54,7 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         containerd.io
 # RUN docker --version
 
-# Install latest version of awscli
+# Install latest version of awscli using pip
 # RUN python3 --version
 RUN python3 -m pip install wheel
 RUN python3 -m pip install awscli
