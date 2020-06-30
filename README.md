@@ -23,23 +23,24 @@ to set up the environment. See https://github.com/cogini/multi-env-deploy
 
 These new features require Docker 19.03.
 
-Setting `DOCKER_BUILDKIT=1` enables the new Dockerfile caching syntax with the
-standard `docker build` command.
+The `DOCKER_BUILDKIT=1` env var enables the new Dockerfile caching syntax with
+the standard `docker build` command.
 
     export DOCKER_BUILDKIT=1
     docker build -t phoenix-container-example -f Dockerfile .
 
-`DOCKER_CLI_EXPERIMENTAL=enabled` enables the new `docker buildx` cli command
-(and new file syntax).
+THe `DOCKER_CLI_EXPERIMENTAL=enabled` env var enables the new `docker buildx`
+cli command (and new file syntax).
 
     export DOCKER_CLI_EXPERIMENTAL=enabled
     docker buildx build -t $CONTAINER_NAME -f deploy/Dockerfile.alpine .
-    or
     docker buildx build -t $CONTAINER_NAME -f deploy/Dockerfile.debian .
 
     docker buildx build --no-cache -t $CONTAINER_NAME -f deploy/Dockerfile.debian .
 
-    docker buildx build --cache-from=type=registry,ref=$CACHE_REPO_URI --cache-to=type=registry,ref=$CACHE_REPO_URI,mode=max --push -t $REPO_URI:latest -f deploy/Dockerfile.alpine --progress=plain "."
+    docker buildx build --cache-from=type=registry,ref=$CACHE_REPO_URI \
+        --cache-to=type=registry,ref=$CACHE_REPO_URI,mode=max \
+        --push -t $REPO_URI:latest -f deploy/Dockerfile.alpine --progress=plain "."
 
 ### Run
 
