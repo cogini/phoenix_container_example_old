@@ -35,7 +35,10 @@ phases:
       - docker buildx create --name mybuilder --use
       - env
       # - docker buildx build -t $CONTAINER_NAME:latest -t $REPO_URI:latest -t $REPO_URI:$IMAGE_TAG -f $TEMPLATE_DIR/Dockerfile --push --progress=plain "."
-      - docker buildx build --push -t $REPO_URI:latest -t $REPO_URI:$IMAGE_TAG -f deploy/Dockerfile.alpine --progress=plain "."
+      # - docker buildx build --push -t $REPO_URI:latest -t $REPO_URI:$IMAGE_TAG -f deploy/Dockerfile.alpine --progress=plain "."
+
+      # Use local files for caching
+      - docker buildx build --cache-from=type=local,src=.cache/docker --cache-to=type=local,dest=.cache/docker,mode=max --push -t $REPO_URI:latest -t $REPO_URI:$IMAGE_TAG -f deploy/Dockerfile.alpine --progress=plain "."
 
       # Use repo for caching
       # Not working yet with ECR, it seems: https://github.com/aws/containers-roadmap/issues/505
@@ -77,8 +80,8 @@ artifacts:
     - imageDetail.json
     - appspec.yml
     - taskdef.json
-# cache:
-#   paths:
-#     - '/var/lib/docker/**/*'
-#     # - '.cache/**/*'
-#     # - '.virtualenv/**/*'
+cache:
+  paths:
+    # - '/var/lib/docker/**/*'
+    - '.cache/**/*'
+    # - '.virtualenv/**/*'
