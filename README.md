@@ -1,7 +1,7 @@
 # phoenix_container_example
 
-This is a full-featured example of building and deploying an Elixir / Phoenix app
-using containers, focusing on AWS ECS.
+This is a full-featured example of building and deploying an Elixir / Phoenix
+app using containers, focusing on AWS ECS.
 
 It uses:
 
@@ -21,16 +21,45 @@ infrastructure. See https://github.com/cogini/multi-env-deploy
 The above stuff is pretty solid, the rest is in progress.
 
 * BuildKit cache sharing ECR
-* Testing
-* DB migrations
-* CloudWatch for logs
-* X-Ray for tracing
 
 # aws ecr docker buildx manifest cache-from cache-to
 https://github.com/aws/containers-roadmap/issues/505
 docker buildx build --cache-to=type=registry,ref=450076236152.dkr.ecr.eu-west-1.amazonaws.com/repo,mode=max --push .
 https://github.com/moby/buildkit/issues/1509
 
+* Testing
+* DB migrations
+* CloudWatch for logs
+* X-Ray for tracing
+
+## Usage
+
+### Build
+
+This requires Docker 19 to get the new syntax built in.
+
+Setting `DOCKER_BUILDKIT=1` enables the new Dockerfile caching syntax with the standard
+`docker build` command.
+
+    DOCKER_BUILDKIT=1 docker build -t phoenix-container-example -f Dockerfile .
+
+More advanced features use the new `docker buildx` command, enabled with the
+`DOCKER_CLI_EXPERIMENTAL=enabled` env var.
+
+    DOCKER_CLI_EXPERIMENTAL=enabled docker buildx build -t phoenix-container-example-alpine -f deploy/Dockerfile.alpine .
+    DOCKER_CLI_EXPERIMENTAL=enabled docker buildx build -t phoenix-container-example-debian -f deploy/Dockerfile.debian .
+    DOCKER_CLI_EXPERIMENTAL=enabled docker buildx build --no-cache -t phoenix-container-example-debian -f deploy/Dockerfile.debian .
+
+### Run
+
+# Create database
+$ mix ecto.create
+
+docker-compose.yml
+    https://docs.docker.com/compose/compose-file/
+    https://github.com/moby/moby/issues/37345
+
+    docker run -p 4000:4000 --env SECRET_KEY_BASE="..." --env DATABASE_URL=ecto://postgres:postgres@host.docker.internal/phoenix_container_example_dev phoenix-container-example
 
 ## BuildKit
 
@@ -45,14 +74,13 @@ features in the back end.
 * https://github.com/docker/buildx
 * https://medium.com/titansoft-engineering/docker-build-cache-sharing-on-multi-hosts-with-buildkit-and-buildx-eb8f7005918e
 
-
-## Links
-* https://hexdocs.pm/phoenix/releases.html#containers
-* Elixir config:
-  https://pggalaviz.com/2019/12/14/elixir-releases-with-multi-stage-docker-builds/
 * Nice modern caching:
   https://elixirforum.com/t/could-use-some-feedback-on-this-multistage-dockerfile-1st-elixir-phoenix-deployment/30862
 * Great Docker techniques, focusing on Erlang: https://adoptingerlang.org/docs/production/docker/#efficient-caching
+
+* https://hexdocs.pm/phoenix/releases.html#containers
+* Elixir config:
+  https://pggalaviz.com/2019/12/14/elixir-releases-with-multi-stage-docker-builds/
 * Debian:
   https://github.com/revelrylabs/revelry_phoenix_app_template/blob/master/Dockerfile
 * Overview of alternate build systems:
@@ -68,6 +96,17 @@ https://github.com/trenpixster/elixir-dockerfile/blob/master/Dockerfile
 
 * https://hex.pm/packages/dockerize
 
+## Environment vars
+
+`SECRET_KEY_BASE` is used to e.g. protect Phoenix cookies from tampering.
+Generate it with the command `mix phx.gen.secret`.
+
+`DATABASE_URL` defines the db connection, e.g. `DATABASE_URL=ecto://user:pass@host/database`
+You can configure the number of db connections in the pool, e.g. `POOL_SIZE=10`.
+
+`PORT` defines the port that Phoenix will listen on, default is 4000.
+
+`mix phx.digest`.
 
 ## Docker
 
@@ -121,25 +160,11 @@ Not necessary unless using e.g. `env.sh.eex` to run migrations.
     * creating rel/env.sh.eex
     * creating rel/env.bat.eex
 
-## Environment vars
-
-`SECRET_KEY_BASE` is used to e.g. protect Phoenix cookies from tampering.
-Generate it with the command `mix phx.gen.secret`.
-
-`DATABASE_URL` defines the db connection, e.g. `DATABASE_URL=ecto://user:pass@host/database`
-You can configure the number of db connections in the pool, e.g. `POOL_SIZE=10`.
-
-    PORT=4000
-
-`mix phx.digest`.
-
 https://hexdocs.pm/mix/Mix.Tasks.Release.html
 
 # Generate assets/package-lock.json
 $ cd assets && npm install && node node_modules/webpack/bin/webpack.js --mode development
 
-# Create database
-$ mix ecto.create
 
 MIX_ENV=prod mix deps.get --only $MIX_ENV
 MIX_ENV=prod mix compile
@@ -153,22 +178,11 @@ Uncomment "server: true" line
 Comment out import in in config/prod.exs
     import_config "prod.secret.exs"
 
-
 npm run --prefix ./assets deploy
 
-docker-compose.yml
-    https://docs.docker.com/compose/compose-file/
-    https://github.com/moby/moby/issues/37345
-
-# DOCKER_BUILDKIT=1 docker build -t phoenix-container-example -f Dockerfile .
-
-    DOCKER_CLI_EXPERIMENTAL=enabled docker buildx build -t phoenix-container-example-alpine -f deploy/Dockerfile.alpine .
-    DOCKER_CLI_EXPERIMENTAL=enabled docker buildx build -t phoenix-container-example-debian -f deploy/Dockerfile.debian .
-    DOCKER_CLI_EXPERIMENTAL=enabled docker buildx build --no-cache -t phoenix-container-example-debian -f deploy/Dockerfile.debian .
 
 https://towardsdatascience.com/slimming-down-your-docker-images-275f0ca9337e
 
-docker run -p 4000:4000 --env SECRET_KEY_BASE="4FbgzFky9n8tpfQFZ8GxPEiHU9mjnrVpYuAZ1qDS16FeDFESsiefWsss8tSHhUre" --env DATABASE_URL=ecto://postgres:postgres@host.docker.internal/phoenix_container_example_dev phoenix-container-example
 
 MIX_ENV=prod mix release --path ../my_app_release
 
