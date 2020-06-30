@@ -26,17 +26,20 @@ These new features require Docker 19.03.
 Setting `DOCKER_BUILDKIT=1` enables the new Dockerfile caching syntax with the
 standard `docker build` command.
 
-    DOCKER_BUILDKIT=1 docker build -t phoenix-container-example -f Dockerfile .
+    export DOCKER_BUILDKIT=1
+    docker build -t phoenix-container-example -f Dockerfile .
 
 `DOCKER_CLI_EXPERIMENTAL=enabled` enables the new `docker buildx` cli command
 (and new file syntax).
 
-    DOCKER_CLI_EXPERIMENTAL=enabled docker buildx build -t phoenix-container-example-alpine -f deploy/Dockerfile.alpine .
-    DOCKER_CLI_EXPERIMENTAL=enabled docker buildx build -t phoenix-container-example-debian -f deploy/Dockerfile.debian .
+    export DOCKER_CLI_EXPERIMENTAL=enabled
+    docker buildx build -t $CONTAINER_NAME -f deploy/Dockerfile.alpine .
+    or
+    docker buildx build -t $CONTAINER_NAME -f deploy/Dockerfile.debian .
 
-    DOCKER_CLI_EXPERIMENTAL=enabled docker buildx build --no-cache -t phoenix-container-example-debian -f deploy/Dockerfile.debian .
+    docker buildx build --no-cache -t $CONTAINER_NAME -f deploy/Dockerfile.debian .
 
-    DOCKER_CLI_EXPERIMENTAL=enabled docker buildx build --cache-from=type=registry,ref=$CACHE_REPO_URI --cache-to=type=registry,ref=$CACHE_REPO_URI,mode=max --push -t $REPO_URI:latest -t $REPO_URI:$IMAGE_TAG -f deploy/Dockerfile.alpine --progress=plain "."
+    docker buildx build --cache-from=type=registry,ref=$CACHE_REPO_URI --cache-to=type=registry,ref=$CACHE_REPO_URI,mode=max --push -t $REPO_URI:latest -f deploy/Dockerfile.alpine --progress=plain "."
 
 ### Run
 
