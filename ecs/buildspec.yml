@@ -4,6 +4,7 @@
 # https://docs.aws.amazon.com/AmazonECS/latest/userguide/ecs-cd-pipeline.html
 # Environment vars:
 #   REPO_URI: ECS app repository URI
+#   CACHE_REPO_URI: ECS repository URI for caching
 #   CONTAINER_NAME: container name in service task definition
 # https://docs.aws.amazon.com/codebuild/latest/userguide/build-env-ref-env-vars.html
 #   AWS_DEFAULT_REGION
@@ -33,8 +34,8 @@ phases:
       - echo "Starting build phase"
       - docker buildx create --name mybuilder --use
       # - docker buildx build -t $CONTAINER_NAME:latest -t $REPO_URI:latest -t $REPO_URI:$IMAGE_TAG -f $TEMPLATE_DIR/Dockerfile --push --progress=plain "."
-      - docker buildx build --push -t $REPO_URI:latest -t $REPO_URI:$IMAGE_TAG -f deploy/Dockerfile.alpine --progress=plain "."
-      # - docker buildx build --progress=plain --cache-from=type=registry,ref=$CACHE_REPO_URI --cache-to=type=registry,ref=$CACHE_REPO_URI,mode=max -t $CONTAINER_NAME:latest -t $REPO_URI:latest -t $REPO_URI:$IMAGE_TAG -f $TEMPLATE_DIR/Dockerfile --push --progress=plain "."
+      # - docker buildx build --push -t $REPO_URI:latest -t $REPO_URI:$IMAGE_TAG -f deploy/Dockerfile.alpine --progress=plain "."
+      - docker buildx build --cache-from=type=registry,ref=$CACHE_REPO_URI --cache-to=type=registry,ref=$CACHE_REPO_URI,mode=max --push -t $REPO_URI:latest -t $REPO_URI:$IMAGE_TAG -f deploy/Dockerfile.alpine --progress=plain "."
   post_build:
     commands:
       - echo "Writing image definition files..."
