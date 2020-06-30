@@ -142,6 +142,7 @@ COPY --from=release --chown=app:app /app/_build/$MIX_ENV/rel/$RELEASE ./
 
 EXPOSE $PORT
 
+# TODO: configure using $RELEASE
 ENTRYPOINT ["bin/app"]
 
 # Run app in foreground
