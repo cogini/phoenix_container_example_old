@@ -1,27 +1,30 @@
 # phoenix_container_example
 
-This is a full-featured example of deploying an Elixir / Phoenix app
-to containers, focusing on AWS ECS.
+This is a full-featured example of building and deploying an Elixir / Phoenix app
+using containers, focusing on AWS ECS.
+
+It uses:
 
 * Docker BuildKit for parallel builds and better caching
-* Alpine and Debian
+* Alpine and Debian Docker images
 * CodeBuild for CI
 * CodeDeploy for deployment to ECS Blue/Green deployment
 * AWS Parameter Store for configuration
-* CloudWatch for logs
-* X-Ray for tracing
 
-Performance
+With local caching, rebuilds take less than 5 seconds.
 
-With local caching, rebuilds in less than 5 seconds.
+It's used in conjunction with Terraform to set up the
+infrastructure. See https://github.com/cogini/multi-env-deploy
 
-    Debian --no-cache build 289.7s
-    Alpine --no-cache build 286.5s
+## TODO
 
-TODO:
+The above stuff is pretty solid, the rest is in progress.
+
 * BuildKit cache sharing ECR
 * Testing
 * DB migrations
+* CloudWatch for logs
+* X-Ray for tracing
 
 # aws ecr docker buildx manifest cache-from cache-to
 https://github.com/aws/containers-roadmap/issues/505
@@ -29,14 +32,14 @@ docker buildx build --cache-to=type=registry,ref=450076236152.dkr.ecr.eu-west-1.
 https://github.com/moby/buildkit/issues/1509
 
 
-## BuildKit / buildx
+## BuildKit
 
-BuildKit is a new back end for Docker that builds tasks in parallel.
-It also supports caching of files outside of the image, particularly useful
-for downloads such as Hex, JS or OS packages.
+BuildKit is a new back end for Docker that builds tasks in parallel.  It also
+supports caching of files outside of container layers, particularly useful for
+downloads such as Hex, JS or OS packages.
 
-`buildx` is the new CLI which allows e.g. `docker build` to take advantage
-of features in the back end.
+`buildx` is the new Docker CLI command which takes advantage of
+features in the back end.
 
 * https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/experimental.md
 * https://github.com/docker/buildx
@@ -109,7 +112,8 @@ See details about images, including sizes of each layer:
     mix phx.new phoenix_container_example
 
 2. Generate templates to customize release
-Not necessary unless using e.g. `env.sh.eex` to run migrations
+
+Not necessary unless using e.g. `env.sh.eex` to run migrations.
 
     mix release.init
 
@@ -119,14 +123,15 @@ Not necessary unless using e.g. `env.sh.eex` to run migrations
 
 ## Environment vars
 
-`mix phx.digest`
+`SECRET_KEY_BASE` is used to e.g. protect Phoenix cookies from tampering.
+Generate it with the command `mix phx.gen.secret`.
 
-SECRET_KEY_BASE="4FbgzFky9n8tpfQFZ8GxPEiHU9mjnrVpYuAZ1qDS16FeDFESsiefWsss8tSHhUre"
-PORT=4000
-DATABASE_URL=ecto://USER:PASS@HOST/DATABASE
-POOL_SIZE=10
+`DATABASE_URL` defines the db connection, e.g. `DATABASE_URL=ecto://user:pass@host/database`
+You can configure the number of db connections in the pool, e.g. `POOL_SIZE=10`.
 
-    mix phx.gen.secret
+    PORT=4000
+
+`mix phx.digest`.
 
 https://hexdocs.pm/mix/Mix.Tasks.Release.html
 
@@ -157,9 +162,9 @@ docker-compose.yml
 
 # DOCKER_BUILDKIT=1 docker build -t phoenix-container-example -f Dockerfile .
 
-DOCKER_CLI_EXPERIMENTAL=enabled docker buildx build -t phoenix-container-example-alpine -f deploy/Dockerfile.alpine .
-DOCKER_CLI_EXPERIMENTAL=enabled docker buildx build -t phoenix-container-example-debian -f deploy/Dockerfile.debian .
-DOCKER_CLI_EXPERIMENTAL=enabled docker buildx build --no-cache -t phoenix-container-example-debian -f deploy/Dockerfile.debian .
+    DOCKER_CLI_EXPERIMENTAL=enabled docker buildx build -t phoenix-container-example-alpine -f deploy/Dockerfile.alpine .
+    DOCKER_CLI_EXPERIMENTAL=enabled docker buildx build -t phoenix-container-example-debian -f deploy/Dockerfile.debian .
+    DOCKER_CLI_EXPERIMENTAL=enabled docker buildx build --no-cache -t phoenix-container-example-debian -f deploy/Dockerfile.debian .
 
 https://towardsdatascience.com/slimming-down-your-docker-images-275f0ca9337e
 
@@ -175,18 +180,19 @@ Alpine create user
 
 ASDF
 
+Erlang build dependencies from https://github.com/asdf-vm/asdf-erlang
+
+16.04 LTS
+
+    apt-get -y install build-essential autoconf m4 libncurses5-dev libwxgtk3.0-dev libgl1-mesa-dev libglu1-mesa-dev libpng-dev libssh-dev unixodbc-dev xsltproc fop
+
+20.04 LTS
+
+    apt-get -y install build-essential autoconf m4 libncurses5-dev libwxgtk3.0-gtk3-dev libgl1-mesa-dev libglu1-mesa-dev libpng-dev libssh-dev unixodbc-dev xsltproc fop libxml2-utils libncurses-dev openjdk-11-jdk
+
     asdf global erlang 23.0
     asdf global elixir 1.10.3
     asdf install
-
-https://github.com/asdf-vm/asdf-erlang
-
-These are build dependencies
-
-16.04 LTS
-apt-get -y install build-essential autoconf m4 libncurses5-dev libwxgtk3.0-dev libgl1-mesa-dev libglu1-mesa-dev libpng-dev libssh-dev unixodbc-dev xsltproc fop
-20.04 LTS
-apt-get -y install build-essential autoconf m4 libncurses5-dev libwxgtk3.0-gtk3-dev libgl1-mesa-dev libglu1-mesa-dev libpng-dev libssh-dev unixodbc-dev xsltproc fop libxml2-utils libncurses-dev openjdk-11-jdk
 
 # To test the image locally:
 # docker build -t $IMAGE_NAME .
