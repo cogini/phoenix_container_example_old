@@ -8,13 +8,14 @@ It uses:
 * Docker BuildKit for parallel builds and better caching
 * Alpine and Debian Docker images
 * CodeBuild for CI
-* CodeDeploy for deployment to ECS Blue/Green deployment
+* Deploying to ECS CodeDeploy
 * AWS Parameter Store for configuration
 
 With local caching, rebuilds take less than 5 seconds.
 
-It's used in conjunction with Terraform to set up the
-infrastructure. See https://github.com/cogini/multi-env-deploy
+Building with Docker BuildKit works anywhere.
+CodeBuild / CodeDeploy / ECS is used in conjunction with Terraform
+to set up the environment. See https://github.com/cogini/multi-env-deploy
 
 ## Usage
 
@@ -66,6 +67,10 @@ features in the back end.
 
 * https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/experimental.md
 * https://github.com/docker/buildx
+
+## CodeBuild / CodeDeploy
+
+* https://docs.aws.amazon.com/codepipeline/latest/userguide/tutorials-ecs-ecr-codedeploy.html
 
 ## Step by step
 
