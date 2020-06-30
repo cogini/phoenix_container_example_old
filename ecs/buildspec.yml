@@ -33,9 +33,12 @@ phases:
     commands:
       - echo "Starting build phase"
       - docker buildx create --name mybuilder --use
+      - env
       # - docker buildx build -t $CONTAINER_NAME:latest -t $REPO_URI:latest -t $REPO_URI:$IMAGE_TAG -f $TEMPLATE_DIR/Dockerfile --push --progress=plain "."
-      # - docker buildx build --push -t $REPO_URI:latest -t $REPO_URI:$IMAGE_TAG -f deploy/Dockerfile.alpine --progress=plain "."
-      - docker buildx build --cache-from=type=registry,ref=$CACHE_REPO_URI --cache-to=type=registry,ref=$CACHE_REPO_URI,mode=max --push -t $REPO_URI:latest -t $REPO_URI:$IMAGE_TAG -f deploy/Dockerfile.alpine --progress=plain "."
+      - docker buildx build --push -t $REPO_URI:latest -t $REPO_URI:$IMAGE_TAG -f deploy/Dockerfile.alpine --progress=plain "."
+      # Not working yet with ECR, it seems: https://github.com/aws/containers-roadmap/issues/505
+      # - docker buildx build --cache-from=type=registry,ref=$CACHE_REPO_URI --cache-to=type=registry,ref=$CACHE_REPO_URI,mode=max --push -t $REPO_URI:latest -t $REPO_URI:$IMAGE_TAG -f deploy/Dockerfile.alpine --progress=plain "."
+      # docker buildx build --push --cache-to=type=registry,ref=${CACHE_REPO_URI}:latest,mode=max -t ${REPO_URI}:latest -f deploy/Dockerfile.alpine --progress=plain "."
   post_build:
     commands:
       - echo "Writing image definition files..."
