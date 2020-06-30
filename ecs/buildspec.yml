@@ -30,7 +30,7 @@ phases:
       - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
       - IMAGE_TAG=${COMMIT_HASH:=latest}
       - mkdir -p .cache/docker
-      - [ -f .cache/docker/index.json ] || echo "{}" > .cache/docker/index.json
+      - test -f .cache/docker/index.json || echo "{}" > .cache/docker/index.json
   build:
     commands:
       - echo "Starting build phase"
