@@ -38,9 +38,17 @@ cli command (and new file syntax).
 
     docker buildx build --no-cache -t $CONTAINER_NAME -f deploy/Dockerfile.debian .
 
-    docker buildx build --cache-from=type=registry,ref=$CACHE_REPO_URI \
+    docker buildx build \
+        --cache-from=type=registry,ref=$CACHE_REPO_URI \
         --cache-to=type=registry,ref=$CACHE_REPO_URI,mode=max \
         --push -t $REPO_URI:latest -f deploy/Dockerfile.alpine --progress=plain "."
+
+Using docker-compose:
+
+    COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker-compose build
+    COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker-compose up
+
+    docker-compose run app mix ecto.create
 
 ### Run
 
@@ -69,8 +77,10 @@ downloads such as Hex, JS or OS packages.
 `buildx` is the new Docker CLI command which takes advantage of
 features in the back end.
 
+* https://github.com/moby/buildkit
 * https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/experimental.md
 * https://github.com/docker/buildx
+* https://www.giantswarm.io/blog/container-image-building-with-buildkit
 
 ## CodeBuild / CodeDeploy
 
@@ -112,7 +122,3 @@ Uncomment "server: true" line
 Comment out import in in `config/prod.exs`
 
     import_config "prod.secret.exs"
-
-Make release:
-
-    MIX_ENV=prod mix release --path ../my_app_release
