@@ -21,16 +21,15 @@ to set up the environment. See https://github.com/cogini/multi-env-deploy
 
 ### Build
 
-These new features require Docker 19.03.
-
 The `DOCKER_BUILDKIT=1` env var enables the new Dockerfile caching syntax with
-the standard `docker build` command.
+the standard `docker build` command. It requires Docker version 18.09.
 
     export DOCKER_BUILDKIT=1
     docker build -t phoenix-container-example -f Dockerfile .
 
 THe `DOCKER_CLI_EXPERIMENTAL=enabled` env var enables the new `docker buildx`
-cli command (and new file syntax).
+cli command (and new file syntax). It is built in with Docker version 19.03, but
+can be installed manually before that.
 
     export DOCKER_CLI_EXPERIMENTAL=enabled
     docker buildx build -t $CONTAINER_NAME -f deploy/Dockerfile.alpine .
@@ -81,6 +80,8 @@ features in the back end.
 * https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/experimental.md
 * https://github.com/docker/buildx
 * https://www.giantswarm.io/blog/container-image-building-with-buildkit
+
+https://docs.docker.com/engine/reference/commandline/build/
 
 ## CodeBuild / CodeDeploy
 
