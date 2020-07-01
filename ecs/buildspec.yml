@@ -39,12 +39,12 @@ phases:
       # - docker buildx build --push -t $REPO_URI:latest -t $REPO_URI:$IMAGE_TAG -f deploy/Dockerfile.alpine --progress=plain "."
 
       # Use local files for caching
-      # buildx can't deal with the cache not existing, so only try if the file exists
+      # buildx can't deal with the cache not existing, so only use --cache-from if present
       - if [ -s .cache/docker/index.json ]; then CACHE_FROM="--cache-from=type=local,src=.cache/docker"; fi
       - docker buildx build $CACHE_FROM --cache-to=type=local,dest=.cache/docker,mode=max --push -t $REPO_URI:latest -t $REPO_URI:$IMAGE_TAG -f deploy/Dockerfile.alpine --progress=plain "."
 
       # Use repo for caching
-      # Not working yet with ECR, it seems: https://github.com/aws/containers-roadmap/issues/505
+      # Not working yet with ECR yet: https://github.com/aws/containers-roadmap/issues/505
       # - docker buildx build --cache-from=type=registry,ref=$CACHE_REPO_URI --cache-to=type=registry,ref=$CACHE_REPO_URI,mode=max --push -t $REPO_URI:latest -t $REPO_URI:$IMAGE_TAG -f deploy/Dockerfile.alpine --progress=plain "."
       # docker buildx build --push --cache-to=type=registry,ref=${CACHE_REPO_URI}:latest,mode=max -t ${REPO_URI}:latest -f deploy/Dockerfile.alpine --progress=plain "."
   post_build:
@@ -85,6 +85,4 @@ artifacts:
     - taskdef.json
 cache:
   paths:
-    # - '/var/lib/docker/**/*'
     - '.cache/**/*'
-    # - '.virtualenv/**/*'
