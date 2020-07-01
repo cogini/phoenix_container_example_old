@@ -8,7 +8,7 @@ It uses:
 * Docker BuildKit for parallel builds and better caching
 * Alpine and Debian Docker images
 * CodeBuild for CI
-* Deploying to ECS CodeDeploy
+* Deploy to ECS using CodeDeploy Blue/Green
 * AWS Parameter Store for configuration
 
 With local caching, rebuilds take less than 5 seconds.
