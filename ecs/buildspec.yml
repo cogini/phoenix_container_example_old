@@ -49,12 +49,13 @@ phases:
       - mkdir -p /root/.cache/docker
       - if [ -s .cache/docker/index.json ]; then CACHE_FROM="--cache-from=type=local,src=.cache/docker"; fi
       # - docker buildx build $CACHE_FROM --cache-to=type=local,dest=.cache/docker,mode=max -t ${REPO_URI}:latest -t ${REPO_URI}:${IMAGE_TAG} -f deploy/Dockerfile.alpine --progress=plain "."
+      - docker buildx build $CACHE_FROM --cache-to=type=local,dest=.cache/docker,mode=max -t $CONTAINER_NAME:latest -t ${CONTAINER_NAME}:${IMAGE_TAG} -f deploy/Dockerfile.alpine --progress=plain "."
 
       - docker-compose --version
       - docker-compose build
       - docker-compose run test mix test
       - docker push ${REPO_URI}:latest
-      - docker push ${REPO_URI}:${IMAGE_TAG}
+      - docker push ${REPO_URI}:$IMAGE_tag
 
       # Use repo for caching
       # Not working yet with ECR yet: https://github.com/aws/containers-roadmap/issues/505
