@@ -24,14 +24,13 @@ phases:
     commands:
       - aws --version
       - docker --version
+      - mkdir -p /root/.docker
+      - printf '{\n    "credsStore": "ecr-login"\n}\n' | tee /root/.docker/config.json
       # - $(aws ecr get-login --region $AWS_DEFAULT_REGION --no-include-email)
       # - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $REPO_URI
       - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
       - IMAGE_TAG=${COMMIT_HASH:=latest}
-      - mkdir -p /root/.cache/docker
-      - mkdir -p /root/.docker
       # - echo '{"credsStore": "ecr-login"}' | tee /root/.docker/config.json
-      - printf '{\n"credsStore": "ecr-login"\n}' | tee /root/.docker/config.json
   build:
     commands:
       - echo "Starting build phase"
@@ -41,6 +40,7 @@ phases:
 
       # Use local files for caching
       # buildx can't deal with the cache not existing, so only use --cache-from if present
+      - mkdir -p /root/.cache/docker
       - if [ -s .cache/docker/index.json ]; then CACHE_FROM="--cache-from=type=local,src=.cache/docker"; fi
       - docker buildx build $CACHE_FROM --cache-to=type=local,dest=.cache/docker,mode=max --push -t $REPO_URI:latest -t $REPO_URI:$IMAGE_TAG -f deploy/Dockerfile.alpine --progress=plain "."
 
