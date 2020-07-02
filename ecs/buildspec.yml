@@ -24,6 +24,8 @@ phases:
     commands:
       - aws --version
       - docker --version
+
+      # Use amazon-ecr-credential-helper for login
       - mkdir -p /root/.docker
       - echo '{"credsStore":"ecr-login"}' | tee /root/.docker/config.json
 
