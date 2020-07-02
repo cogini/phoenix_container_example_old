@@ -26,8 +26,8 @@ phases:
       - docker --version
       - mkdir -p /root/.docker
 
-      # - printf '{"%s":"%s"}' "credsStore" "ecr-login" | tee /root/.docker/config.json
-      - printf '{"credsStore":"ecr-login"}' | tee /root/.docker/config.json
+      # - printf '{"credsStore":"ecr-login"}' | tee /root/.docker/config.json
+      - echo '{"credsStore":"ecr-login"}' | tee /root/.docker/config.json
 
       # - $(aws ecr get-login --region $AWS_DEFAULT_REGION --no-include-email)
       # - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $REPO_URI
