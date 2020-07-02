@@ -17,6 +17,22 @@ Building with Docker BuildKit works anywhere.
 CodeBuild / CodeDeploy / ECS is used in conjunction with Terraform
 to set up the environment. See https://github.com/cogini/multi-env-deploy
 
+## BuildKit
+
+BuildKit is a new back end for Docker that builds tasks in parallel.  It also
+supports caching of files outside of container layers, particularly useful for
+downloads such as Hex, JS or OS packages.
+
+`buildx` is the new Docker CLI command which takes advantage of
+features in the back end.
+
+* https://github.com/moby/buildkit
+* https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/experimental.md
+* https://github.com/docker/buildx
+* https://www.giantswarm.io/blog/container-image-building-with-buildkit
+
+https://docs.docker.com/engine/reference/commandline/build/
+
 ## Usage
 
 ### Build
@@ -38,8 +54,8 @@ can be installed manually before that.
     docker buildx build --no-cache -t $CONTAINER_NAME -f deploy/Dockerfile.debian .
 
     docker buildx build \
-        --cache-from=type=registry,ref=$CACHE_REPO_URI \
-        --cache-to=type=registry,ref=$CACHE_REPO_URI,mode=max \
+        --cache-from=type=local,src=.cache/docker \
+        --cache-to=type=local,dest=.cache/docker,mode=max \
         --push -t $REPO_URI:latest -f deploy/Dockerfile.alpine --progress=plain "."
 
 Using docker-compose:
@@ -66,22 +82,6 @@ Create database
     mix ecto.create
 
     docker run -p 4000:4000 --env SECRET_KEY_BASE="..." --env DATABASE_URL=ecto://postgres:postgres@host.docker.internal/phoenix_container_example_dev phoenix-container-example
-
-## BuildKit
-
-BuildKit is a new back end for Docker that builds tasks in parallel.  It also
-supports caching of files outside of container layers, particularly useful for
-downloads such as Hex, JS or OS packages.
-
-`buildx` is the new Docker CLI command which takes advantage of
-features in the back end.
-
-* https://github.com/moby/buildkit
-* https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/experimental.md
-* https://github.com/docker/buildx
-* https://www.giantswarm.io/blog/container-image-building-with-buildkit
-
-https://docs.docker.com/engine/reference/commandline/build/
 
 ## CodeBuild / CodeDeploy
 
