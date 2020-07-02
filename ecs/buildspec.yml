@@ -31,11 +31,13 @@ phases:
       # - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $REPO_URI
       - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
       - IMAGE_TAG=${COMMIT_HASH:=latest}
-      # - echo '{"credsStore": "ecr-login"}' | tee /root/.docker/config.json
   build:
     commands:
       - echo "Starting build phase"
       - docker buildx create --name mybuilder --use
+
+      - printf '{\n    "credsStore": "ecr-login"\n}\n' | tee /root/.docker/config.json
+
       # - docker buildx build -t $CONTAINER_NAME:latest -t $REPO_URI:latest -t $REPO_URI:$IMAGE_TAG -f $TEMPLATE_DIR/Dockerfile --push --progress=plain "."
       # - docker buildx build --push -t $REPO_URI:latest -t $REPO_URI:$IMAGE_TAG -f deploy/Dockerfile.alpine --progress=plain "."
 
