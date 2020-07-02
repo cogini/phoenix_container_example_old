@@ -30,7 +30,7 @@ phases:
       - IMAGE_TAG=${COMMIT_HASH:=latest}
       - mkdir -p /root/.cache/docker
       - mkdir -p /root/.docker
-      # - echo "{\"credsStore\": \"ecr-login\"}" | tee /root/.docker/config.json
+      - echo '{"credsStore": "ecr-login"}' | tee /root/.docker/config.json
   build:
     commands:
       - echo "Starting build phase"
