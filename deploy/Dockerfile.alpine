@@ -91,6 +91,8 @@ COPY rel ./rel
 
 RUN mix do compile, release $RELEASE
 
+RUN echo $BUILDPLATFORM
+RUN echo $TARGETPLATFORM
 
 ##########################################################################
 # Create actual image that is deployed
