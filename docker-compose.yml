@@ -1,0 +1,46 @@
+version: '3.8'
+services:
+  app:
+    image: phoenix-container-example-alpine
+    environment:
+      - SECRET_KEY_BASE
+      - DATABASE_URL
+    build:
+      dockerfile: deploy/Dockerfile.alpine
+      context: .
+      args:
+        MIX_ENV: prod
+    ports:
+      - "4000"
+    depends_on:
+      - db
+
+  test:
+    image: phoenix-container-example-test
+    # command: sh -c 'while !</dev/tcp/db/5432; do sleep 1; done; set -ex mix test'
+    command: sh -c 'mix test'
+    environment:
+      - DATABASE_HOST=db
+    build:
+      dockerfile: deploy/Dockerfile.alpine
+      context: .
+      target: test
+      args:
+        MIX_ENV: test
+    depends_on:
+      - db
+
+  # https://github.com/docker-library/docs/blob/master/postgres/README.md
+  db:
+    image: postgres:12
+    restart: always
+    volumes:
+      - ./tmp/db:/var/lib/postgresql/data
+    environment:
+      # POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    expose:
+      - 5432
+
+# volumes:
+#   db-data:
