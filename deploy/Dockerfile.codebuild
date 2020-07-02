@@ -74,6 +74,6 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
  && apt-get install $APT_OPTS \
         amazon-ecr-credential-helper
 
-RUN set -ex \
- && mkdir -p /root/.docker \
- && echo '{"credsStore": "ecr-login"}'> /root/.docker/config.json
+# RUN set -ex \
+#  && mkdir -p /root/.docker \
+#  && echo '{"credsStore": "ecr-login"}'> /root/.docker/config.json
