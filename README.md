@@ -48,7 +48,9 @@ cli command (and new file syntax). It is built in with Docker version 19.03, but
 can be installed manually before that.
 
     export DOCKER_CLI_EXPERIMENTAL=enabled
+    export CONTAINER_NAME=phoenix-container-example-alpine
     docker buildx build -t $CONTAINER_NAME -f deploy/Dockerfile.alpine .
+
     docker buildx build -t $CONTAINER_NAME -f deploy/Dockerfile.debian .
 
     docker buildx build --no-cache -t $CONTAINER_NAME -f deploy/Dockerfile.debian .
@@ -62,6 +64,8 @@ Using docker-compose:
 
     COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker-compose build
     COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker-compose up
+
+    COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker-compose run test mix test
 
     docker-compose run app mix ecto.create
 
