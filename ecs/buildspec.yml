@@ -29,6 +29,8 @@ phases:
       - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
       - IMAGE_TAG=${COMMIT_HASH:=latest}
       - mkdir -p .cache/docker
+      - mkdir -p /root/.docker
+      - [ -s .docker/config.json ] || echo '{"credsStore": "ecr-login"}'> .docker/config.json
   build:
     commands:
       - echo "Starting build phase"
