@@ -3,7 +3,8 @@
 # Create custom build image for CodeBuild with latest Docker
 # so we can use BuildKit
 
-FROM ubuntu:bionic
+# FROM ubuntu:bionic
+FROM ubuntu:focal
 
 ARG DEBIAN_FRONTEND=noninteractive
 ARG APT_OPTS="-y -qq -o=Dpkg::Use-Pty=0 --no-install-recommends"
@@ -50,12 +51,29 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
  && apt-get update -qq \
  && apt-get install $APT_OPTS \
         docker-ce \
-        docker-ce-cli \
-        containerd.io
+        docker-ce-cli
+# containerd.io
 # RUN docker --version
 
 # Install latest version of awscli using pip
 # RUN python3 --version
-RUN python3 -m pip install wheel
-RUN python3 -m pip install awscli
+RUN --mount=type=cache,id=pip,target=/root/.cache/pip \
+    set -ex \
+ && python3 -m pip install wheel \
+ && python3 -m pip install awscli
 # RUN aws --version
+
+# Use ecr-credential-helper to access ECR repos
+# https://github.com/awslabs/amazon-ecr-credential-helper
+# This package is not in Ubuntu 18.04, it requires a newer release
+RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
+    --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
+    set -ex \
+ && apt-get update -qq \
+ && apt-get install $APT_OPTS \
+        amazon-ecr-credential-helper
+
+RUN set -ex \
+ && mkdir -p /root/.docker \
+ && echo '{"credsStore": "ecr-login"}'> /root/.docker/config.json
