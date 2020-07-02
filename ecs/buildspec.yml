@@ -50,6 +50,7 @@ phases:
       - if [ -s .cache/docker/index.json ]; then CACHE_FROM="--cache-from=type=local,src=.cache/docker"; fi
       - docker buildx build $CACHE_FROM --cache-to=type=local,dest=.cache/docker,mode=max --push -t $REPO_URI:latest -t $REPO_URI:$IMAGE_TAG -f deploy/Dockerfile.alpine --progress=plain "."
 
+      - docker-compose --version
       - docker-compose run test mix test
       - docker push -t $REPO_URI:latest -t $REPO_URI:$IMAGE_TAG
 
