@@ -69,6 +69,9 @@ Using docker-compose:
 
     docker-compose run app mix ecto.create
 
+
+DOCKER_CLI_EXPERIMENTAL=enabled docker buildx build --push -t $REPO_URI -f deploy/Dockerfile.codebuild .
+
 ### Run
 
 Environment vars:

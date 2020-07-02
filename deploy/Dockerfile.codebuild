@@ -55,6 +55,10 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
 # containerd.io
 # RUN docker --version
 
+RUN set -ex \
+ && curl -L "https://github.com/docker/compose/releases/download/1.26.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose \
+ && chmod +x /usr/local/bin/docker-compose
+
 # Install latest version of awscli using pip
 # RUN python3 --version
 RUN --mount=type=cache,id=pip,target=/root/.cache/pip \
