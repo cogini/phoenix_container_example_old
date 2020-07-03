@@ -57,7 +57,7 @@ phases:
       - docker-compose --version
       - docker-compose run test mix test
 
-      - docker buildx build $CACHE_FROM $CACHE_TO --push -t ${REPO_URI}:latest -t ${REPO_URI}:${IMAGE_TAG} -f deploy/Dockerfile.alpine --progress=plain "."
+      - docker buildx build $CACHE_FROM $CACHE_TO --target deploy --push -t ${REPO_URI}:latest -t ${REPO_URI}:${IMAGE_TAG} -f deploy/Dockerfile.alpine --progress=plain "."
 
       # Use repo for caching
       # Not working yet with ECR yet: https://github.com/aws/containers-roadmap/issues/505
