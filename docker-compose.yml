@@ -16,7 +16,7 @@ services:
       - db
 
   test:
-    image: phoenix-container-example-test
+    image: phoenix-container-example-alpine-test
     # command: sh -c 'while !</dev/tcp/db/5432; do sleep 1; done; set -ex mix test'
     command: sh -c 'mix test'
     environment:
