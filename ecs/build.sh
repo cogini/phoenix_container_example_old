@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# Build containers and run tests
+
 set -e
 
 # - docker buildx build -t $CONTAINER_NAME:latest -t $REPO_URI:latest -t $REPO_URI:$IMAGE_TAG -f $TEMPLATE_DIR/Dockerfile --push --progress=plain "."
