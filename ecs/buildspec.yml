@@ -52,7 +52,7 @@ phases:
       # - docker buildx build $CACHE_FROM --cache-to=type=local,dest=.cache/docker,mode=max -t ${REPO_URI}:latest -t ${REPO_URI}:${IMAGE_TAG} -f deploy/Dockerfile.alpine --progress=plain "."
       # - docker buildx build $CACHE_FROM --cache-to=type=local,dest=.cache/docker,mode=max -t $CONTAINER_NAME:latest -t ${CONTAINER_NAME}:${IMAGE_TAG} -f deploy/Dockerfile.alpine --progress=plain "."
 
-      - docker buildx build $CACHE_FROM $CACHE_TO --target test -t phoenix-container-example-alpine-test -f deploy/Dockerfile.alpine --progress=plain "."
+      - docker buildx build $CACHE_FROM $CACHE_TO --target test --load -t phoenix-container-example-alpine-test -f deploy/Dockerfile.alpine --progress=plain "."
 
       - docker-compose --version
       - docker-compose run test mix test
