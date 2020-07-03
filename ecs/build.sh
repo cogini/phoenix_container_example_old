@@ -9,24 +9,24 @@ set -e
 
 # Use local files for caching
 
-echo "Building test image"
-CACHE_DIR=$HOME/.cache/docker/test
-mkdir -p $CACHE_DIR
-# buildx can't deal with the cache not existing, so only use --cache-from if present
-if [ -s $CACHE_DIR/index.json ]
-then
-    CACHE_FROM=--cache-from=type=local,src=$CACHE_DIR
-else
-    CACHE_FROM=""
-fi
-CACHE_TO="--cache-to=type=local,dest=$CACHE_DIR,mode=max"
-echo "CACHE_FROM: ${CACHE_FROM}"
-echo "CACHE_TO: ${CACHE_TO}"
+# echo "Building test image"
+# CACHE_DIR=$HOME/.cache/docker/test
+# mkdir -p $CACHE_DIR
+# # buildx can't deal with the cache not existing, so only use --cache-from if present
+# if [ -s $CACHE_DIR/index.json ]
+# then
+#     CACHE_FROM=--cache-from=type=local,src=$CACHE_DIR
+# else
+#     CACHE_FROM=""
+# fi
+# CACHE_TO="--cache-to=type=local,dest=$CACHE_DIR,mode=max"
+# echo "CACHE_FROM: ${CACHE_FROM}"
+# echo "CACHE_TO: ${CACHE_TO}"
 
-docker buildx build $CACHE_FROM $CACHE_TO --load --target test --build-arg MIX_ENV=test -t app-test -f deploy/Dockerfile.alpine --progress=plain "."
+# docker buildx build $CACHE_FROM $CACHE_TO --load --target test --build-arg MIX_ENV=test -t app-test -f deploy/Dockerfile.alpine --progress=plain "."
 
-echo "Running tests"
-docker-compose run test mix test
+# echo "Running tests"
+# docker-compose run test mix test
 
 echo "Building deploy image"
 CACHE_DIR=$HOME/.cache/docker/deploy

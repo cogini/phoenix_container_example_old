@@ -36,18 +36,18 @@ RUN --mount=type=cache,target=~/.hex/packages/hexpm,sharing=locked \
     --mount=type=cache,target=~/.cache/rebar3,sharing=locked \
     mix do local.rebar --force, local.hex --force, deps.get --only $MIX_ENV
 
-FROM deps AS test
+# FROM deps AS test
 
-ARG MIX_ENV
+# ARG MIX_ENV
 
-# Instead of copying sources, could use bind mount, e.g.
-# RUN --mount=target=.
-# see https://adoptingerlang.org/docs/production/docker/#efficient-caching
-COPY lib ./lib
-COPY priv ./priv
-COPY test ./test
+# # Instead of copying sources, could use bind mount, e.g.
+# # RUN --mount=target=.
+# # see https://adoptingerlang.org/docs/production/docker/#efficient-caching
+# COPY lib ./lib
+# COPY priv ./priv
+# COPY test ./test
 
-RUN mix do compile
+# RUN mix do compile
 
 ##########################################################################
 # Build Phoenix assets
