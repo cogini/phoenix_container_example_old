@@ -6,12 +6,11 @@ set -e
 # - docker buildx build --push -t $REPO_URI:latest -t $REPO_URI:$IMAGE_TAG -f deploy/Dockerfile.alpine --progress=plain "."
 
 # Use local files for caching
-# buildx can't deal with the cache not existing, so only use --cache-from if present
 
-CACHE_DIR=.cache/docker/test
+CACHE_DIR=/root/.cache/docker/test
 mkdir -p $CACHE_DIR
-
-if [ -s .cache/docker/test/index.json ]
+# buildx can't deal with the cache not existing, so only use --cache-from if present
+if [ -s $CACHE_DIR/index.json ]
 then
     CACHE_FROM=--cache-from=type=local,src=.cache/docker/test
 else
@@ -25,10 +24,10 @@ docker buildx build $CACHE_FROM $CACHE_TO --load --target test --build-arg MIX_E
 
 docker-compose run test mix test
 
-CACHE_DIR=.cache/docker
+CACHE_DIR=/root/.cache/docker
 mkdir -p $CACHE_DIR
-
-if [ -s .cache/docker/test/index.json ]
+# buildx can't deal with the cache not existing, so only use --cache-from if present
+if [ -s $CACHE_DIR/index.json ]
 then
     CACHE_FROM=--cache-from=type=local,src=.cache/docker/test
 else
@@ -38,7 +37,7 @@ CACHE_TO="--cache-to=type=local,dest=.cache/docker/test,mode=max"
 echo "CACHE_FROM: ${CACHE_FROM}"
 echo "CACHE_TO: ${CACHE_TO}"
 
-- docker buildx build $CACHE_FROM $CACHE_TO --target deploy --push -t ${REPO_URI}:latest -t ${REPO_URI}:${IMAGE_TAG} -f deploy/Dockerfile.alpine --progress=plain "."
+docker buildx build $CACHE_FROM $CACHE_TO --target deploy --push -t ${REPO_URI}:latest -t ${REPO_URI}:${IMAGE_TAG} -f deploy/Dockerfile.alpine --progress=plain "."
 
 # - docker buildx build $CACHE_FROM --cache-to=type=local,dest=.cache/docker,mode=max -t $CONTAINER_NAME:latest -t ${CONTAINER_NAME}:${IMAGE_TAG} -f deploy/Dockerfile.alpine --progress=plain "."
 
