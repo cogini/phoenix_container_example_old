@@ -50,10 +50,12 @@ phases:
 
       - CACHE_DIR=/root/.cache/docker/test
       - mkdir -p $CACHE_DIR
-      - if [ -s $CACHE_DIR/index.json ]; then CACHE_FROM="--cache-from=type=local,src=$CACHE_DIR"; fi
+      # - if [ -s $CACHE_DIR/index.json ]; then CACHE_FROM="--cache-from=type=local,src=$CACHE_DIR"; fi
+      - CACHE_FROM=""
+      - test -s $CACHE_DIR/index.json && CACHE_FROM="--cache-from=type=local,src=$CACHE_DIR"
       - CACHE_TO="--cache-to=type=local,dest=$CACHE_DIR,mode=max"
-      # - echo "CACHE_FROM: ${CACHE_FROM}"
-      # - echo "CACHE_TO: ${CACHE_TO}"
+      - printf "CACHE_FROM: %s" $CACHE_FROM
+      - printf "CACHE_TO: %s" $CACHE_TO
       - docker buildx build $CACHE_FROM $CACHE_TO --load --target test --build-arg MIX_ENV=test -t app-test -f deploy/Dockerfile.alpine --progress=plain "."
 
       - docker-compose run test mix test
