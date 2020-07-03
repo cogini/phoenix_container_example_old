@@ -48,11 +48,10 @@ phases:
       # Use local files for caching
       # buildx can't deal with the cache not existing, so only use --cache-from if present
 
-      - CACHE_DIR=/root/.cache/docker/test
-      - mkdir -p $CACHE_DIR
-      - if [ -s $CACHE_DIR/index.json ]; then CACHE_FROM=--cache-from=type=local,src=$CACHE_DIR; fi
+      - mkdir -p .cache/docker/test
+      - if [ -s .cache/docker/test/index.json ]; then CACHE_FROM=--cache-from=type=local,src=.cache/docker/test; fi
       - printf "CACHE_FROM: %s" $CACHE_FROM
-      - docker buildx build $CACHE_FROM --cache-to=type=local,dest=$CACHE_DIR,mode=max --load --target test --build-arg MIX_ENV=test -t app-test -f deploy/Dockerfile.alpine --progress=plain "."
+      - docker buildx build $CACHE_FROM --cache-to=type=local,dest=.cache/docker/test,mode=max --load --target test --build-arg MIX_ENV=test -t app-test -f deploy/Dockerfile.alpine --progress=plain "."
 
       - docker-compose run test mix test
 
