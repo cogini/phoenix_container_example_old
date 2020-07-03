@@ -24,9 +24,7 @@ FROM elixir:1.10.3-alpine AS deps
 ARG http_proxy
 ARG https_proxy=$http_proxy
 
-# For max speed, use MIX_ENV to only pull prod deps
-# When building a test image, pull everything
-# ARG MIX_ENV
+ARG MIX_ENV
 
 WORKDIR /app
 
@@ -36,8 +34,7 @@ COPY mix.exs mix.lock ./
 # Mount hex and rebar cache directories as type=cache
 RUN --mount=type=cache,target=~/.hex/packages/hexpm,sharing=locked \
     --mount=type=cache,target=~/.cache/rebar3,sharing=locked \
-    mix do local.rebar --force, local.hex --force, deps.get
-#      mix do local.rebar --force, local.hex --force, deps.get --only $MIX_ENV
+    mix do local.rebar --force, local.hex --force, deps.get --only $MIX_ENV
 
 FROM deps AS test
 
