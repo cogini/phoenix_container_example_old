@@ -52,8 +52,8 @@ phases:
       - mkdir -p $CACHE_DIR
       - if [ -s $CACHE_DIR/index.json ]; then CACHE_FROM="--cache-from=type=local,src=$CACHE_DIR"; fi
       - CACHE_TO="--cache-to=type=local,dest=$CACHE_DIR,mode=max"
-      - echo "CACHE_FROM: $CACHE_FROM"
-      - echo "CACHE_TO: $CACHE_TO"
+      - echo "CACHE_FROM: ${CACHE_FROM}"
+      - echo "CACHE_TO: ${CACHE_TO}"
       - docker buildx build $CACHE_FROM $CACHE_TO --load --target test --build-arg MIX_ENV=test -t app-test -f deploy/Dockerfile.alpine --progress=plain "."
 
       - docker-compose run test mix test
@@ -62,8 +62,8 @@ phases:
       - mkdir -p $CACHE_DIR
       - if [ -s $CACHE_DIR/index.json ]; then CACHE_FROM="--cache-from=type=local,src=$CACHE_DIR"; fi
       - CACHE_TO="--cache-to=type=local,dest=$CACHE_DIR,mode=max"
-      - echo "CACHE_FROM: $CACHE_FROM"
-      - echo "CACHE_TO: $CACHE_TO"
+      - echo "CACHE_FROM: ${CACHE_FROM}"
+      - echo "CACHE_TO: ${CACHE_TO}"
       - docker buildx build $CACHE_FROM $CACHE_TO --target deploy --push -t ${REPO_URI}:latest -t ${REPO_URI}:${IMAGE_TAG} -f deploy/Dockerfile.alpine --progress=plain "."
 
       # - docker buildx build $CACHE_FROM --cache-to=type=local,dest=.cache/docker,mode=max -t $CONTAINER_NAME:latest -t ${CONTAINER_NAME}:${IMAGE_TAG} -f deploy/Dockerfile.alpine --progress=plain "."
