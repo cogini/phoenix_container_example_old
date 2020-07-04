@@ -36,7 +36,6 @@ phases:
   build:
     commands:
       - echo "Starting build phase"
-      - docker buildx create --name mybuilder --use
       - $TEMPLATE_DIR/build.sh
   post_build:
     commands:

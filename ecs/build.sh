@@ -10,6 +10,8 @@ export COMPOSE_DOCKER_CLI_BUILD=1
 PROGRESS=--progress=plain
 DOCKERFILE=deploy/Dockerfile.alpine
 
+docker buildx create --name mybuilder --use
+
 # - docker buildx build -t $CONTAINER_NAME:latest -t $REPO_URI:latest -t $REPO_URI:$IMAGE_TAG -f $TEMPLATE_DIR/Dockerfile --push --progress=plain "."
 # - docker buildx build --push -t $REPO_URI:latest -t $REPO_URI:$IMAGE_TAG -f deploy/Dockerfile.alpine --progress=plain "."
 
