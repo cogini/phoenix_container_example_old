@@ -75,4 +75,4 @@ artifacts:
     - taskdef.json
 cache:
   paths:
-    - '.cache/**/*'
+    - '/root/.cache/docker/**/*'
