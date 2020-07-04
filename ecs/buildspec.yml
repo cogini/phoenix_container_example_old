@@ -14,10 +14,6 @@ version: 0.2
 env:
   variables:
     TEMPLATE_DIR: ecs
-    DOCKER_BUILDKIT: 1
-    DOCKER_CLI_EXPERIMENTAL: enabled
-    COMPOSE_DOCKER_CLI_BUILD: 1
-    DOCKER_BUILDKIT: 1
 phases:
   install:
     commands:
