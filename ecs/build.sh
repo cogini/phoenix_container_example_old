@@ -2,7 +2,8 @@
 
 # Build containers and run tests
 
-set -e
+# set -e
+set -o errexit -o nounset -o xtrace
 
 export DOCKER_BUILDKIT=1
 export DOCKER_CLI_EXPERIMENTAL=enabled
