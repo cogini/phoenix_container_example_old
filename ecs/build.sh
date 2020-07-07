@@ -52,7 +52,7 @@ echo "CACHE_FROM: ${CACHE_FROM}"
 echo "CACHE_TO: ${CACHE_TO}"
 
 # docker buildx build $CACHE_FROM $CACHE_TO --push --target deploy -t ${REPO_URI}:latest -t ${REPO_URI}:${IMAGE_TAG} -f deploy/Dockerfile.alpine --progress=plain "."
-docker buildx build $CACHE_FROM $CACHE_TO --push --target deploy -t ${REPO_URI}:latest -f $DOCKERFILE $PROGRESS "."
+docker buildx build $CACHE_FROM $CACHE_TO --push --target deploy -t ${REPO_URI}:latest -t ${REPO_URI}:${IMAGE_TAG} -f $DOCKERFILE $PROGRESS "."
 
 # - docker buildx build $CACHE_FROM --cache-to=type=local,dest=.cache/docker,mode=max -t $CONTAINER_NAME:latest -t ${CONTAINER_NAME}:${IMAGE_TAG} -f deploy/Dockerfile.alpine --progress=plain "."
 
