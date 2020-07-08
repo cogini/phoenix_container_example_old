@@ -14,6 +14,8 @@ version: 0.2
 env:
   variables:
     TEMPLATE_DIR: ecs
+    # Enable docker buildx
+    DOCKER_CLI_EXPERIMENTAL: enabled
 phases:
   install:
     commands:
