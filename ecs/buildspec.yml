@@ -36,6 +36,13 @@ phases:
   build:
     commands:
       - echo "Starting build phase"
+      # Create builder instance
+      - docker buildx create --name mybuilder --use
+      # Build test container
+      - $TEMPLATE_DIR/build-test.sh
+      # Run tests
+      - docker-compose run test mix test
+      # Build final deploy container
       - $TEMPLATE_DIR/build.sh
   post_build:
     commands:

@@ -13,10 +13,10 @@ set -o errexit -o nounset -o xtrace
 # Dockerfile
 DOCKERFILE=deploy/Dockerfile.alpine
 # Target in Dockerfile
-TARGET=deploy
-TAGS="-t ${REPO_URI}:latest -t ${REPO_URI}:${IMAGE_TAG}"
-# BUILD_ARGS="--build-arg MIX_ENV=test"
-OUTPUT=--push
+TARGET=test
+TAGS="-t app-test"
+BUILD_ARGS="--build-arg MIX_ENV=test"
+OUTPUT=--load
 
 CACHE_TYPE=local
 
