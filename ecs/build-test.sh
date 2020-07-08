@@ -20,8 +20,9 @@ CACHE_TYPE=local
 # Cache directory for build files
 CACHE_DIR=$HOME/.cache/docker/$TARGET
 
-# How to report output, default is auto
-PROGRESS=--progress=plain
+# How to report output
+# PROGRESS=--progress=plain
+PROGRESS=""
 
 # Enable BuildKit/buildx
 export DOCKER_BUILDKIT=1
