@@ -5,7 +5,6 @@ set -o errexit -o nounset -o xtrace
 # Build container
 
 # Input ENV vars:
-#   CONTAINER_NAME: name of target container
 #   REPO_URI: URL of ECR repo
 #   IMAGE_TAG: Git commit hash
 #   CACHE_REPO_URI: URL of ECR repo for cache
