@@ -6,7 +6,7 @@ set -o errexit -o nounset -o xtrace
 
 # Input ENV vars:
 #   REPO_URI: URL of ECR repo
-#   IMAGE_TAG: Git commit hash
+#   IMAGE_TAG: git commit hash
 #   CACHE_REPO_URI: URL of ECR repo for cache
 
 # Dockerfile
