@@ -32,7 +32,7 @@ services:
 
   # https://github.com/docker-library/docs/blob/master/postgres/README.md
   db:
-    image: postgres:12
+    image: app-db
     restart: always
     volumes:
       - ./tmp/db:/var/lib/postgresql/data
