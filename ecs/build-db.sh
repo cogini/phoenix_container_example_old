@@ -8,7 +8,7 @@ set -o errexit -o nounset -o xtrace
 #   CACHE_REPO_URI: URL of ECR repo for cache
 
 # Dockerfile
-DOCKERFILE=deploy/Dockerfile.alpine
+DOCKERFILE=deploy/Dockerfile.postgres
 TARGET=app-db
 TAGS="-t ${TARGET}"
 OUTPUT=--load
