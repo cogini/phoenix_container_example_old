@@ -9,13 +9,14 @@ set -o errexit -o nounset -o xtrace
 
 # Dockerfile
 DOCKERFILE=deploy/Dockerfile.alpine
-TAGS="-t app-db"
+TARGET=app-db
+TAGS="-t ${TARGET}"
 OUTPUT=--load
 
 CACHE_TYPE=local
 
 # Cache directory for build files
-CACHE_DIR=$HOME/.cache/docker/$TARGET
+CACHE_DIR=$HOME/.cache/docker/${TARGET}
 
 # How to report output
 # PROGRESS=--progress=plain
