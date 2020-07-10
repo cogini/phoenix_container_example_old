@@ -9,10 +9,7 @@ set -o errexit -o nounset -o xtrace
 
 # Dockerfile
 DOCKERFILE=deploy/Dockerfile.alpine
-# Target in Dockerfile
-# TARGET=test
 TAGS="-t app-db"
-# BUILD_ARGS="--build-arg MIX_ENV=test"
 OUTPUT=--load
 
 CACHE_TYPE=local
@@ -58,4 +55,4 @@ case $CACHE_TYPE in
 esac
 echo "CACHE_FROM: ${CACHE_FROM}"
 echo "CACHE_TO: ${CACHE_TO}"
-docker buildx build $CACHE_FROM $CACHE_TO --target $TARGET $TAGS -f $DOCKERFILE $PROGRESS $OUTPUT "."
+docker buildx build $CACHE_FROM $CACHE_TO $TAGS -f $DOCKERFILE $PROGRESS $OUTPUT "."
