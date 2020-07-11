@@ -23,9 +23,9 @@ CACHE_TYPE=local
 # Cache directory for build files
 CACHE_DIR=$HOME/.cache/docker/$TARGET
 
-# OUTPUT=--load
+OUTPUT=--load
 # OUTPUT=--output=type=local,dest=path
-OUTPUT=--output=type=image
+# OUTPUT=--output=type=image
 # --output "type=image,push=true"
 
 # How to report output, default is auto
