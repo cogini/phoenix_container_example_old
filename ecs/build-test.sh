@@ -13,14 +13,22 @@ DOCKERFILE=deploy/Dockerfile.alpine
 TARGET=test
 TAGS="-t app-test"
 BUILD_ARGS="--build-arg MIX_ENV=test"
-OUTPUT=--load
+# DOCKER_REPO="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/"
+# BUILD_ARGS="--build-arg MIX_ENV=test --build-arg DOCKER_REPO=${DOCKER_REPO}"
 
 CACHE_TYPE=local
+# CACHE_TYPE=none
+# CACHE_TYPE=""
 
 # Cache directory for build files
 CACHE_DIR=$HOME/.cache/docker/$TARGET
 
-# How to report output
+# OUTPUT=--load
+# OUTPUT=--output=type=local,dest=path
+OUTPUT=--output=type=image
+# --output "type=image,push=true"
+
+# How to report output, default is auto
 # PROGRESS=--progress=plain
 PROGRESS=""
 
@@ -51,6 +59,10 @@ case $CACHE_TYPE in
         CACHE_FROM="--cache-from=type=registry,ref=$CACHE_REPO_URI"
         CACHE_TO="--cache-to=type=registry,ref=$CACHE_REPO_URI,mode=max"
         ;;
+    none)
+        CACHE_FROM="--no-cache"
+        CACHE_TO=""
+        ;;
     *)
         CACHE_FROM=""
         CACHE_TO=""
@@ -58,4 +70,5 @@ case $CACHE_TYPE in
 esac
 echo "CACHE_FROM: ${CACHE_FROM}"
 echo "CACHE_TO: ${CACHE_TO}"
-docker buildx build $CACHE_FROM $CACHE_TO --target $TARGET $TAGS -f $DOCKERFILE $PROGRESS $OUTPUT "."
+
+docker buildx build $CACHE_FROM $CACHE_TO $BUILD_ARGS --target $TARGET $TAGS -f $DOCKERFILE $PROGRESS $OUTPUT "."

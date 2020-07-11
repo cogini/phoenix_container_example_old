@@ -12,11 +12,21 @@ DOCKERFILE=deploy/Dockerfile.postgres
 TARGET=app-db
 TAGS="-t ${TARGET}"
 OUTPUT=--load
+BUILD_ARGS=""
+# DOCKER_REPO="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/"
+# BUILD_ARGS="--build-arg MIX_ENV=test --build-arg DOCKER_REPO=${DOCKER_REPO}"
 
 CACHE_TYPE=local
+# CACHE_TYPE=none
+# CACHE_TYPE=""
 
 # Cache directory for build files
 CACHE_DIR=$HOME/.cache/docker/${TARGET}
+
+# OUTPUT=--load
+# OUTPUT=--output=type=local,dest=path
+OUTPUT=--output=type=image
+# --output "type=image,push=true"
 
 # How to report output
 # PROGRESS=--progress=plain
@@ -49,6 +59,10 @@ case $CACHE_TYPE in
         CACHE_FROM="--cache-from=type=registry,ref=$CACHE_REPO_URI"
         CACHE_TO="--cache-to=type=registry,ref=$CACHE_REPO_URI,mode=max"
         ;;
+    none)
+        CACHE_FROM="--no-cache"
+        CACHE_TO=""
+        ;;
     *)
         CACHE_FROM=""
         CACHE_TO=""
@@ -56,4 +70,4 @@ case $CACHE_TYPE in
 esac
 echo "CACHE_FROM: ${CACHE_FROM}"
 echo "CACHE_TO: ${CACHE_TO}"
-docker buildx build $CACHE_FROM $CACHE_TO $TAGS -f $DOCKERFILE $PROGRESS $OUTPUT "."
+docker buildx build $CACHE_FROM $CACHE_TO $BUILD_ARGS $TAGS -f $DOCKERFILE $PROGRESS $OUTPUT "."
