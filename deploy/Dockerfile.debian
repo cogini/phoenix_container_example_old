@@ -19,7 +19,7 @@ ARG MIX_ENV=prod
 # Name of release
 ARG RELEASE=app
 
-FROM elixir:1.10.3 as deps
+FROM elixir:1.10.4 as deps
 
 ARG http_proxy
 ARG https_proxy=$http_proxy
