@@ -16,6 +16,7 @@ env:
     TEMPLATE_DIR: ecs
     # Enable docker buildx
     DOCKER_CLI_EXPERIMENTAL: enabled
+    COMPOSE_DOCKER_CLI_BUILD: 1
 phases:
   install:
     commands:
