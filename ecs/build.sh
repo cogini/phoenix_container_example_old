@@ -59,4 +59,9 @@ case $CACHE_TYPE in
 esac
 echo "CACHE_FROM: ${CACHE_FROM}"
 echo "CACHE_TO: ${CACHE_TO}"
+
+docker pull elixir:1.10.4-alpine
+docker pull node:14.4-stretch
+docker pull alpine:3.12
+
 docker buildx build $CACHE_FROM $CACHE_TO --target $TARGET $TAGS -f $DOCKERFILE $PROGRESS $OUTPUT "."
