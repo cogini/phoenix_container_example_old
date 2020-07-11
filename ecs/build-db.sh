@@ -11,7 +11,6 @@ set -o errexit -o nounset -o xtrace
 DOCKERFILE=deploy/Dockerfile.postgres
 TARGET=app-db
 TAGS="-t ${TARGET}"
-OUTPUT=--load
 BUILD_ARGS=""
 # DOCKER_REPO="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/"
 # BUILD_ARGS="--build-arg MIX_ENV=test --build-arg DOCKER_REPO=${DOCKER_REPO}"
@@ -21,14 +20,14 @@ CACHE_TYPE=local
 # CACHE_TYPE=""
 
 # Cache directory for build files
-CACHE_DIR=$HOME/.cache/docker/${TARGET}
+CACHE_DIR=$HOME/.cache/docker/$TARGET
 
-# OUTPUT=--load
+OUTPUT=--load
 # OUTPUT=--output=type=local,dest=path
-OUTPUT=--output=type=image
+# OUTPUT=--output=type=image
 # --output "type=image,push=true"
 
-# How to report output
+# How to report output, default is auto
 # PROGRESS=--progress=plain
 PROGRESS=""
 
@@ -70,4 +69,5 @@ case $CACHE_TYPE in
 esac
 echo "CACHE_FROM: ${CACHE_FROM}"
 echo "CACHE_TO: ${CACHE_TO}"
+
 docker buildx build $CACHE_FROM $CACHE_TO $BUILD_ARGS $TAGS -f $DOCKERFILE $PROGRESS $OUTPUT "."
