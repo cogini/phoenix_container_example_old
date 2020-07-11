@@ -40,6 +40,12 @@ phases:
       - echo "Starting build phase"
       # Create builder instance
       - docker buildx create --name mybuilder --use
+
+      - docker pull elixir:1.10.4-alpine
+      - docker pull node:14.4-stretch
+      - docker pull alpine:3.12
+      - docker pull postgres:12
+
       # Build test container
       - $TEMPLATE_DIR/build-test.sh
       # Build test db container
