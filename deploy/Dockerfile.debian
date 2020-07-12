@@ -14,12 +14,16 @@
 ##########################################################################
 # Fetch dependencies
 
+ARG ELIXIR_VERSION=1.10.4
+ARG NODE_VERSION=14.4
 ARG MIX_ENV=prod
 
 # Name of release
 ARG RELEASE=app
+# Docker repository, default is docker.io
+ARG DOCKER_REPO=""
 
-FROM elixir:1.10.4 as deps
+FROM ${DOCKER_REPO}elixir:${ELIXIR_VERSION} as deps
 
 ARG http_proxy
 ARG https_proxy=$http_proxy
@@ -53,7 +57,7 @@ RUN mix do compile
 # Build Phoenix assets
 # Using stretch because it has Python
 
-FROM node:14.4-stretch AS assets
+FROM ${DOCKER_REPO}node:${NODE_VERSION}-stretch AS assets
 WORKDIR /app/assets
 
 # Copy deps to get assets from phoenix
@@ -107,7 +111,7 @@ RUN mix do compile, release $RELEASE
 ##########################################################################
 # Create actual image that is deployed
 
-FROM debian:buster-slim as deploy
+FROM ${DOCKER_REPO}debian:buster-slim as deploy
 
 ARG MIX_ENV
 ARG RELEASE
@@ -122,8 +126,6 @@ ARG APT_OPTS="-y -qq -o=Dpkg::Use-Pty=0 --no-install-recommends"
 ENV LANG=C.UTF-8 \
     HOME=/app \
     RELEASE_TMP=/run/app \
-    SECRET_KEY_BASE=\
-    DATABASE_URL=\
     PORT=4000
 
 # With BuildKit caching, the special Docker cache cleaning stuff is not helpful
@@ -187,6 +189,7 @@ COPY --from=release --chown=app:app /app/_build/$MIX_ENV/rel/$RELEASE ./
 
 EXPOSE $PORT
 
+# TODO: configure using $RELEASE
 ENTRYPOINT ["bin/app"]
 
 # Run app in foreground

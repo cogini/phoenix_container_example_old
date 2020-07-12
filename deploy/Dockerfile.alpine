@@ -14,13 +14,16 @@
 ##########################################################################
 # Fetch dependencies
 
+ARG ALPINE_VERSION=3.12
+ARG ELIXIR_VERSION=1.10.4
 ARG MIX_ENV=prod
 
-# Name of release
+# Name of Elixir release
 ARG RELEASE=app
+# Docker repository, default is docker.io
 ARG DOCKER_REPO=""
 
-FROM ${DOCKER_REPO}elixir:1.10.4-alpine AS deps
+FROM ${DOCKER_REPO}elixir:${ELIXIR_VERSION}-alpine AS deps
 
 ARG http_proxy
 ARG https_proxy=$http_proxy
@@ -54,7 +57,7 @@ RUN mix do compile
 # Build Phoenix assets
 # Using stretch because it has Python
 
-FROM ${DOCKER_REPO}node:14.4-stretch AS assets
+FROM ${DOCKER_REPO}node:${NODE_VERSION}-stretch AS assets
 WORKDIR /app/assets
 
 # Copy deps to get assets from phoenix
@@ -110,7 +113,7 @@ RUN echo $TARGETPLATFORM
 ##########################################################################
 # Create actual image that is deployed
 
-FROM ${DOCKER_REPO}alpine:3.12 as deploy
+FROM ${DOCKER_REPO}alpine:${ALPINE_VERSION} as deploy
 
 ARG MIX_ENV
 ARG RELEASE
@@ -123,8 +126,6 @@ ENV LANG=C.UTF-8 \
     RELEASE_TMP=/run/app \
     PORT=4000
 
-    # SECRET_KEY_BASE=\
-    # DATABASE_URL=\
 
 # Install openssl, allowing the app to listen on HTTPS.
 # May not be needed if handled outside the application (e.g. in Kubernetes ingress).
