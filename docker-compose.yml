@@ -1,7 +1,7 @@
 version: '3.8'
 services:
   app:
-    image: app
+    image: "${DOCKER_REPO}foo-app"
     environment:
       - SECRET_KEY_BASE
       - DATABASE_URL
@@ -11,6 +11,8 @@ services:
       context: .
       args:
         MIX_ENV: prod
+      cache_from:
+        - "${DOCKER_REPO}foo-app"
     ports:
       - 4000
     depends_on:

@@ -42,10 +42,13 @@ phases:
   build:
     commands:
       - echo "Starting build phase"
+      - DOCKER_REPO="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/"
 
       - docker buildx bake -f docker-compose.yml --print
-      - docker buildx bake -f docker-compose.yml
-      - docker-compose run test mix test
+      - docker buildx bake -f docker-compose.yml --load
+      - docker-compose run test
+      - docker-compose push app
+      # - docker-compose run test mix test
 
       # # Build test container
       # - env MIX_ENV=test TARGET=test $TEMPLATE_DIR/build-test.sh
@@ -54,7 +57,7 @@ phases:
       # # Run tests
       # - docker-compose run test mix test
       # Build final deploy container
-      - $TEMPLATE_DIR/build.sh
+      # - $TEMPLATE_DIR/build.sh
   post_build:
     commands:
       - echo "Writing image definition files..."
