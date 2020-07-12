@@ -54,7 +54,6 @@ phases:
       - docker-compose push app
 
       - du -cks /var/lib | sort -n
-      - ls -l /var/lib/buildkit
 
       # # Build test container
       # - env MIX_ENV=test TARGET=test $TEMPLATE_DIR/build-test.sh
