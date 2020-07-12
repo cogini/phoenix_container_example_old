@@ -9,32 +9,34 @@ set -o errexit -o nounset -o xtrace
 #   IMAGE_TAG: git commit hash
 #   CACHE_REPO_URI: URL of ECR repo for cache
 
+# Output cache type: local, registry, none (clear cache), blank
+CACHE_TYPE="${CACHE_TYPE:-local}"
+# CACHE_TYPE=none
+# CACHE_TYPE=""
+TARGET="${TARGET:-deploy}"
+
 # Dockerfile
 DOCKERFILE=deploy/Dockerfile.alpine
 # Target in Dockerfile
-TARGET=deploy
+IMAGE_NAME=""
 TAGS="-t ${REPO_URI}:latest -t ${REPO_URI}:${IMAGE_TAG}"
-# BUILD_ARGS="--build-arg MIX_ENV=test"
+MIX_ENV="${MIX_ENV:-prod}"
+BUILD_ARGS="--build-arg MIX_ENV=#{MIX_ENV}"
 # DOCKER_REPO="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/"
 # BUILD_ARGS="--build-arg MIX_ENV=test --build-arg DOCKER_REPO=${DOCKER_REPO}"
-
-CACHE_TYPE=local
-# CACHE_TYPE=none
-# CACHE_TYPE=""
 
 # Cache directory for build files
 CACHE_DIR=$HOME/.cache/docker/$TARGET
 
 # OUTPUT=--load
+OUTPUT=--push
 # OUTPUT=--output=type=local,dest=path
 # OUTPUT=--output=type=image
 # --output "type=image,push=true"
-OUTPUT=--push
 
 # How to report output, default is auto
 # PROGRESS=--progress=plain
 PROGRESS=""
-
 
 # Enable BuildKit/buildx
 export DOCKER_BUILDKIT=1

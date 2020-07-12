@@ -48,7 +48,7 @@ phases:
       - docker buildx create --name mybuilder --use
 
       # Build test container
-      - $TEMPLATE_DIR/build-test.sh
+      - env MIX_ENV=test TARGET=test $TEMPLATE_DIR/build-test.sh
       # Build test db container
       - $TEMPLATE_DIR/build-db.sh
       # Run tests
