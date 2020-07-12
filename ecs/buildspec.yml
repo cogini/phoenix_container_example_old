@@ -51,6 +51,8 @@ phases:
       - docker buildx use dcbuilder
       - docker-compose push app
 
+      - ls -l /var/lib/buildkit
+
       # # Build test container
       # - env MIX_ENV=test TARGET=test $TEMPLATE_DIR/build-test.sh
       # # Build test db container
