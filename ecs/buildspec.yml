@@ -26,6 +26,7 @@ phases:
       - aws --version
       - docker --version
       - docker-compose --version
+      - docker buildx inspect --bootstrap
 
       # Use amazon-ecr-credential-helper for login
       - mkdir -p /root/.docker
@@ -33,11 +34,6 @@ phases:
 
       # - $(aws ecr get-login --region $AWS_DEFAULT_REGION --no-include-email)
       # - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $REPO_URI
-
-      # - docker pull elixir:1.10.4-alpine
-      # - docker pull node:14.4-stretch
-      # - docker pull alpine:3.12
-      # - docker pull postgres:12
 
       - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
       - IMAGE_TAG=${COMMIT_HASH:=latest}
