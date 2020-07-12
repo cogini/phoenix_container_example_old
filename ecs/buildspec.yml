@@ -27,7 +27,7 @@ phases:
       - docker --version
       - docker-compose --version
       # Create builder instance
-      - docker buildx create --name mybuilder --use
+      - docker buildx create --name dcbuilder
       - docker buildx inspect --bootstrap
 
       # Use amazon-ecr-credential-helper for login
@@ -44,11 +44,12 @@ phases:
       - echo "Starting build phase"
       - DOCKER_REPO="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/"
 
+      # - docker buildx use default
       - docker buildx bake -f docker-compose.yml --print
-      - docker buildx bake -f docker-compose.yml --load
-      - docker-compose run test
+      - docker buildx bake -f docker-compose.yml
+      - docker-compose run test mix test
+      - docker buildx use dcbuilder
       - docker-compose push app
-      # - docker-compose run test mix test
 
       # # Build test container
       # - env MIX_ENV=test TARGET=test $TEMPLATE_DIR/build-test.sh

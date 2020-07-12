@@ -21,13 +21,14 @@ services:
   test:
     image: app-test
     # command: sh -c 'while !</dev/tcp/db/5432; do sleep 1; done; set -ex mix test'
-    command: sh -c 'mix test'
+    # command: sh -c 'mix test'
     environment:
       - DATABASE_HOST=db
+      - MIX_ENV=test
     build:
       dockerfile: deploy/Dockerfile.alpine
-      context: .
       target: test
+      context: .
       args:
         MIX_ENV: test
     depends_on:
