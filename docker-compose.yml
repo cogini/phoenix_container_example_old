@@ -1,17 +1,18 @@
 version: '3.8'
 services:
   app:
-    image: phoenix-container-example-alpine
+    image: app
     environment:
       - SECRET_KEY_BASE
       - DATABASE_URL
     build:
       dockerfile: deploy/Dockerfile.alpine
+      target: deploy
       context: .
       args:
         MIX_ENV: prod
     ports:
-      - "4000"
+      - 4000
     depends_on:
       - db
 
@@ -33,6 +34,11 @@ services:
   # https://github.com/docker-library/docs/blob/master/postgres/README.md
   db:
     image: app-db
+    build:
+      dockerfile: deploy/Dockerfile.postgres
+      context: .
+      # args:
+      #   MIX_ENV: prod
     restart: always
     volumes:
       - ./tmp/db:/var/lib/postgresql/data

@@ -26,6 +26,8 @@ phases:
       - aws --version
       - docker --version
       - docker-compose --version
+      # Create builder instance
+      - docker buildx create --name mybuilder --use
       - docker buildx inspect --bootstrap
 
       # Use amazon-ecr-credential-helper for login
@@ -40,15 +42,17 @@ phases:
   build:
     commands:
       - echo "Starting build phase"
-      # Create builder instance
-      - docker buildx create --name mybuilder --use
 
-      # Build test container
-      - env MIX_ENV=test TARGET=test $TEMPLATE_DIR/build-test.sh
-      # Build test db container
-      - $TEMPLATE_DIR/build-db.sh
-      # Run tests
+      - docker buildx bake -f docker-compose.yml --print
+      - docker buildx bake -f docker-compose.yml
       - docker-compose run test mix test
+
+      # # Build test container
+      # - env MIX_ENV=test TARGET=test $TEMPLATE_DIR/build-test.sh
+      # # Build test db container
+      # - $TEMPLATE_DIR/build-db.sh
+      # # Run tests
+      # - docker-compose run test mix test
       # Build final deploy container
       - $TEMPLATE_DIR/build.sh
   post_build:
