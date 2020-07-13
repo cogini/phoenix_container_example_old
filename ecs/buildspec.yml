@@ -44,8 +44,8 @@ phases:
       - echo "Starting build phase"
       - DOCKER_REPO="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/"
 
-      - ls -l /var/lib
-      - du -cks /var/lib | sort -n
+      - ls -l /var/lib/docker
+      - du -cks /var/lib/* | sort -n
 
       # - docker buildx use default
       - docker buildx bake -f docker-compose.yml --print
@@ -54,8 +54,8 @@ phases:
       - docker buildx use dcbuilder
       - docker-compose push app
 
-      - ls -l /var/lib
-      - du -cks /var/lib | sort -n
+      - ls -l /var/lib/docker
+      - du -cks /var/lib/* | sort -n
 
       # # Build test container
       # - env MIX_ENV=test TARGET=test $TEMPLATE_DIR/build-test.sh
