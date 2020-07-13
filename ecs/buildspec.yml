@@ -46,7 +46,7 @@ phases:
       - echo "Starting build phase"
       - DOCKER_REPO="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/"
 
-      - du -cks /var/lib/* | sort -n
+      # - du -cks /var/lib/* | sort -n
       - du -cks /var/lib/docker/* | sort -n
 
       # - docker buildx use default
