@@ -106,3 +106,4 @@ artifacts:
 cache:
   paths:
     - '/root/.cache/docker/**/*'
+    - '/var/lib/docker/**/*'
