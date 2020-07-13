@@ -58,6 +58,8 @@ phases:
 
       - du -cks /var/lib/* | sort -n
       - du -cks /var/lib/docker/* | sort -n
+      - du -cks /var/lib/docker/buildkit/* | sort -n
+      - du -cks /var/lib/docker/image/* | sort -n
 
       # # Build test container
       # - env MIX_ENV=test TARGET=test $TEMPLATE_DIR/build-test.sh
