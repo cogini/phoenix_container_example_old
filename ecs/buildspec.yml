@@ -46,33 +46,21 @@ phases:
       - echo "Starting build phase"
       - DOCKER_REPO="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/"
 
-      - du -cks /var/lib/* | sort -n
-      - du -cks /var/lib/docker/* | sort -n
-      - du -cks /var/lib/docker/buildkit/* | sort -n
-      - du -cks /var/lib/docker/image/* | sort -n
-      - du -cks /var/lib/docker/overlay2/* | sort -n
-
       # - docker buildx use default
-      - docker buildx bake -f docker-compose.yml --print
-      - docker buildx bake -f docker-compose.yml
-      - docker-compose run test mix test
-      - docker buildx use dcbuilder
-      - docker-compose push app
-
-      - du -cks /var/lib/* | sort -n
-      - du -cks /var/lib/docker/* | sort -n
-      - du -cks /var/lib/docker/buildkit/* | sort -n
-      - du -cks /var/lib/docker/image/* | sort -n
-      - du -cks /var/lib/docker/overlay2/* | sort -n
-
-      # # Build test container
-      # - env MIX_ENV=test TARGET=test $TEMPLATE_DIR/build-test.sh
-      # # Build test db container
-      # - $TEMPLATE_DIR/build-db.sh
-      # # Run tests
+      # - docker buildx bake -f docker-compose.yml --print
+      # - docker buildx bake -f docker-compose.yml
       # - docker-compose run test mix test
-      # Build final deploy container
-      # - $TEMPLATE_DIR/build.sh
+      # - docker buildx use dcbuilder
+      # - docker-compose push app
+
+      # Build test container
+      - env MIX_ENV=test TARGET=test $TEMPLATE_DIR/build-test.sh
+      # Build test db container
+      - $TEMPLATE_DIR/build-db.sh
+      # Run tests
+      - docker-compose run test mix test
+      Build final deploy container
+      - $TEMPLATE_DIR/build.sh
   post_build:
     commands:
       - echo "Writing image definition files..."
@@ -112,4 +100,4 @@ artifacts:
 cache:
   paths:
     - '/root/.cache/docker/**/*'
-    - '/var/lib/docker/**/*'
+    # - '/var/lib/docker/**/*'

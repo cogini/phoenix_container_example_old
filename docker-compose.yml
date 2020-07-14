@@ -31,6 +31,10 @@ services:
       context: .
       args:
         MIX_ENV: test
+      cache_from:
+        - "type=local,src=${CACHE_DIR}"
+      # cache_to:
+      #   - "type=local,dest=${CACHE_DIR},mode=max"
     depends_on:
       - db
 
