@@ -27,7 +27,7 @@ phases:
       - docker --version
       - docker-compose --version
       # Create builder instance
-      - docker buildx create --name dcbuilder
+      - docker buildx create --name docker-container
       - docker buildx inspect --bootstrap
 
       # Use amazon-ecr-credential-helper for login
@@ -52,6 +52,8 @@ phases:
       # - docker-compose run test mix test
       # - docker buildx use dcbuilder
       # - docker-compose push app
+
+      - docker buildx use docker-container
 
       # Build test container
       - env MIX_ENV=test TARGET=test $TEMPLATE_DIR/build-test.sh
