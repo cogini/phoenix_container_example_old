@@ -59,7 +59,7 @@ phases:
       - $TEMPLATE_DIR/build-db.sh
       # Run tests
       - docker-compose run test mix test
-      Build final deploy container
+      # Build final deploy container
       - $TEMPLATE_DIR/build.sh
   post_build:
     commands:
