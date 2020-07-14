@@ -11,6 +11,7 @@ services:
       context: .
       args:
         MIX_ENV: prod
+        BUILDKIT_INLINE_CACHE: 1
       cache_from:
         - "${DOCKER_REPO}foo-app"
     ports:

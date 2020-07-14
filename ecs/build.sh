@@ -21,7 +21,8 @@ DOCKERFILE=deploy/Dockerfile.alpine
 IMAGE_NAME=""
 TAGS="-t ${REPO_URI}:latest -t ${REPO_URI}:${IMAGE_TAG}"
 MIX_ENV="${MIX_ENV:-prod}"
-BUILD_ARGS="--build-arg MIX_ENV=${MIX_ENV}"
+BUILD_ARGS="--build-arg MIX_ENV=${MIX_ENV} --build-arg BUILDKIT_INLINE_CACHE=1"
+
 # DOCKER_REPO="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/"
 # BUILD_ARGS="--build-arg MIX_ENV=test --build-arg DOCKER_REPO=${DOCKER_REPO}"
 
