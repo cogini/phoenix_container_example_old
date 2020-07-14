@@ -34,7 +34,8 @@ ARG MIX_ENV
 WORKDIR /app
 
 COPY config ./config
-COPY mix.exs mix.lock ./
+COPY mix.exs .
+COPY mix.lock .
 
 # Mount hex and rebar cache directories as type=cache
 RUN --mount=type=cache,target=~/.hex/packages/hexpm,sharing=locked \
@@ -71,7 +72,7 @@ RUN --mount=type=cache,target=~/.npm,sharing=locked \
       npm --prefer-offline --no-audit --progress=false \
       --loglevel=error ci
 
-COPY assets/ ./
+COPY assets .
 
 RUN npm run deploy
 
@@ -126,7 +127,6 @@ ENV LANG=C.UTF-8 \
     HOME=/app \
     RELEASE_TMP=/run/app \
     PORT=4000
-
 
 # Install openssl, allowing the app to listen on HTTPS.
 # May not be needed if handled outside the application (e.g. in Kubernetes ingress).
