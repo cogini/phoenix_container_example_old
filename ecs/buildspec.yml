@@ -46,27 +46,28 @@ phases:
     commands:
       - echo "Starting build phase"
       - DOCKER_REPO="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/"
+      # - BUILD_CACHE_REPO_URI="${DOCKER_REPO}foo-app-ecs-build-cache"
 
-      - docker buildx use docker-container
-      - COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker-compose build
-      - docker-compose run test mix test
-      - $TEMPLATE_DIR/build.sh
-
-      # # - docker buildx use default
-      # # - docker buildx bake -f docker-compose.yml --print
-      # # - docker buildx bake -f docker-compose.yml
-      # # - docker-compose run test mix test
-      # # - docker buildx use docker-container
-      # # - docker-compose push app
-
-      # # Build test container
-      # - env MIX_ENV=test TARGET=test $TEMPLATE_DIR/build-test.sh
-      # # Build test db container
-      # - $TEMPLATE_DIR/build-db.sh
-      # # Run tests
+      # - docker buildx use docker-container
+      # - COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker-compose build
       # - docker-compose run test mix test
-      # # Build final deploy container
       # - $TEMPLATE_DIR/build.sh
+
+      # - docker buildx use default
+      # - docker buildx bake -f docker-compose.yml --print
+      # - docker buildx bake -f docker-compose.yml
+      # - docker-compose run test mix test
+      # - docker buildx use docker-container
+      # - docker-compose push app
+
+      # Build test container
+      - env MIX_ENV=test TARGET=test $TEMPLATE_DIR/build-test.sh
+      # Build test db container
+      - $TEMPLATE_DIR/build-db.sh
+      # Run tests
+      - docker-compose run test mix test
+      # Build final deploy container
+      - $TEMPLATE_DIR/build.sh
       # - CACHE_REPO_URI="${DOCKER_REPO}foo-app-ecs-build-cache"
       # - CACHE_TYPE=registry $TEMPLATE_DIR/build.sh
   post_build:
