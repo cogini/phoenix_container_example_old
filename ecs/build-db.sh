@@ -7,22 +7,26 @@ set -o errexit -o nounset -o xtrace
 # Input ENV vars:
 #   CACHE_REPO_URI: URL of ECR repo for cache
 
+# Output cache type: local, registry, none (clear cache), blank
+CACHE_TYPE="${CACHE_TYPE:-local}"
+# CACHE_TYPE=none
+# CACHE_TYPE=""
+
+# Target in Dockerfile
+TARGET=app-db
+
 # Dockerfile
 DOCKERFILE=deploy/Dockerfile.postgres
-TARGET=app-db
 TAGS="-t ${TARGET}"
 BUILD_ARGS=""
 # DOCKER_REPO="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/"
 # BUILD_ARGS="--build-arg MIX_ENV=test --build-arg DOCKER_REPO=${DOCKER_REPO}"
 
-CACHE_TYPE=local
-# CACHE_TYPE=none
-# CACHE_TYPE=""
-
 # Cache directory for build files
-CACHE_DIR=$HOME/.cache/docker/$TARGET
+CACHE_DIR=$HOME/.cache/docker/${TARGET}
 
 OUTPUT=--load
+# OUTPUT=--push
 # OUTPUT=--output=type=local,dest=path
 # OUTPUT=--output=type=image
 # --output "type=image,push=true"

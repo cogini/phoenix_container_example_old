@@ -13,11 +13,12 @@ set -o errexit -o nounset -o xtrace
 CACHE_TYPE="${CACHE_TYPE:-local}"
 # CACHE_TYPE=none
 # CACHE_TYPE=""
+
+# Target in Dockerfile
 TARGET="${TARGET:-deploy}"
 
 # Dockerfile
 DOCKERFILE=deploy/Dockerfile.alpine
-# Target in Dockerfile
 IMAGE_NAME=""
 TAGS="-t ${REPO_URI}:latest -t ${REPO_URI}:${IMAGE_TAG}"
 MIX_ENV="${MIX_ENV:-prod}"

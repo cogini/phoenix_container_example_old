@@ -11,16 +11,18 @@ set -o errexit -o nounset -o xtrace
 CACHE_TYPE="${CACHE_TYPE:-local}"
 # CACHE_TYPE=none
 # CACHE_TYPE=""
-TARGET="${TARGET:-deploy}"
 
-IMAGE_NAME="${IMAGE_NAME:-app-test}"
+# Target in Dockerfile
+TARGET="${TARGET:-test}"
 
 # Dockerfile
 DOCKERFILE=deploy/Dockerfile.alpine
-# Target in Dockerfile
+IMAGE_NAME="${IMAGE_NAME:-app-test}"
 TAGS="-t ${IMAGE_NAME}"
 MIX_ENV="${MIX_ENV:-prod}"
+# BUILD_ARGS="--build-arg MIX_ENV=${MIX_ENV} --build-arg BUILDKIT_INLINE_CACHE=1"
 BUILD_ARGS="--build-arg MIX_ENV=${MIX_ENV}"
+
 # DOCKER_REPO="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/"
 # BUILD_ARGS="--build-arg MIX_ENV=test --build-arg DOCKER_REPO=${DOCKER_REPO}"
 
