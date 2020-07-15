@@ -50,20 +50,24 @@ phases:
       # - docker buildx bake -f docker-compose.yml --print
       # - docker buildx bake -f docker-compose.yml
       # - docker-compose run test mix test
-      # - docker buildx use dcbuilder
+      # - docker buildx use docker-container
       # - docker-compose push app
 
       - docker buildx use docker-container
 
-      # Build test container
-      - env MIX_ENV=test TARGET=test $TEMPLATE_DIR/build-test.sh
-      # Build test db container
-      - $TEMPLATE_DIR/build-db.sh
-      # Run tests
+      - docker-compose build
       - docker-compose run test mix test
-      # Build final deploy container
-      - $TEMPLATE_DIR/build.sh
-  post_build:
+      - docker-compose push app
+
+      # # Build test container
+      # - env MIX_ENV=test TARGET=test $TEMPLATE_DIR/build-test.sh
+      # # Build test db container
+      # - $TEMPLATE_DIR/build-db.sh
+      # # Run tests
+      # - docker-compose run test mix test
+      # # Build final deploy container
+      # - $TEMPLATE_DIR/build.sh
+  # post_build:
     commands:
       - echo "Writing image definition files..."
       # https://docs.aws.amazon.com/codepipeline/latest/userguide/file-reference.html

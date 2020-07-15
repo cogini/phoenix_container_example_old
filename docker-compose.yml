@@ -13,7 +13,8 @@ services:
         MIX_ENV: prod
         BUILDKIT_INLINE_CACHE: 1
       cache_from:
-        - "${DOCKER_REPO}foo-app"
+        - "${DOCKER_REPO}foo-app-ecs-build-cache"
+        # - "${DOCKER_REPO}foo-app"
     ports:
       - 4000
     depends_on:
@@ -32,8 +33,11 @@ services:
       context: .
       args:
         MIX_ENV: test
+        BUILDKIT_INLINE_CACHE: 1
       cache_from:
-        - "type=local,src=${CACHE_DIR}"
+        - "${DOCKER_REPO}foo-app-ecs-build-cache"
+      # cache_from:
+      #   - "type=local,src=${CACHE_DIR}"
       # cache_to:
       #   - "type=local,dest=${CACHE_DIR},mode=max"
     depends_on:
