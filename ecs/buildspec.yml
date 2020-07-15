@@ -46,11 +46,11 @@ phases:
     commands:
       - echo "Starting build phase"
       - DOCKER_REPO="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/"
-      - CACHE_REPO_URI="${DOCKER_REPO}foo-app-ecs-build-cache"
 
       - docker buildx use docker-container
       - COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker-compose build
       - docker-compose run test mix test
+      - $TEMPLATE_DIR/build.sh
 
       # # - docker buildx use default
       # # - docker buildx bake -f docker-compose.yml --print
@@ -66,7 +66,9 @@ phases:
       # # Run tests
       # - docker-compose run test mix test
       # # Build final deploy container
-      - CACHE_TYPE=registry $TEMPLATE_DIR/build.sh
+      # - $TEMPLATE_DIR/build.sh
+      # - CACHE_REPO_URI="${DOCKER_REPO}foo-app-ecs-build-cache"
+      # - CACHE_TYPE=registry $TEMPLATE_DIR/build.sh
   post_build:
     commands:
       - echo "Writing image definition files..."
