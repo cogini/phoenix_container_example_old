@@ -22,8 +22,8 @@ DOCKERFILE=deploy/Dockerfile.postgres
 TAGS="-t ${TARGET}"
 BUILD_ARGS=""
 
-# BUILD_ARGS="--build-arg MIX_ENV=${MIX_ENV} --build-arg BUILDKIT_INLINE_CACHE=1"
-BUILD_ARGS="--build-arg MIX_ENV=${MIX_ENV} --build-arg DOCKER_REPO=${DOCKER_REPO}"
+# BUILD_ARGS="--build-arg BUILDKIT_INLINE_CACHE=1"
+BUILD_ARGS="--build-arg DOCKER_REPO=${DOCKER_REPO}"
 
 # Cache directory for build files
 CACHE_DIR=$HOME/.cache/docker/${TARGET}
