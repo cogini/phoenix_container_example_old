@@ -15,6 +15,7 @@ env:
   variables:
     TEMPLATE_DIR: ecs
     # Enable docker buildx
+    DOCKER_BUILDKIT: 1
     DOCKER_CLI_EXPERIMENTAL: enabled
     COMPOSE_DOCKER_CLI_BUILD: 1
 phases:
@@ -47,7 +48,7 @@ phases:
       - DOCKER_REPO="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/"
 
       - docker buildx use docker-container
-      - docker-compose build
+      - COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker-compose build
       - docker-compose run test mix test
       - docker-compose push app
 
