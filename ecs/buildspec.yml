@@ -50,7 +50,7 @@ phases:
       - docker buildx use docker-container
       - COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker-compose build
       - docker-compose run test mix test
-      - docker-compose push app
+      # - docker-compose push app
 
       # # - docker buildx use default
       # # - docker buildx bake -f docker-compose.yml --print
