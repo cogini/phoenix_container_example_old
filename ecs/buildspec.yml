@@ -50,7 +50,6 @@ phases:
       - docker buildx use docker-container
       - COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker-compose build
       - docker-compose run test mix test
-      # - docker-compose push app
 
       # # - docker buildx use default
       # # - docker buildx bake -f docker-compose.yml --print
@@ -66,7 +65,7 @@ phases:
       # # Run tests
       # - docker-compose run test mix test
       # # Build final deploy container
-      # - $TEMPLATE_DIR/build.sh
+      - CACHE_TYPE=registry $TEMPLATE_DIR/build.sh
   post_build:
     commands:
       - echo "Writing image definition files..."
