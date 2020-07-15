@@ -48,7 +48,6 @@ phases:
       - DOCKER_REPO="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/"
       # - BUILD_CACHE_REPO_URI="${DOCKER_REPO}foo-app-ecs-build-cache"
 
-      # - docker buildx use docker-container
       # - COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker-compose build
       # - docker-compose run test mix test
       # - $TEMPLATE_DIR/build.sh
@@ -59,6 +58,8 @@ phases:
       # - docker-compose run test mix test
       # - docker buildx use docker-container
       # - docker-compose push app
+
+      - docker buildx use docker-container
 
       # Build test container
       - env MIX_ENV=test TARGET=test $TEMPLATE_DIR/build-test.sh
