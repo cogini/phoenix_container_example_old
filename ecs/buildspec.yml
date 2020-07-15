@@ -38,7 +38,7 @@ phases:
       # - $(aws ecr get-login --region $AWS_DEFAULT_REGION --no-include-email)
       # - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $REPO_URI
 
-      - rm -rf /root/.cache/docker
+      # - rm -rf /root/.cache/docker
 
       - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
       - IMAGE_TAG=${COMMIT_HASH:=latest}
@@ -48,6 +48,7 @@ phases:
       - DOCKER_REPO="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/"
       # - BUILD_CACHE_REPO_URI="${DOCKER_REPO}foo-app-ecs-build-cache"
 
+      # - docker buildx use docker-container
       # - COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker-compose build
       # - docker-compose run test mix test
       # - $TEMPLATE_DIR/build.sh
