@@ -8,6 +8,8 @@ set -o errexit -o nounset -o xtrace
 #   REPO_URI: URL of ECR repo
 #   IMAGE_TAG: git commit hash
 #   CACHE_REPO_URI: URL of ECR repo for cache
+DOCKER_REPO="${DOCKER_REPO:-""}"
+# DOCKER_REPO="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/"
 
 # Output cache type: local, registry, none (clear cache), blank
 CACHE_TYPE="${CACHE_TYPE:-local}"
@@ -23,10 +25,7 @@ IMAGE_NAME=""
 TAGS="-t ${REPO_URI}:latest -t ${REPO_URI}:${IMAGE_TAG}"
 MIX_ENV="${MIX_ENV:-prod}"
 # BUILD_ARGS="--build-arg MIX_ENV=${MIX_ENV} --build-arg BUILDKIT_INLINE_CACHE=1"
-BUILD_ARGS="--build-arg MIX_ENV=${MIX_ENV}"
-
-# DOCKER_REPO="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/"
-# BUILD_ARGS="--build-arg MIX_ENV=test --build-arg DOCKER_REPO=${DOCKER_REPO}"
+BUILD_ARGS="--build-arg MIX_ENV=${MIX_ENV} --build-arg DOCKER_REPO=${DOCKER_REPO}"
 
 # Cache directory for build files
 CACHE_DIR=$HOME/.cache/docker/${TARGET}

@@ -45,7 +45,7 @@ phases:
   build:
     commands:
       - echo "Starting build phase"
-      - DOCKER_REPO="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/"
+      - DOCKER_REPO="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/vendor-"
       # - BUILD_CACHE_REPO_URI="${DOCKER_REPO}foo-app-ecs-build-cache"
 
       # - docker buildx use docker-container
