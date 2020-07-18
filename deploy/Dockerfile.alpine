@@ -126,6 +126,7 @@ ARG RELEASE
 ENV LANG=C.UTF-8 \
     HOME=/app \
     RELEASE_TMP=/run/app \
+    RELEASE=${RELEASE} \
     PORT=4000
 
 # Install Alpine libraries needed to compile the project here.
@@ -136,7 +137,8 @@ ENV LANG=C.UTF-8 \
 # May not be needed if handled outside the application (e.g. in Kubernetes ingress).
 RUN --mount=type=cache,id=apk,target=/var/cache/apk,sharing=locked \
     ln -s /var/cache/apk /etc/apk/cache \
- %% apk add --update \
+ && apk update \
+ %% apk add \
         git \
         ncurses-libs \
         openssl
@@ -152,23 +154,24 @@ USER app
 
 # Setting WORKDIR after USER makes directory be owned by the user.
 # The app needs to be able to write to a tmp directory on startup, which by default
-# is under the release. This could be changed by setting RELEASE_TMP to /tmp or
-# (probably better) /run/foo
+# is under the release. This can be changed by setting RELEASE_TMP to /tmp or
+# (better) /run/foo
 WORKDIR /app
 
 # chown files while copying to make them owned by nobody
-# "RUN chown -R nobody: /app" after the copy would add an extra layer which is about 10Mb
-# Considering the image for a new phoenix app is around 20Mb, that's a huge difference
+# "RUN chown -R nobody: /app" after the copy adds an extra layer which is about 10Mb,
+# a huge difference when the image for a new phoenix app is around 20Mb.
 
 # TODO: change specific files to have group read/execute permissions while
 # leaving them owned by root
 
-COPY --from=release --chown=app:app /app/_build/$MIX_ENV/rel/$RELEASE ./
+COPY --from=release --chown=app:app /app/_build/$MIX_ENV/rel/${RELEASE} ./
 
 EXPOSE $PORT
 
 # TODO: configure using $RELEASE
-ENTRYPOINT ["bin/app"]
+# ENTRYPOINT ["bin/app"]
+ENTRYPOINT ["bin/${RELEASE}"]
 
 # Run app in foreground
 CMD ["start"]
