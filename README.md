@@ -1,30 +1,24 @@
 # phoenix_container_example
 
-This is a full-featured example of building and deploying an Elixir / Phoenix
+This is an example of building and deploying an Elixir / Phoenix
 app using containers.
 
-Features:
+It uses the new Docker BuildKit for parallel builds and better caching.
+With local caching, rebuilds take less than 5 seconds. It has Dockerfiles for
+Alpine and Debian.
 
-* Docker BuildKit for parallel builds and better caching
-* Alpine and Debian Docker images
-* CodeBuild for CI
-* Deploy to ECS using CodeDeploy Blue/Green deployment
-* AWS Parameter Store for configuration
-
-With local caching, rebuilds take less than 5 seconds.
-
-Building with Docker BuildKit works anywhere.
-CodeBuild / CodeDeploy / ECS is used in conjunction with Terraform
-to set up the environment. See https://github.com/cogini/multi-env-deploy
+It also supports deploying to AWS ECS using CodeBuild, CodeDeploy Blue/Green
+deployment, and AWS Parameter Store for configuration. Terraform is used to
+set up the environment, see https://github.com/cogini/multi-env-deploy
 
 ## BuildKit
 
-BuildKit is a new back end for Docker that builds tasks in parallel.  It also
-supports caching of files outside of container layers, particularly useful for
-downloads such as Hex, JS or OS packages.
+BuildKit is a new back end for Docker that builds tasks in parallel.
+It also supports caching of files outside of container layers, particularly
+useful for downloads such as Hex, JS or OS packages.
 
-`buildx` is the new Docker CLI command which takes advantage of
-features in the back end.
+`docker buildx` is the new CLI command which takes advantage of features in the
+back end.
 
 * https://github.com/moby/buildkit
 * https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/experimental.md
