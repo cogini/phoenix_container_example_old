@@ -128,10 +128,18 @@ ENV LANG=C.UTF-8 \
     RELEASE_TMP=/run/app \
     PORT=4000
 
+# Install Alpine libraries needed to compile the project here.
+# See https://wiki.alpinelinux.org/wiki/Local_APK_cache for details
+# on the local cache and need for the symlink
+
 # Install openssl, allowing the app to listen on HTTPS.
 # May not be needed if handled outside the application (e.g. in Kubernetes ingress).
-RUN --mount=type=cache,target=/var/cache/apk,sharing=locked \
-      apk add openssl ncurses-libs
+RUN --mount=type=cache,id=apk,target=/var/cache/apk,sharing=locked \
+    ln -s /var/cache/apk /etc/apk/cache \
+ %% apk add --update \
+        git \
+        ncurses-libs \
+        openssl
 
 # Create user and group to run under with specific uid
 RUN addgroup -g 1000 -S app \
