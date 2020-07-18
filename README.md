@@ -1,14 +1,14 @@
 # phoenix_container_example
 
 This is a full-featured example of building and deploying an Elixir / Phoenix
-app using containers, focusing on AWS ECS.
+app using containers.
 
-It uses:
+Features:
 
 * Docker BuildKit for parallel builds and better caching
 * Alpine and Debian Docker images
 * CodeBuild for CI
-* Deploy to ECS using CodeDeploy Blue/Green
+* Deploy to ECS using CodeDeploy Blue/Green deployment
 * AWS Parameter Store for configuration
 
 With local caching, rebuilds take less than 5 seconds.
