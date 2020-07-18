@@ -172,7 +172,6 @@ EXPOSE $PORT
 # "app" here is the name of the release
 ENTRYPOINT ["bin/app"]
 # TODO: configure using $RELEASE
-# ENTRYPOINT bin/${RELEASE} start
 
 # Run app in foreground
 CMD ["start"]
