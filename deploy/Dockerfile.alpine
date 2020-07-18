@@ -85,6 +85,7 @@ FROM deps AS digest
 ARG MIX_ENV
 
 COPY --from=assets /app/priv ./priv
+# https://hexdocs.pm/phoenix/Mix.Tasks.Phx.Digest.html
 RUN mix phx.digest
 
 # This does a partial compile.
@@ -108,9 +109,6 @@ COPY lib ./lib
 COPY rel ./rel
 
 RUN mix do compile, release $RELEASE
-
-RUN echo $BUILDPLATFORM
-RUN echo $TARGETPLATFORM
 
 ##########################################################################
 # Create actual image that is deployed
@@ -170,9 +168,26 @@ COPY --from=release --chown=app:app /app/_build/$MIX_ENV/rel/${RELEASE} ./
 
 EXPOSE $PORT
 
+# "app" here is the name of the release
+ENTRYPOINT ["bin/app"]
 # TODO: configure using $RELEASE
-# ENTRYPOINT ["bin/app"]
-ENTRYPOINT bin/${RELEASE} start
+# ENTRYPOINT bin/${RELEASE} start
 
 # Run app in foreground
 CMD ["start"]
+
+
+##########################################################################
+# Copy build artifacts to host
+
+FROM scratch as artifacts
+
+ARG MIX_ENV
+ARG RELEASE
+
+COPY --from=release /app/_build/$MIX_ENV/rel/${RELEASE} /release
+COPY --from=release /app/priv/static /static
+
+##########################################################################
+# Default target
+FROM deploy
