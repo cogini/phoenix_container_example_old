@@ -129,18 +129,19 @@ ENV LANG=C.UTF-8 \
     RELEASE=${RELEASE} \
     PORT=4000
 
-# Install Alpine libraries needed to compile the project here.
+# Install Alpine libraries needed to compile the project.
 # See https://wiki.alpinelinux.org/wiki/Local_APK_cache for details
 # on the local cache and need for the symlink
 
-# Install openssl, allowing the app to listen on HTTPS.
-# May not be needed if handled outside the application (e.g. in Kubernetes ingress).
 RUN --mount=type=cache,id=apk,target=/var/cache/apk,sharing=locked \
     ln -s /var/cache/apk /etc/apk/cache \
  && apk update \
  %% apk add \
-        git \
+        # Install git for fetching non-hex depenencies.
+        # git \
         ncurses-libs \
+        # Install openssl, allowing the app to listen on HTTPS.
+        # May not be needed if handled outside the application (e.g. in Kubernetes ingress).
         openssl
 
 # Create user and group to run under with specific uid
@@ -158,12 +159,12 @@ USER app
 # (better) /run/foo
 WORKDIR /app
 
-# chown files while copying to make them owned by nobody
-# "RUN chown -R nobody: /app" after the copy adds an extra layer which is about 10Mb,
-# a huge difference when the image for a new phoenix app is around 20Mb.
+# chown files while copying. Running "RUN chown -R app:app /app" after the copy
+# adds an extra layer which is about 10Mb, a huge difference when the image for
+# a new phoenix app is around 20Mb.
 
-# TODO: change specific files to have group read/execute permissions while
-# leaving them owned by root
+# TODO: for more security, change specific files to have group read/execute
+# permissions while leaving them owned by root
 
 COPY --from=release --chown=app:app /app/_build/$MIX_ENV/rel/${RELEASE} ./
 
