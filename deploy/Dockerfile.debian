@@ -84,6 +84,7 @@ FROM deps AS digest
 ARG MIX_ENV
 
 COPY --from=assets /app/priv ./priv
+# https://hexdocs.pm/phoenix/Mix.Tasks.Phx.Digest.html
 RUN mix phx.digest
 
 # This does a partial compile.
@@ -127,6 +128,7 @@ ARG APT_OPTS="-y -qq -o=Dpkg::Use-Pty=0 --no-install-recommends"
 ENV LANG=C.UTF-8 \
     HOME=/app \
     RELEASE_TMP=/run/app \
+    RELEASE=${RELEASE} \
     PORT=4000
 
 # With BuildKit caching, the special Docker cache cleaning stuff is not helpful
@@ -175,18 +177,18 @@ USER app
 
 # Setting WORKDIR after USER makes directory be owned by the user.
 # The app needs to be able to write to a tmp directory on startup, which by default
-# is under the release. This could be changed by setting RELEASE_TMP to /tmp or
-# (probably better) /run/foo
+# is under the release. This can be changed by setting RELEASE_TMP to /tmp or
+# (better) /run/foo
 WORKDIR /app
 
-# chown files while copying to make them owned by nobody
-# "RUN chown -R nobody: /app" after the copy would add an extra layer which is about 10Mb
-# Considering the image for a new phoenix app is around 20Mb, that's a huge difference
+# We chown files while copying. Running "RUN chown -R app:app /app"
+# adds an extra layer which is about 10Mb, a huge difference when the
+# image for a new phoenix app is around 20Mb.
 
-# TODO: change specific files to have group read/execute permissions while
-# leaving them owned by root
+# TODO: for more security, change specific files to have group read/execute
+# permissions while leaving them owned by root
 
-COPY --from=release --chown=app:app /app/_build/$MIX_ENV/rel/$RELEASE ./
+COPY --from=release --chown=app:app /app/_build/$MIX_ENV/rel/${RELEASE} ./
 
 EXPOSE $PORT
 
@@ -195,3 +197,19 @@ ENTRYPOINT ["bin/app"]
 
 # Run app in foreground
 CMD ["start"]
+
+
+##########################################################################
+# Copy build artifacts to host
+
+FROM scratch as artifacts
+
+ARG MIX_ENV
+ARG RELEASE
+
+COPY --from=release /app/_build/$MIX_ENV/rel/${RELEASE} /release
+COPY --from=release /app/priv/static /static
+
+##########################################################################
+# Default target
+FROM deploy
