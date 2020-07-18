@@ -5,9 +5,11 @@ set -o errexit -o nounset -o xtrace
 # Build container
 
 # Input ENV vars:
-#   CACHE_REPO_URI: URL of ECR repo for cache
+# Private docker repository for base images.
+# DOCKER_REPO="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/vendor-"
 DOCKER_REPO="${DOCKER_REPO:-""}"
-# DOCKER_REPO="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/"
+
+# CACHE_REPO_URI: URL of ECR repo for cache
 
 # Output cache type: local, registry, none (clear cache), blank
 CACHE_TYPE="${CACHE_TYPE:-local}"
