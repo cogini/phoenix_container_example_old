@@ -134,8 +134,8 @@ ENV LANG=C.UTF-8 \
 
 RUN --mount=type=cache,id=apk,target=/var/cache/apk,sharing=locked \
     ln -s /var/cache/apk /etc/apk/cache \
+ && apk update \
  && apk add openssl ncurses-libs
- # && apk update \
  # %% apk add \
  #        # Install git for fetching non-hex depenencies.
  #        # git \
