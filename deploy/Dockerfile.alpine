@@ -110,6 +110,7 @@ COPY rel ./rel
 
 RUN mix do compile, release $RELEASE
 
+
 ##########################################################################
 # Create actual image that is deployed
 
@@ -157,9 +158,9 @@ USER app
 # (better) /run/foo
 WORKDIR /app
 
-# chown files while copying. Running "RUN chown -R app:app /app" after the copy
-# adds an extra layer which is about 10Mb, a huge difference when the image for
-# a new phoenix app is around 20Mb.
+# We chown files while copying. Running "RUN chown -R app:app /app"
+# adds an extra layer which is about 10Mb, a huge difference when the
+# image for a new phoenix app is around 20Mb.
 
 # TODO: for more security, change specific files to have group read/execute
 # permissions while leaving them owned by root
