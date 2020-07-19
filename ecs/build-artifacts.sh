@@ -46,7 +46,7 @@ WRITE_CACHE=false
 OUTPUT="--output type=local,dest=artifacts"
 
 PLATFORM="${PLATFORM:-""}"
-# PlATFORM=--platform linux/amd64,linux/arm64
+# PLATFORM="--platform linux/amd64,linux/arm64"
 
 # How to report output, default is auto
 # PROGRESS=--progress=plain
