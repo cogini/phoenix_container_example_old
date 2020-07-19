@@ -79,7 +79,8 @@ phases:
       - docker-compose run test mix test
       # Build final deploy container
       # - env DOCKERFILE=deploy/Dockerfile.debian $TEMPLATE_DIR/build.sh
-      - $TEMPLATE_DIR/build.sh
+      - env PLATFORM="--platform linux/amd64,linux/arm64" DOCKERFILE=deploy/Dockerfile.debian $TEMPLATE_DIR/build.sh
+      # - $TEMPLATE_DIR/build.sh
       # Extract assets from build container
       # - $TEMPLATE_DIR/build-artifacts.sh
       # - CACHE_REPO_URI="${DOCKER_REPO}foo-app-ecs-build-cache"
