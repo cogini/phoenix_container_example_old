@@ -26,7 +26,7 @@ TARGET="${TARGET:-deploy}"
 TARGET_ARG="--target ${TARGET}"
 
 # Dockerfile
-DOCKERFILE=deploy/Dockerfile.alpine
+DOCKERFILE="${DOCKERFILE:-deploy/Dockerfile.alpine}"
 IMAGE_NAME=""
 TAGS="-t ${REPO_URI}:latest -t ${REPO_URI}:${IMAGE_TAG}"
 MIX_ENV="${MIX_ENV:-prod}"
@@ -44,7 +44,7 @@ OUTPUT=--push
 # OUTPUT="--output type=local,dest=artifacts"
 
 PLATFORM="${PLATFORM:-""}"
-# PlATFORM=--platform linux/amd64,linux/arm64
+# PLATFORM="--platform linux/amd64,linux/arm64"
 
 # How to report output, default is auto
 # PROGRESS=--progress=plain
