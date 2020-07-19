@@ -84,7 +84,7 @@ case $CACHE_TYPE in
         CACHE_TO=""
         ;;
 esac
-if [ "$WRITE_CACHE" == "false" ]; then
+if [ "$WRITE_CACHE" = "false" ]; then
     CACHE_TO=""
 fi
 echo "CACHE_FROM: ${CACHE_FROM}"
