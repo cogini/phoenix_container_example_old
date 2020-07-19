@@ -17,6 +17,7 @@
 ARG ELIXIR_VERSION=1.10.4
 ARG NODE_VERSION=14.4
 ARG MIX_ENV=prod
+ARG DEBIAN_VERSION=buster-slim
 
 # Name of Elixir release
 ARG RELEASE=app
@@ -113,12 +114,12 @@ RUN mix do compile, release $RELEASE
 ##########################################################################
 # Create actual image that is deployed
 
-FROM ${DOCKER_REPO}debian:buster-slim as deploy
+FROM ${DOCKER_REPO}debian:${DEBIAN_VERSION} as deploy
 
 ARG MIX_ENV
 ARG RELEASE
 
-# Options to make apt-get be quiet
+# Make apt-get be quiet
 ARG DEBIAN_FRONTEND=noninteractive
 ARG APT_OPTS="-y -qq -o=Dpkg::Use-Pty=0 --no-install-recommends"
 
@@ -176,24 +177,25 @@ RUN mkdir -p /run/app \
 USER app
 
 # Setting WORKDIR after USER makes directory be owned by the user.
-# The app needs to be able to write to a tmp directory on startup, which by default
-# is under the release. This can be changed by setting RELEASE_TMP to /tmp or
-# (better) /run/foo
+# The app needs to be able to write to a tmp directory on startup, which by
+# default is under the release. This can be changed by setting RELEASE_TMP to
+# /tmp or, more securely, /run/foo
 WORKDIR /app
 
 # We chown files while copying. Running "RUN chown -R app:app /app"
 # adds an extra layer which is about 10Mb, a huge difference when the
 # image for a new phoenix app is around 20Mb.
 
-# TODO: for more security, change specific files to have group read/execute
+# TODO: For more security, change specific files to have group read/execute
 # permissions while leaving them owned by root
 
 COPY --from=release --chown=app:app /app/_build/$MIX_ENV/rel/${RELEASE} ./
 
 EXPOSE $PORT
 
-# TODO: configure using $RELEASE
+# "app" here is the name of the release
 ENTRYPOINT ["bin/app"]
+# TODO: configure using $RELEASE
 
 # Run app in foreground
 CMD ["start"]
