@@ -41,7 +41,7 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
 
 # Add Docker repo
 RUN set -ex \
- && curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add - \
+ && curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -qq - \
  && echo "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list
 
 RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
