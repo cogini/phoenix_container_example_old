@@ -13,11 +13,10 @@ DOCKER_REPO="${DOCKER_REPO:-""}"
 
 # Output cache type: local, registry, none (clear cache), blank
 CACHE_TYPE="${CACHE_TYPE:-local}"
-# CACHE_TYPE=none
-# CACHE_TYPE=""
 
 # Target in Dockerfile
-TARGET=app-db
+TARGET="${TARGET:-app-db}"
+TARGET_ARG="--target ${TARGET}"
 
 # Dockerfile
 DOCKERFILE=deploy/Dockerfile.postgres
@@ -34,7 +33,11 @@ OUTPUT=--load
 # OUTPUT=--push
 # OUTPUT=--output=type=local,dest=path
 # OUTPUT=--output=type=image
-# --output "type=image,push=true"
+# OUTPUT="--output type=image,push=true"
+# OUTPUT="--output type=local,dest=artifacts"
+
+PLATFORM="${PLATFORM:-""}"
+# PlATFORM=--platform linux/amd64,linux/arm64
 
 # How to report output, default is auto
 # PROGRESS=--progress=plain
@@ -79,4 +82,4 @@ esac
 echo "CACHE_FROM: ${CACHE_FROM}"
 echo "CACHE_TO: ${CACHE_TO}"
 
-docker buildx build $CACHE_FROM $CACHE_TO $BUILD_ARGS $TAGS -f $DOCKERFILE $PROGRESS $OUTPUT "."
+docker buildx build $CACHE_FROM $CACHE_TO $BUILD_ARGS $PLATFORM $TARGET_ARG $TAGS -f $DOCKERFILE $PROGRESS $OUTPUT "."

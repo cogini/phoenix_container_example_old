@@ -23,6 +23,7 @@ CACHE_TYPE="${CACHE_TYPE:-local}"
 
 # Target in Dockerfile
 TARGET="${TARGET:-artifacts}"
+TARGET_ARG="--target ${TARGET}"
 
 # Dockerfile
 DOCKERFILE=deploy/Dockerfile.alpine
@@ -43,6 +44,9 @@ WRITE_CACHE=false
 # OUTPUT=--output=type=image
 # OUTPUT="--output type=image,push=true"
 OUTPUT="--output type=local,dest=artifacts"
+
+PLATFORM="${PLATFORM:-""}"
+# PlATFORM=--platform linux/amd64,linux/arm64
 
 # How to report output, default is auto
 # PROGRESS=--progress=plain
@@ -90,4 +94,4 @@ fi
 echo "CACHE_FROM: ${CACHE_FROM}"
 echo "CACHE_TO: ${CACHE_TO}"
 
-docker buildx build $CACHE_FROM $CACHE_TO $BUILD_ARGS --target $TARGET $TAGS -f $DOCKERFILE $PROGRESS $OUTPUT "."
+docker buildx build $CACHE_FROM $CACHE_TO $BUILD_ARGS $PLATFORM $TARGET_ARG $TAGS -f $DOCKERFILE $PROGRESS $OUTPUT "."
