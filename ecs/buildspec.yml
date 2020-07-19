@@ -28,6 +28,10 @@ phases:
       # - docker --version
       - docker version
       - docker-compose --version
+
+      - docker run --rm --privileged docker/binfmt:820fdd95a9972a5308930a2bdfb8573dd4447ad3
+      - cat /proc/sys/fs/binfmt_misc/qemu-aarch64
+
       # Create builder instance
       - docker buildx create --name docker-container
 
@@ -48,7 +52,7 @@ phases:
   build:
     commands:
       - echo "Starting build phase"
-      - DOCKER_REPO="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/vendor-"
+      # - DOCKER_REPO="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/vendor-"
       # - BUILD_CACHE_REPO_URI="${DOCKER_REPO}foo-app-ecs-build-cache"
 
       # - docker buildx use docker-container
@@ -72,7 +76,8 @@ phases:
       # Run tests
       - docker-compose run test mix test
       # Build final deploy container
-      - env DOCKERFILE=deploy/Dockerfile.debian $TEMPLATE_DIR/build.sh
+      # - env DOCKERFILE=deploy/Dockerfile.debian $TEMPLATE_DIR/build.sh
+      - $TEMPLATE_DIR/build.sh
       # Extract assets from build container
       # - $TEMPLATE_DIR/build-artifacts.sh
       # - CACHE_REPO_URI="${DOCKER_REPO}foo-app-ecs-build-cache"
