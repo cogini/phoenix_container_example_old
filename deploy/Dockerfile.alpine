@@ -14,10 +14,10 @@
 ##########################################################################
 # Fetch dependencies
 
-ARG ALPINE_VERSION=3.12
 ARG ELIXIR_VERSION=1.10.4
 ARG NODE_VERSION=14.4
 ARG MIX_ENV=prod
+ARG ALPINE_VERSION=3.12
 
 # Name of Elixir release
 ARG RELEASE=app
@@ -149,16 +149,16 @@ RUN mkdir -p /run/app \
 USER app
 
 # Setting WORKDIR after USER makes directory be owned by the user.
-# The app needs to be able to write to a tmp directory on startup, which by default
-# is under the release. This can be changed by setting RELEASE_TMP to /tmp or
-# (better) /run/foo
+# The app needs to be able to write to a tmp directory on startup, which by
+# default is under the release. This can be changed by setting RELEASE_TMP to
+# /tmp or, more securely, /run/foo
 WORKDIR /app
 
 # We chown files while copying. Running "RUN chown -R app:app /app"
 # adds an extra layer which is about 10Mb, a huge difference when the
 # image for a new phoenix app is around 20Mb.
 
-# TODO: for more security, change specific files to have group read/execute
+# TODO: For more security, change specific files to have group read/execute
 # permissions while leaving them owned by root
 
 COPY --from=release --chown=app:app /app/_build/$MIX_ENV/rel/${RELEASE} ./
