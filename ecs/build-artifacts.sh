@@ -19,7 +19,7 @@ DOCKER_REPO="${DOCKER_REPO:-""}"
 # CACHE_REPO_URI: URL of ECR repo for cache
 
 # Output cache type: local, registry, none (clear cache), blank
-CACHE_TYPE="${CACHE_TYPE:-""}"
+CACHE_TYPE="${CACHE_TYPE:-local}"
 
 # Target in Dockerfile
 TARGET="${TARGET:-artifacts}"
@@ -33,10 +33,12 @@ MIX_ENV="${MIX_ENV:-prod}"
 BUILD_ARGS="--build-arg MIX_ENV=${MIX_ENV} --build-arg DOCKER_REPO=${DOCKER_REPO}"
 
 # Cache directory for build files
-CACHE_DIR=$HOME/.cache/docker/${TARGET}
+# CACHE_DIR=$HOME/.cache/docker/${TARGET}
+CACHE_DIR=$HOME/.cache/docker/${MIX_ENV}
+WRITE_CACHE=false
 
 # OUTPUT=--load
-OUTPUT=--push
+# OUTPUT=--push
 # OUTPUT=--output=type=local,dest=path
 # OUTPUT=--output=type=image
 # OUTPUT="--output type=image,push=true"
@@ -82,6 +84,9 @@ case $CACHE_TYPE in
         CACHE_TO=""
         ;;
 esac
+if [ "$WRITE_CACHE" == "false" ]; then
+    CACHE_TO=""
+fi
 echo "CACHE_FROM: ${CACHE_FROM}"
 echo "CACHE_TO: ${CACHE_TO}"
 
