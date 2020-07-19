@@ -20,8 +20,6 @@ DOCKER_REPO="${DOCKER_REPO:-""}"
 
 # Output cache type: local, registry, none (clear cache), blank
 CACHE_TYPE="${CACHE_TYPE:-local}"
-# CACHE_TYPE=none
-# CACHE_TYPE=""
 
 # Target in Dockerfile
 TARGET="${TARGET:-test}"
@@ -41,7 +39,8 @@ OUTPUT=--load
 # OUTPUT=--push
 # OUTPUT=--output=type=local,dest=path
 # OUTPUT=--output=type=image
-# --output "type=image,push=true"
+# OUTPUT="--output type=image,push=true"
+# OUTPUT="--output type=local,dest=artifacts"
 
 # How to report output, default is auto
 # PROGRESS=--progress=plain

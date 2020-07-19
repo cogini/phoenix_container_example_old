@@ -19,9 +19,7 @@ DOCKER_REPO="${DOCKER_REPO:-""}"
 # CACHE_REPO_URI: URL of ECR repo for cache
 
 # Output cache type: local, registry, none (clear cache), blank
-CACHE_TYPE="${CACHE_TYPE:-local}"
-# CACHE_TYPE=none
-# CACHE_TYPE=""
+CACHE_TYPE="${CACHE_TYPE:-""}"
 
 # Target in Dockerfile
 TARGET="${TARGET:-artifacts}"
@@ -41,7 +39,7 @@ CACHE_DIR=$HOME/.cache/docker/${TARGET}
 OUTPUT=--push
 # OUTPUT=--output=type=local,dest=path
 # OUTPUT=--output=type=image
-# --output "type=image,push=true"
+# OUTPUT="--output type=image,push=true"
 OUTPUT="--output type=local,dest=artifacts"
 
 # How to report output, default is auto
@@ -67,8 +65,7 @@ case $CACHE_TYPE in
         else
             CACHE_FROM=""
         fi
-        # CACHE_TO="--cache-to=type=local,dest=$CACHE_DIR,mode=max"
-        CACHE_TO=""
+        CACHE_TO="--cache-to=type=local,dest=$CACHE_DIR,mode=max"
         ;;
     registry)
         # Use repo for caching
