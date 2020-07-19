@@ -34,7 +34,7 @@ phases:
       # - /usr/sbin/service docker restart
       # - cat /proc/sys/fs/binfmt_misc/qemu-aarch64
       # - ls -l /proc/sys/fs/binfmt_misc
-      - ls -1 /proc/sys/fs/binfmt_misc/qemu-*
+      # - ls -1 /proc/sys/fs/binfmt_misc/qemu-*
 
       # Create builder instance
       - docker buildx create --name docker-container
