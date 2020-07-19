@@ -54,7 +54,7 @@ export COMPOSE_DOCKER_CLI_BUILD=1
 # Create builder instance
 # docker buildx create --name mybuilder --use
 
-case $CACHE_TYPE in
+case "$CACHE_TYPE" in
     local)
         # Use local files for caching
         mkdir -p $CACHE_DIR
