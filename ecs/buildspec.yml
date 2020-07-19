@@ -30,6 +30,7 @@ phases:
       - docker-compose --version
 
       - docker run --rm --privileged docker/binfmt:820fdd95a9972a5308930a2bdfb8573dd4447ad3
+      - /usr/sbin/service docker restart
       - cat /proc/sys/fs/binfmt_misc/qemu-aarch64
 
       # Create builder instance
