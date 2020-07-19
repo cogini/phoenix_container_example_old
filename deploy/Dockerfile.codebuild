@@ -51,8 +51,8 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
  && apt-get update -qq \
  && apt-get install $APT_OPTS \
         docker-ce \
-        docker-ce-cli
-# containerd.io
+        docker-ce-cli \
+        containerd.io
 # RUN docker --version
 
 RUN set -ex \
