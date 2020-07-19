@@ -66,15 +66,15 @@ phases:
       # - docker buildx use docker-container
 
       # Build test container
-      - env MIX_ENV=test TARGET=test $TEMPLATE_DIR/build-test.sh
+      - env DOCKERFILE=deploy/Dockerfile.debian MIX_ENV=test TARGET=test $TEMPLATE_DIR/build-test.sh
       # Build test db container
       - $TEMPLATE_DIR/build-db.sh
       # Run tests
       - docker-compose run test mix test
       # Build final deploy container
-      - $TEMPLATE_DIR/build.sh
+      - env DOCKERFILE=deploy/Dockerfile.debian $TEMPLATE_DIR/build.sh
       # Extract assets from build container
-      - $TEMPLATE_DIR/build-artifacts.sh
+      # - $TEMPLATE_DIR/build-artifacts.sh
       # - CACHE_REPO_URI="${DOCKER_REPO}foo-app-ecs-build-cache"
       # - CACHE_TYPE=registry $TEMPLATE_DIR/build.sh
   post_build:
