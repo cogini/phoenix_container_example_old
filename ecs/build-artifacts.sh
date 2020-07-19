@@ -26,7 +26,7 @@ TARGET="${TARGET:-artifacts}"
 TARGET_ARG="--target ${TARGET}"
 
 # Dockerfile
-DOCKERFILE=deploy/Dockerfile.alpine
+DOCKERFILE="${DOCKERFILE:-deploy/Dockerfile.alpine}"
 IMAGE_NAME=""
 TAGS="-t ${REPO_URI}:latest -t ${REPO_URI}:${IMAGE_TAG}"
 MIX_ENV="${MIX_ENV:-prod}"
@@ -91,7 +91,7 @@ esac
 if [ "$WRITE_CACHE" = "false" ]; then
     CACHE_TO=""
 fi
-echo "CACHE_FROM: ${CACHE_FROM}"
-echo "CACHE_TO: ${CACHE_TO}"
+# echo "CACHE_FROM: ${CACHE_FROM}"
+# echo "CACHE_TO: ${CACHE_TO}"
 
 docker buildx build $CACHE_FROM $CACHE_TO $BUILD_ARGS $PLATFORM $TARGET_ARG $TAGS -f $DOCKERFILE $PROGRESS $OUTPUT "."

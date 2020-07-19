@@ -86,7 +86,7 @@ case "$CACHE_TYPE" in
         CACHE_TO=""
         ;;
 esac
-echo "CACHE_FROM: ${CACHE_FROM}"
-echo "CACHE_TO: ${CACHE_TO}"
+# echo "CACHE_FROM: ${CACHE_FROM}"
+# echo "CACHE_TO: ${CACHE_TO}"
 
 docker buildx build $CACHE_FROM $CACHE_TO $BUILD_ARGS $PLATFORM $TARGET_ARG $TAGS -f $DOCKERFILE $PROGRESS $OUTPUT "."
