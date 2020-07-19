@@ -16,7 +16,8 @@ CACHE_TYPE="${CACHE_TYPE:-local}"
 
 # Target in Dockerfile
 TARGET="${TARGET:-app-db}"
-TARGET_ARG="--target ${TARGET}"
+# TARGET_ARG="--target ${TARGET}"
+TARGET_ARG=""
 
 # Dockerfile
 DOCKERFILE=deploy/Dockerfile.postgres
