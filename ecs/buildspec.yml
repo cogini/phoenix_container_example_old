@@ -85,7 +85,8 @@ phases:
       # - env DOCKERFILE=deploy/Dockerfile.debian $TEMPLATE_DIR/build.sh
 
       # Build multiple architectures
-      - env PLATFORM="--platform linux/amd64,linux/arm64" DOCKERFILE=deploy/Dockerfile.debian $TEMPLATE_DIR/build.sh
+      # - env PLATFORM="--platform linux/amd64,linux/arm64" DOCKERFILE=deploy/Dockerfile.debian $TEMPLATE_DIR/build.sh
+      - env PLATFORM="--platform linux/amd64,linux/arm64" DOCKERFILE=deploy/Dockerfile.alpine $TEMPLATE_DIR/build.sh
 
       # Extract assets from build container
       # - $TEMPLATE_DIR/build-artifacts.sh
