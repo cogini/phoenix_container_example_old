@@ -92,8 +92,7 @@ phases:
       # - $TEMPLATE_DIR/build-artifacts.sh
       # - CACHE_REPO_URI="${DOCKER_REPO}foo-app-ecs-build-cache"
       # - CACHE_TYPE=registry $TEMPLATE_DIR/build.sh
-  post_build:
-    commands:
+
       - echo "Writing image definition files..."
       # https://docs.aws.amazon.com/codepipeline/latest/userguide/file-reference.html
       # Generate imagedefinitions.json file for standard ECS deploy action
@@ -122,6 +121,8 @@ phases:
       - cp $TEMPLATE_DIR/taskdef.json .
 
       - echo Build completed on `date`
+  # post_build:
+  #   commands:
 artifacts:
   files:
     - imagedefinitions.json
