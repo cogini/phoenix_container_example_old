@@ -2,15 +2,27 @@
 #
 # Create custom build image for CodeBuild with latest Docker
 # so we can use BuildKit
+#
+# It takes advantage of caching and parallel build support in BuildKit.
+#
+# The "syntax" line must be the first thing in the file, as it enables the
+# new syntax for caching, etc. see
+# https://docs.docker.com/develop/develop-images/build_enhancements/
+# https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/experimental.md
+
+# Docker repository, default is docker.io
+ARG DOCKER_REPO=""
 
 ARG UBUNTU_VERSION=focal
 # ARG UBUNTU_VERSION=bionic
-FROM ubuntu:${UBUNTU_VERSION}
+ARG UBUNTU_CODENAME=focal
 
 ARG DEBIAN_FRONTEND=noninteractive
 ARG APT_OPTS="-y -qq -o=Dpkg::Use-Pty=0 --no-install-recommends"
 
-# Remove special Docker caching stuff, as it is not helpful with BuildKit caching
+FROM ${DOCKER_REPO}ubuntu:${UBUNTU_VERSION}
+
+# Remove special Docker caching config in apt, as it is not helpful with BuildKit caching
 RUN set -ex \
  && rm -f /etc/apt/apt.conf.d/docker-clean \
  && echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache \
@@ -26,11 +38,11 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
  && apt-get install $APT_OPTS dialog apt-utils \
     # Enable installation of packages over https
  && apt-get install $APT_OPTS \
-    apt-transport-https \
-    ca-certificates \
-    curl \
-    gnupg-agent \
-    software-properties-common \
+        apt-transport-https \
+        ca-certificates \
+        curl \
+        gnupg-agent \
+        software-properties-common \
 
     # Arm emulation
     binfmt-support \
