@@ -24,11 +24,13 @@ phases:
       - /usr/sbin/service docker start
   pre_build:
     commands:
+      - echo Build started on `date`
       - aws --version
       # - docker --version
       - docker version
       - docker-compose --version
 
+      # Add support for cross arch builds (Arm)
       - docker run --rm --privileged linuxkit/binfmt:v0.8
       # - cat /proc/sys/fs/binfmt_misc/qemu-aarch64
       # - ls -l /proc/sys/fs/binfmt_misc/*
@@ -36,7 +38,6 @@ phases:
 
       # Create builder instance
       - docker buildx create --name docker-container
-
       - docker buildx use docker-container
       - docker buildx inspect --bootstrap
 
