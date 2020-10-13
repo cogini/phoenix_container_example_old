@@ -23,7 +23,7 @@ ARG APT_OPTS="-y -qq -o=Dpkg::Use-Pty=0 --no-install-recommends"
 FROM ${DOCKER_REPO}ubuntu:${UBUNTU_VERSION}
 
 # Remove special Docker caching config in apt, as it is not helpful with BuildKit caching
-RUN set -exuo pipefail \
+RUN set -exu \
  && rm -f /etc/apt/apt.conf.d/docker-clean \
  && echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache \
  && echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression
@@ -32,7 +32,7 @@ RUN set -exuo pipefail \
 RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
     --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
-    set -exuo pipefail \
+    set -exu \
  && apt-get update -qq \
     # Avoid warnings
  && apt-get install $APT_OPTS dialog apt-utils \
@@ -63,14 +63,14 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
 # https://docs.docker.com/engine/install/ubuntu/
 
 # Add Docker repo
-RUN set -exuo pipefail \
+RUN set -exu \
  && curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -qq - \
  && echo "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list
 
 RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
     --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
-    set -exuo pipefail \
+    set -exu \
  && apt-get update -qq \
  && apt-get install $APT_OPTS \
         docker-ce \
@@ -78,14 +78,14 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         containerd.io
 # RUN docker --version
 
-RUN set -exuo pipefail \
+RUN set -exu \
  && curl -L "https://github.com/docker/compose/releases/download/1.26.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose \
  && chmod +x /usr/local/bin/docker-compose
 
 # Install latest awscli using pip
 # RUN python3 --version
 RUN --mount=type=cache,id=pip,target=/root/.cache/pip \
-    set -exuo pipefail \
+    set -exu \
  && python3 -m pip install wheel \
  && python3 -m pip install awscli
 
@@ -95,7 +95,7 @@ RUN --mount=type=cache,id=pip,target=/root/.cache/pip \
 RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
     --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
-    set -exuo pipefail \
+    set -exu \
  && apt-get update -qq \
  && apt-get install $APT_OPTS \
         amazon-ecr-credential-helper
