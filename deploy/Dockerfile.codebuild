@@ -13,8 +13,8 @@
 # Docker repository, default is docker.io
 ARG DOCKER_REPO=""
 
-ARG UBUNTU_VERSION=focal
 # ARG UBUNTU_VERSION=bionic
+ARG UBUNTU_VERSION=focal
 ARG UBUNTU_CODENAME=focal
 
 ARG DEBIAN_FRONTEND=noninteractive
@@ -78,11 +78,12 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         containerd.io
 # RUN docker --version
 
+# Add docker-compose
 RUN set -exu \
  && curl -L "https://github.com/docker/compose/releases/download/1.26.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose \
  && chmod +x /usr/local/bin/docker-compose
 
-# Install latest awscli using pip
+# Install latest aws cli using pip
 # RUN python3 --version
 RUN --mount=type=cache,id=pip,target=/root/.cache/pip \
     set -exu \
