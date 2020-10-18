@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# Build db image
+
 set -o errexit -o nounset -o xtrace
 
 # Build container
