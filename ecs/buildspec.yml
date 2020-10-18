@@ -25,6 +25,7 @@ phases:
   pre_build:
     commands:
       - echo Build started on `date`
+      - python --version
       - aws --version
       # - docker --version
       - docker version
@@ -41,11 +42,13 @@ phases:
       - docker buildx use docker-container
       - docker buildx inspect --bootstrap
 
-      # Use amazon-ecr-credential-helper for login
+      - echo Logging in to Amazon ECR...
+      # Use amazon-ecr-credential-helper for login, installed in build image
       - mkdir -p /root/.docker
       - echo '{"credsStore":"ecr-login"}' | tee /root/.docker/config.json
-
+      # Use old aws cli for login
       # - $(aws ecr get-login --region $AWS_DEFAULT_REGION --no-include-email)
+      # Use new aws cli for login
       # - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $REPO_URI
 
       # - rm -rf /root/.cache/docker
@@ -86,11 +89,11 @@ phases:
       # - env DOCKERFILE=deploy/Dockerfile.debian $TEMPLATE_DIR/build.sh
 
       # Build multiple architectures
-      # - env PLATFORM="--platform linux/amd64,linux/arm64" DOCKERFILE=deploy/Dockerfile.debian $TEMPLATE_DIR/build.sh
       - env PLATFORM="--platform linux/amd64,linux/arm64" DOCKERFILE=deploy/Dockerfile.alpine $TEMPLATE_DIR/build.sh
 
       # Extract assets from build container
       # - $TEMPLATE_DIR/build-artifacts.sh
+
       # - CACHE_REPO_URI="${DOCKER_REPO}foo-app-ecs-build-cache"
       # - CACHE_TYPE=registry $TEMPLATE_DIR/build.sh
 
