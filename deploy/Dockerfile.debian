@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.0-experimental
 # syntax=docker/dockerfile:experimental
 #
-# Build an Elixir Phoenix app.
+# Build an Elixir/Phoenix app.
 #
 # It takes advantage of caching and parallel build support in BuildKit.
 # It can build in less than 5s after the initial build.
@@ -11,18 +11,29 @@
 # https://docs.docker.com/develop/develop-images/build_enhancements/
 # https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/experimental.md
 
-##########################################################################
-# Fetch dependencies
-
 ARG ELIXIR_VERSION=1.10.4
 ARG NODE_VERSION=14.4
-ARG MIX_ENV=prod
 ARG DEBIAN_VERSION=buster-slim
+
+# Make apt-get be quiet
+ARG DEBIAN_FRONTEND=noninteractive
+ARG APT_OPTS="-y -qq -o=Dpkg::Use-Pty=0 --no-install-recommends"
+
+# Elixir release env to build
+ARG MIX_ENV=prod
 
 # Name of Elixir release
 ARG RELEASE=app
-# Docker repository, default is docker.io
+
+# OS user that app runs under
+ARG APP_USER=app
+
+# Source Docker repository for images, default is docker.io
 ARG DOCKER_REPO=""
+
+
+##########################################################################
+# Fetch dependencies
 
 FROM ${DOCKER_REPO}elixir:${ELIXIR_VERSION} as deps
 
@@ -83,6 +94,7 @@ RUN npm run deploy
 FROM deps AS digest
 
 ARG MIX_ENV
+ARG RELEASE
 
 COPY --from=assets /app/priv ./priv
 # https://hexdocs.pm/phoenix/Mix.Tasks.Phx.Digest.html
@@ -112,16 +124,18 @@ RUN mix do compile, release $RELEASE
 
 
 ##########################################################################
-# Create actual image that is deployed
+# Create base image with runtime dependencies
 
-FROM ${DOCKER_REPO}debian:${DEBIAN_VERSION} as deploy
+FROM ${DOCKER_REPO}debian:${DEBIAN_VERSION} as runtime
 
 ARG MIX_ENV
 ARG RELEASE
 
-# Make apt-get be quiet
-ARG DEBIAN_FRONTEND=noninteractive
-ARG APT_OPTS="-y -qq -o=Dpkg::Use-Pty=0 --no-install-recommends"
+ARG DEBIAN_FRONTEND
+ARG APT_OPTS
+
+ARG APP_USER
+ARG APP_GROUP=$APP_USER
 
 # Set environment vars used by the app
 # SECRET_KEY_BASE and DATABASE_URL env vars should be set when running the application
@@ -132,8 +146,8 @@ ENV LANG=C.UTF-8 \
     RELEASE=${RELEASE} \
     PORT=4000
 
-# With BuildKit caching, the special Docker cache cleaning stuff is not helpful
-RUN set -ex \
+# Configure apt caching for use with BuildKit
+RUN set -exu \
  && rm -f /etc/apt/apt.conf.d/docker-clean \
  && echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache \
  && echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression
@@ -141,7 +155,7 @@ RUN set -ex \
 # If LANG=C.UTF-8 is not enough, use full featured locale
 # RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
 #     --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
-#     set -ex \
+#     set -exu \
 #     && apt-get update -qq \
 #     && apt-get install $APT_OPTS \
 #       locales
@@ -158,21 +172,54 @@ RUN set -ex \
 RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
     --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
-    set -ex \
+    set -exu \
  && apt-get update -qq \
+ #    # Avoid warnings
+ # && apt-get install $APT_OPTS dialog apt-utils \
+ #    # Enable installation of packages over https
+ # && apt-get install $APT_OPTS \
+ #        apt-transport-https \
+ #        ca-certificates \
+ #        curl \
+ #        gnupg-agent \
+ #        software-properties-common \
+    # App deps
  && apt-get install $APT_OPTS \
         openssl \
         libpq-dev \
  && rm -rf /var/lib/dpkg
 
 # Create user and group to run under with specific uid
-RUN groupadd -g 1000 app \
- && useradd -g 1000 -g app app \
+RUN groupadd -g 1000 $APP_GROUP \
+ && useradd -g 1000 -g $APP_GROUP $APP_USER \
  && rm /var/log/lastlog \
  && rm /var/log/faillog
 
-RUN mkdir -p /run/app \
- && chown app:app /run/app
+# Create dirs writable by app user
+RUN  mkdir -p \
+    /run/app \
+ && chown -R $APP_USER:$APP_GROUP \
+    /run/app
+
+##########################################################################
+# Production app image which gets deployed
+
+FROM runtime as deploy
+
+ARG APP_USER
+ARG APP_GROUP=$APP_USER
+
+ARG MIX_ENV
+ARG RELEASE
+
+# Set environment vars used by the app
+# SECRET_KEY_BASE and DATABASE_URL env vars should be set when running the application
+# maybe set COOKIE and other things
+ENV LANG=C.UTF-8 \
+    HOME=/app \
+    RELEASE_TMP=/run/app \
+    RELEASE=${RELEASE} \
+    PORT=4000
 
 USER app
 
@@ -182,7 +229,7 @@ USER app
 # /tmp or, more securely, /run/foo
 WORKDIR /app
 
-# We chown files while copying. Running "RUN chown -R app:app /app"
+# Chown files while copying. Running "RUN chown -R app:app /app"
 # adds an extra layer which is about 10Mb, a huge difference when the
 # image for a new phoenix app is around 20Mb.
 
