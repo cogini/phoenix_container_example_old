@@ -80,8 +80,8 @@ COPY assets/package.json assets/package-lock.json ./
 
 # Cache npm cache directory as type=cache
 RUN --mount=type=cache,target=~/.npm,sharing=locked \
-      npm --prefer-offline --no-audit --progress=false \
-      --loglevel=error ci
+    npm --prefer-offline --no-audit --progress=false \
+    --loglevel=error ci
 
 COPY assets .
 
@@ -148,9 +148,9 @@ ENV LANG=C.UTF-8 \
 
 # Configure apt caching for use with BuildKit
 RUN set -exu \
- && rm -f /etc/apt/apt.conf.d/docker-clean \
- && echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache \
- && echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression
+    && rm -f /etc/apt/apt.conf.d/docker-clean \
+    && echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache \
+    && echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression
 
 # If LANG=C.UTF-8 is not enough, use full featured locale
 # RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
@@ -173,33 +173,33 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
     --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
     set -exu \
- && apt-get update -qq \
- #    # Avoid warnings
- # && apt-get install $APT_OPTS dialog apt-utils \
- #    # Enable installation of packages over https
- # && apt-get install $APT_OPTS \
- #        apt-transport-https \
- #        ca-certificates \
- #        curl \
- #        gnupg-agent \
- #        software-properties-common \
-    # App deps
- && apt-get install $APT_OPTS \
+    && apt-get update -qq \
+    #    # Avoid warnings
+    # && apt-get install $APT_OPTS dialog apt-utils \
+    #    # Enable installation of packages over https
+    # && apt-get install $APT_OPTS \
+    #        apt-transport-https \
+    #        ca-certificates \
+    #        curl \
+    #        gnupg-agent \
+    #        software-properties-common \
+       # App deps
+    && apt-get install $APT_OPTS \
         openssl \
         libpq-dev \
- && rm -rf /var/lib/dpkg
+    && rm -rf /var/lib/dpkg
 
 # Create user and group to run under with specific uid
 RUN groupadd -g 1000 $APP_GROUP \
- && useradd -g 1000 -g $APP_GROUP $APP_USER \
- && rm /var/log/lastlog \
- && rm /var/log/faillog
+    && useradd -g 1000 -g $APP_GROUP $APP_USER \
+    && rm /var/log/lastlog \
+    && rm /var/log/faillog
 
 # Create dirs writable by app user
-RUN  mkdir -p \
-    /run/app \
- && chown -R $APP_USER:$APP_GROUP \
-    /run/app
+RUN mkdir -p \
+        /run/app \
+    && chown -R $APP_USER:$APP_GROUP \
+        /run/app
 
 ##########################################################################
 # Production app image which gets deployed
