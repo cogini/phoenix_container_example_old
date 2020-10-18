@@ -13,20 +13,22 @@
 # Docker repository, default is docker.io
 ARG DOCKER_REPO=""
 
-# ARG UBUNTU_VERSION=bionic
 ARG UBUNTU_VERSION=focal
+
+FROM ${DOCKER_REPO}ubuntu:${UBUNTU_VERSION}
+
 ARG UBUNTU_CODENAME=focal
+ARG DOCKER_COMPOSE_VERSION=1.27.4
 
 ARG DEBIAN_FRONTEND=noninteractive
 ARG APT_OPTS="-y -qq -o=Dpkg::Use-Pty=0 --no-install-recommends"
 
-FROM ${DOCKER_REPO}ubuntu:${UBUNTU_VERSION}
 
-# Remove special Docker caching config in apt, as it is not helpful with BuildKit caching
+# Configure apt caching for use with BuildKit
 RUN set -exu \
+ && echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression \
  && rm -f /etc/apt/apt.conf.d/docker-clean \
- && echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache \
- && echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression
+ && echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache
 
 # Basic APT stuff
 RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
@@ -80,7 +82,7 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
 
 # Add docker-compose
 RUN set -exu \
- && curl -L "https://github.com/docker/compose/releases/download/1.26.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose \
+ && curl -L "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose \
  && chmod +x /usr/local/bin/docker-compose
 
 # Install latest aws cli using pip
