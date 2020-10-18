@@ -69,8 +69,8 @@ COPY assets/package.json assets/package-lock.json ./
 
 # Cache npm cache directory as type=cache
 RUN --mount=type=cache,target=~/.npm,sharing=locked \
-      npm --prefer-offline --no-audit --progress=false \
-      --loglevel=error ci
+    npm --prefer-offline --no-audit --progress=false \
+    --loglevel=error ci
 
 COPY assets .
 
@@ -134,17 +134,17 @@ ENV LANG=C.UTF-8 \
 
 RUN --mount=type=cache,id=apk,target=/var/cache/apk,sharing=locked \
     ln -s /var/cache/apk /etc/apk/cache \
- && apk update \
+    && apk update \
     # Install openssl, allowing the app to listen on HTTPS.
     # May not be needed if handled outside the application (e.g. in Kubernetes ingress).
- && apk add openssl ncurses-libs
+    && apk add openssl ncurses-libs
 
 # Create user and group to run under with specific uid
 RUN addgroup -g 1000 -S app \
- && adduser -u 1000 -S app -G app
+    && adduser -u 1000 -S app -G app
 
 RUN mkdir -p /run/app \
- && chown app:app /run/app
+    && chown app:app /run/app
 
 USER app
 
