@@ -75,7 +75,9 @@ case "$CACHE_TYPE" in
         ;;
     registry)
         # Use repo for caching
-        # Not working yet with ECR: https://github.com/aws/containers-roadmap/issues/505
+        # Not working yet with ECR:
+        # https://github.com/aws/containers-roadmap/issues/876
+        # https://github.com/aws/containers-roadmap/issues/505
         CACHE_FROM="--cache-from=type=registry,ref=$CACHE_REPO_URI"
         CACHE_TO="--cache-to=type=registry,ref=$CACHE_REPO_URI,mode=max"
         ;;
