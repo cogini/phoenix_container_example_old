@@ -34,7 +34,7 @@ phases:
       - docker-compose --version
 
       # Add support for cross arch builds (Arm)
-      - docker run --rm --privileged linuxkit/binfmt:v0.8
+      # - docker run --rm --privileged linuxkit/binfmt:v0.8
       # - cat /proc/sys/fs/binfmt_misc/qemu-aarch64
       # - ls -l /proc/sys/fs/binfmt_misc/*
       # - ls -1 /proc/sys/fs/binfmt_misc/qemu-*
@@ -78,7 +78,7 @@ phases:
       # - docker buildx use docker-container
 
       - echo Building app container for tests...
-      - env DOCKERFILE=deploy/Dockerfile.debian MIX_ENV=test TARGET=test $TEMPLATE_DIR/build-test.sh
+      - env CACHE_TYPE=registry DOCKERFILE=deploy/Dockerfile.debian MIX_ENV=test TARGET=test $TEMPLATE_DIR/build-test.sh
 
       - echo Building db container...
       - $TEMPLATE_DIR/build-db.sh
