@@ -26,20 +26,20 @@ ARG APT_OPTS="-y -qq -o=Dpkg::Use-Pty=0 --no-install-recommends"
 
 # Configure apt caching for use with BuildKit
 RUN set -exu \
- && echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression \
- && rm -f /etc/apt/apt.conf.d/docker-clean \
- && echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache
+    && echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression \
+    && rm -f /etc/apt/apt.conf.d/docker-clean \
+    && echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache
 
 # Basic APT stuff
 RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
     --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
     set -exu \
- && apt-get update -qq \
+    && apt-get update -qq \
     # Avoid warnings
- && apt-get install $APT_OPTS dialog apt-utils \
+    && apt-get install $APT_OPTS dialog apt-utils \
     # Enable installation of packages over https
- && apt-get install $APT_OPTS \
+    && apt-get install $APT_OPTS \
         apt-transport-https \
         ca-certificates \
         curl \
@@ -66,15 +66,15 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
 
 # Add Docker repo
 RUN set -exu \
- && curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -qq - \
- && echo "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list
+    && curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -qq - \
+    && echo "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list
 
 RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
     --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
     set -exu \
- && apt-get update -qq \
- && apt-get install $APT_OPTS \
+    && apt-get update -qq \
+    && apt-get install $APT_OPTS \
         docker-ce \
         docker-ce-cli \
         containerd.io
@@ -82,15 +82,15 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
 
 # Add docker-compose
 RUN set -exu \
- && curl -L "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose \
- && chmod +x /usr/local/bin/docker-compose
+    && curl -L "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose \
+    && chmod +x /usr/local/bin/docker-compose
 
 # Install latest aws cli using pip
 # RUN python3 --version
 RUN --mount=type=cache,id=pip,target=/root/.cache/pip \
     set -exu \
- && python3 -m pip install wheel \
- && python3 -m pip install awscli
+    && python3 -m pip install wheel \
+    && python3 -m pip install awscli
 
 # Use ecr-credential-helper to access ECR repos
 # https://github.com/awslabs/amazon-ecr-credential-helper
@@ -99,10 +99,10 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
     --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
     set -exu \
- && apt-get update -qq \
- && apt-get install $APT_OPTS \
+    && apt-get update -qq \
+    && apt-get install $APT_OPTS \
         amazon-ecr-credential-helper
 
 # RUN set -ex \
-#  && mkdir -p /root/.docker \
-#  && echo '{"credsStore": "ecr-login"}'> /root/.docker/config.json
+#     && mkdir -p /root/.docker \
+#     && echo '{"credsStore": "ecr-login"}'> /root/.docker/config.json
