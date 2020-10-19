@@ -35,13 +35,15 @@ BUILD_ARGS="--build-arg MIX_ENV=${MIX_ENV} --build-arg DOCKER_REPO=${DOCKER_REPO
 
 # Cache directory for build files
 CACHE_DIR=$HOME/.cache/docker/${TARGET}
+WRITE_CACHE=true
 
 # OUTPUT=--load
-OUTPUT=--push
+# OUTPUT=--push
 # OUTPUT=--output=type=local,dest=path
 # OUTPUT=--output=type=image
 # OUTPUT="--output type=image,push=true"
 # OUTPUT="--output type=local,dest=artifacts"
+OUTPUT="${OUTPUT:-"--push"}"
 
 PLATFORM="${PLATFORM:-""}"
 # PLATFORM="--platform linux/amd64,linux/arm64"
@@ -86,6 +88,9 @@ case "$CACHE_TYPE" in
         CACHE_TO=""
         ;;
 esac
+if [ "$WRITE_CACHE" = "false" ]; then
+    CACHE_TO=""
+fi
 # echo "CACHE_FROM: ${CACHE_FROM}"
 # echo "CACHE_TO: ${CACHE_TO}"
 
