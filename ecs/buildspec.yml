@@ -78,7 +78,7 @@ phases:
       # - docker buildx use docker-container
 
       - echo Building app container for tests...
-      - env CACHE_TYPE=registry DOCKERFILE=deploy/Dockerfile.debian MIX_ENV=test TARGET=test $TEMPLATE_DIR/build-test.sh
+      - env DOCKERFILE=deploy/Dockerfile.debian MIX_ENV=test TARGET=test $TEMPLATE_DIR/build-test.sh
 
       - echo Building db container...
       - $TEMPLATE_DIR/build-db.sh
