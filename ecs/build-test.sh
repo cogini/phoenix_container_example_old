@@ -37,6 +37,7 @@ BUILD_ARGS="--build-arg MIX_ENV=${MIX_ENV} --build-arg DOCKER_REPO=${DOCKER_REPO
 
 # Cache directory for build files
 CACHE_DIR=$HOME/.cache/docker/${TARGET}
+WRITE_CACHE=true
 
 # OUTPUT=--load
 # OUTPUT=--push
