@@ -28,7 +28,7 @@ phases:
     commands:
       - echo Build started on `date`
       - cat /etc/lsb-release
-      - python --version
+      - python3 --version
       - aws --version
       - docker version
       - docker-compose --version
