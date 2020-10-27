@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.0-experimental
 # syntax=docker/dockerfile:experimental
 #
-# Build an Elixir Phoenix app.
+# Build an Elixir/Phoenix app.
 #
 # It takes advantage of caching and parallel build support in BuildKit.
 # It can build in less than 5s after the initial build.
@@ -11,20 +11,26 @@
 # https://docs.docker.com/develop/develop-images/build_enhancements/
 # https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/experimental.md
 
-##########################################################################
-# Fetch dependencies
-
-ARG ELIXIR_VERSION=1.10.4
+# ARG ELIXIR_VERSION=1.10-alpine
+ARG ELIXIR_VERSION=alpine
 ARG NODE_VERSION=14.4
 ARG MIX_ENV=prod
 ARG ALPINE_VERSION=3.12
 
 # Name of Elixir release
 ARG RELEASE=app
-# Docker repository, default is docker.io
+
+# OS user that app runs under
+ARG APP_USER=app
+
+# Source Docker repository for images, default is docker.io
 ARG DOCKER_REPO=""
 
-FROM ${DOCKER_REPO}elixir:${ELIXIR_VERSION}-alpine AS deps
+
+##########################################################################
+# Fetch dependencies
+
+FROM ${DOCKER_REPO}elixir:${ELIXIR_VERSION} AS deps
 
 ARG http_proxy
 ARG https_proxy=$http_proxy
@@ -114,10 +120,13 @@ RUN mix do compile, release $RELEASE
 ##########################################################################
 # Create actual image that is deployed
 
-FROM ${DOCKER_REPO}alpine:${ALPINE_VERSION} as deploy
+FROM ${DOCKER_REPO}alpine:${ALPINE_VERSION} AS deploy
 
 ARG MIX_ENV
 ARG RELEASE
+
+ARG APP_USER
+ARG APP_GROUP=$APP_USER
 
 # Set environment vars used by the app
 # SECRET_KEY_BASE and DATABASE_URL env vars should be set when running the application
@@ -140,13 +149,13 @@ RUN --mount=type=cache,id=apk,target=/var/cache/apk,sharing=locked \
     && apk add openssl ncurses-libs
 
 # Create user and group to run under with specific uid
-RUN addgroup -g 1000 -S app \
-    && adduser -u 1000 -S app -G app
+RUN addgroup -g 1000 -S $APP_GROUP \
+    && adduser -u 1000 -S $APP_USER -G $APP_GROUP
 
 RUN mkdir -p /run/app \
-    && chown app:app /run/app
+    && chown $APP_USER:$APP_GROUP /run/app
 
-USER app
+USER $APP_USER
 
 # Setting WORKDIR after USER makes directory be owned by the user.
 # The app needs to be able to write to a tmp directory on startup, which by
@@ -154,14 +163,14 @@ USER app
 # /tmp or, more securely, /run/foo
 WORKDIR /app
 
-# We chown files while copying. Running "RUN chown -R app:app /app"
+# Chown files while copying. Running "RUN chown -R app:app /app"
 # adds an extra layer which is about 10Mb, a huge difference when the
 # image for a new phoenix app is around 20Mb.
 
 # TODO: For more security, change specific files to have group read/execute
 # permissions while leaving them owned by root
 
-COPY --from=release --chown=app:app /app/_build/$MIX_ENV/rel/${RELEASE} ./
+COPY --from=release --chown=$APP_USER:$APP_GROUP /app/_build/$MIX_ENV/rel/${RELEASE} ./
 
 EXPOSE $PORT
 
