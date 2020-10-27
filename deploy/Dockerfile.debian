@@ -209,6 +209,9 @@ FROM ${DOCKER_REPO}elixir:${ELIXIR_VERSION} AS dev
 ARG http_proxy
 ARG https_proxy=$http_proxy
 
+ARG DEBIAN_FRONTEND
+ARG APT_OPTS
+
 ARG MIX_ENV
 ARG RELEASE
 
@@ -218,6 +221,52 @@ ARG APP_GROUP=$APP_USER
 ENV LANG=C.UTF-8 \
     HOME=/app \
     PORT=4000
+
+# Configure apt caching for use with BuildKit
+RUN set -exu \
+    && rm -f /etc/apt/apt.conf.d/docker-clean \
+    && echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache \
+    && echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression
+
+# If LANG=C.UTF-8 is not enough, use full featured locale
+# RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
+#     --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
+#     set -exu \
+#     && apt-get update -qq \
+#     && apt-get install $APT_OPTS \
+#       locales
+#     && localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
+#
+# ENV LANG en_US.utf8
+
+# Install openssl, allowing the app to listen on HTTPS.
+# May not be needed if handled outside the application (e.g. in Kubernetes ingress).
+
+# Create dirs needed by postgres-client but stripped from slim
+# RUN seq 1 8 | xargs -I{} mkdir -p /usr/share/man/man{}
+
+RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
+    --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
+    set -exu \
+    && apt-get update -qq \
+    #    # Avoid warnings
+    # && apt-get install $APT_OPTS dialog apt-utils \
+    #    # Enable installation of packages over https
+    # && apt-get install $APT_OPTS \
+    #        apt-transport-https \
+    #        ca-certificates \
+    #        curl \
+    #        gnupg-agent \
+    #        software-properties-common \
+       # App deps
+    && apt-get install $APT_OPTS \
+        # Runtime deps
+        openssl \
+        libpq-dev \
+        # Dev tools
+        inotify-tools \
+    && rm -rf /var/lib/dpkg
 
 # Create user and group to run under with specific uid
 RUN groupadd -g 1000 $APP_GROUP \
