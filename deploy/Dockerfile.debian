@@ -202,6 +202,32 @@ RUN mkdir -p \
         /run/app
 
 ##########################################################################
+# Dev app image
+
+FROM ${DOCKER_REPO}elixir:${ELIXIR_VERSION} as dev
+
+ARG http_proxy
+ARG https_proxy=$http_proxy
+
+ARG MIX_ENV
+ARG RELEASE
+
+ARG APP_USER
+ARG APP_GROUP=$APP_USER
+
+ENV LANG=C.UTF-8 \
+    HOME=/app \
+    PORT=4000
+
+USER $APP_USER
+
+WORKDIR /app
+
+EXPOSE $PORT
+
+CMD [ "sleep", "infinity" ]
+
+##########################################################################
 # Production app image which gets deployed
 
 FROM runtime as deploy
@@ -221,7 +247,7 @@ ENV LANG=C.UTF-8 \
     RELEASE=${RELEASE} \
     PORT=4000
 
-USER app
+USER $APP_USER
 
 # Setting WORKDIR after USER makes directory be owned by the user.
 # The app needs to be able to write to a tmp directory on startup, which by
@@ -236,7 +262,7 @@ WORKDIR /app
 # TODO: For more security, change specific files to have group read/execute
 # permissions while leaving them owned by root
 
-COPY --from=release --chown=app:app /app/_build/$MIX_ENV/rel/${RELEASE} ./
+COPY --from=release --chown=$APP_USER:$APP_GROUP /app/_build/$MIX_ENV/rel/${RELEASE} ./
 
 EXPOSE $PORT
 
