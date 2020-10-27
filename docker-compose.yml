@@ -16,17 +16,43 @@ services:
       #   - "${DOCKER_REPO}foo-app-ecs-build-cache"
       #   # - "${DOCKER_REPO}foo-app"
     ports:
-      - 4000
+      - "4000:4000"
     depends_on:
       - db
 
+  dev:
+    image: "${DOCKER_REPO}foo-app-dev"
+    environment:
+      - SECRET_KEY_BASE
+      - DATABASE_URL
+    # command: /bin/bash -c /srv/click/bin/app-start-dev
+    # command: /srv/click/bin/app-start-dev
+    # VSCode devcontainer needs something running
+    # command: ["tail", "-f", "/dev/null"]
+    command: ["sleep", "infinity"]
+    build:
+      dockerfile: deploy/Dockerfile.debian
+      target: dev
+      context: .
+      args:
+        MIX_ENV: prod
+        BUILDKIT_INLINE_CACHE: 1
+    ports:
+      - "4000:4000"
+    depends_on:
+      - db
+    volumes:
+      - type: bind
+        source: .
+        target: /app
+
   test:
-    image: app-test
-    # command: sh -c 'while !</dev/tcp/db/5432; do sleep 1; done; set -ex mix test'
-    # command: sh -c 'mix test'
+    image: "${DOCKER_REPO}app-test"
     environment:
       - DATABASE_HOST=db
       - MIX_ENV=test
+    # command: sh -c 'while !</dev/tcp/db/5432; do sleep 1; done; set -ex mix test'
+    # command: sh -c 'mix test'
     build:
       dockerfile: deploy/Dockerfile.alpine
       target: test
@@ -47,7 +73,8 @@ services:
 
   # https://github.com/docker-library/docs/blob/master/postgres/README.md
   db:
-    image: app-db
+    image: "${DOCKER_REPO}app-db"
+    # image: postgres:latest
     build:
       dockerfile: deploy/Dockerfile.postgres
       context: .
@@ -60,7 +87,7 @@ services:
       # POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     expose:
-      - 5432
+      - "5432"
 
 # volumes:
 #   db-data:
