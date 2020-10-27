@@ -11,7 +11,8 @@
 # https://docs.docker.com/develop/develop-images/build_enhancements/
 # https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/experimental.md
 
-ARG ELIXIR_VERSION=1.10.4
+# ARG ELIXIR_VERSION=1.10
+ARG ELIXIR_VERSION=latest
 ARG NODE_VERSION=14.4
 ARG DEBIAN_VERSION=buster-slim
 
@@ -35,7 +36,7 @@ ARG DOCKER_REPO=""
 ##########################################################################
 # Fetch dependencies
 
-FROM ${DOCKER_REPO}elixir:${ELIXIR_VERSION} as deps
+FROM ${DOCKER_REPO}elixir:${ELIXIR_VERSION} AS deps
 
 ARG http_proxy
 ARG https_proxy=$http_proxy
@@ -94,7 +95,6 @@ RUN npm run deploy
 FROM deps AS digest
 
 ARG MIX_ENV
-ARG RELEASE
 
 COPY --from=assets /app/priv ./priv
 # https://hexdocs.pm/phoenix/Mix.Tasks.Phx.Digest.html
@@ -126,7 +126,7 @@ RUN mix do compile, release $RELEASE
 ##########################################################################
 # Create base image with runtime dependencies
 
-FROM ${DOCKER_REPO}debian:${DEBIAN_VERSION} as runtime
+FROM ${DOCKER_REPO}debian:${DEBIAN_VERSION} AS runtime
 
 ARG MIX_ENV
 ARG RELEASE
@@ -204,7 +204,7 @@ RUN mkdir -p \
 ##########################################################################
 # Dev app image
 
-FROM ${DOCKER_REPO}elixir:${ELIXIR_VERSION} as dev
+FROM ${DOCKER_REPO}elixir:${ELIXIR_VERSION} AS dev
 
 ARG http_proxy
 ARG https_proxy=$http_proxy
@@ -219,9 +219,25 @@ ENV LANG=C.UTF-8 \
     HOME=/app \
     PORT=4000
 
+# Create user and group to run under with specific uid
+RUN groupadd -g 1000 $APP_GROUP \
+    && useradd -g 1000 -g $APP_GROUP $APP_USER \
+    && rm /var/log/lastlog \
+    && rm /var/log/faillog
+
+# Create dirs writable by app user
+RUN mkdir -p \
+        /run/app \
+    && chown -R $APP_USER:$APP_GROUP \
+        /run/app
+
 USER $APP_USER
 
 WORKDIR /app
+
+RUN --mount=type=cache,target=~/.hex/packages/hexpm,sharing=locked \
+    --mount=type=cache,target=~/.cache/rebar3,sharing=locked \
+    mix do local.rebar --force, local.hex --force
 
 EXPOSE $PORT
 
@@ -230,7 +246,7 @@ CMD [ "sleep", "infinity" ]
 ##########################################################################
 # Production app image which gets deployed
 
-FROM runtime as deploy
+FROM runtime AS deploy
 
 ARG APP_USER
 ARG APP_GROUP=$APP_USER
