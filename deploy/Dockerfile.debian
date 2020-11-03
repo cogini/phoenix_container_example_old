@@ -17,6 +17,9 @@ ARG NODE_VERSION=14.4
 # Name used in Docker
 ARG DEBIAN_VERSION=buster-slim
 
+# Name used in OS packages
+ARG DEBIAN_CODENAME=buster
+
 # Elixir release env to build
 ARG MIX_ENV=prod
 
@@ -26,13 +29,14 @@ ARG RELEASE=app
 # OS user that app runs under
 ARG APP_USER=app
 
+ARG APP_DIR=/app
+
 # Source Docker repository for images, default is docker.io
 ARG DOCKER_REPO=""
 
 # Make apt-get be quiet
 ARG DEBIAN_FRONTEND=noninteractive
 ARG APT_OPTS="-y -qq -o=Dpkg::Use-Pty=0 --no-install-recommends"
-
 
 ##########################################################################
 # Fetch dependencies
@@ -58,6 +62,8 @@ RUN --mount=type=cache,target=~/.hex/packages/hexpm,sharing=locked \
 FROM deps AS test
 
 ARG MIX_ENV
+
+WORKDIR /app
 
 # Instead of copying sources, could use bind mount, e.g.
 # RUN --mount=target=.
@@ -126,24 +132,27 @@ RUN mix do compile, release $RELEASE
 
 
 ##########################################################################
+
 # Create base image with runtime dependencies
 
 FROM ${DOCKER_REPO}debian:${DEBIAN_VERSION} AS runtime
 
 ARG DEBIAN_FRONTEND
 ARG APT_OPTS
+ARG DEBIAN_CODENAME
 
 ARG MIX_ENV
 ARG RELEASE
 
 ARG APP_USER
 ARG APP_GROUP=$APP_USER
+ARG APP_DIR
 
 # Set environment vars used by the app
 # SECRET_KEY_BASE and DATABASE_URL env vars should be set when running the application
 # maybe set COOKIE and other things
 ENV LANG=C.UTF-8 \
-    HOME=/app \
+    HOME=$APP_DIR \
     RELEASE_TMP=/run/app \
     RELEASE=${RELEASE} \
     PORT=4000
@@ -168,7 +177,7 @@ RUN set -exu \
 # Install openssl, allowing the app to listen on HTTPS.
 # May not be needed if handled outside the application (e.g. in Kubernetes ingress).
 
-# Create dirs needed by postgres-client but stripped from slim
+# Create dirs needed by postgresql-client but stripped from slim
 # RUN seq 1 8 | xargs -I{} mkdir -p /usr/share/man/man{}
 
 RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
@@ -183,13 +192,28 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     #     apt-transport-https \
     #     ca-certificates \
     #     curl \
+    #     gnupg \
     #     gnupg-agent \
-    #     software-properties-common \
+    #     # software-properties-common \
     # App deps
     && apt-get install $APT_OPTS \
         # Runtime deps
         openssl \
         libpq-dev \
+        # postgresql-client \
+    # Latest PostgreSQL
+    # && curl -sL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /etc/apt/trusted.gpg.d/postgresql-ACCC4CF8.asc \
+    # && echo "deb http://apt.postgresql.org/pub/repos/apt/ $DEBIAN_CODENAME-pgdg main" | tee /etc/apt/sources.list.d/pgdg.list \
+    # && echo "Package: *\nPin: release o=apt.postgresql.org\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/pgdg.pref \
+    # && apt-get update \
+    # && apt-get install $APT_OPTS \
+    #     libpq-dev \
+    #     postgresql-client-12 \
+    # Microsoft ODBC Driver for SQL Server
+    # && curl -sL https://packages.microsoft.com/keys/microsoft.asc -o /etc/apt/trusted.gpg.d/microsoft.asc \
+    # && curl https://packages.microsoft.com/config/debian/10/prod.list > /etc/apt/sources.list.d/mssql-release.list \
+    # && export ACCEPT_EULA=Y \
+    # && apt-get -qq update && apt-get install $APT_OPTS msodbcsql17 \
     && rm -rf /var/lib/dpkg
 
 # Create OS user and group to run app under
@@ -211,6 +235,7 @@ FROM ${DOCKER_REPO}elixir:${ELIXIR_VERSION} AS dev
 
 ARG DEBIAN_FRONTEND
 ARG APT_OPTS
+ARG DEBIAN_CODENAME
 
 ARG http_proxy
 ARG https_proxy=$http_proxy
@@ -220,10 +245,11 @@ ARG RELEASE
 
 ARG APP_USER
 ARG APP_GROUP=$APP_USER
+ARG APP_DIR
 
 # Set environment vars used by the app
 ENV LANG=C.UTF-8 \
-    HOME=/app \
+    HOME=$APP_DIR \
     PORT=4000
 
 # Configure apt caching for use with BuildKit
@@ -262,14 +288,28 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     #     ca-certificates \
     #     curl \
     #     gnupg-agent \
-    #     software-properties-common \
+    #     # software-properties-common \
     # App deps
     && apt-get install $APT_OPTS \
         # Runtime deps
         openssl \
         libpq-dev \
+        # postgresql-client \
         # Dev tools
         inotify-tools \
+    # Latest PostgreSQL
+    # && curl -sL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /etc/apt/trusted.gpg.d/postgresql-ACCC4CF8.asc \
+    # && echo "deb http://apt.postgresql.org/pub/repos/apt/ $DEBIAN_CODENAME-pgdg main" | tee /etc/apt/sources.list.d/pgdg.list \
+    # && echo "Package: *\nPin: release o=apt.postgresql.org\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/pgdg.pref \
+    # && apt-get update \
+    # && apt-get install $APT_OPTS \
+    #     libpq-dev \
+    #     postgresql-client-12 \
+    # Microsoft ODBC Driver for SQL Server
+    # && curl -sL https://packages.microsoft.com/keys/microsoft.asc -o /etc/apt/trusted.gpg.d/microsoft.asc \
+    # && curl https://packages.microsoft.com/config/debian/10/prod.list > /etc/apt/sources.list.d/mssql-release.list \
+    # && export ACCEPT_EULA=Y \
+    # && apt-get -qq update && apt-get install $APT_OPTS msodbcsql17 \
     && rm -rf /var/lib/dpkg
 
 # Create user and group to run under with specific uid
@@ -286,7 +326,7 @@ RUN mkdir -p \
 
 USER $APP_USER
 
-WORKDIR /app
+WORKDIR $APP_DIR
 
 RUN --mount=type=cache,target=~/.hex/packages/hexpm,sharing=locked \
     --mount=type=cache,target=~/.cache/rebar3,sharing=locked \
@@ -303,6 +343,7 @@ FROM runtime AS deploy
 
 ARG APP_USER
 ARG APP_GROUP=$APP_USER
+ARG APP_DIR
 
 ARG MIX_ENV
 ARG RELEASE
@@ -311,18 +352,19 @@ ARG RELEASE
 # SECRET_KEY_BASE and DATABASE_URL env vars should be set when running the application
 # maybe set COOKIE and other things
 ENV LANG=C.UTF-8 \
-    HOME=/app \
+    HOME=$APP_DIR \
     RELEASE_TMP=/run/app \
     RELEASE=${RELEASE} \
     PORT=4000
 
-USER $APP_USER
-
 # Setting WORKDIR after USER makes directory be owned by the user.
+# Setting it before makes it owned by root, which is more secure.
 # The app needs to be able to write to a tmp directory on startup, which by
 # default is under the release. This can be changed by setting RELEASE_TMP to
 # /tmp or, more securely, /run/foo
-WORKDIR /app
+WORKDIR $APP_DIR
+
+USER $APP_USER
 
 # Chown files while copying. Running "RUN chown -R app:app /app"
 # adds an extra layer which is about 10Mb, a huge difference when the
