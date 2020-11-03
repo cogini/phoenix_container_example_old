@@ -1,8 +1,15 @@
 {
   "name": "App dev",
+
   "dockerComposeFile": "../docker-compose.yml",
+
+  // Name of the service for the container that VS Code should // use.
+  // Update this value and .devcontainer/docker-compose.yml to the real service name.
   "service": "dev",
+
+  // Start specific services in your Docker Compose config.
   "runServices": ["dev"],
+
   "workspaceFolder": "/app",
   // Connect as a non-root user. See https://aka.ms/vscode-remote/containers/non-root.
   "remoteUser": "app",
