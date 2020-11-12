@@ -26,8 +26,8 @@ services:
     environment:
       - SECRET_KEY_BASE
       - DATABASE_URL
-    # command: /bin/bash -c /srv/click/bin/app-start-dev
-    # command: /srv/click/bin/app-start-dev
+    # command: /bin/bash -c /srv/app/bin/app-start-dev
+    # command: /srv/app/bin/app-start-dev
     # command: /bin/sh -c "/app/_build/prod/rel/app/bin/app foreground"
 
     # VSCode devcontainer needs something running
