@@ -26,7 +26,7 @@ though it should work in docker.io. See https://github.com/aws/containers-roadma
 and https://github.com/aws/containers-roadmap/issues/505
 
 This project supports deploying to AWS ECS using CodeBuild, CodeDeploy Blue/Green
-deployment, and AWS Parameter Store for configuration. See `ecs/buildspec.yml`.
+deployment, and AWS Parameter Store for configuration. See [ecs/buildspec.yml](ecs/buildspec.yml).
 Terraform is used to set up the environment, see https://github.com/cogini/multi-env-deploy
 
 ## BuildKit
