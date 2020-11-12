@@ -78,26 +78,28 @@ Using docker-compose:
     export COMPOSE_DOCKER_CLI_BUILD=1
     export DOCKER_BUILDKIT=1
 
+    # Build everything
     docker-compose build
-    DATABASE_DB=app DATABASE_HOST=db docker-compose up test
+
+    # Run tests
+    DATABASE_HOST=db docker-compose up test
     DATABASE_HOST=db docker-compose run test mix test
 
-    # Create prod db via test
+    # Create prod db via test image, by running mix
     DATABASE_DB=app DATABASE_HOST=db docker-compose run test mix ecto.create
 
-    # Run prod app
+    # Run prod app locally, talking to the db in Docker
     export SECRET_KEY_BASE="JBGplDAEnheX84quhVw2xvqWMFGDdn0v4Ye/GR649KH2+8ezr0fAeQ3kNbtbrY4U"
     export DATABASE_URL=ecto://postgres:postgres@db/app
     docker-compose up app
 
-    # Make request to app
+    # Make request to app running in Docker
     curl -v localhost:4000
 
     # Push prod image to repo
     export DOCKER_CLI_EXPERIMENTAL=enabled
-
     export REPO_URI=123456789.dkr.ecr.us-east-1.amazonaws.com/app
-    docker buildx build --push -t ${REPO_URI}:latest -f deploy/Dockerfile .
+    docker buildx build --push -t ${REPO_URI}:latest -f deploy/Dockerfile.alpine .
 
 ### Run
 
