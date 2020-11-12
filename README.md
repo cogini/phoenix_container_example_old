@@ -52,8 +52,9 @@ The `COMPOSE_DOCKER_CLI_BUILD=1` env var tells `docker-compose` to use `buildx`.
 
 Using `docker-compose`:
 
-    export COMPOSE_DOCKER_CLI_BUILD=1
+    ```shell
     export DOCKER_BUILDKIT=1
+    export COMPOSE_DOCKER_CLI_BUILD=1
 
     # Build everything (dev, test and app prod images, local Postgres db image)
     docker-compose build
@@ -62,10 +63,11 @@ Using `docker-compose`:
     DATABASE_HOST=db docker-compose up test
     DATABASE_HOST=db docker-compose run test mix test
 
-    # Create prod db via test image, by running mix
+    # Create prod db via test image by running mix
     DATABASE_DB=app DATABASE_HOST=db docker-compose run test mix ecto.create
 
-    # Run prod app locally, talking to the db in Docker
+    # Run prod app locally, talking to the db container
+    # Uses Erlang release running in Alpine, a minimal image about 10mb
     export SECRET_KEY_BASE="JBGplDAEnheX84quhVw2xvqWMFGDdn0v4Ye/GR649KH2+8ezr0fAeQ3kNbtbrY4U"
     export DATABASE_URL=ecto://postgres:postgres@db/app
     docker-compose up app
@@ -77,9 +79,11 @@ Using `docker-compose`:
     export DOCKER_CLI_EXPERIMENTAL=enabled
     export REPO_URI=123456789.dkr.ecr.us-east-1.amazonaws.com/app
     docker buildx build --push -t ${REPO_URI}:latest -f deploy/Dockerfile.alpine .
+    ```
 
 ### Build
 
+    ```shell
     export DOCKER_BUILDKIT=1
 
     export CONTAINER_NAME=phoenix-container-example
@@ -105,6 +109,7 @@ Using `docker-compose`:
         --cache-from=type=local,src=.cache/docker \
         --cache-to=type=local,dest=.cache/docker,mode=max \
         --push -t ${REPO_URI}:latest -f deploy/Dockerfile.alpine --progress=plain "."
+    ```
 
 ### Run
 
@@ -120,9 +125,11 @@ You can configure the number of db connections in the pool, e.g. `POOL_SIZE=10`.
 
 Create database
 
+    ```shell
     mix ecto.create
 
     docker run -p 4000:4000 --env SECRET_KEY_BASE="..." --env DATABASE_URL=ecto://postgres:postgres@host.docker.internal/phoenix_container_example_dev phoenix-container-example
+    ```
 
 # Visual Studio Code
 
@@ -141,6 +148,7 @@ use `env_file` in your Docker Compose file to specify an alternate location.
 
 `.env`
 
+    ```shell
     DOCKER_REPO=""
     TEMPLATE_DIR=ecs
 
@@ -155,14 +163,19 @@ use `env_file` in your Docker Compose file to specify an alternate location.
     AWS_ACCESS_KEY_ID=...
     AWS_SECRET_ACCESS_KEY=...
     AWS_DEFAULT_REGION=ap-northeast-1
+    ```
 
 After the container starts, in the vscode shell, start the app:
 
+    ```shell
     mix phx.server
+    ```
 
 On your host machine, connect to the app running in the container:
 
+    ```shell
     curl -v localhost:4000
+    ```
 
 ## CodeBuild / CodeDeploy
 
