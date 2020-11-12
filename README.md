@@ -3,16 +3,19 @@
 This is an example of building and deploying an Elixir / Phoenix
 app using containers.
 
-It uses the new Docker BuildKit for parallel builds and better caching.
-With local caching, rebuilds take less than 5 seconds. It has Dockerfiles for
-Alpine and Debian. The Alpine image uses an Erlang release, resulting in a
-minimal image about 10mb.
+It uses the new Docker BuildKit for parallel multi-stage builds and 
+caching of OS files and packages external to the images. With local caching,
+rebuilds take less than 5 seconds.
 
-It supports building for multiple architectures, e.g. for AWS ARM.
+It has Dockerfiles for Alpine and Debian.  The Alpine image uses an Erlang
+release, resulting in a minimal 10mb image.
+
+It supports building for multiple architectures, e.g. for AWS
+[Gravaton](https://aws.amazon.com/ec2/graviton/) ARM processor.
 
     PLATFORM="--platform linux/amd64,linux/arm64" DOCKERFILE=deploy/Dockerfile.alpine ecs/build.sh
 
-Cross builds work on Intel with both Mac hardware and Linux (CodeBuild), and I
+Arm builds work on Intel with both Mac hardware and Linux (CodeBuild), and I
 expect them to work the same on Apple Silicon. Building in emulation is
 definitely slower. The key in any case is getting your Docker caching
 optimized.
@@ -22,10 +25,9 @@ intermediate cache data like OS packages. It's not supported by AWS ECR yet,
 though it should work in docker.io. See https://github.com/aws/containers-roadmap/issues/876
 and https://github.com/aws/containers-roadmap/issues/505
 
-It also supports deploying to AWS ECS using CodeBuild, CodeDeploy Blue/Green
-deployment, and AWS Parameter Store for configuration. Terraform is used to
-set up the environment, see https://github.com/cogini/multi-env-deploy
-See `ecs/buildspec.yml`.
+This project supports deploying to AWS ECS using CodeBuild, CodeDeploy Blue/Green
+deployment, and AWS Parameter Store for configuration. See `ecs/buildspec.yml`.
+Terraform is used to set up the environment, see https://github.com/cogini/multi-env-deploy
 
 ## BuildKit
 
