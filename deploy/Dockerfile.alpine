@@ -25,6 +25,8 @@ ARG RELEASE=app
 # OS user that app runs under
 ARG APP_USER=app
 
+ARG APP_DIR=/app
+
 # Source Docker repository for images, default is docker.io
 ARG DOCKER_REPO=""
 
@@ -130,12 +132,13 @@ ARG RELEASE
 
 ARG APP_USER
 ARG APP_GROUP=$APP_USER
+ARG APP_DIR
 
 # Set environment vars used by the app
 # SECRET_KEY_BASE and DATABASE_URL env vars should be set when running the application
 # maybe set COOKIE and other things
 ENV LANG=C.UTF-8 \
-    HOME=/app \
+    HOME=$APP_DIR \
     RELEASE_TMP=/run/app \
     RELEASE=${RELEASE} \
     PORT=4000
@@ -155,18 +158,22 @@ RUN --mount=type=cache,id=apk,target=/var/cache/apk,sharing=locked \
 RUN addgroup -g 1000 -S $APP_GROUP \
     && adduser -u 1000 -S $APP_USER -G $APP_GROUP
 
+# Create dirs writable by app user
 RUN mkdir -p \
         /run/app \
-    && chown $APP_USER:$APP_GROUP
+    && chown $APP_USER:$APP_GROUP \
         /run/app
 
 USER $APP_USER
 
 # Setting WORKDIR after USER makes directory be owned by the user.
+# Setting it before makes it owned by root, which is more secure.
 # The app needs to be able to write to a tmp directory on startup, which by
 # default is under the release. This can be changed by setting RELEASE_TMP to
 # /tmp or, more securely, /run/foo
-WORKDIR /app
+WORKDIR $APP_DIR
+
+USER $APP_USER
 
 # Chown files while copying. Running "RUN chown -R app:app /app"
 # adds an extra layer which is about 10Mb, a huge difference when the
