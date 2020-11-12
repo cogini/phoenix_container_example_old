@@ -11,16 +11,21 @@ minimal image about 10mb.
 It also supports deploying to AWS ECS using CodeBuild, CodeDeploy Blue/Green
 deployment, and AWS Parameter Store for configuration. Terraform is used to
 set up the environment, see https://github.com/cogini/multi-env-deploy
+See `ecs/buildspec.yml`.
 
-It works on intel with both Mac hardware and Linux (CodeBuild), and I expect it
-would work the same on Apple Silicon. Building in emulation is definitely
-slower. The key in any case is getting your Docker caching optimized.
+It supports building for multiple architectures, e.g. for AWS ARM.
+
+    PLATFORM="--platform linux/amd64,linux/arm64" DOCKERFILE=deploy/Dockerfile.alpine ecs/build.sh
+
+Cross builds work on Intel with both Mac hardware and Linux (CodeBuild), and I
+expect them to work the same on Apple Silicon. Building in emulation is
+definitely slower. The key in any case is getting your Docker caching
+optimized.
 
 There is new bleeding edge support in Docker registries for storing
-intermediate cache data like OS packages. I think that will provide better
-cache performance than some of the current ways of caching docker data in Ci.
-It's not supported by AWS ECR yet, though it should work in docker.io once we
-get past the new login requirement.
+intermediate cache data like OS packages. It's not supported by AWS ECR yet,
+though it should work in docker.io. See https://github.com/aws/containers-roadmap/issues/876
+and https://github.com/aws/containers-roadmap/issues/505
 
 ## BuildKit
 
