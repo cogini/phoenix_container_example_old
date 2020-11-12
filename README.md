@@ -8,7 +8,7 @@ caching of OS files and packages external to the images. With local caching,
 rebuilds take less than 5 seconds.
 
 It has Dockerfiles for [Alpine](deploy/Dockerfile.alpine) and [Debian](deploy/Dockerfile.debian).
-The Alpine image uses an Erlang release, resulting in a minimal 10mb image.
+The prod image uses an Erlang release, resulting in a minimal 10mb image with Alpine.
 
 It supports building for multiple architectures, e.g. for AWS
 [Gravaton](https://aws.amazon.com/ec2/graviton/) ARM processor.
