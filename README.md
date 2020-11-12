@@ -66,10 +66,12 @@ can be installed manually before that.
 
     docker buildx build --no-cache -t $CONTAINER_NAME -f deploy/Dockerfile.debian .
 
+    export REPO_URI=123456789.dkr.ecr.us-east-1.amazonaws.com/app
+
     docker buildx build \
         --cache-from=type=local,src=.cache/docker \
         --cache-to=type=local,dest=.cache/docker,mode=max \
-        --push -t $REPO_URI:latest -f deploy/Dockerfile.alpine --progress=plain "."
+        --push -t ${REPO_URI}:latest -f deploy/Dockerfile.alpine --progress=plain "."
 
 Using docker-compose:
 
@@ -93,7 +95,9 @@ Using docker-compose:
 
     # Push prod image to repo
     export DOCKER_CLI_EXPERIMENTAL=enabled
-    docker buildx build --push -t $REPO_URI -f deploy/Dockerfile.codebuild .
+
+    export REPO_URI=123456789.dkr.ecr.us-east-1.amazonaws.com/app
+    docker buildx build --push -t ${REPO_URI}:latest -f deploy/Dockerfile .
 
 ### Run
 
