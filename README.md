@@ -37,43 +37,20 @@ back end.
 
 https://docs.docker.com/engine/reference/commandline/build/
 
-## Usage
-
-### Build
+## Environment vars
 
 The `DOCKER_BUILDKIT=1` env var enables the new Dockerfile caching syntax with
 the standard `docker build` command. It requires Docker version 18.09.
 
-    export DOCKER_BUILDKIT=1
-
-    export CONTAINER_NAME=phoenix-container-example
-    docker build -t $CONTAINER_NAME -f deploy/Dockerfile.debian .
-
-    export CONTAINER_NAME=phoenix-container-example-alpine
-    docker build -t $CONTAINER_NAME -f deploy/Dockerfile.alpine .
-
-THe `DOCKER_CLI_EXPERIMENTAL=enabled` env var enables the new `docker buildx`
+The `DOCKER_CLI_EXPERIMENTAL=enabled` env var enables the new `docker buildx`
 cli command (and new file syntax). It is built in with Docker version 19.03, but
 can be installed manually before that.
 
-    export DOCKER_CLI_EXPERIMENTAL=enabled
+The `COMPOSE_DOCKER_CLI_BUILD=1` env var tells `docker-compose` to use `buildx`.
 
-    export CONTAINER_NAME=phoenix-container-example-alpine
-    docker buildx build -t $CONTAINER_NAME -f deploy/Dockerfile.alpine .
+## Usage
 
-    export CONTAINER_NAME=phoenix-container-example
-    docker buildx build -t $CONTAINER_NAME -f deploy/Dockerfile.debian .
-
-    docker buildx build --no-cache -t $CONTAINER_NAME -f deploy/Dockerfile.debian .
-
-    export REPO_URI=123456789.dkr.ecr.us-east-1.amazonaws.com/app
-
-    docker buildx build \
-        --cache-from=type=local,src=.cache/docker \
-        --cache-to=type=local,dest=.cache/docker,mode=max \
-        --push -t ${REPO_URI}:latest -f deploy/Dockerfile.alpine --progress=plain "."
-
-Using docker-compose:
+Using `docker-compose`:
 
     export COMPOSE_DOCKER_CLI_BUILD=1
     export DOCKER_BUILDKIT=1
@@ -101,6 +78,34 @@ Using docker-compose:
     export REPO_URI=123456789.dkr.ecr.us-east-1.amazonaws.com/app
     docker buildx build --push -t ${REPO_URI}:latest -f deploy/Dockerfile.alpine .
 
+### Build
+
+    export DOCKER_BUILDKIT=1
+
+    export CONTAINER_NAME=phoenix-container-example
+    docker build -t $CONTAINER_NAME -f deploy/Dockerfile.debian .
+
+    export CONTAINER_NAME=phoenix-container-example-alpine
+    docker build -t $CONTAINER_NAME -f deploy/Dockerfile.alpine .
+
+
+    export DOCKER_CLI_EXPERIMENTAL=enabled
+
+    export CONTAINER_NAME=phoenix-container-example-alpine
+    docker buildx build -t $CONTAINER_NAME -f deploy/Dockerfile.alpine .
+
+    export CONTAINER_NAME=phoenix-container-example
+    docker buildx build -t $CONTAINER_NAME -f deploy/Dockerfile.debian .
+
+    docker buildx build --no-cache -t $CONTAINER_NAME -f deploy/Dockerfile.debian .
+
+    export REPO_URI=123456789.dkr.ecr.us-east-1.amazonaws.com/app
+
+    docker buildx build \
+        --cache-from=type=local,src=.cache/docker \
+        --cache-to=type=local,dest=.cache/docker,mode=max \
+        --push -t ${REPO_URI}:latest -f deploy/Dockerfile.alpine --progress=plain "."
+
 ### Run
 
 Environment vars:
@@ -118,6 +123,46 @@ Create database
     mix ecto.create
 
     docker run -p 4000:4000 --env SECRET_KEY_BASE="..." --env DATABASE_URL=ecto://postgres:postgres@host.docker.internal/phoenix_container_example_dev phoenix-container-example
+
+# Visual Studio Code
+
+Visual Studio Code has support for developing in a Docker container.
+
+https://code.visualstudio.com/docs/remote/containers-tutorial
+https://code.visualstudio.com/docs/remote/remote-overview
+https://code.visualstudio.com/docs/remote/containers
+https://code.visualstudio.com/docs/remote/devcontainerjson-reference
+https://code.visualstudio.com/docs/containers/docker-compose
+
+https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack
+
+The default .env file is picked up from the root of the project, but you can
+use env_file in your Docker Compose file to specify an alternate location.
+
+`.env`
+
+    DOCKER_REPO=""
+    TEMPLATE_DIR=ecs
+
+    REPO_URI=123456789.dkr.ecr.us-east-1.amazonaws.com/app
+
+    DOCKER_BUILDKIT=1
+    DOCKER_CLI_EXPERIMENTAL=enabled
+    COMPOSE_DOCKER_CLI_BUILD=1
+
+    DATABASE_URL=ecto://postgres:postgres@db/app
+
+    AWS_ACCESS_KEY_ID=...
+    AWS_SECRET_ACCESS_KEY=...
+    AWS_DEFAULT_REGION=ap-northeast-1
+
+After the container starts, in the vscode shell, start the app:
+
+    mix phx.server
+
+On your host machine, connect to the app running in the container:
+
+    curl -v localhost:4000
 
 ## CodeBuild / CodeDeploy
 
