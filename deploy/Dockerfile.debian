@@ -95,6 +95,9 @@ COPY assets .
 
 RUN npm run deploy
 
+# Generate assets the old way
+# RUN npm install \
+#   && node node_modules/webpack/bin/webpack.js --mode production
 
 ##########################################################################
 # Create Phoenix digest
@@ -287,6 +290,7 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     #     apt-transport-https \
     #     ca-certificates \
     #     curl \
+    #     gnupg \
     #     gnupg-agent \
     #     # software-properties-common \
     # App deps
