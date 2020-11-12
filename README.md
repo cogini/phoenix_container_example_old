@@ -5,7 +5,8 @@ app using containers.
 
 It uses the new Docker BuildKit for parallel builds and better caching.
 With local caching, rebuilds take less than 5 seconds. It has Dockerfiles for
-Alpine and Debian.
+Alpine and Debian. The Alpine image uses an Erlang release, resulting in a
+minimal image about 10mb.
 
 It also supports deploying to AWS ECS using CodeBuild, CodeDeploy Blue/Green
 deployment, and AWS Parameter Store for configuration. Terraform is used to
