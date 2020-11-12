@@ -7,8 +7,8 @@ It uses the new Docker BuildKit for parallel multi-stage builds and
 caching of OS files and packages external to the images. With local caching,
 rebuilds take less than 5 seconds.
 
-It has Dockerfiles for Alpine and Debian.  The Alpine image uses an Erlang
-release, resulting in a minimal 10mb image.
+It has Dockerfiles for [Alpine](deploy/Dockerfile.alpine) and [Debian](deploy/Dockerfile.debian).
+The Alpine image uses an Erlang release, resulting in a minimal 10mb image.
 
 It supports building for multiple architectures, e.g. for AWS
 [Gravaton](https://aws.amazon.com/ec2/graviton/) ARM processor.
@@ -142,6 +142,8 @@ docker run -p 4000:4000 --env SECRET_KEY_BASE="..." --env DATABASE_URL=ecto://po
 # Visual Studio Code
 
 Visual Studio Code has support for developing in a Docker container.
+
+See [.devcontainer/devcontainer.json](.devcontainer/devcontainer.json).
 
 https://code.visualstudio.com/docs/remote/containers-tutorial
 https://code.visualstudio.com/docs/remote/remote-overview
