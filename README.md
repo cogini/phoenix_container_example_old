@@ -55,7 +55,7 @@ Using `docker-compose`:
     export COMPOSE_DOCKER_CLI_BUILD=1
     export DOCKER_BUILDKIT=1
 
-    # Build everything
+    # Build everything (dev, test and app prod images, local Postgres db image)
     docker-compose build
 
     # Run tests
@@ -136,8 +136,8 @@ https://code.visualstudio.com/docs/containers/docker-compose
 
 https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack
 
-The default .env file is picked up from the root of the project, but you can
-use env_file in your Docker Compose file to specify an alternate location.
+The default `.env` file is picked up from the root of the project, but you can
+use `env_file` in your Docker Compose file to specify an alternate location.
 
 `.env`
 
