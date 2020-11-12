@@ -8,11 +8,6 @@ With local caching, rebuilds take less than 5 seconds. It has Dockerfiles for
 Alpine and Debian. The Alpine image uses an Erlang release, resulting in a
 minimal image about 10mb.
 
-It also supports deploying to AWS ECS using CodeBuild, CodeDeploy Blue/Green
-deployment, and AWS Parameter Store for configuration. Terraform is used to
-set up the environment, see https://github.com/cogini/multi-env-deploy
-See `ecs/buildspec.yml`.
-
 It supports building for multiple architectures, e.g. for AWS ARM.
 
     PLATFORM="--platform linux/amd64,linux/arm64" DOCKERFILE=deploy/Dockerfile.alpine ecs/build.sh
@@ -26,6 +21,11 @@ There is new bleeding edge support in Docker registries for storing
 intermediate cache data like OS packages. It's not supported by AWS ECR yet,
 though it should work in docker.io. See https://github.com/aws/containers-roadmap/issues/876
 and https://github.com/aws/containers-roadmap/issues/505
+
+It also supports deploying to AWS ECS using CodeBuild, CodeDeploy Blue/Green
+deployment, and AWS Parameter Store for configuration. Terraform is used to
+set up the environment, see https://github.com/cogini/multi-env-deploy
+See `ecs/buildspec.yml`.
 
 ## BuildKit
 
