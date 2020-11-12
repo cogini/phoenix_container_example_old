@@ -11,6 +11,16 @@ It also supports deploying to AWS ECS using CodeBuild, CodeDeploy Blue/Green
 deployment, and AWS Parameter Store for configuration. Terraform is used to
 set up the environment, see https://github.com/cogini/multi-env-deploy
 
+It works on intel with both Mac hardware and Linux (CodeBuild), and I expect it
+would work the same on Apple Silicon. Building in emulation is definitely
+slower. The key in any case is getting your Docker caching optimized.
+
+There is new bleeding edge support in Docker registries for storing
+intermediate cache data like OS packages. I think that will provide better
+cache performance than some of the current ways of caching docker data in Ci.
+It's not supported by AWS ECR yet, though it should work in docker.io once we
+get past the new login requirement.
+
 ## BuildKit
 
 BuildKit is a new back end for Docker that builds tasks in parallel.
@@ -35,16 +45,23 @@ The `DOCKER_BUILDKIT=1` env var enables the new Dockerfile caching syntax with
 the standard `docker build` command. It requires Docker version 18.09.
 
     export DOCKER_BUILDKIT=1
-    docker build -t phoenix-container-example -f Dockerfile .
+
+    export CONTAINER_NAME=phoenix-container-example
+    docker build -t $CONTAINER_NAME -f deploy/Dockerfile.debian .
+
+    export CONTAINER_NAME=phoenix-container-example-alpine
+    docker build -t $CONTAINER_NAME -f deploy/Dockerfile.alpine .
 
 THe `DOCKER_CLI_EXPERIMENTAL=enabled` env var enables the new `docker buildx`
 cli command (and new file syntax). It is built in with Docker version 19.03, but
 can be installed manually before that.
 
     export DOCKER_CLI_EXPERIMENTAL=enabled
+
     export CONTAINER_NAME=phoenix-container-example-alpine
     docker buildx build -t $CONTAINER_NAME -f deploy/Dockerfile.alpine .
 
+    export CONTAINER_NAME=phoenix-container-example
     docker buildx build -t $CONTAINER_NAME -f deploy/Dockerfile.debian .
 
     docker buildx build --no-cache -t $CONTAINER_NAME -f deploy/Dockerfile.debian .
@@ -56,15 +73,27 @@ can be installed manually before that.
 
 Using docker-compose:
 
-    COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker-compose build
-    COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker-compose up
+    export COMPOSE_DOCKER_CLI_BUILD=1
+    export DOCKER_BUILDKIT=1
 
-    COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker-compose run test mix test
+    docker-compose build
+    DATABASE_DB=app DATABASE_HOST=db docker-compose up test
+    DATABASE_HOST=db docker-compose run test mix test
 
-    docker-compose run app mix ecto.create
+    # Create prod db via test
+    DATABASE_DB=app DATABASE_HOST=db docker-compose run test mix ecto.create
 
+    # Run prod app
+    export SECRET_KEY_BASE="JBGplDAEnheX84quhVw2xvqWMFGDdn0v4Ye/GR649KH2+8ezr0fAeQ3kNbtbrY4U"
+    export DATABASE_URL=ecto://postgres:postgres@db/app
+    docker-compose up app
 
-DOCKER_CLI_EXPERIMENTAL=enabled docker buildx build --push -t $REPO_URI -f deploy/Dockerfile.codebuild .
+    # Make request to app
+    curl -v localhost:4000
+
+    # Push prod image to repo
+    export DOCKER_CLI_EXPERIMENTAL=enabled
+    docker buildx build --push -t $REPO_URI -f deploy/Dockerfile.codebuild .
 
 ### Run
 
