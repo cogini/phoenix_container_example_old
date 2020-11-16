@@ -10,12 +10,22 @@
 # https://docs.docker.com/develop/develop-images/build_enhancements/
 # https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/experimental.md
 
-# ARG ELIXIR_VERSION=1.10
-ARG ELIXIR_VERSION=latest
+ARG ELIXIR_VERSION=1.11.2
+# ARG ELIXIR_VERSION=latest
+
+ARG ERLANG_VERSION=23.1.2
+
 ARG NODE_VERSION=14.4
 
 # Name used in Docker
 ARG DEBIAN_VERSION=buster-slim
+ARG ELIXIR_DEBIAN_VERSION=buster-20201012
+
+# ARG ELIXIR_IMAGE_NAME=elixir
+ARG ELIXIR_IMAGE_NAME=hexpm/elixir
+
+# ARG ELIXIR_IMAGE_TAG=${ELIXIR_VERSION}
+ARG ELIXIR_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${ERLANG_VERSION}-debian-${ELIXIR_DEBIAN_VERSION}
 
 # Name used in OS packages
 ARG DEBIAN_CODENAME=buster
@@ -41,7 +51,7 @@ ARG APT_OPTS="-y -qq -o=Dpkg::Use-Pty=0 --no-install-recommends"
 ##########################################################################
 # Fetch dependencies
 
-FROM ${DOCKER_REPO}elixir:${ELIXIR_VERSION} AS deps
+FROM ${DOCKER_REPO}${ELIXIR_IMAGE_NAME}:${ELIXIR_IMAGE_TAG} AS deps
 
 ARG http_proxy
 ARG https_proxy=$http_proxy
@@ -234,7 +244,7 @@ RUN mkdir -p \
 ##########################################################################
 # Dev app image
 
-FROM ${DOCKER_REPO}elixir:${ELIXIR_VERSION} AS dev
+FROM ${DOCKER_REPO}${ELIXIR_IMAGE_NAME}:${ELIXIR_IMAGE_TAG} AS dev
 
 ARG DEBIAN_FRONTEND
 ARG APT_OPTS
