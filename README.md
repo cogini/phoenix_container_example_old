@@ -3,7 +3,7 @@
 This is an example of building and deploying an Elixir / Phoenix
 app using containers.
 
-It uses the new Docker BuildKit for parallel multi-stage builds and 
+It uses the new Docker BuildKit for parallel multi-stage builds and
 caching of OS files and packages external to the images. With local caching,
 rebuilds take less than 5 seconds.
 
