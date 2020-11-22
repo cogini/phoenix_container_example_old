@@ -1,7 +1,10 @@
 version: '3.8'
 services:
   app:
-    image: "${DOCKER_REPO}foo-app"
+    # image: "${REGISTRY}foo-app"
+    image: "${REPO_URL}"
+    # image: "cogini/foo-app
+    # image: 123456789.dkr.ecr.us-east-1.amazonaws.com/app
     environment:
       - SECRET_KEY_BASE
       - DATABASE_URL
@@ -11,18 +14,21 @@ services:
       target: deploy
       context: .
       args:
-        MIX_ENV: prod
+        REGISTRY: ${REGISTRY}
         BUILDKIT_INLINE_CACHE: 1
+        MIX_ENV: prod
+    # platform: "linux/arm64"
+    # platform: "linux/amd64"
       # cache_from:
-      #   - "${DOCKER_REPO}foo-app-ecs-build-cache"
-      #   # - "${DOCKER_REPO}foo-app"
+      #   - "${REGISTRY}/foo-app-ecs-build-cache"
+      #   # - "${REGISTRY}/foo-app"
     ports:
       - "4000:4000"
     depends_on:
       - db
 
   dev:
-    image: "${DOCKER_REPO}foo-app-dev"
+    image: "foo-app-dev"
     environment:
       - SECRET_KEY_BASE
       - DATABASE_URL
@@ -39,8 +45,9 @@ services:
       target: dev
       context: .
       args:
-        MIX_ENV: prod
+        REGISTRY: ${REGISTRY}
         BUILDKIT_INLINE_CACHE: 1
+        MIX_ENV: prod
     ports:
       - "4000:4000"
     depends_on:
@@ -52,7 +59,7 @@ services:
     # - 'nfsmount:/app'
 
   test:
-    image: "${DOCKER_REPO}app-test"
+    image: "app-test"
     environment:
       - MIX_ENV=test
       - DATABASE_HOST=db
@@ -65,6 +72,7 @@ services:
       target: test
       context: .
       args:
+        REGISTRY: ${REGISTRY}
         MIX_ENV: test
         BUILDKIT_INLINE_CACHE: 1
       # cache_from:
@@ -80,12 +88,13 @@ services:
 
   # https://github.com/docker-library/docs/blob/master/postgres/README.md
   db:
-    image: "${DOCKER_REPO}app-db"
+    image: "app-db"
     # image: postgres:latest
     build:
       dockerfile: deploy/Dockerfile.postgres
       context: .
-      # args:
+      args:
+        REGISTRY: ${REGISTRY}
       #   MIX_ENV: prod
     restart: always
     volumes:
