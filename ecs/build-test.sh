@@ -7,18 +7,14 @@ set -o errexit -o nounset -o xtrace
 # Build container
 
 # Input ENV vars:
-
-# URL of target image in ECR repo
-# REPO_URI="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/foo-app"
+# REGISTRY: Docker registry for base images, default docker.io
+# REGISTRY="${REGISTRY:-"${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/"}"
+REGISTRY="${REGISTRY:-""}"
 
 # git commit hash used to tag specific build
 IMAGE_TAG="${IMAGE_TAG:-"$(git rev-parse --short HEAD)"}"
 
-# Private docker repository for base images.
-# DOCKER_REPO="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/vendor-"
-DOCKER_REPO="${DOCKER_REPO:-""}"
-
-# CACHE_REPO_URI: URL of ECR repo for cache
+# CACHE_REPO_URL: URL of ECR repo for cache
 
 # Output cache type: local, registry, none (clear cache), blank
 CACHE_TYPE="${CACHE_TYPE:-local}"
@@ -33,7 +29,7 @@ IMAGE_NAME="${IMAGE_NAME:-app-test}"
 TAGS="-t ${IMAGE_NAME}"
 MIX_ENV="${MIX_ENV:-prod}"
 # BUILD_ARGS="--build-arg MIX_ENV=${MIX_ENV} --build-arg BUILDKIT_INLINE_CACHE=1"
-BUILD_ARGS="--build-arg MIX_ENV=${MIX_ENV} --build-arg DOCKER_REPO=${DOCKER_REPO}"
+BUILD_ARGS="--build-arg MIX_ENV=${MIX_ENV} --build-arg REGISTRY=${REGISTRY}"
 
 # Cache directory for build files
 CACHE_DIR=$HOME/.cache/docker/${TARGET}
@@ -77,9 +73,11 @@ case "$CACHE_TYPE" in
         ;;
     registry)
         # Use repo for caching
-        # Not working yet with ECR: https://github.com/aws/containers-roadmap/issues/505
-        CACHE_FROM="--cache-from=type=registry,ref=$CACHE_REPO_URI"
-        CACHE_TO="--cache-to=type=registry,ref=$CACHE_REPO_URI,mode=max"
+        # Not working yet with ECR:
+        # https://github.com/aws/containers-roadmap/issues/876
+        # https://github.com/aws/containers-roadmap/issues/505
+        CACHE_FROM="--cache-from=type=registry,ref=$CACHE_REPO_URL"
+        CACHE_TO="--cache-to=type=registry,ref=$CACHE_REPO_URL,mode=max"
         ;;
     none)
         CACHE_FROM="--no-cache"
