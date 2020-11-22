@@ -41,8 +41,9 @@ ARG APP_USER=app
 
 ARG APP_DIR=/app
 
-# Source Docker repository for images, default is docker.io
-ARG DOCKER_REPO=""
+# Docker registry for base images, default is docker.io
+# If specified, should have a trailing slash
+ARG REGISTRY=""
 
 # Make apt-get be quiet
 ARG DEBIAN_FRONTEND=noninteractive
@@ -51,7 +52,7 @@ ARG APT_OPTS="-y -qq -o=Dpkg::Use-Pty=0 --no-install-recommends"
 ##########################################################################
 # Fetch dependencies
 
-FROM ${DOCKER_REPO}${ELIXIR_IMAGE_NAME}:${ELIXIR_IMAGE_TAG} AS deps
+FROM ${REGISTRY}${ELIXIR_IMAGE_NAME}:${ELIXIR_IMAGE_TAG} AS deps
 
 ARG http_proxy
 ARG https_proxy=$http_proxy
@@ -88,7 +89,7 @@ RUN mix do compile
 # Build Phoenix assets
 # Using stretch because it has Python
 
-FROM ${DOCKER_REPO}node:${NODE_VERSION}-stretch AS assets
+FROM ${REGISTRY}node:${NODE_VERSION}-stretch AS assets
 WORKDIR /app/assets
 
 # Copy deps to get assets from phoenix
@@ -148,7 +149,7 @@ RUN mix do compile, release $RELEASE
 
 # Create base image with runtime dependencies
 
-FROM ${DOCKER_REPO}debian:${DEBIAN_VERSION} AS runtime
+FROM ${REGISTRY}debian:${DEBIAN_VERSION} AS runtime
 
 ARG DEBIAN_FRONTEND
 ARG APT_OPTS
@@ -244,7 +245,7 @@ RUN mkdir -p \
 ##########################################################################
 # Dev app image
 
-FROM ${DOCKER_REPO}${ELIXIR_IMAGE_NAME}:${ELIXIR_IMAGE_TAG} AS dev
+FROM ${REGISTRY}${ELIXIR_IMAGE_NAME}:${ELIXIR_IMAGE_TAG} AS dev
 
 ARG DEBIAN_FRONTEND
 ARG APT_OPTS

@@ -10,12 +10,14 @@
 # https://docs.docker.com/develop/develop-images/build_enhancements/
 # https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/experimental.md
 
-# Docker repository, default is docker.io
-ARG DOCKER_REPO=""
+# Docker registry for base images, default is docker.io
+# If specified, should have a trailing slash
+ARG REGISTRY=""
+
 
 ARG UBUNTU_VERSION=focal
 
-FROM ${DOCKER_REPO}ubuntu:${UBUNTU_VERSION}
+FROM ${REGISTRY}ubuntu:${UBUNTU_VERSION}
 
 ARG UBUNTU_CODENAME=focal
 ARG DOCKER_COMPOSE_VERSION=1.27.4
