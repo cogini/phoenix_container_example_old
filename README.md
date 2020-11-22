@@ -3,12 +3,14 @@
 This is an example of building and deploying an Elixir / Phoenix
 app using containers.
 
-It uses the new Docker BuildKit for parallel multi-stage builds and
+It uses the new Docker BuildKit support for parallel multi-stage builds and
 caching of OS files and packages external to the images. With local caching,
 rebuilds take less than 5 seconds.
 
 It has Dockerfiles for [Alpine](deploy/Dockerfile.alpine) and [Debian](deploy/Dockerfile.debian).
 The prod image uses an Erlang release, resulting in a minimal 10mb image with Alpine.
+
+It supports mirroring base images from docker.io to e.g. AWS ECR.
 
 It supports building for multiple architectures, e.g. for AWS
 [Gravaton](https://aws.amazon.com/ec2/graviton/) ARM processor.
@@ -45,7 +47,7 @@ back end.
 
 https://docs.docker.com/engine/reference/commandline/build/
 
-## Environment vars
+## Docker environment vars
 
 The `DOCKER_BUILDKIT=1` env var enables the new Dockerfile caching syntax with
 the standard `docker build` command. It requires Docker version 18.09.
@@ -61,8 +63,13 @@ The `COMPOSE_DOCKER_CLI_BUILD=1` env var tells `docker-compose` to use `buildx`.
 Using `docker-compose`:
 
 ```shell
+# REGISTRY specifies the Docker registry for source images, default docker.io
+# export REGISTRY=123456789.dkr.ecr.us-east-1.amazonaws.com/
+# aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $REGISTRY
+
 export DOCKER_BUILDKIT=1
 export COMPOSE_DOCKER_CLI_BUILD=1
+export DOCKER_CLI_EXPERIMENTAL=enabled
 
 # Build everything (dev, test and app prod images, local Postgres db image)
 docker-compose build
@@ -84,9 +91,9 @@ docker-compose up app
 curl -v localhost:4000
 
 # Push prod image to repo
-export DOCKER_CLI_EXPERIMENTAL=enabled
-export REPO_URI=123456789.dkr.ecr.us-east-1.amazonaws.com/app
-docker buildx build --push -t ${REPO_URI}:latest -f deploy/Dockerfile.alpine .
+# export REPO_URL=cogini/app
+export REPO_URL=123456789.dkr.ecr.us-east-1.amazonaws.com/app
+docker buildx build --push -t ${REPO_URL}:latest -f deploy/Dockerfile.alpine .
 ```
 
 ### Build
@@ -111,12 +118,13 @@ docker buildx build -t $CONTAINER_NAME -f deploy/Dockerfile.debian .
 
 docker buildx build --no-cache -t $CONTAINER_NAME -f deploy/Dockerfile.debian .
 
-export REPO_URI=123456789.dkr.ecr.us-east-1.amazonaws.com/app
+# export REGISTRY=123456789.dkr.ecr.us-east-1.amazonaws.com/
+export REPO_URL=123456789.dkr.ecr.us-east-1.amazonaws.com/app
 
 docker buildx build \
     --cache-from=type=local,src=.cache/docker \
     --cache-to=type=local,dest=.cache/docker,mode=max \
-    --push -t ${REPO_URI}:latest -f deploy/Dockerfile.alpine --progress=plain "."
+    --push -t ${REPO_URL}:latest -f deploy/Dockerfile.alpine --progress=plain "."
 ```
 
 ### Run
@@ -154,12 +162,12 @@ https://code.visualstudio.com/docs/containers/docker-compose
 https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack
 
 The default `.env` file is picked up from the root of the project, but you can
-use `env_file` in your Docker Compose file to specify an alternate location.
+use `env_file` in your docker-compose.yml file to specify an alternate location.
 
 `.env`
 
 ```shell
-DOCKER_REPO=""
+REGISTRY=""
 TEMPLATE_DIR=ecs
 
 REPO_URI=123456789.dkr.ecr.us-east-1.amazonaws.com/app
@@ -185,6 +193,89 @@ On your host machine, connect to the app running in the container:
 
 ```shell
 curl -v localhost:4000
+```
+
+## Mirror source images
+
+You can make a mirror of the base images that your build depends
+on to you own registry. This is particularly useful since Docker started
+rate limiting requests to public images.
+
+Dregsy is a utility which mirrors repositories from one registry to another.
+
+https://github.com/xelalexv/dregsy
+
+`dregsy.yml`
+
+```yaml
+relay: skopeo
+
+skopeo:
+  binary: skopeo
+
+tasks:
+  - name: task1
+    verbose: true
+
+    source:
+      registry: docker.io
+      # Authenticate with Docker Hub to get higher rate limits
+      # echo '{"username":"cogini","password":"xxx"}' | base64
+      # auth: xxx
+    target:
+      registry: 1234567890.dkr.ecr.ap-northeast-1.amazonaws.com
+      auth-refresh: 10h
+
+    # 'mappings' is a list of 'from':'to' pairs that define mappings of image
+    # paths in the source registry to paths in the destination; 'from' is
+    # required, while 'to' can be dropped if the path should remain the same as
+    # 'from'. Additionally, the tags being synced for a mapping can be limited
+    # by providing a 'tags' list. When omitted, all image tags are synced.
+    # mappings:
+    #   - from: test/image
+    #     to: archive/test/image
+    #     tags: ['0.1.0', '0.1.1']
+    mappings:
+      # - from: moby/buildkit
+      #   tags: ['latest']
+
+      # CodeBuild base image
+      - from: ubuntu
+        tags: ['focal']
+
+      # Target base image, choose one
+      - from: alpine
+        tags: ['3.12.1']
+      - from: debian
+        tags: ['buster-slim']
+
+      - from: postgres
+        tags: ['12']
+
+      # Build base images
+      # - from: hexpm/erlang
+      - from: hexpm/elixir
+        tags:
+          # Choose one
+          - '1.11.2-erlang-23.1.2-alpine-3.12.1'
+          - '1.11.2-erlang-23.1.2-debian-buster-20201012'
+      - from: node
+        tags: ['14.4-stretch']
+```
+
+```
+docker run --rm -v $(pwd)/dregsy.yml:/config.yaml xelalex/dregsy
+export AWS_ACCESS_KEY_ID=XXX
+export AWS_SECRET_ACCESS_KEY=XXX
+docker run --rm -v $(pwd)/dregsy.yml:/config.yaml -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY xelalex/dregsy
+
+# Config file is not unmounted properly
+docker volume ls -qf dangling=true
+docker volume rm `(docker volume ls -qf dangling=true)`
+
+aws ecr describe-repositories | jq '.repositories[].repositoryName'
+aws ecr delete-repository --repository-name vendor-alpine --force
+aws ecr create-repository --repository-name alpine
 ```
 
 ## CodeBuild / CodeDeploy
