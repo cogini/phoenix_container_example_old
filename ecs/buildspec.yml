@@ -62,7 +62,7 @@ phases:
     commands:
       - echo "Starting build phase"
       # - REGISTRY="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/"
-      - export REGISTRY=$REGISTRY/
+      - export REGISTRY="$(dirname $REPO_URL)/"
       # - BUILD_CACHE_REPO_URL="${REGISTRY}foo-app-ecs-build-cache"
 
       # - docker buildx use docker-container
