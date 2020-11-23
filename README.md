@@ -45,14 +45,14 @@ Dockerfile caching syntax with the standard `docker build` command. It requires 
 [buildx](https://github.com/docker/buildx) CLI command (and the new file syntax).
 It is built in with Docker version 19.03, but can be installed manually before that.
 
-`COMPOSE_DOCKER_CLI_BUILD=1` tells `docker-compose` to use `buildx`.
+`COMPOSE_DOCKER_CLI_BUILD=1` tells [docker-compose](https://docs.docker.com/compose/) to use `buildx`.
 
 ## Usage
 
 [docker-compose](https://docs.docker.com/compose/) lets you define multiple
-image targets in a YAML file, then build and start them together.
-It's particularly useful for development or running tests in a CI/CD
-environment which depend on a database.
+services in a YAML file, then build and start them together. It's particularly
+useful for development or running tests in a CI/CD environment which depend on
+a database.
 
 ```shell
 # REGISTRY specifies registry for source images, default Docker Hub
