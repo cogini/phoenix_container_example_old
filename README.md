@@ -87,7 +87,7 @@ docker buildx build --push -t ${REPO_URL}:latest -f deploy/Dockerfile.alpine .
 ```
 
 You can also run the docker build commands directly, which give more
-control over caching.
+control over caching and cross builds.
 
 ```shell
 # export REGISTRY=123456789.dkr.ecr.us-east-1.amazonaws.com/
