@@ -59,6 +59,10 @@ a database.
 # export REGISTRY=123456789.dkr.ecr.us-east-1.amazonaws.com/
 # aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $REGISTRY
 
+# REPO_URL specifies destination repository for app final image
+# export REPO_URL=cogini/app # Docker Hub
+export REPO_URL=123456789.dkr.ecr.us-east-1.amazonaws.com/app # ECR
+
 export DOCKER_BUILDKIT=1
 export COMPOSE_DOCKER_CLI_BUILD=1
 export DOCKER_CLI_EXPERIMENTAL=enabled
@@ -71,8 +75,6 @@ DATABASE_HOST=db docker-compose up test
 DATABASE_HOST=db docker-compose run test mix test
 
 # Push prod image to repo
-# export REPO_URL=cogini/app # Docker Hub
-export REPO_URL=123456789.dkr.ecr.us-east-1.amazonaws.com/app # ECR
 docker buildx build --push -t ${REPO_URL}:latest -f deploy/Dockerfile.alpine .
 
 
