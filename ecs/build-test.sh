@@ -11,10 +11,14 @@ set -o errexit -o nounset -o xtrace
 # REGISTRY="${REGISTRY:-"${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/"}"
 REGISTRY="${REGISTRY:-""}"
 
+# Target image in repo
+# REPO_URL="cogini/app"
+# REPO_URL="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/app"
+
+# CACHE_REPO_URL: URL of repo for cache, optional
+
 # git commit hash used to tag specific build
 IMAGE_TAG="${IMAGE_TAG:-"$(git rev-parse --short HEAD)"}"
-
-# CACHE_REPO_URL: URL of ECR repo for cache
 
 # Output cache type: local, registry, none (clear cache), blank
 CACHE_TYPE="${CACHE_TYPE:-local}"
@@ -28,6 +32,7 @@ DOCKERFILE="${DOCKERFILE:-deploy/Dockerfile.alpine}"
 IMAGE_NAME="${IMAGE_NAME:-app-test}"
 TAGS="-t ${IMAGE_NAME}"
 MIX_ENV="${MIX_ENV:-prod}"
+
 # BUILD_ARGS="--build-arg MIX_ENV=${MIX_ENV} --build-arg BUILDKIT_INLINE_CACHE=1"
 BUILD_ARGS="--build-arg MIX_ENV=${MIX_ENV} --build-arg REGISTRY=${REGISTRY}"
 
@@ -76,6 +81,7 @@ case "$CACHE_TYPE" in
         # Not working yet with ECR:
         # https://github.com/aws/containers-roadmap/issues/876
         # https://github.com/aws/containers-roadmap/issues/505
+        # https://github.com/moby/buildkit/pull/1746
         CACHE_FROM="--cache-from=type=registry,ref=$CACHE_REPO_URL"
         CACHE_TO="--cache-to=type=registry,ref=$CACHE_REPO_URL,mode=max"
         ;;

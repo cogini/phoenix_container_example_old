@@ -74,6 +74,7 @@ case "$CACHE_TYPE" in
         # Not working yet with ECR:
         # https://github.com/aws/containers-roadmap/issues/876
         # https://github.com/aws/containers-roadmap/issues/505
+        # https://github.com/moby/buildkit/pull/1746
         CACHE_FROM="--cache-from=type=registry,ref=$CACHE_REPO_URL"
         CACHE_TO="--cache-to=type=registry,ref=$CACHE_REPO_URL,mode=max"
         ;;
