@@ -14,16 +14,24 @@
 # If specified, should have a trailing slash
 ARG REGISTRY=""
 
-
 ARG UBUNTU_VERSION=focal
-
-FROM ${REGISTRY}ubuntu:${UBUNTU_VERSION}
-
 ARG UBUNTU_CODENAME=focal
 ARG DOCKER_COMPOSE_VERSION=1.27.4
 
+# Make apt-get be quiet
 ARG DEBIAN_FRONTEND=noninteractive
 ARG APT_OPTS="-y -qq -o=Dpkg::Use-Pty=0 --no-install-recommends"
+
+
+##########################################################################
+FROM ${REGISTRY}ubuntu:${UBUNTU_VERSION}
+
+ARG DEBIAN_FRONTEND
+ARG APT_OPTS
+
+ARG UBUNTU_CODENAME
+ARG DOCKER_COMPOSE_VERSION
+
 
 
 # Configure apt caching for use with BuildKit
