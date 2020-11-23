@@ -41,11 +41,13 @@ useful for development or running tests in a CI/CD environment which depend on
 a database.
 
 ```shell
-# REGISTRY specifies registry for source images, default Docker Hub
+# Registry for source images, Docker Hub if blank
 # export REGISTRY=123456789.dkr.ecr.us-east-1.amazonaws.com/
+
+# Login to registry, needed to push or use mirrored base images
 # aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $REGISTRY
 
-# REPO_URL specifies destination repository for app final image
+# Destination repository for app final image
 # export REPO_URL=cogini/app # Docker Hub
 export REPO_URL=123456789.dkr.ecr.us-east-1.amazonaws.com/app # ECR
 
@@ -61,7 +63,7 @@ docker-compose build
 DATABASE_HOST=db docker-compose up test
 DATABASE_HOST=db docker-compose run test mix test
 
-# Push prod image to repo
+# Push final image to repo
 docker buildx build --push -t ${REPO_URL}:latest -f deploy/Dockerfile.alpine .
 
 
