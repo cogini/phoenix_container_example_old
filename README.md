@@ -13,7 +13,8 @@ app using containers.
 * Supports mirroring base images from Docker Hub to AWS ECR to avoid rate
   limits and ensure consistent builds.
 
-* Supports development in a Docker container with Visual Studio Code.
+* Supports development in a Docker container with Visual Studio Code on
+  Windows.
 
 * Supports building for multiple architectures, e.g. AWS
   [Gravaton](https://aws.amazon.com/ec2/graviton/) ARM processor.
@@ -28,9 +29,9 @@ app using containers.
   Terraform is used to set up the environment, see https://github.com/cogini/multi-env-deploy
 
 * Supports storing intermediate cache data such as OS packages in the repository itself.
-  This is pretty bleeding edge right now, and there are oncompatibilities between tools,
-  e.g. with AWS ECR. See https://github.com/aws/containers-roadmap/issues/876 and
-https://github.com/aws/containers-roadmap/issues/505
+  This is pretty bleeding edge right now, and there are incompatibilities e.g. between
+  docker and AWS ECR. See https://github.com/aws/containers-roadmap/issues/876 and
+  https://github.com/aws/containers-roadmap/issues/505
 
 ## Docker environment vars
 
@@ -54,7 +55,7 @@ It's particularly useful for development or running tests in a CI/CD
 environment which depend on a database.
 
 ```shell
-# REGISTRY specifies the Docker registry for source images, default docker.io.
+# REGISTRY specifies registry for source images, default Docker Hub
 # export REGISTRY=123456789.dkr.ecr.us-east-1.amazonaws.com/
 # aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $REGISTRY
 
@@ -69,6 +70,12 @@ docker-compose build
 DATABASE_HOST=db docker-compose up test
 DATABASE_HOST=db docker-compose run test mix test
 
+# Push prod image to repo
+# export REPO_URL=cogini/app
+export REPO_URL=123456789.dkr.ecr.us-east-1.amazonaws.com/app
+docker buildx build --push -t ${REPO_URL}:latest -f deploy/Dockerfile.alpine .
+
+
 # Create prod db schema via test image by running mix
 DATABASE_DB=app DATABASE_HOST=db docker-compose run test mix ecto.create
 
@@ -80,11 +87,6 @@ docker-compose up app
 
 # Make request to app running in Docker
 curl -v localhost:4000
-
-# Push prod image to repo
-# export REPO_URL=cogini/app
-export REPO_URL=123456789.dkr.ecr.us-east-1.amazonaws.com/app
-docker buildx build --push -t ${REPO_URL}:latest -f deploy/Dockerfile.alpine .
 ```
 
 You can also run the docker build commands directly, which give more
@@ -98,17 +100,17 @@ PLATFORM="--platform linux/amd64,linux/arm64" DOCKERFILE=deploy/Dockerfile.alpin
 PLATFORM="--platform linux/amd64,linux/arm64" DOCKERFILE=deploy/Dockerfile.debian ecs/build.sh
 ```
 
-The production deploy container uses the following environment vars:
-
-* `SECRET_KEY_BASE` is used to e.g. protect Phoenix cookies from tampering.
-Generate it with the command `mix phx.gen.secret`.
+The prod deploy container uses the following env vars:
 
 * `DATABASE_URL` defines the db connection, e.g. `DATABASE_URL=ecto://user:pass@host/database`
 You can configure the number of db connections in the pool, e.g. `POOL_SIZE=10`.
 
+* `SECRET_KEY_BASE` protects Phoenix cookies from tampering.
+Generate it with the command `mix phx.gen.secret`.
+
 * `PORT` defines the port that Phoenix will listen on, default is 4000.
 
-## Mirror source images
+## Mirroring source images
 
 You can make a mirror of the base images that your build depends on to you own
 registry. This is particularly useful since Docker started rate limiting
@@ -182,8 +184,7 @@ export AWS_SECRET_ACCESS_KEY=XXX
 docker run --rm -v $(pwd)/dregsy.yml:/config.yaml -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY xelalex/dregsy
 ```
 
-After mirroring is done, set the `REPOSITORY` env variable
-and the Dockerfiles will use your repo instead of Docker Hub.
+To use the mirror registry, set the `REGISTRY` env variable:
 
 ```shell
 export REGISTRY=1234567890.dkr.ecr.ap-northeast-1.amazonaws.com/
