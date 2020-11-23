@@ -4,32 +4,33 @@ This is an example of building and deploying an Elixir / Phoenix
 app using containers.
 
 It uses the new Docker BuildKit support for parallel multi-stage builds and
-caching of OS files and packages external to the images. With local caching,
+caching of OS files and packages external to images. With local caching,
 rebuilds take less than 5 seconds.
 
-It has Dockerfiles for [Alpine](deploy/Dockerfile.alpine) and [Debian](deploy/Dockerfile.debian).
-The prod image uses an Erlang release, resulting in a minimal 10mb image with Alpine.
+It has Dockerfiles for Alpine and Debian. The prod image uses an Erlang
+release, resulting in a minimal 10MB image with Alpine.
 
-It supports mirroring base images from Docker Hub to e.g. AWS ECR to avoid rate limits
-and ensure consistent builds.
+It supports mirroring base images from Docker Hub to e.g. AWS ECR to avoid rate
+limits and ensure consistent builds.
 
 It supports building for multiple architectures, e.g. for AWS
-[Gravaton](https://aws.amazon.com/ec2/graviton/) ARM processor.
+[Gravaton](https://aws.amazon.com/ec2/graviton/) ARM processor, e.g.:
 
     PLATFORM="--platform linux/amd64,linux/arm64" DOCKERFILE=deploy/Dockerfile.alpine ecs/build.sh
 
 Arm builds work on Intel with both Mac hardware and Linux (CodeBuild), and I
 expect them to work the same on Apple Silicon. Building in emulation is
-definitely slower. The key in any case is getting your Docker caching
-optimized.
+considerably slower, mainly due to lack of precompiled packages.
+The key in any case is getting caching optimized.
 
 There is new bleeding edge support in Docker registries for storing
-intermediate cache data like OS packages. It's not supported by AWS ECR yet,
-though it should work in docker.io. See https://github.com/aws/containers-roadmap/issues/876
-and https://github.com/aws/containers-roadmap/issues/505
+intermediate cache data like OS packages in the repository itself.
+These scripts attempt to use that, but it's not supported by AWS ECR yet.
+See https://github.com/aws/containers-roadmap/issues/876 and
+https://github.com/aws/containers-roadmap/issues/505
 
 This project supports deploying to AWS ECS using CodeBuild, CodeDeploy Blue/Green
-deployment, and AWS Parameter Store for configuration. See [ecs/buildspec.yml](ecs/buildspec.yml).
+deployment, and AWS Parameter Store for configuration. See [ecs/buildspec.ml](ecs/buildspec.yml).
 Terraform is used to set up the environment, see https://github.com/cogini/multi-env-deploy
 
 ## BuildKit
@@ -61,10 +62,13 @@ The `COMPOSE_DOCKER_CLI_BUILD=1` env var tells `docker-compose` to use `buildx`.
 
 ## Usage
 
-Using `docker-compose`:
+[docker-compose](https://docs.docker.com/compose/) lets you define multiple
+image targets in a YAML file, then build and start them together.
+It's particularly useful for development or running tests in a CI/CD
+environment which depend on a database.
 
 ```shell
-# REGISTRY specifies the Docker registry for source images, default docker.io
+# REGISTRY specifies the Docker registry for source images, default docker.io.
 # export REGISTRY=123456789.dkr.ecr.us-east-1.amazonaws.com/
 # aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $REGISTRY
 
@@ -79,7 +83,7 @@ docker-compose build
 DATABASE_HOST=db docker-compose up test
 DATABASE_HOST=db docker-compose run test mix test
 
-# Create prod db via test image by running mix
+# Create prod db schema via test image by running mix
 DATABASE_DB=app DATABASE_HOST=db docker-compose run test mix ecto.create
 
 # Run prod app locally, talking to the db container
@@ -97,40 +101,18 @@ export REPO_URL=123456789.dkr.ecr.us-east-1.amazonaws.com/app
 docker buildx build --push -t ${REPO_URL}:latest -f deploy/Dockerfile.alpine .
 ```
 
-### Build
+You can also run the docker build commands directly, which give more
+control over caching.
 
 ```shell
-export DOCKER_BUILDKIT=1
-
-export CONTAINER_NAME=phoenix-container-example
-docker build -t $CONTAINER_NAME -f deploy/Dockerfile.debian .
-
-export CONTAINER_NAME=phoenix-container-example-alpine
-docker build -t $CONTAINER_NAME -f deploy/Dockerfile.alpine .
-
-
-export DOCKER_CLI_EXPERIMENTAL=enabled
-
-export CONTAINER_NAME=phoenix-container-example-alpine
-docker buildx build -t $CONTAINER_NAME -f deploy/Dockerfile.alpine .
-
-export CONTAINER_NAME=phoenix-container-example
-docker buildx build -t $CONTAINER_NAME -f deploy/Dockerfile.debian .
-
-docker buildx build --no-cache -t $CONTAINER_NAME -f deploy/Dockerfile.debian .
-
 # export REGISTRY=123456789.dkr.ecr.us-east-1.amazonaws.com/
 export REPO_URL=123456789.dkr.ecr.us-east-1.amazonaws.com/app
 
-docker buildx build \
-    --cache-from=type=local,src=.cache/docker \
-    --cache-to=type=local,dest=.cache/docker,mode=max \
-    --push -t ${REPO_URL}:latest -f deploy/Dockerfile.alpine --progress=plain "."
+PLATFORM="--platform linux/amd64,linux/arm64" DOCKERFILE=deploy/Dockerfile.alpine ecs/build.sh
+PLATFORM="--platform linux/amd64,linux/arm64" DOCKERFILE=deploy/Dockerfile.debian ecs/build.sh
 ```
 
-### Run
-
-Environment vars:
+The production deploy container uses the following environment vars:
 
 * `SECRET_KEY_BASE` is used to e.g. protect Phoenix cookies from tampering.
 Generate it with the command `mix phx.gen.secret`.
@@ -139,14 +121,6 @@ Generate it with the command `mix phx.gen.secret`.
 You can configure the number of db connections in the pool, e.g. `POOL_SIZE=10`.
 
 * `PORT` defines the port that Phoenix will listen on, default is 4000.
-
-Create database
-
-```shell
-mix ecto.create
-
-docker run -p 4000:4000 --env SECRET_KEY_BASE="..." --env DATABASE_URL=ecto://postgres:postgres@host.docker.internal/phoenix_container_example_dev phoenix-container-example
-```
 
 ## Mirror source images
 
@@ -266,7 +240,7 @@ AWS_SECRET_ACCESS_KEY=...
 AWS_DEFAULT_REGION=ap-northeast-1
 ```
 
-After the container starts, in the vscode shell, start the app:
+After the container starts, in the VS Code shell, start the app:
 
 ```shell
 mix phx.server
@@ -277,7 +251,6 @@ On your host machine, connect to the app running in the container:
 ```shell
 curl -v localhost:4000
 ```
-
 
 ## CodeBuild / CodeDeploy
 
