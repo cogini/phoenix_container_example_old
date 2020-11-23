@@ -10,7 +10,8 @@ rebuilds take less than 5 seconds.
 It has Dockerfiles for [Alpine](deploy/Dockerfile.alpine) and [Debian](deploy/Dockerfile.debian).
 The prod image uses an Erlang release, resulting in a minimal 10mb image with Alpine.
 
-It supports mirroring base images from docker.io to e.g. AWS ECR.
+It supports mirroring base images from Docker Hub to e.g. AWS ECR to avoid rate limits
+and ensure consistent builds.
 
 It supports building for multiple architectures, e.g. for AWS
 [Gravaton](https://aws.amazon.com/ec2/graviton/) ARM processor.
