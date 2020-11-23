@@ -1,35 +1,36 @@
-# phoenix_container_example
-
 This is an example of building and deploying an Elixir / Phoenix
 app using containers.
 
-It uses the new Docker [BuildKit](https://github.com/moby/buildkit)
-support for parallel multi-stage builds and caching of OS files and language
-packages external to images. With local caching, rebuilds take less than 5
-seconds.
+* Uses new Docker [BuildKit](https://github.com/moby/buildkit)
+  support for parallel multi-stage builds and caching of OS files and language
+  packages external to images. With local caching, rebuilds take less than 5
+  seconds.
 
-It has Dockerfiles for Alpine and Debian. The prod image uses an Erlang
-release. With Alpine, the resulting image is just 10MB.
+* Supports Alpine and Debian.
 
-It supports mirroring base images from Docker Hub to e.g. AWS ECR to avoid rate
-limits and ensure consistent builds.
+* Uses Erlang releases for the prod image, resulting in final images as small as 10MB.
 
-It supports building for multiple architectures, e.g. AWS
-[Gravaton](https://aws.amazon.com/ec2/graviton/) ARM processor.
-Arm builds work on Intel with both Mac hardware and Linux (CodeBuild), and
-should work the same on Apple Silicon. Building in emulation is considerably
-slower, mainly due to lack of precompiled packages for Arm. The key in any case
-is getting caching optimized.
+* Supports mirroring base images from Docker Hub to AWS ECR to avoid rate
+  limits and ensure consistent builds.
 
-There is new bleeding edge support in Docker registries for storing
-intermediate cache data like OS packages in the repository itself.
-These scripts attempt to use that, but there are incompatibilities with AWS ECR.
-See https://github.com/aws/containers-roadmap/issues/876 and
+* Supports development in a Docker container with Visual Studio Code.
+
+* Supports building for multiple architectures, e.g. AWS
+  [Gravaton](https://aws.amazon.com/ec2/graviton/) ARM processor.
+  Arm builds work on Intel with both Mac hardware and Linux (CodeBuild), and
+  should work the same on Apple Silicon. Building in emulation is considerably
+  slower, mainly due to lack of precompiled packages for Arm. The key in any case
+  is getting caching optimized.
+
+* Supports deploying to AWS ECS using CodeBuild, CodeDeploy Blue/Green
+  deployment, and AWS Parameter Store for configuration.
+  See [ecs/buildspec.yml](ecs/buildspec.yml).
+  Terraform is used to set up the environment, see https://github.com/cogini/multi-env-deploy
+
+* Supports storing intermediate cache data such as OS packages in the repository itself.
+  This is pretty bleeding edge right now, and there are oncompatibilities between tools,
+  e.g. with AWS ECR. See https://github.com/aws/containers-roadmap/issues/876 and
 https://github.com/aws/containers-roadmap/issues/505
-
-This project supports deploying to AWS ECS using CodeBuild, CodeDeploy Blue/Green
-deployment, and AWS Parameter Store for configuration. See [ecs/buildspec.yml](ecs/buildspec.yml).
-Terraform is used to set up the environment, see https://github.com/cogini/multi-env-deploy
 
 ## Docker environment vars
 
