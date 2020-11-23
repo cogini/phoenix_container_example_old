@@ -4,8 +4,8 @@
 # https://docs.aws.amazon.com/AmazonECS/latest/userguide/ecs-cd-pipeline.html
 # Environment vars:
 #   REGISTRY: ECS base registry
-#   REPO_URL: ECS app repository URL
-#   CACHE_REPO_URL: ECS repository URL for caching
+#   REPO_URL: ECS app repository
+#   CACHE_REPO_URL: ECS repository for caching
 #   CONTAINER_NAME: container name in service task definition
 # https://docs.aws.amazon.com/codebuild/latest/userguide/build-env-ref-env-vars.html
 #   AWS_DEFAULT_REGION
@@ -80,17 +80,21 @@ phases:
       # - docker buildx use docker-container
 
       - echo Building app container for tests...
-      - env DOCKERFILE=deploy/Dockerfile.debian MIX_ENV=test TARGET=test $TEMPLATE_DIR/build-test.sh
+      # - env DOCKERFILE=deploy/Dockerfile.debian MIX_ENV=test TARGET=test $TEMPLATE_DIR/build-test.sh
+      - docker-compose build test
 
-      - echo Building db container...
-      - $TEMPLATE_DIR/build-db.sh
+      # - echo Building db container...
+      # - $TEMPLATE_DIR/build-db.sh
 
       - echo Running unit tests...
-      - docker-compose run test mix test
+      - DATABASE_HOST=db docker-compose up test
+      - DATABASE_HOST=db docker-compose run test mix test
 
       # Build final deploy container
       # - $TEMPLATE_DIR/build.sh
-      - env DOCKERFILE=deploy/Dockerfile.debian $TEMPLATE_DIR/build.sh
+      # - env DOCKERFILE=deploy/Dockerfile.debian $TEMPLATE_DIR/build.sh
+      - docker-compose build app
+      - docker-compose push app
 
       # Build multiple architectures
       # - env PLATFORM="--platform linux/amd64,linux/arm64" DOCKERFILE=deploy/Dockerfile.alpine $TEMPLATE_DIR/build.sh
