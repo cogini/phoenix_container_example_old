@@ -42,14 +42,16 @@ a database.
 
 ```shell
 # Registry for source images, Docker Hub if blank
-# export REGISTRY=123456789.dkr.ecr.us-east-1.amazonaws.com/
+export REGISTRY=123456789.dkr.ecr.us-east-1.amazonaws.com/
 
-# Login to registry, needed to push or use mirrored base images
-# aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $REGISTRY
+# Login to docker
+# docker login
+# Login to ECR registry, needed to push or use mirrored base images
+aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $REGISTRY
 
 # Destination repository for app final image
 # export REPO_URL=cogini/app # Docker Hub
-export REPO_URL=123456789.dkr.ecr.us-east-1.amazonaws.com/app # ECR
+export REPO_URL=${REGISTRY}app # ECR
 
 # Enable Docker BuildKit
 export DOCKER_BUILDKIT=1
@@ -59,13 +61,12 @@ export DOCKER_CLI_EXPERIMENTAL=enabled
 # Build everything (dev, test and app prod images, local Postgres db image)
 docker-compose build
 
-# Run tests
+# Run tests, talking to db in container
 DATABASE_HOST=db docker-compose up test
 DATABASE_HOST=db docker-compose run test mix test
 
-# Push final image to repo
-docker buildx build --push -t ${REPO_URL}:latest -f deploy/Dockerfile.alpine .
-
+# Push final image to repo REPO_URL
+docker-compose push app
 
 # Run prod app locally, talking to the db container
 
@@ -77,7 +78,7 @@ export DATABASE_URL=ecto://postgres:postgres@db/app
 docker-compose up app
 
 # Make request to app running in Docker
-curl -v localhost:4000
+curl -v http://localhost:4000/
 ```
 
 You can also run the docker build commands directly, which give more
@@ -89,6 +90,8 @@ export REPO_URL=123456789.dkr.ecr.us-east-1.amazonaws.com/app
 
 PLATFORM="--platform linux/amd64,linux/arm64" DOCKERFILE=deploy/Dockerfile.alpine ecs/build.sh
 PLATFORM="--platform linux/amd64,linux/arm64" DOCKERFILE=deploy/Dockerfile.debian ecs/build.sh
+
+docker buildx build --push -t ${REPO_URL}:latest -f deploy/Dockerfile.alpine .
 ```
 
 ## Environment vars
@@ -239,7 +242,7 @@ mix phx.server
 On your host machine, connect to the app running in the container:
 
 ```shell
-open localhost:4000
+open http://localhost:4000/
 ```
 
 ## Links
