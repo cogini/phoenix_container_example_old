@@ -147,59 +147,11 @@ mix ecto.create
 docker run -p 4000:4000 --env SECRET_KEY_BASE="..." --env DATABASE_URL=ecto://postgres:postgres@host.docker.internal/phoenix_container_example_dev phoenix-container-example
 ```
 
-# Visual Studio Code
-
-Visual Studio Code has support for developing in a Docker container.
-
-See [.devcontainer/devcontainer.json](.devcontainer/devcontainer.json).
-
-https://code.visualstudio.com/docs/remote/containers-tutorial
-https://code.visualstudio.com/docs/remote/remote-overview
-https://code.visualstudio.com/docs/remote/containers
-https://code.visualstudio.com/docs/remote/devcontainerjson-reference
-https://code.visualstudio.com/docs/containers/docker-compose
-
-https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack
-
-The default `.env` file is picked up from the root of the project, but you can
-use `env_file` in your docker-compose.yml file to specify an alternate location.
-
-`.env`
-
-```shell
-REGISTRY=""
-TEMPLATE_DIR=ecs
-
-REPO_URI=123456789.dkr.ecr.us-east-1.amazonaws.com/app
-
-DOCKER_BUILDKIT=1
-DOCKER_CLI_EXPERIMENTAL=enabled
-COMPOSE_DOCKER_CLI_BUILD=1
-
-DATABASE_URL=ecto://postgres:postgres@db/app
-
-AWS_ACCESS_KEY_ID=...
-AWS_SECRET_ACCESS_KEY=...
-AWS_DEFAULT_REGION=ap-northeast-1
-```
-
-After the container starts, in the vscode shell, start the app:
-
-```shell
-mix phx.server
-```
-
-On your host machine, connect to the app running in the container:
-
-```shell
-curl -v localhost:4000
-```
-
 ## Mirror source images
 
-You can make a mirror of the base images that your build depends
-on to you own registry. This is particularly useful since Docker started
-rate limiting requests to public images.
+You can make a mirror of the base images that your build depends on to you own
+registry. This is particularly useful since Docker started rate limiting
+requests to public images.
 
 Dregsy is a utility which mirrors repositories from one registry to another.
 
@@ -263,20 +215,68 @@ tasks:
         tags: ['14.4-stretch']
 ```
 
-```
-docker run --rm -v $(pwd)/dregsy.yml:/config.yaml xelalex/dregsy
+```shell
 export AWS_ACCESS_KEY_ID=XXX
 export AWS_SECRET_ACCESS_KEY=XXX
 docker run --rm -v $(pwd)/dregsy.yml:/config.yaml -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY xelalex/dregsy
-
-# Config file is not unmounted properly
-docker volume ls -qf dangling=true
-docker volume rm `(docker volume ls -qf dangling=true)`
-
-aws ecr describe-repositories | jq '.repositories[].repositoryName'
-aws ecr delete-repository --repository-name vendor-alpine --force
-aws ecr create-repository --repository-name alpine
 ```
+
+After mirroring is done, set the `REPOSITORY` env variable
+and the Dockerfiles will use your repo instead of Docker Hub.
+
+```shell
+export REGISTRY=1234567890.dkr.ecr.ap-northeast-1.amazonaws.com/
+docker-compose build
+```
+
+# Visual Studio Code
+
+Visual Studio Code has support for developing in a Docker container.
+
+See [.devcontainer/devcontainer.json](.devcontainer/devcontainer.json).
+
+https://code.visualstudio.com/docs/remote/containers-tutorial
+https://code.visualstudio.com/docs/remote/remote-overview
+https://code.visualstudio.com/docs/remote/containers
+https://code.visualstudio.com/docs/remote/devcontainerjson-reference
+https://code.visualstudio.com/docs/containers/docker-compose
+
+https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack
+
+The default `.env` file is picked up from the root of the project, but you can
+use `env_file` in your docker-compose.yml file to specify an alternate location.
+
+`.env`
+
+```shell
+REGISTRY=""
+TEMPLATE_DIR=ecs
+
+REPO_URI=123456789.dkr.ecr.us-east-1.amazonaws.com/app
+
+DOCKER_BUILDKIT=1
+DOCKER_CLI_EXPERIMENTAL=enabled
+COMPOSE_DOCKER_CLI_BUILD=1
+
+DATABASE_URL=ecto://postgres:postgres@db/app
+
+AWS_ACCESS_KEY_ID=...
+AWS_SECRET_ACCESS_KEY=...
+AWS_DEFAULT_REGION=ap-northeast-1
+```
+
+After the container starts, in the vscode shell, start the app:
+
+```shell
+mix phx.server
+```
+
+On your host machine, connect to the app running in the container:
+
+```shell
+curl -v localhost:4000
+```
+
 
 ## CodeBuild / CodeDeploy
 
