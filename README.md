@@ -33,7 +33,12 @@ app using containers.
   docker and AWS ECR. See https://github.com/aws/containers-roadmap/issues/876 and
   https://github.com/aws/containers-roadmap/issues/505
 
-## Docker environment vars
+## Usage
+
+[docker-compose](https://docs.docker.com/compose/) lets you define multiple
+services in a YAML file, then build and start them together. It's particularly
+useful for development or running tests in a CI/CD environment which depend on
+a database.
 
 The new BuildKit features are enabled with environment vars:
 
@@ -46,13 +51,6 @@ Dockerfile caching syntax with the standard `docker build` command. It requires 
 It is built in with Docker version 19.03, but can be installed manually before that.
 
 `COMPOSE_DOCKER_CLI_BUILD=1` tells [docker-compose](https://docs.docker.com/compose/) to use `buildx`.
-
-## Usage
-
-[docker-compose](https://docs.docker.com/compose/) lets you define multiple
-services in a YAML file, then build and start them together. It's particularly
-useful for development or running tests in a CI/CD environment which depend on
-a database.
 
 ```shell
 # REGISTRY specifies registry for source images, default Docker Hub
