@@ -71,16 +71,16 @@ DATABASE_HOST=db docker-compose up test
 DATABASE_HOST=db docker-compose run test mix test
 
 # Push prod image to repo
-# export REPO_URL=cogini/app
-export REPO_URL=123456789.dkr.ecr.us-east-1.amazonaws.com/app
+# export REPO_URL=cogini/app # Docker Hub
+export REPO_URL=123456789.dkr.ecr.us-east-1.amazonaws.com/app # ECR
 docker buildx build --push -t ${REPO_URL}:latest -f deploy/Dockerfile.alpine .
 
+
+# Run prod app locally, talking to the db container
 
 # Create prod db schema via test image by running mix
 DATABASE_DB=app DATABASE_HOST=db docker-compose run test mix ecto.create
 
-# Run prod app locally, talking to the db container
-# Uses Erlang release running in Alpine, a minimal image about 10mb
 export SECRET_KEY_BASE="JBGplDAEnheX84quhVw2xvqWMFGDdn0v4Ye/GR649KH2+8ezr0fAeQ3kNbtbrY4U"
 export DATABASE_URL=ecto://postgres:postgres@db/app
 docker-compose up app
