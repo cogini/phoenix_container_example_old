@@ -17,7 +17,7 @@ REGISTRY="${REGISTRY:-""}"
 # git commit hash used to tag specific build
 IMAGE_TAG="${IMAGE_TAG:-"$(git rev-parse --short HEAD)"}"
 
-# CACHE_REPO_URL: URL of ECR repo for cache
+# CACHE_REPO_URL: URL of repo for cache
 
 # Output cache type: local, registry, none (clear cache), blank
 CACHE_TYPE="${CACHE_TYPE:-local}"
