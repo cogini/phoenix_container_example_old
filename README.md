@@ -9,13 +9,13 @@ packages external to images. With local caching, rebuilds take less than 5
 seconds.
 
 It has Dockerfiles for Alpine and Debian. The prod image uses an Erlang
-release, resulting in a minimal 10MB image with Alpine.
+release. With Alpine, the resulting image is just 10MB.
 
-It supports building for multiple architectures, e.g. for AWS
+It supports mirroring base images from Docker Hub to e.g. AWS ECR to avoid rate
+limits and ensure consistent builds.
+
+It supports building for multiple architectures, e.g. AWS
 [Gravaton](https://aws.amazon.com/ec2/graviton/) ARM processor.
-
-    PLATFORM="--platform linux/amd64,linux/arm64" DOCKERFILE=deploy/Dockerfile.alpine ecs/build.sh
-
 Arm builds work on Intel with both Mac hardware and Linux (CodeBuild), and
 should work the same on Apple Silicon. Building in emulation is considerably
 slower, mainly due to lack of precompiled packages for Arm. The key in any case
@@ -23,12 +23,9 @@ is getting caching optimized.
 
 There is new bleeding edge support in Docker registries for storing
 intermediate cache data like OS packages in the repository itself.
-These scripts attempt to use that, but it's not supported by AWS ECR yet.
+These scripts attempt to use that, but there are incompatibilities with AWS ECR.
 See https://github.com/aws/containers-roadmap/issues/876 and
 https://github.com/aws/containers-roadmap/issues/505
-
-It supports mirroring base images from Docker Hub to e.g. AWS ECR to avoid rate
-limits and ensure consistent builds.
 
 This project supports deploying to AWS ECS using CodeBuild, CodeDeploy Blue/Green
 deployment, and AWS Parameter Store for configuration. See [ecs/buildspec.yml](ecs/buildspec.yml).
