@@ -40,18 +40,6 @@ services in a YAML file, then build and start them together. It's particularly
 useful for development or running tests in a CI/CD environment which depend on
 a database.
 
-The new BuildKit features are enabled with environment vars:
-
-`DOCKER_BUILDKIT=1` enables the new
-[experimental](https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/experimental.md)
-Dockerfile caching syntax with the standard `docker build` command. It requires Docker version 18.09.
-
-`DOCKER_CLI_EXPERIMENTAL=enabled` enables the new Docker
-[buildx](https://github.com/docker/buildx) CLI command (and the new file syntax).
-It is built in with Docker version 19.03, but can be installed manually before that.
-
-`COMPOSE_DOCKER_CLI_BUILD=1` tells [docker-compose](https://docs.docker.com/compose/) to use `buildx`.
-
 ```shell
 # REGISTRY specifies registry for source images, default Docker Hub
 # export REGISTRY=123456789.dkr.ecr.us-east-1.amazonaws.com/
@@ -61,6 +49,7 @@ It is built in with Docker version 19.03, but can be installed manually before t
 # export REPO_URL=cogini/app # Docker Hub
 export REPO_URL=123456789.dkr.ecr.us-east-1.amazonaws.com/app # ECR
 
+# Enable Docker BuildKit
 export DOCKER_BUILDKIT=1
 export COMPOSE_DOCKER_CLI_BUILD=1
 export DOCKER_CLI_EXPERIMENTAL=enabled
@@ -99,6 +88,20 @@ export REPO_URL=123456789.dkr.ecr.us-east-1.amazonaws.com/app
 PLATFORM="--platform linux/amd64,linux/arm64" DOCKERFILE=deploy/Dockerfile.alpine ecs/build.sh
 PLATFORM="--platform linux/amd64,linux/arm64" DOCKERFILE=deploy/Dockerfile.debian ecs/build.sh
 ```
+
+## Environment vars
+
+The new BuildKit features are enabled with environment vars:
+
+`DOCKER_BUILDKIT=1` enables the new
+[experimental](https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/experimental.md)
+Dockerfile caching syntax with the standard `docker build` command. It requires Docker version 18.09.
+
+`DOCKER_CLI_EXPERIMENTAL=enabled` enables the new Docker
+[buildx](https://github.com/docker/buildx) CLI command (and the new file syntax).
+It is built in with Docker version 19.03, but can be installed manually before that.
+
+`COMPOSE_DOCKER_CLI_BUILD=1` tells [docker-compose](https://docs.docker.com/compose/) to use `buildx`.
 
 The prod deploy container uses the following env vars:
 
