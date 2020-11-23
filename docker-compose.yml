@@ -14,14 +14,14 @@ services:
       target: deploy
       context: .
       args:
-        REGISTRY: ${REGISTRY}
         BUILDKIT_INLINE_CACHE: 1
+        REGISTRY: ${REGISTRY}
         MIX_ENV: prod
     # platform: "linux/arm64"
     # platform: "linux/amd64"
-      # cache_from:
-      #   - "${REGISTRY}/foo-app-ecs-build-cache"
-      #   # - "${REGISTRY}/foo-app"
+    # cache_from:
+    #   - "${REGISTRY}/foo-app-ecs-build-cache"
+    #   # - "${REGISTRY}/foo-app"
     ports:
       - "4000:4000"
     depends_on:
@@ -45,8 +45,8 @@ services:
       target: dev
       context: .
       args:
-        REGISTRY: ${REGISTRY}
         BUILDKIT_INLINE_CACHE: 1
+        REGISTRY: ${REGISTRY}
         MIX_ENV: prod
     ports:
       - "4000:4000"
@@ -72,13 +72,13 @@ services:
       target: test
       context: .
       args:
+        BUILDKIT_INLINE_CACHE: 1
         REGISTRY: ${REGISTRY}
         MIX_ENV: test
-        BUILDKIT_INLINE_CACHE: 1
       # cache_from:
       #   - "type=local,src=${CACHE_DIR}"
       # cache_from:
-      #   - "${DOCKER_REPO}foo-app-ecs-build-cache"
+      #   - "${REGISTRY}foo-app-ecs-build-cache"
       # cache_from:
       #   - "type=local,src=${CACHE_DIR}"
       # cache_to:
