@@ -3,15 +3,12 @@
 This is an example of building and deploying an Elixir / Phoenix
 app using containers.
 
-It uses the new Docker BuildKit support for parallel multi-stage builds and
-caching of OS files and packages external to images. With local caching,
-rebuilds take less than 5 seconds.
+It uses the new Docker [BuildKit](https://github.com/moby/buildkit)
+support for parallel multi-stage builds and caching of OS files and packages
+external to images. With local caching, rebuilds take less than 5 seconds.
 
 It has Dockerfiles for Alpine and Debian. The prod image uses an Erlang
 release, resulting in a minimal 10MB image with Alpine.
-
-It supports mirroring base images from Docker Hub to e.g. AWS ECR to avoid rate
-limits and ensure consistent builds.
 
 It supports building for multiple architectures, e.g. for AWS
 [Gravaton](https://aws.amazon.com/ec2/graviton/) ARM processor, e.g.:
@@ -29,36 +26,26 @@ These scripts attempt to use that, but it's not supported by AWS ECR yet.
 See https://github.com/aws/containers-roadmap/issues/876 and
 https://github.com/aws/containers-roadmap/issues/505
 
+It supports mirroring base images from Docker Hub to e.g. AWS ECR to avoid rate
+limits and ensure consistent builds.
+
 This project supports deploying to AWS ECS using CodeBuild, CodeDeploy Blue/Green
 deployment, and AWS Parameter Store for configuration. See [ecs/buildspec.ml](ecs/buildspec.yml).
 Terraform is used to set up the environment, see https://github.com/cogini/multi-env-deploy
 
-## BuildKit
-
-BuildKit is a new back end for Docker that builds tasks in parallel.
-It also supports caching of files outside of container layers, particularly
-useful for downloads such as Hex, JS or OS packages.
-
-`docker buildx` is the new CLI command which takes advantage of features in the
-back end.
-
-* https://github.com/moby/buildkit
-* https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/experimental.md
-* https://github.com/docker/buildx
-* https://www.giantswarm.io/blog/container-image-building-with-buildkit
-
-https://docs.docker.com/engine/reference/commandline/build/
-
 ## Docker environment vars
 
-The `DOCKER_BUILDKIT=1` env var enables the new Dockerfile caching syntax with
-the standard `docker build` command. It requires Docker version 18.09.
+The new Docker BuildKit features are enabled with environment vars:
 
-The `DOCKER_CLI_EXPERIMENTAL=enabled` env var enables the new `docker buildx`
-cli command (and new file syntax). It is built in with Docker version 19.03, but
-can be installed manually before that.
+`DOCKER_BUILDKIT=1` enables the new
+[experimental](https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/experimental.md)
+Dockerfile caching syntax with the standard `docker build` command. It requires Docker version 18.09.
 
-The `COMPOSE_DOCKER_CLI_BUILD=1` env var tells `docker-compose` to use `buildx`.
+`DOCKER_CLI_EXPERIMENTAL=enabled` enables the new Docker
+[buildx](https://github.com/docker/buildx) CLI command (and the new file syntax).
+It is built in with Docker version 19.03, but can be installed manually before that.
+
+`COMPOSE_DOCKER_CLI_BUILD=1` tells `docker-compose` to use `buildx`.
 
 ## Usage
 
@@ -255,6 +242,16 @@ curl -v localhost:4000
 ## CodeBuild / CodeDeploy
 
 * https://docs.aws.amazon.com/codepipeline/latest/userguide/tutorials-ecs-ecr-codedeploy.html
+
+## BuildKit
+
+BuildKit is a new back end for Docker that builds tasks in parallel.
+It also supports caching of files outside of container layers, particularly
+useful for downloads such as Hex, JS or OS packages.
+
+* https://www.giantswarm.io/blog/container-image-building-with-buildkit
+
+https://docs.docker.com/engine/reference/commandline/build/
 
 ## Step by step
 
