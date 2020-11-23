@@ -28,11 +28,6 @@ app using containers.
   See [ecs/buildspec.yml](ecs/buildspec.yml).
   Terraform is used to set up the environment, see https://github.com/cogini/multi-env-deploy
 
-* Supports storing intermediate cache data such as OS packages in the repository itself.
-  This is pretty bleeding edge right now, and there are incompatibilities e.g. between
-  docker and AWS ECR. See https://github.com/aws/containers-roadmap/issues/876 and
-  https://github.com/aws/containers-roadmap/issues/505
-
 ## Usage
 
 [docker-compose](https://docs.docker.com/compose/) lets you define multiple
@@ -84,14 +79,18 @@ curl -v http://localhost:4000/
 You can also run the docker build commands directly, which give more
 control over caching and cross builds.
 
+`build.sh` is a wrapper on `docker buildx build` which sets various options.
+
 ```shell
 # export REGISTRY=123456789.dkr.ecr.us-east-1.amazonaws.com/
 export REPO_URL=123456789.dkr.ecr.us-east-1.amazonaws.com/app
 
+# Build for multiple platforms
 PLATFORM="--platform linux/amd64,linux/arm64" DOCKERFILE=deploy/Dockerfile.alpine ecs/build.sh
 PLATFORM="--platform linux/amd64,linux/arm64" DOCKERFILE=deploy/Dockerfile.debian ecs/build.sh
 
-docker buildx build --push -t ${REPO_URL}:latest -f deploy/Dockerfile.alpine .
+# Use registry to cache intermediate data, e.g. OS packages
+CACHE_REPO_URL=$REPO_URL CACHE_TYPE=registry DOCKERFILE=deploy/Dockerfile.alpine ecs/build.sh
 ```
 
 ## Environment vars
@@ -203,18 +202,20 @@ docker-compose build
 
 Visual Studio Code has support for developing in a Docker container.
 
+* https://code.visualstudio.com/docs/remote/containers-tutorial
+* https://code.visualstudio.com/docs/remote/remote-overview
+* https://code.visualstudio.com/docs/remote/containers
+* https://code.visualstudio.com/docs/remote/devcontainerjson-reference
+* https://code.visualstudio.com/docs/containers/docker-compose
+* https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack
+
 See [.devcontainer/devcontainer.json](.devcontainer/devcontainer.json).
 
-https://code.visualstudio.com/docs/remote/containers-tutorial
-https://code.visualstudio.com/docs/remote/remote-overview
-https://code.visualstudio.com/docs/remote/containers
-https://code.visualstudio.com/docs/remote/devcontainerjson-reference
-https://code.visualstudio.com/docs/containers/docker-compose
-
-https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack
+It uses the `docker-compose.yml` plus an `.env` file to set environment
+variables.
 
 The default `.env` file is picked up from the root of the project, but you can
-use `env_file` in your docker-compose.yml file to specify an alternate location.
+use `env_file` in `docker-compose.yml` file to specify an alternate location.
 
 `.env`
 
@@ -244,6 +245,42 @@ On your host machine, connect to the app running in the container:
 ```shell
 open http://localhost:4000/
 ```
+
+## Caching
+
+BuildKit supports caching intermediate build files such as OS or programming
+language packages outside of the Docker images.
+
+This is done by specifying a cache when running comands in a `Dockerfile`, e.g.:
+
+```Dockerfile
+RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
+    --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
+    set -exu \
+    && apt-get update -qq \
+    && apt-get install -y -qq -o=Dpkg::Use-Pty=0 --no-install-recommends \
+        openssl
+```
+
+This keeps the OS packages separate from the image layers, only the results of
+the install are in the image. It can significantly speed up builds, as it's not
+necessary to download packages. The cache can also be shared between stages/targets.
+
+The cache can be stored locally, or potentially stored in the registry as extra
+data layers. `docker buildkit build` then uses `--cache-from` and `--cache-to`
+options to control the location of the cache. See `build.sh` for details.
+
+```shell
+CACHE_REPO_URL=$REPO_URL CACHE_TYPE=registry DOCKERFILE=deploy/Dockerfile.alpine ecs/build.sh
+```
+
+It currently works quite well for local cache. At some point, registry caching
+may be a fast way to share build cache inside of CI/CD environments. This is
+pretty bleeding edge right now, though. It works with Docker Hub, but there are
+incompatibilities e.g. between docker and AWS ECR.
+See https://github.com/aws/containers-roadmap/issues/876 and https://github.com/aws/containers-roadmap/issues/505
+The registry needs to have a fast/close network connection, or it can be quite slow.
 
 ## Links
 
