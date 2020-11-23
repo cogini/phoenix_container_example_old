@@ -1,4 +1,4 @@
-This is an example of building and deploying an Elixir / Phoenix
+This is a full featured example of building and deploying an Elixir / Phoenix
 app using containers.
 
 * Uses new Docker [BuildKit](https://github.com/moby/buildkit)
@@ -6,15 +6,15 @@ app using containers.
   packages external to images. With local caching, rebuilds take less than 5
   seconds.
 
-* Supports Alpine and Debian.
+* Supports Alpine and Debian, using [hexpm/elixir](https://hub.docker.com/r/hexpm/elixir)
+  base images.
 
 * Uses Erlang releases for the prod image, resulting in final images as small as 10MB.
 
 * Supports mirroring base images from Docker Hub to AWS ECR to avoid rate
   limits and ensure consistent builds.
 
-* Supports development in a Docker container with Visual Studio Code on
-  Windows.
+* Supports development in a Docker container with Visual Studio Code on Windows.
 
 * Supports building for multiple architectures, e.g. AWS
   [Gravaton](https://aws.amazon.com/ec2/graviton/) ARM processor.
@@ -35,7 +35,7 @@ app using containers.
 
 ## Docker environment vars
 
-The new Docker BuildKit features are enabled with environment vars:
+The new BuildKit features are enabled with environment vars:
 
 `DOCKER_BUILDKIT=1` enables the new
 [experimental](https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/experimental.md)
@@ -191,7 +191,7 @@ export REGISTRY=1234567890.dkr.ecr.ap-northeast-1.amazonaws.com/
 docker-compose build
 ```
 
-# Visual Studio Code
+# Developing in a Docker container
 
 Visual Studio Code has support for developing in a Docker container.
 
@@ -211,14 +211,12 @@ use `env_file` in your docker-compose.yml file to specify an alternate location.
 `.env`
 
 ```shell
-REGISTRY=""
-TEMPLATE_DIR=ecs
-
-REPO_URI=123456789.dkr.ecr.us-east-1.amazonaws.com/app
-
 DOCKER_BUILDKIT=1
 DOCKER_CLI_EXPERIMENTAL=enabled
 COMPOSE_DOCKER_CLI_BUILD=1
+
+REGISTRY=""
+REPO_URI=123456789.dkr.ecr.us-east-1.amazonaws.com/app
 
 DATABASE_URL=ecto://postgres:postgres@db/app
 
@@ -236,22 +234,14 @@ mix phx.server
 On your host machine, connect to the app running in the container:
 
 ```shell
-curl -v localhost:4000
+open localhost:4000
 ```
 
-## CodeBuild / CodeDeploy
+## Links
 
 * https://docs.aws.amazon.com/codepipeline/latest/userguide/tutorials-ecs-ecr-codedeploy.html
-
-## BuildKit
-
-BuildKit is a new back end for Docker that builds tasks in parallel.
-It also supports caching of files outside of container layers, particularly
-useful for downloads such as Hex, JS or OS packages.
-
 * https://www.giantswarm.io/blog/container-image-building-with-buildkit
-
-https://docs.docker.com/engine/reference/commandline/build/
+* https://docs.docker.com/engine/reference/commandline/build/
 
 ## Step by step
 
