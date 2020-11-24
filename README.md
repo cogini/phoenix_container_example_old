@@ -53,7 +53,7 @@ export DOCKER_BUILDKIT=1
 export COMPOSE_DOCKER_CLI_BUILD=1
 export DOCKER_CLI_EXPERIMENTAL=enabled
 
-# Build everything (dev, test and app prod images, local Postgres db image)
+# Build all images (dev, test and app prod, local Postgres db)
 docker-compose build
 
 # Run tests, talking to db in container
