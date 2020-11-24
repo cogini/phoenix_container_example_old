@@ -63,6 +63,7 @@ DATABASE_HOST=db docker-compose run test mix test
 # Push final image to repo REPO_URL
 docker-compose push app
 
+
 # Run prod app locally, talking to the db container
 
 # Create prod db schema via test image by running mix
