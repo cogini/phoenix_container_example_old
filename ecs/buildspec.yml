@@ -90,7 +90,7 @@ phases:
       - DATABASE_HOST=db docker-compose up test
       - DATABASE_HOST=db docker-compose run test mix test
 
-      # Build final deploy container
+      # Build and push final deploy container
       # - $TEMPLATE_DIR/build.sh
       # - env DOCKERFILE=deploy/Dockerfile.debian $TEMPLATE_DIR/build.sh
       - docker-compose build app
