@@ -2,7 +2,7 @@ version: '3.8'
 services:
   app:
     # image: "${REGISTRY}foo-app"
-    image: "${REPO_URL}"
+    image: "${REPO_URL}:${IMAGE_TAG}"
     # image: "cogini/foo-app
     # image: 123456789.dkr.ecr.us-east-1.amazonaws.com/app
     environment:
