@@ -82,8 +82,8 @@
             "memoryReservation": 256,
             "portMappings": [
                 {
+                    "hostPort": 0,
                     "containerPort": 2000,
-                    "hostPort": 2000,
                     "protocol": "udp"
                 }
             ],
