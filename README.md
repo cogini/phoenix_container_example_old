@@ -8,6 +8,9 @@ app using containers.
   of container layers and allows sharing of data betwen container targets.
   With proper caching, rebuilds take less than 5 seconds.
 
+  It supports compiling assets such as JS/CSS within the container, then
+  exporting them to the Docker host so that they can be uploaded to a CDN.
+
 * Supports Alpine and Debian, using [hexpm/elixir](https://hub.docker.com/r/hexpm/elixir)
   base images.
 
