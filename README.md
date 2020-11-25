@@ -1,15 +1,17 @@
 This is a full featured example of building and deploying an Elixir / Phoenix
 app using containers.
 
-* Uses new Docker [BuildKit](https://github.com/moby/buildkit)
+* Uses Docker [BuildKit](https://github.com/moby/buildkit)
   support for parallel multi-stage builds and caching of OS files and language
-  packages external to images. With local caching, rebuilds take less than 5
-  seconds.
+  packages external to images. Multi-stage builds split the app compilation
+  from dependencies for faster builds. Caching of packages reduces size
+  of container layers and allows sharing of data betwen container targets.
+  With proper caching, rebuilds take less than 5 seconds.
 
 * Supports Alpine and Debian, using [hexpm/elixir](https://hub.docker.com/r/hexpm/elixir)
   base images.
 
-* Uses Erlang releases for the prod image, resulting in final images as small as 10MB.
+* Uses Erlang releases for the prod image, resulting in images as small as 10MB.
 
 * Supports mirroring base images from Docker Hub to AWS ECR to avoid rate
   limits and ensure consistent builds.
@@ -19,9 +21,7 @@ app using containers.
 * Supports building for multiple architectures, e.g. AWS
   [Gravaton](https://aws.amazon.com/ec2/graviton/) ARM processor.
   Arm builds work on Intel with both Mac hardware and Linux (CodeBuild), and
-  should work the same on Apple Silicon. Building in emulation is considerably
-  slower, mainly due to lack of precompiled packages for Arm. The key in any case
-  is getting caching optimized.
+  should work the same on Apple Silicon.
 
 * Supports deploying to AWS ECS using CodeBuild, CodeDeploy Blue/Green
   deployment, and AWS Parameter Store for configuration.
@@ -35,64 +35,64 @@ services in a YAML file, then build and start them together. It's particularly
 useful for development or running tests in a CI/CD environment which depend on
 a database.
 
-```shell
-# Registry for source images, Docker Hub if blank
-export REGISTRY=123456789.dkr.ecr.us-east-1.amazonaws.com/
+  ```shell
+  # Registry for source images, Docker Hub if blank
+  export REGISTRY=123456789.dkr.ecr.us-east-1.amazonaws.com/
 
-# Login to docker
-# docker login
-# Login to ECR registry, needed to push or use mirrored base images
-aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $REGISTRY
+  # Login to docker
+  # docker login
+  # Login to ECR registry, needed to push or use mirrored base images
+  aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $REGISTRY
 
-# Destination repository for app final image
-# export REPO_URL=cogini/app # Docker Hub
-export REPO_URL=${REGISTRY}app # ECR
+  # Destination repository for app final image
+  # export REPO_URL=cogini/app # Docker Hub
+  export REPO_URL=${REGISTRY}app # ECR
 
-# Enable Docker BuildKit
-export DOCKER_BUILDKIT=1
-export COMPOSE_DOCKER_CLI_BUILD=1
-export DOCKER_CLI_EXPERIMENTAL=enabled
+  # Enable Docker BuildKit
+  export DOCKER_BUILDKIT=1
+  export COMPOSE_DOCKER_CLI_BUILD=1
+  export DOCKER_CLI_EXPERIMENTAL=enabled
 
-# Build all images (dev, test and app prod, local Postgres db)
-docker-compose build
+  # Build all images (dev, test and app prod, local Postgres db)
+  docker-compose build
 
-# Run tests, talking to db in container
-DATABASE_HOST=db docker-compose up test
-DATABASE_HOST=db docker-compose run test mix test
+  # Run tests, talking to db in container
+  DATABASE_HOST=db docker-compose up test
+  DATABASE_HOST=db docker-compose run test mix test
 
-# Push final image to repo REPO_URL
-docker-compose push app
+  # Push final image to repo REPO_URL
+  docker-compose push app
 
 
-# Run prod app locally, talking to the db container
+  # Run prod app locally, talking to the db container
 
-# Create prod db schema via test image by running mix
-DATABASE_DB=app DATABASE_HOST=db docker-compose run test mix ecto.create
+  # Create prod db schema via test image by running mix
+  DATABASE_DB=app DATABASE_HOST=db docker-compose run test mix ecto.create
 
-export SECRET_KEY_BASE="JBGplDAEnheX84quhVw2xvqWMFGDdn0v4Ye/GR649KH2+8ezr0fAeQ3kNbtbrY4U"
-export DATABASE_URL=ecto://postgres:postgres@db/app
-docker-compose up app
+  export SECRET_KEY_BASE="JBGplDAEnheX84quhVw2xvqWMFGDdn0v4Ye/GR649KH2+8ezr0fAeQ3kNbtbrY4U"
+  export DATABASE_URL=ecto://postgres:postgres@db/app
+  docker-compose up app
 
-# Make request to app running in Docker
-curl -v http://localhost:4000/
-```
+  # Make request to app running in Docker
+  curl -v http://localhost:4000/
+  ```
 
-You can also run the docker build commands directly, which give more
-control over caching and cross builds.
+You can also run the docker build commands directly, which give more control
+over caching and cross builds. `build.sh` is a wrapper on `docker buildx build`
+which sets various options.
 
-`build.sh` is a wrapper on `docker buildx build` which sets various options.
+  ```shell
+  DOCKERFILE=deploy/Dockerfile.debian ecs/build.sh
+  ```
 
-```shell
-# export REGISTRY=123456789.dkr.ecr.us-east-1.amazonaws.com/
-export REPO_URL=123456789.dkr.ecr.us-east-1.amazonaws.com/app
+## Building for multiple platforms
 
-# Build for multiple platforms
-PLATFORM="--platform linux/amd64,linux/arm64" DOCKERFILE=deploy/Dockerfile.alpine ecs/build.sh
-PLATFORM="--platform linux/amd64,linux/arm64" DOCKERFILE=deploy/Dockerfile.debian ecs/build.sh
+Building in emulation is considerably slower, mainly due to lack of precompiled
+packages for Arm. The key in any case is getting caching optimized.
 
-# Use registry to cache intermediate data, e.g. OS packages
-CACHE_REPO_URL=$REPO_URL CACHE_TYPE=registry DOCKERFILE=deploy/Dockerfile.alpine ecs/build.sh
-```
+  ```shell
+  PLATFORM="--platform linux/amd64,linux/arm64" ecs/build.sh
+  ```
 
 ## Environment vars
 
@@ -130,61 +130,52 @@ https://github.com/xelalexv/dregsy
 
 `dregsy.yml`
 
-```yaml
-relay: skopeo
+  ```yaml
+  relay: skopeo
 
-skopeo:
-  binary: skopeo
+  skopeo:
+    binary: skopeo
 
-tasks:
-  - name: task1
-    verbose: true
+  tasks:
+    - name: task1
+      verbose: true
 
-    source:
-      registry: docker.io
-      # Authenticate with Docker Hub to get higher rate limits
-      # echo '{"username":"cogini","password":"xxx"}' | base64
-      # auth: xxx
-    target:
-      registry: 1234567890.dkr.ecr.ap-northeast-1.amazonaws.com
-      auth-refresh: 10h
+      source:
+        registry: docker.io
+        # Authenticate with Docker Hub to get higher rate limits
+        # echo '{"username":"cogini","password":"xxx"}' | base64
+        # auth: xxx
+      target:
+        registry: 1234567890.dkr.ecr.ap-northeast-1.amazonaws.com
+        auth-refresh: 10h
 
-    # 'mappings' is a list of 'from':'to' pairs that define mappings of image
-    # paths in the source registry to paths in the destination; 'from' is
-    # required, while 'to' can be dropped if the path should remain the same as
-    # 'from'. Additionally, the tags being synced for a mapping can be limited
-    # by providing a 'tags' list. When omitted, all image tags are synced.
-    # mappings:
-    #   - from: test/image
-    #     to: archive/test/image
-    #     tags: ['0.1.0', '0.1.1']
-    mappings:
-      # - from: moby/buildkit
-      #   tags: ['latest']
+      mappings:
+        # - from: moby/buildkit
+        #   tags: ['latest']
 
-      # CodeBuild base image
-      - from: ubuntu
-        tags: ['focal']
+        # CodeBuild base image
+        - from: ubuntu
+          tags: ['focal']
 
-      # Target base image, choose one
-      - from: alpine
-        tags: ['3.12.1']
-      - from: debian
-        tags: ['buster-slim']
+        # Target base image, choose one
+        - from: alpine
+          tags: ['3.12.1']
+        - from: debian
+          tags: ['buster-slim']
 
-      - from: postgres
-        tags: ['12']
+        - from: postgres
+          tags: ['12']
 
-      # Build base images
-      # - from: hexpm/erlang
-      - from: hexpm/elixir
-        tags:
-          # Choose one
-          - '1.11.2-erlang-23.1.2-alpine-3.12.1'
-          - '1.11.2-erlang-23.1.2-debian-buster-20201012'
-      - from: node
-        tags: ['14.4-stretch']
-```
+        # Build base images
+        # - from: hexpm/erlang
+        - from: hexpm/elixir
+          tags:
+            # Choose one
+            - '1.11.2-erlang-23.1.2-alpine-3.12.1'
+            - '1.11.2-erlang-23.1.2-debian-buster-20201012'
+        - from: node
+          tags: ['14.4-stretch']
+  ```
 
 ```shell
 export AWS_ACCESS_KEY_ID=XXX
