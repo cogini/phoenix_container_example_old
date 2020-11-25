@@ -41,7 +41,8 @@ a database.
 
   # Login to docker
   # docker login
-  # Login to ECR registry, needed to push or use mirrored base images
+  # or
+  # Login to AWS ECR registry, needed to push or use mirrored base images
   aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $REGISTRY
 
   # Destination repository for app final image
@@ -60,7 +61,7 @@ a database.
   DATABASE_HOST=db docker-compose up test
   DATABASE_HOST=db docker-compose run test mix test
 
-  # Push final image to repo REPO_URL
+  # Push final app image to repo REPO_URL
   docker-compose push app
 
 
