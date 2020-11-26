@@ -55,10 +55,6 @@ ARG APT_OPTS="-y -qq -o=Dpkg::Use-Pty=0 --no-install-recommends"
 
 FROM ${REGISTRY}${ELIXIR_IMAGE_NAME}:${ELIXIR_IMAGE_TAG} AS deps
 
-# To build binary packages
-# ARG DEBIAN_FRONTEND
-# ARG APT_OPTS
-# ARG DEBIAN_CODENAME
 
 ARG http_proxy
 ARG https_proxy=$http_proxy
@@ -66,6 +62,9 @@ ARG https_proxy=$http_proxy
 ARG MIX_ENV
 
 # Install tools and libraries to build binary libraries
+# ARG DEBIAN_FRONTEND
+# ARG APT_OPTS
+# ARG DEBIAN_CODENAME
 
 # Configure apt caching for use with BuildKit
 # RUN set -exu \
@@ -467,6 +466,7 @@ WORKDIR $APP_DIR
 
 # Startup script
 # COPY bin ./bin
+
 USER $APP_USER
 
 # Chown files while copying. Running "RUN chown -R app:app /app"
