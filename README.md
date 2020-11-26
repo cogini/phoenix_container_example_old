@@ -2,8 +2,8 @@ This is a full featured example of building and deploying an Elixir / Phoenix
 app using containers.
 
 * Uses Docker [BuildKit](https://github.com/moby/buildkit)
-  support for parallel multi-stage builds and caching of OS files and language
-  packages external to images. Multi-stage builds split the app compilation
+  for parallel multistage builds and caching of OS files and language
+  packages external to layers. Multistage builds split the app compilation
   from dependencies for faster builds. Caching of packages reduces size
   of container layers and allows sharing of data betwen container targets.
   With proper caching, rebuilds take less than 5 seconds.
