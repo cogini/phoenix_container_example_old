@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.0-experimental
 # syntax=docker/dockerfile:experimental
 #
-# Build an Elixir/Phoenix app.
+# Build app.
 #
 # It takes advantage of caching and parallel build support in BuildKit.
 #
@@ -11,11 +11,12 @@
 # https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/experimental.md
 
 ARG ELIXIR_VERSION=1.11.2
-# ARG ELIXIR_VERSION=latest
 
 ARG ERLANG_VERSION=23.1.2
 
 ARG NODE_VERSION=14.4
+
+# ARG AWS_CLI_VERSION=2.0.61
 
 # Name used in Docker
 ARG DEBIAN_VERSION=buster-slim
@@ -33,7 +34,7 @@ ARG DEBIAN_CODENAME=buster
 # Elixir release env to build
 ARG MIX_ENV=prod
 
-# Name of Elixir release
+# Name of Elixir release, normally the app name
 ARG RELEASE=app
 
 # OS user that app runs under
@@ -54,13 +55,53 @@ ARG APT_OPTS="-y -qq -o=Dpkg::Use-Pty=0 --no-install-recommends"
 
 FROM ${REGISTRY}${ELIXIR_IMAGE_NAME}:${ELIXIR_IMAGE_TAG} AS deps
 
+# To build binary packages
+# ARG DEBIAN_FRONTEND
+# ARG APT_OPTS
+# ARG DEBIAN_CODENAME
+
 ARG http_proxy
 ARG https_proxy=$http_proxy
 
 ARG MIX_ENV
 
+# Install tools and libraries to build binary libraries
+
+# Configure apt caching for use with BuildKit
+# RUN set -exu \
+#     && rm -f /etc/apt/apt.conf.d/docker-clean \
+#     && echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache \
+#     && echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression
+#
+# RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
+#     --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
+#     --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
+#     set -exu \
+#     && apt-get update -qq \
+#     # Avoid warnings
+#     # && apt-get install $APT_OPTS dialog apt-utils \
+#     # Enable installation of packages over https
+#     && apt-get install $APT_OPTS \
+#         apt-transport-https \
+#         ca-certificates \
+#         curl \
+#         build-essential \
+#         git \
+#         gnupg \
+#         gnupg-agent \
+#         # software-properties-common \
+#     # Latest PostgreSQL
+#     && curl -sL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /etc/apt/trusted.gpg.d/postgresql-ACCC4CF8.asc \
+#     && echo "deb http://apt.postgresql.org/pub/repos/apt/ $DEBIAN_CODENAME-pgdg main" | tee /etc/apt/sources.list.d/pgdg.list \
+#     && echo "Package: *\nPin: release o=apt.postgresql.org\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/pgdg.pref \
+#     && apt-get update \
+#     && apt-get install $APT_OPTS \
+#         libpq-dev \
+#         postgresql-client-12
+
 WORKDIR /app
 
+# Get Elixir app deps
 COPY config ./config
 COPY mix.exs .
 COPY mix.lock .
@@ -146,7 +187,48 @@ RUN mix do compile, release $RELEASE
 
 
 ##########################################################################
+# Stage binary installer files
 
+FROM ${REGISTRY}debian:${DEBIAN_VERSION} AS installer
+
+ARG DEBIAN_FRONTEND
+ARG APT_OPTS
+ARG AWS_CLI_VERSION
+
+# Install aws cli
+# https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2-linux.html
+
+# Configure apt caching for use with BuildKit
+RUN set -exu \
+    && rm -f /etc/apt/apt.conf.d/docker-clean \
+    && echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache \
+    && echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression
+
+RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
+    --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
+    set -exu \
+    && apt-get update -qq \
+    # Avoid warnings
+    # && apt-get install $APT_OPTS dialog apt-utils \
+    # Enable installation of packages over https
+    && apt-get install $APT_OPTS \
+        # apt-transport-https \
+        ca-certificates \
+        curl \
+        # gnupg-agent \
+        # software-properties-common \
+        # gnupg \
+        unzip \
+  && rm -rf /var/lib/dpkg \
+  && curl https://awscli.amazonaws.com/awscli-exe-linux-x86_64-${AWS_CLI_VERSION}.zip -o awscli-exe-linux-x86_64.zip \
+  && unzip awscli-exe-linux-x86_64.zip \
+  # Specify --bin-dir so we can copy the entire bin directory into
+  # /usr/local/bin of the final stage without accidentally copying over any
+  # other executables that may be present in /usr/local/bin of the installer stage.
+  && ./aws/install --bin-dir /aws-cli-bin/
+
+##########################################################################
 # Create base image with runtime dependencies
 
 FROM ${REGISTRY}debian:${DEBIAN_VERSION} AS runtime
@@ -229,6 +311,10 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     # && export ACCEPT_EULA=Y \
     # && apt-get -qq update && apt-get install $APT_OPTS msodbcsql17 \
     && rm -rf /var/lib/dpkg
+
+# AWS cli
+# COPY --from=installer /usr/local/aws-cli/ /usr/local/aws-cli/
+# COPY --from=installer /aws-cli-bin/ /usr/local/bin/
 
 # Create OS user and group to run app under
 RUN groupadd -g 1000 $APP_GROUP \
@@ -379,6 +465,8 @@ ENV LANG=C.UTF-8 \
 # /tmp or, more securely, /run/foo
 WORKDIR $APP_DIR
 
+# Startup script
+# COPY bin ./bin
 USER $APP_USER
 
 # Chown files while copying. Running "RUN chown -R app:app /app"
@@ -387,6 +475,9 @@ USER $APP_USER
 
 # TODO: For more security, change specific files to have group read/execute
 # permissions while leaving them owned by root
+
+# Release is unpacked under current
+# WORKDIR $APP_DIR/current
 
 COPY --from=release --chown=$APP_USER:$APP_GROUP /app/_build/$MIX_ENV/rel/${RELEASE} ./
 
@@ -399,6 +490,8 @@ ENTRYPOINT ["bin/app"]
 # Run app in foreground
 CMD ["start"]
 
+# Startup script
+# CMD ["/app/bin/start-docker"]
 
 ##########################################################################
 # Copy build artifacts to host
