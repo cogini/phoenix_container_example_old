@@ -16,7 +16,7 @@ ARG ERLANG_VERSION=23.1.2
 
 ARG NODE_VERSION=14.4
 
-# ARG AWS_CLI_VERSION=2.0.61
+ARG AWS_CLI_VERSION=2.0.61
 
 # Name used in Docker
 ARG DEBIAN_VERSION=buster-slim
@@ -149,6 +149,10 @@ RUN npm run deploy
 # Generate assets the old way
 # RUN npm install \
 #   && node node_modules/webpack/bin/webpack.js --mode production
+
+# Install AWS cli binaries
+# COPY --from=installer /usr/local/aws-cli/ /usr/local/aws-cli/
+# COPY --from=installer /aws-cli-bin/ /usr/local/bin/
 
 ##########################################################################
 # Create Phoenix digest
@@ -311,7 +315,7 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     # && apt-get -qq update && apt-get install $APT_OPTS msodbcsql17 \
     && rm -rf /var/lib/dpkg
 
-# AWS cli
+# Install AWS cli binaries
 # COPY --from=installer /usr/local/aws-cli/ /usr/local/aws-cli/
 # COPY --from=installer /aws-cli-bin/ /usr/local/bin/
 
