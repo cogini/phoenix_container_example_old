@@ -83,6 +83,22 @@ To run the prod app locally, talking to the db container:
   curl -v http://localhost:4000/
   ```
 
+To develop the app in a container:
+
+  ```shell
+  # Start dev instance talking to local db
+  docker-compose up dev
+
+  # Create dev db schema by running mix
+  docker-compose run dev mix ecto.create
+
+  # Make request to app running in Docker
+  curl -v http://localhost:4000/
+
+  # Open a shell on the running dev environment
+  docker-compose run dev bash
+  ```
+
 ## Building for multiple platforms
 
 Building in emulation is considerably slower, mainly due to lack of precompiled
@@ -359,3 +375,23 @@ Uncomment "server: true" line
 Comment out import in in `config/prod.exs`
 
     import_config "prod.secret.exs"
+
+Allow db configuration to be overridden by env vars:
+
+diff --git config/dev.exs config/dev.exs
+index 89617ee..f7de153 100644
+--- config/dev.exs
++++ config/dev.exs
+@@ -2,10 +2,10 @@ use Mix.Config
+
+`config/dev.exs` and `config/test.exs':
+```elixir
+ # Configure your database
+ config :phoenix_container_example, PhoenixContainerExample.Repo,
+   username: System.get_env("DATABASE_USER") || "postgres",
+   password: System.get_env("DATABASE_PASS") || "postgres",
+   database: System.get_env("DATABASE_DB") || "app",
+   hostname: System.get_env("DATABASE_HOST") || "localhost",
+   show_sensitive_data_on_connection_error: true,
+   pool_size: 10
+ ```

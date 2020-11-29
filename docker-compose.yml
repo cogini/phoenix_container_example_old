@@ -31,8 +31,11 @@ services:
   dev:
     image: "foo-app-dev"
     environment:
+      - MIX_ENV=dev
       - SECRET_KEY_BASE
       - DATABASE_URL
+      - DATABASE_HOST=db
+      - DATABASE_DB=app_dev
       - AWS_ACCESS_KEY_ID
       - AWS_SECRET_ACCESS_KEY
       - AWS_REGION
@@ -44,7 +47,8 @@ services:
     # VSCode devcontainer needs something running
     # command: ["tail", "-f", "/dev/null"]
     # command: ["sleep", "infinity"]
-    command: /bin/sh -c "while sleep 1000; do :; done"
+    # command: /bin/sh -c "while sleep 1000; do :; done"
+    command: mix phx.server
     build:
       dockerfile: deploy/Dockerfile.debian
       target: dev
@@ -52,7 +56,7 @@ services:
       args:
         BUILDKIT_INLINE_CACHE: 1
         REGISTRY: ${REGISTRY}
-        MIX_ENV: prod
+        MIX_ENV: dev
     ports:
       - "4000:4000"
     depends_on:

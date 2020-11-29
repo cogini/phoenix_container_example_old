@@ -2,10 +2,10 @@ use Mix.Config
 
 # Configure your database
 config :phoenix_container_example, PhoenixContainerExample.Repo,
-  username: "postgres",
-  password: "postgres",
-  database: "phoenix_container_example_dev",
-  hostname: "localhost",
+  username: System.get_env("DATABASE_USER") || "postgres",
+  password: System.get_env("DATABASE_PASS") || "postgres",
+  database: System.get_env("DATABASE_DB") || "app_dev",
+  hostname: System.get_env("DATABASE_HOST") || "localhost",
   show_sensitive_data_on_connection_error: true,
   pool_size: 10
 
