@@ -39,16 +39,13 @@ useful for development or running tests in a CI/CD environment which depend on
 a database.
 
   ```shell
-  # Registry for source images, Docker Hub if blank
-  # Mirrored to AWS ECR
+  # Registry for mirrored source images, Docker Hub if blank
+  # AWS ECR
   export REGISTRY=123456789.dkr.ecr.us-east-1.amazonaws.com/
 
   # Login to docker, needed to push or use mirrored base images
-  # Docker Hub
-  # docker login --username cogini --password <access-token>
-  # or
-  # AWS ECR registry
   aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $REGISTRY
+  # docker login --username cogini --password <access-token> # Docker Hub
 
   # Destination repository for app final image
   export REPO_URL=${REGISTRY}foo/app
@@ -64,7 +61,13 @@ a database.
   docker-compose push app
   ```
 
-See below for [#developing-in-a-docker-container](developing in a container).
+You can also run the docker build commands directly, which give more control
+over caching and cross builds. `build.sh` is a wrapper on `docker buildx build`
+which sets various options.
+
+  ```shell
+  DOCKERFILE=deploy/Dockerfile.debian ecs/build.sh
+  ```
 
 To run the prod app locally, talking to the db container:
 
@@ -78,14 +81,6 @@ To run the prod app locally, talking to the db container:
 
   # Make request to app running in Docker
   curl -v http://localhost:4000/
-  ```
-
-You can also run the docker build commands directly, which give more control
-over caching and cross builds. `build.sh` is a wrapper on `docker buildx build`
-which sets various options.
-
-  ```shell
-  DOCKERFILE=deploy/Dockerfile.debian ecs/build.sh
   ```
 
 ## Building for multiple platforms
