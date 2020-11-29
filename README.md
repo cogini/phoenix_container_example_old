@@ -22,7 +22,7 @@ app using containers.
 * Supports building for multiple architectures, e.g. AWS
   [Gravaton](https://aws.amazon.com/ec2/graviton/) ARM processor.
   Arm builds work on Intel with both Mac hardware and Linux (CodeBuild), and
-  should work the same on Apple Silicon.
+  should work the other direction on Apple Silicon.
 
 * Supports deploying to AWS ECS using CodeBuild, CodeDeploy Blue/Green
   deployment, and AWS Parameter Store for configuration. See [ecs/buildspec.yml](ecs/buildspec.yml).
@@ -277,25 +277,44 @@ The registry needs to have a fast/close network connection, or it can be quite s
 
 ## AWS CodeBuild
 
-See [deploy/Dockerfile.codebuild](deploy/Dockerfile.codebuild) is a custom build image for AWS CodeBuild.
+[deploy/Dockerfile.codebuild](deploy/Dockerfile.codebuild) is a custom build
+image for AWS CodeBuild.
 
 It includes:
 
 * Latest Docker
-* docker-compose
+* `docker-compose`
 * AWS CLI v2.0
 * `amazon-ecr-credential-helper`
 
   ```shell
-  # pushd ~/work/multi-env-deploy/terraform/foo/dev/ecr-build-app-ecs
-  # export REPO_URL=$(terragrunt output repository_url)
-  # popd
-  export REPO_URL=123456789.dkr.ecr.us-east-1.amazonaws.com/foo-app-ecs-build
+  # The repo is used by CodePipeline/CodeBuild, get the repo URL from there
+  pushd ~/work/multi-env-deploy/terraform/foo/dev/ecr-build-app-ecs
+  export REPO_URL=$(terragrunt output repository_url)
+  popd
+
   export REGISTRY="$(dirname $REPO_URL)/"
 
   aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $REPO_URL
   DOCKER_CLI_EXPERIMENTAL=enabled docker buildx build --push -t $REPO_URL -f deploy/Dockerfile.codebuild .
   ```
+
+## AWS CodeDeploy
+
+After building a new contaner and pushing it to ECR, it's necessary to update
+the ECS task with the new image version. CodeBuild has support to do this by
+generating JSON output files.
+
+[ecs/buildspec.yml](ecs/buildspec.yml):
+
+  ```shell
+    # Generate imagedefinitions.json file for standard ECS deploy action
+    - printf '[{"name":"%s","imageUri":"%s"}]' "$CONTAINER_NAME" "$REPO_URL:$IMAGE_TAG" | tee imagedefinitions.json
+    # Generate imageDetail.json file for CodeDeploy ECS blue/green deploy action
+    - printf '{"ImageURI":"%s"}' "$REPO_URL:$IMAGE_TAG" | tee imageDetail.json
+  ```
+
+See https://docs.aws.amazon.com/codepipeline/latest/userguide/file-reference.html
 
 ## Links
 
