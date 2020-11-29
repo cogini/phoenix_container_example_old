@@ -40,6 +40,7 @@ a database.
 
   ```shell
   # Registry for source images, Docker Hub if blank
+  # Mirrored to AWS ECR
   export REGISTRY=123456789.dkr.ecr.us-east-1.amazonaws.com/
 
   # Login to docker, needed to push or use mirrored base images
@@ -61,10 +62,13 @@ a database.
 
   # Push final app image to repo REPO_URL
   docker-compose push app
+  ```
 
+See below for [#developing-in-a-docker-container](developing in a container).
 
-  # Run prod app locally, talking to the db container
+To run the prod app locally, talking to the db container:
 
+  ```shell
   # Create prod db schema via test image by running mix
   DATABASE_DB=app DATABASE_HOST=db docker-compose run test mix ecto.create
 
@@ -92,6 +96,8 @@ packages for Arm. The key in any case is getting caching optimized.
   ```shell
   PLATFORM="--platform linux/amd64,linux/arm64" ecs/build.sh
   ```
+
+It can also be configured in `docker-compose.yml`.
 
 ## Environment vars
 
@@ -210,34 +216,34 @@ use `env_file` in `docker-compose.yml` file to specify an alternate location.
 
 `.env`
 
-```shell
-DOCKER_BUILDKIT=1
-DOCKER_CLI_EXPERIMENTAL=enabled
-COMPOSE_DOCKER_CLI_BUILD=1
+  ```shell
+  DOCKER_BUILDKIT=1
+  DOCKER_CLI_EXPERIMENTAL=enabled
+  COMPOSE_DOCKER_CLI_BUILD=1
 
-IMAGE_TAG=latest
+  IMAGE_TAG=latest
 
-REGISTRY=""
-REPO_URI=123456789.dkr.ecr.us-east-1.amazonaws.com/app
+  REGISTRY=""
+  REPO_URI=123456789.dkr.ecr.us-east-1.amazonaws.com/app
 
-DATABASE_URL=ecto://postgres:postgres@db/app
+  DATABASE_URL=ecto://postgres:postgres@db/app
 
-AWS_ACCESS_KEY_ID=...
-AWS_SECRET_ACCESS_KEY=...
-AWS_DEFAULT_REGION=ap-northeast-1
-```
+  AWS_ACCESS_KEY_ID=...
+  AWS_SECRET_ACCESS_KEY=...
+  AWS_DEFAULT_REGION=ap-northeast-1
+  ```
 
 After the container starts, in the VS Code shell, start the app:
 
-```shell
-mix phx.server
-```
+  ```shell
+  mix phx.server
+  ```
 
 On your host machine, connect to the app running in the container:
 
-```shell
-open http://localhost:4000/
-```
+  ```shell
+  open http://localhost:4000/
+  ```
 
 ## Caching
 
