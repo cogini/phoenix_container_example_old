@@ -10,14 +10,15 @@
 # https://docs.docker.com/develop/develop-images/build_enhancements/
 # https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/experimental.md
 
-# Docker registry for base images, default is docker.io
-# If specified, should have a trailing slash
-ARG REGISTRY=""
+ARG DOCKER_COMPOSE_VERSION=1.27.4
+ARG AWS_CLI_VERSION=2.0.61
 
 ARG UBUNTU_VERSION=focal
 ARG UBUNTU_CODENAME=focal
-ARG DOCKER_COMPOSE_VERSION=1.27.4
-ARG AWS_CLI_VERSION=2.0.61
+
+# Docker registry for base images, default is docker.io
+# If specified, should have a trailing slash
+ARG REGISTRY=""
 
 # Make apt-get be quiet
 ARG DEBIAN_FRONTEND=noninteractive
@@ -30,11 +31,10 @@ FROM ${REGISTRY}ubuntu:${UBUNTU_VERSION} AS installer
 
 ARG DEBIAN_FRONTEND
 ARG APT_OPTS
-
 ARG AWS_CLI_VERSION
 ARG DOCKER_COMPOSE_VERSION
 
-# Install aws cli
+# Install AWS CLI v2 from binary package
 # https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2-linux.html
 
 # Configure apt caching for use with BuildKit
@@ -73,6 +73,8 @@ RUN set -exu \
     && chmod +x /usr/local/bin/docker-compose
 
 ##########################################################################
+# Create build image
+
 FROM ${REGISTRY}ubuntu:${UBUNTU_VERSION}
 
 ARG UBUNTU_CODENAME
@@ -81,9 +83,9 @@ ARG APT_OPTS
 
 # Configure apt caching for use with BuildKit
 RUN set -exu \
-    && echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression \
     && rm -f /etc/apt/apt.conf.d/docker-clean \
-    && echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache
+    && echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache \
+    && echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression
 
 # Basic APT stuff
 RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
