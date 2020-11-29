@@ -3,10 +3,11 @@ app using containers.
 
 * Uses Docker [BuildKit](https://github.com/moby/buildkit)
   for parallel multistage builds and caching of OS files and language
-  packages external to layers. Multistage builds split the app compilation
-  from dependencies for faster builds. Caching of packages reduces size
-  of container layers and allows sharing of data betwen container targets.
-  With proper caching, rebuilds take less than 5 seconds.
+  packages external to layers. Multistage builds compile dependencies
+  separately from app code, speeding rebuilds and reducing final image size.
+  Caching of packages reduces size of container layers and allows sharing of
+  data betwen container targets.  With proper caching, rebuilds take less than
+  5 seconds.
 
 * Supports Alpine and Debian, using [hexpm/elixir](https://hub.docker.com/r/hexpm/elixir)
   base images.
@@ -24,8 +25,7 @@ app using containers.
   should work the same on Apple Silicon.
 
 * Supports deploying to AWS ECS using CodeBuild, CodeDeploy Blue/Green
-  deployment, and AWS Parameter Store for configuration.
-  See [ecs/buildspec.yml](ecs/buildspec.yml).
+  deployment, and AWS Parameter Store for configuration. See [ecs/buildspec.yml](ecs/buildspec.yml).
   Terraform is used to set up the environment, see https://github.com/cogini/multi-env-deploy
 
 * Supports compiling assets such as JS/CSS within the container, then
@@ -42,20 +42,15 @@ a database.
   # Registry for source images, Docker Hub if blank
   export REGISTRY=123456789.dkr.ecr.us-east-1.amazonaws.com/
 
-  # Login to docker
-  # docker login
+  # Login to docker, needed to push or use mirrored base images
+  # Docker Hub
+  # docker login --username cogini --password <access-token>
   # or
-  # Login to AWS ECR registry, needed to push or use mirrored base images
+  # AWS ECR registry
   aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $REGISTRY
 
   # Destination repository for app final image
-  # export REPO_URL=cogini/app # Docker Hub
-  export REPO_URL=${REGISTRY}app # ECR
-
-  # Enable Docker BuildKit
-  export DOCKER_BUILDKIT=1
-  export COMPOSE_DOCKER_CLI_BUILD=1
-  export DOCKER_CLI_EXPERIMENTAL=enabled
+  export REPO_URL=${REGISTRY}foo/app
 
   # Build all images (dev, test and app prod, local Postgres db)
   docker-compose build
