@@ -8,6 +8,8 @@ services:
     environment:
       - SECRET_KEY_BASE
       - DATABASE_URL
+      - DATABASE_HOST=db
+      - DATABASE_DB
       - AWS_ACCESS_KEY_ID
       - AWS_SECRET_ACCESS_KEY
       - AWS_REGION
@@ -35,7 +37,7 @@ services:
       - SECRET_KEY_BASE
       - DATABASE_URL
       - DATABASE_HOST=db
-      - DATABASE_DB=app_dev
+      - DATABASE_DB
       - AWS_ACCESS_KEY_ID
       - AWS_SECRET_ACCESS_KEY
       - AWS_REGION
@@ -73,6 +75,7 @@ services:
     image: "app-test"
     environment:
       - MIX_ENV=test
+      - DATABASE_URL
       - DATABASE_HOST=db
       - DATABASE_DB
     # command: sh -c 'while !</dev/tcp/db/5432; do sleep 1; done; set -ex mix test'
