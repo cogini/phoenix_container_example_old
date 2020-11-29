@@ -264,9 +264,9 @@ The cache can be stored locally, or potentially stored in the registry as extra
 data layers. `docker buildkit build` then uses `--cache-from` and `--cache-to`
 options to control the location of the cache. See `build.sh` for details.
 
-```shell
-CACHE_REPO_URL=$REPO_URL CACHE_TYPE=registry DOCKERFILE=deploy/Dockerfile.alpine ecs/build.sh
-```
+  ```shell
+  CACHE_REPO_URL=$REPO_URL CACHE_TYPE=registry DOCKERFILE=deploy/Dockerfile.alpine ecs/build.sh
+  ```
 
 It currently works quite well for local cache. At some point, registry caching
 may be a fast way to share build cache inside of CI/CD environments. This is
@@ -274,6 +274,28 @@ pretty bleeding edge right now, though. It works with Docker Hub, but there are
 incompatibilities e.g. between docker and AWS ECR.
 See https://github.com/aws/containers-roadmap/issues/876 and https://github.com/aws/containers-roadmap/issues/505
 The registry needs to have a fast/close network connection, or it can be quite slow.
+
+## AWS CodeBuild
+
+See [deploy/Dockerfile.codebuild](deploy/Dockerfile.codebuild) is a custom build image for AWS CodeBuild.
+
+It includes:
+
+* Latest Docker
+* docker-compose
+* AWS CLI v2.0
+* `amazon-ecr-credential-helper`
+
+  ```shell
+  # pushd ~/work/multi-env-deploy/terraform/foo/dev/ecr-build-app-ecs
+  # export REPO_URL=$(terragrunt output repository_url)
+  # popd
+  export REPO_URL=123456789.dkr.ecr.us-east-1.amazonaws.com/foo-app-ecs-build
+  export REGISTRY="$(dirname $REPO_URL)/"
+
+  aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $REPO_URL
+  DOCKER_CLI_EXPERIMENTAL=enabled docker buildx build --push -t $REPO_URL -f deploy/Dockerfile.codebuild .
+  ```
 
 ## Links
 
