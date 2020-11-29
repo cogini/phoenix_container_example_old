@@ -47,13 +47,13 @@ phases:
       - export REGISTRY="$(dirname $REPO_URL)/"
 
       - echo Logging in to Amazon ECR...
-      # Use amazon-ecr-credential-helper for login, installed in build image
-      - mkdir -p /root/.docker
-      - echo '{"credsStore":"ecr-login"}' | tee /root/.docker/config.json
-      # Use old aws cli for login
-      # - $(aws ecr get-login --region $AWS_DEFAULT_REGION --no-include-email)
       # Use new aws cli for login
       # - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $REGISTRY
+      # Use old aws cli for login
+      # - $(aws ecr get-login --region $AWS_DEFAULT_REGION --no-include-email)
+      # Use amazon-ecr-credential-helper for login, installed in custom build image
+      - mkdir -p /root/.docker
+      - echo '{"credsStore":"ecr-login"}' | tee /root/.docker/config.json
 
       # - rm -rf /root/.cache/docker
 
