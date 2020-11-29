@@ -235,8 +235,10 @@ use `env_file` in `docker-compose.yml` file to specify an alternate location.
   IMAGE_TAG=latest
 
   REGISTRY=""
+  # REGISTRY=123456789.dkr.ecr.us-east-1.amazonaws.com/
   REPO_URI=123456789.dkr.ecr.us-east-1.amazonaws.com/app
 
+  SECRET_KEY_BASE="JBGplDAEnheX84quhVw2xvqWMFGDdn0v4Ye/GR649KH2+8ezr0fAeQ3kNbtbrY4U"
   DATABASE_URL=ecto://postgres:postgres@db/app
 
   AWS_ACCESS_KEY_ID=...
