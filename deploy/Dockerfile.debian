@@ -209,6 +209,7 @@ RUN set -exu \
 
 RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
+    --mount=type=cache,id=dpkg-lib,target=/var/lib/dpkg,sharing=locked \
     --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
     set -exu \
     && apt-get update -qq \
@@ -223,7 +224,7 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         # software-properties-common \
         # gnupg \
         unzip \
-  && rm -rf /var/lib/dpkg \
+  # && rm -rf /var/lib/dpkg \
   && curl https://awscli.amazonaws.com/awscli-exe-linux-x86_64-${AWS_CLI_VERSION}.zip -o awscli-exe-linux-x86_64.zip \
   && unzip awscli-exe-linux-x86_64.zip \
   # Specify --bin-dir so we can copy the entire bin directory into
@@ -281,6 +282,7 @@ RUN set -exu \
 
 RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
+    --mount=type=cache,id=dpkg-lib,target=/var/lib/dpkg,sharing=locked \
     --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
     set -exu \
     && apt-get update -qq \
@@ -313,7 +315,7 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     # && curl https://packages.microsoft.com/config/debian/10/prod.list > /etc/apt/sources.list.d/mssql-release.list \
     # && export ACCEPT_EULA=Y \
     # && apt-get -qq update && apt-get install $APT_OPTS msodbcsql17 \
-    && rm -rf /var/lib/dpkg
+    # && rm -rf /var/lib/dpkg
 
 # Install AWS cli binaries
 # COPY --from=installer /usr/local/aws-cli/ /usr/local/aws-cli/
@@ -321,7 +323,7 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
 
 # Create OS user and group to run app under
 RUN groupadd -g 1000 $APP_GROUP \
-    && useradd -g 1000 -g $APP_GROUP $APP_USER \
+    && useradd -u 1000 -g $APP_GROUP $APP_USER \
     && rm /var/log/lastlog \
     && rm /var/log/faillog
 
@@ -380,6 +382,7 @@ RUN set -exu \
 
 RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
+    --mount=type=cache,id=dpkg-lib,target=/var/lib/dpkg,sharing=locked \
     --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
     set -exu \
     && apt-get update -qq \
@@ -418,7 +421,7 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
 
 # Create user and group to run under with specific uid
 RUN groupadd -g 1000 $APP_GROUP \
-    && useradd -g 1000 -g $APP_GROUP $APP_USER \
+    && useradd -u 1000 -g $APP_GROUP $APP_USER \
     && rm /var/log/lastlog \
     && rm /var/log/faillog
 
