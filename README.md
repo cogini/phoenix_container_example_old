@@ -39,23 +39,23 @@ useful for development or running tests in a CI/CD environment which depend on
 a database.
 
   ```shell
-  # Registry for mirrored source images, Docker Hub if blank
+  # Registry for mirrored source images, defaults to Docker Hub
   # AWS ECR
   export REGISTRY=123456789.dkr.ecr.us-east-1.amazonaws.com/
 
-  # Login to docker, needed to push or use mirrored base images
-  aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $REGISTRY
-  # docker login --username cogini --password <access-token> # Docker Hub
-
   # Destination repository for app final image
   export REPO_URL=${REGISTRY}foo/app
+
+  # Login to docker, needed to push to repo or use mirrored base images
+  aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $REGISTRY
+  # docker login --username cogini --password <access-token> # Docker Hub
 
   # Build all images (dev, test and app prod, local Postgres db)
   docker-compose build
 
   # Run tests, talking to db in container
-  DATABASE_HOST=db docker-compose up test
-  DATABASE_HOST=db docker-compose run test mix test
+  docker-compose up test
+  docker-compose run test mix test
 
   # Push final app image to repo REPO_URL
   docker-compose push app
@@ -72,12 +72,11 @@ which sets various options.
 To run the prod app locally, talking to the db container:
 
   ```shell
-  # Create prod db schema via test image by running mix
-  DATABASE_DB=app DATABASE_HOST=db docker-compose run test mix ecto.create
+  # Create prod db schema via test stage
+  DATABASE_DB=app docker-compose run test mix ecto.create
 
   export SECRET_KEY_BASE="JBGplDAEnheX84quhVw2xvqWMFGDdn0v4Ye/GR649KH2+8ezr0fAeQ3kNbtbrY4U"
-  export DATABASE_URL=ecto://postgres:postgres@db/app
-  docker-compose up app
+  DATABASE_DB=app docker-compose up app
 
   # Make request to app running in Docker
   curl -v http://localhost:4000/
@@ -86,7 +85,7 @@ To run the prod app locally, talking to the db container:
 To develop the app in a container:
 
   ```shell
-  # Start dev instance talking to local db
+  # Start dev instance
   docker-compose up dev
 
   # Create dev db schema by running mix
