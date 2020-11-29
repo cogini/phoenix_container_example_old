@@ -198,7 +198,7 @@ ARG DEBIAN_FRONTEND
 ARG APT_OPTS
 ARG AWS_CLI_VERSION
 
-# Install aws cli
+# Install AWS CLI v2 from binary package
 # https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2-linux.html
 
 # Configure apt caching for use with BuildKit
