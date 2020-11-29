@@ -58,9 +58,11 @@ services:
     depends_on:
       - db
     volumes:
-      - type: bind
-        source: .
-        target: /app:delegated
+      - ".:/app:delegated"
+      #   target: /app
+      # - type: bind
+      #   source: .
+      #   target: /app
     # - 'nfsmount:/app'
 
   test:
