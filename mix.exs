@@ -41,7 +41,6 @@ defmodule PhoenixContainerExample.MixProject do
     ]
   end
 
-  # Specifies your project dependencies.
   #
   # Type `mix help deps` for examples and options.
   defp deps do
