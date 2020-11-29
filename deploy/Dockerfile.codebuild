@@ -17,11 +17,54 @@ ARG REGISTRY=""
 ARG UBUNTU_VERSION=focal
 ARG UBUNTU_CODENAME=focal
 ARG DOCKER_COMPOSE_VERSION=1.27.4
+ARG AWS_CLI_VERSION=2.0.61
 
 # Make apt-get be quiet
 ARG DEBIAN_FRONTEND=noninteractive
 ARG APT_OPTS="-y -qq -o=Dpkg::Use-Pty=0 --no-install-recommends"
 
+
+##########################################################################
+# Stage binary installer files
+
+FROM ${REGISTRY}ubuntu:${UBUNTU_VERSION} AS installer
+
+ARG DEBIAN_FRONTEND
+ARG APT_OPTS
+ARG AWS_CLI_VERSION
+
+# Install aws cli
+# https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2-linux.html
+
+# Configure apt caching for use with BuildKit
+RUN set -exu \
+    && rm -f /etc/apt/apt.conf.d/docker-clean \
+    && echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache \
+    && echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression
+
+RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
+    --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
+    set -exu \
+    && apt-get update -qq \
+    # Avoid warnings
+    # && apt-get install $APT_OPTS dialog apt-utils \
+    # Enable installation of packages over https
+    && apt-get install $APT_OPTS \
+        # apt-transport-https \
+        ca-certificates \
+        curl \
+        # gnupg-agent \
+        # software-properties-common \
+        # gnupg \
+        unzip \
+  # && rm -rf /var/lib/dpkg \
+  && curl https://awscli.amazonaws.com/awscli-exe-linux-x86_64-${AWS_CLI_VERSION}.zip -o awscli-exe-linux-x86_64.zip \
+  && unzip awscli-exe-linux-x86_64.zip \
+  # Specify --bin-dir so we can copy the entire bin directory into
+  # /usr/local/bin of the final stage without accidentally copying over any
+  # other executables that may be present in /usr/local/bin of the installer stage.
+  && ./aws/install --bin-dir /aws-cli-bin/
 
 ##########################################################################
 FROM ${REGISTRY}ubuntu:${UBUNTU_VERSION}
@@ -32,8 +75,6 @@ ARG APT_OPTS
 ARG UBUNTU_CODENAME
 ARG DOCKER_COMPOSE_VERSION
 
-
-
 # Configure apt caching for use with BuildKit
 RUN set -exu \
     && echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression \
@@ -43,6 +84,7 @@ RUN set -exu \
 # Basic APT stuff
 RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
+    --mount=type=cache,id=dpkg-lib,target=/var/lib/dpkg,sharing=locked \
     --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
     set -exu \
     && apt-get update -qq \
@@ -66,10 +108,6 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         python3-pip \
         python3-setuptools
 
-        # awscli
-
-        # Ubuntu Docker repo
-        # docker.io
 
 # Install Docker
 # https://docs.docker.com/engine/install/ubuntu/
@@ -81,6 +119,7 @@ RUN set -exu \
 
 RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
+    --mount=type=cache,id=dpkg-lib,target=/var/lib/dpkg,sharing=locked \
     --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
     set -exu \
     && apt-get update -qq \
@@ -88,25 +127,29 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         docker-ce \
         docker-ce-cli \
         containerd.io
-# RUN docker --version
 
 # Add docker-compose
 RUN set -exu \
     && curl -L "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose \
     && chmod +x /usr/local/bin/docker-compose
 
-# Install latest aws cli using pip
+# Install latest AWS CLI using pip
 # RUN python3 --version
 RUN --mount=type=cache,id=pip,target=/root/.cache/pip \
     set -exu \
     && python3 -m pip install wheel \
     && python3 -m pip install awscli
 
+# Install AWS CLI 2.0 from binary package
+# COPY --from=installer /usr/local/aws-cli/ /usr/local/aws-cli/
+# COPY --from=installer /aws-cli-bin/ /usr/local/bin/
+
 # Use ecr-credential-helper to access ECR repos
 # https://github.com/awslabs/amazon-ecr-credential-helper
 # This package is not in Ubuntu 18.04, it requires a newer release
 RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
+    --mount=type=cache,id=dpkg-lib,target=/var/lib/dpkg,sharing=locked \
     --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
     set -exu \
     && apt-get update -qq \
