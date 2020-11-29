@@ -44,6 +44,8 @@ ARG APP_USER=app
 
 ARG APP_DIR=/app
 
+ARG LANG=C.UTF-8
+
 # Docker registry for base images, default is docker.io
 # If specified, should have a trailing slash
 ARG REGISTRY=""
@@ -57,13 +59,11 @@ ARG APT_OPTS="-y -qq -o=Dpkg::Use-Pty=0 --no-install-recommends"
 
 FROM ${REGISTRY}${ELIXIR_IMAGE_NAME}:${ELIXIR_IMAGE_TAG} AS deps
 
-
 ARG http_proxy
 ARG https_proxy=$http_proxy
 
 ARG MIX_ENV
-
-ENV LANG=C.UTF-8
+ARG LANG
 
 # Install tools and libraries to build binary libraries
 # ARG DEBIAN_FRONTEND
@@ -104,7 +104,6 @@ ENV LANG=C.UTF-8
 
 WORKDIR /app
 
-# Get Elixir app deps
 COPY config ./config
 COPY mix.exs .
 COPY mix.lock .
@@ -119,8 +118,10 @@ RUN --mount=type=cache,target=~/.hex/packages/hexpm,sharing=locked \
 FROM deps AS test
 
 ARG MIX_ENV
+ARG LANG
 
-ENV LANG=C.UTF-8
+ENV LANG=$LANG
+
 WORKDIR /app
 
 # Instead of copying sources, could use bind mount, e.g.
@@ -169,8 +170,7 @@ RUN npm run deploy
 FROM deps AS digest
 
 ARG MIX_ENV
-
-ENV LANG=C.UTF-8
+ARG LANG
 
 COPY --from=assets /app/priv ./priv
 
@@ -191,9 +191,8 @@ RUN --mount=type=cache,target=~/.hex/packages/hexpm,sharing=locked \
 FROM digest AS release
 
 ARG MIX_ENV
+ARG LANG
 ARG RELEASE
-
-ENV LANG=C.UTF-8
 
 # Instead of copying sources, could use bind mount, e.g.
 # RUN --mount=target=.
@@ -225,7 +224,6 @@ RUN set -exu \
 
 RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
-    --mount=type=cache,id=dpkg-lib,target=/var/lib/dpkg,sharing=locked \
     --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
     set -exu \
     && apt-get update -qq \
@@ -240,7 +238,7 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         # software-properties-common \
         # gnupg \
         unzip \
-  # && rm -rf /var/lib/dpkg \
+  && rm -rf /var/lib/dpkg \
   && curl https://awscli.amazonaws.com/awscli-exe-linux-x86_64-${AWS_CLI_VERSION}.zip -o awscli-exe-linux-x86_64.zip \
   && unzip awscli-exe-linux-x86_64.zip \
   # Specify --bin-dir so we can copy the entire bin directory into
@@ -258,6 +256,7 @@ ARG APT_OPTS
 ARG DEBIAN_CODENAME
 
 ARG MIX_ENV
+ARG LANG
 ARG RELEASE
 
 ARG APP_NAME
@@ -268,9 +267,9 @@ ARG APP_DIR
 # Set environment vars used by the app
 # SECRET_KEY_BASE and DATABASE_URL env vars should be set when running the application
 # maybe set COOKIE and other things
-ENV LANG=C.UTF-8 \
+ENV LANG=$LANG \
     HOME=$APP_DIR \
-    RELEASE_TMP=/run/app \
+    RELEASE_TMP=/run/$APP_NAME \
     RELEASE=${RELEASE} \
     PORT=4000
 
@@ -299,7 +298,6 @@ RUN set -exu \
 
 RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
-    --mount=type=cache,id=dpkg-lib,target=/var/lib/dpkg,sharing=locked \
     --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
     set -exu \
     && apt-get update -qq \
@@ -332,7 +330,7 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     # && curl https://packages.microsoft.com/config/debian/10/prod.list > /etc/apt/sources.list.d/mssql-release.list \
     # && export ACCEPT_EULA=Y \
     # && apt-get -qq update && apt-get install $APT_OPTS msodbcsql17 \
-    # && rm -rf /var/lib/dpkg
+    && rm -rf /var/lib/dpkg
 
 # Install AWS cli binaries
 # COPY --from=installer /usr/local/aws-cli/ /usr/local/aws-cli/
@@ -363,6 +361,7 @@ ARG http_proxy
 ARG https_proxy=$http_proxy
 
 ARG MIX_ENV
+ARG LANG
 
 ARG APP_NAME
 ARG APP_USER
@@ -370,7 +369,7 @@ ARG APP_GROUP=$APP_USER
 ARG APP_DIR
 
 # Set environment vars used by the app
-ENV LANG=C.UTF-8 \
+ENV LANG=$LANG \
     HOME=$APP_DIR \
     PORT=4000
 
@@ -399,7 +398,6 @@ RUN set -exu \
 
 RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
-    --mount=type=cache,id=dpkg-lib,target=/var/lib/dpkg,sharing=locked \
     --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
     set -exu \
     && apt-get update -qq \
@@ -442,7 +440,7 @@ RUN groupadd -g 1000 $APP_GROUP \
     && rm /var/log/lastlog \
     && rm /var/log/faillog
 
-# Create dirs writable by app user
+# Create app directories
 RUN mkdir -p \
         /run/$APP_NAME \
     && chown -R $APP_USER:$APP_GROUP \
@@ -470,12 +468,13 @@ ARG APP_GROUP=$APP_USER
 ARG APP_DIR
 
 ARG MIX_ENV
+ARG LANG
 ARG RELEASE
 
 # Set environment vars used by the app
 # SECRET_KEY_BASE and DATABASE_URL env vars should be set when running the application
 # maybe set COOKIE and other things
-ENV LANG=C.UTF-8 \
+ENV LANG=$LANG \
     HOME=$APP_DIR \
     RELEASE_TMP=/run/app \
     RELEASE=${RELEASE} \
@@ -508,6 +507,7 @@ COPY --from=release --chown=$APP_USER:$APP_GROUP /app/_build/$MIX_ENV/rel/${RELE
 EXPOSE $PORT
 
 ENTRYPOINT ["bin/prod"]
+# TODO: configure using $RELEASE
 
 # Run app in foreground
 CMD ["start"]
