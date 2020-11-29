@@ -3,7 +3,6 @@
 #
 # https://docs.aws.amazon.com/AmazonECS/latest/userguide/ecs-cd-pipeline.html
 # Environment vars:
-#   REGISTRY: ECS base registry
 #   REPO_URL: ECS app repository
 #   CACHE_REPO_URL: ECS repository for caching
 #   CONTAINER_NAME: container name in service task definition
@@ -45,6 +44,8 @@ phases:
       - docker buildx use docker-container
       - docker buildx inspect --bootstrap
 
+      - export REGISTRY="$(dirname $REPO_URL)/"
+
       - echo Logging in to Amazon ECR...
       # Use amazon-ecr-credential-helper for login, installed in build image
       - mkdir -p /root/.docker
@@ -61,8 +62,6 @@ phases:
   build:
     commands:
       - echo "Starting build phase"
-      # - REGISTRY="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/"
-      - export REGISTRY="$(dirname $REPO_URL)/"
       # - BUILD_CACHE_REPO_URL="${REGISTRY}foo-app-ecs-build-cache"
 
       # - docker buildx use docker-container
