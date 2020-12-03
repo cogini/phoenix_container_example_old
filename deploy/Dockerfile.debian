@@ -65,7 +65,7 @@ ARG https_proxy=$http_proxy
 ARG MIX_ENV
 ARG LANG
 
-# Install tools and libraries to build binary libraries
+# Install tools and libraries to build libraries
 # ARG DEBIAN_FRONTEND
 # ARG APT_OPTS
 # ARG DEBIAN_CODENAME
