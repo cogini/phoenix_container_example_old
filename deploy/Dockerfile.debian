@@ -104,6 +104,7 @@ ARG LANG
 
 WORKDIR /app
 
+# Get Elixir app deps
 COPY config ./config
 COPY mix.exs .
 COPY mix.lock .
@@ -119,8 +120,6 @@ FROM deps AS test
 
 ARG MIX_ENV
 ARG LANG
-
-ENV LANG=$LANG
 
 WORKDIR /app
 
@@ -140,6 +139,9 @@ RUN --mount=type=cache,target=~/.hex/packages/hexpm,sharing=locked \
 # Using stretch because it has Python
 
 FROM ${REGISTRY}node:${NODE_VERSION}-stretch AS assets
+
+ARG LANG
+
 WORKDIR /app/assets
 
 # Copy deps to get assets from phoenix
@@ -183,7 +185,6 @@ RUN --mount=type=cache,target=~/.hex/packages/hexpm,sharing=locked \
 # Doing "mix do compile, phx.digest, release" in a single stage is worse,
 # because a single line of code changed causes a complete recompile.
 # With the stages separated most of the compilation is cached.
-
 
 ##########################################################################
 # Create release
