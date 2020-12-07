@@ -66,9 +66,9 @@ export COMPOSE_DOCKER_CLI_BUILD=1
 case "$CACHE_TYPE" in
     local)
         # Use local files for caching
-        mkdir -p $CACHE_DIR
+        mkdir -p "$CACHE_DIR"
         # buildx can't handle cache not existing,  only use --cache-from if present
-        if [ -s $CACHE_DIR/index.json ]
+        if [ -s "$CACHE_DIR/index.json" ]
         then
             CACHE_FROM="--cache-from=type=local,src=$CACHE_DIR"
         else
@@ -100,4 +100,4 @@ fi
 # echo "CACHE_FROM: ${CACHE_FROM}"
 # echo "CACHE_TO: ${CACHE_TO}"
 
-docker buildx build $CACHE_FROM $CACHE_TO $BUILD_ARGS $PLATFORM $TARGET_ARG $TAGS -f $DOCKERFILE $PROGRESS $OUTPUT "."
+docker buildx build $CACHE_FROM $CACHE_TO "$BUILD_ARGS" $PLATFORM "$TARGET_ARG" "$TAGS" -f "$DOCKERFILE" $PROGRESS "$OUTPUT" "."
