@@ -437,13 +437,14 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     # && n "$NODE_VERSION" \
     # && apt-get purge -y nodejs npm \
 
-    # Install directly using n
+    # Install using n
     && curl -L https://raw.githubusercontent.com/tj/n/master/bin/n -o /usr/local/bin/n \
     && chmod +x /usr/local/bin/n \
     # Install lts version
     # && n lts \
     # Install specific version
     && n "$NODE_VERSION" \
+    && rm /usr/local/bin/n \
 
     # Latest PostgreSQL
     # && curl -sL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /etc/apt/trusted.gpg.d/postgresql-ACCC4CF8.asc \
