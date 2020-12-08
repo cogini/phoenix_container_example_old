@@ -63,9 +63,10 @@ services:
       - "4000:4000"
     depends_on:
       - db
+    stdin_open: true
+    tty: true
     volumes:
       - ".:/app:delegated"
-      #   target: /app
       # - type: bind
       #   source: .
       #   target: /app
