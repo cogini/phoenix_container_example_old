@@ -189,13 +189,17 @@ https://github.com/xelalexv/dregsy
             - '1.11.2-erlang-23.1.2-alpine-3.12.1'
             - '1.11.2-erlang-23.1.2-debian-buster-20201012'
         - from: node
-          tags: ['14.4-stretch']
+          tags:
+            - '14.4-stretch'
+            - '14.15.1-stretch'
   ```
 
 ```shell
-export AWS_ACCESS_KEY_ID=XXX
-export AWS_SECRET_ACCESS_KEY=XXX
-docker run --rm -v $(pwd)/dregsy.yml:/config.yaml -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY xelalex/dregsy
+docker run --rm -v $(pwd)/dregsy.yml:/config.yaml -v $HOME/.aws:/root/.aws -e AWS_PROFILE xelalex/dregsy
+```
+or
+```shell
+docker run --rm -v $(pwd)/dregsy.yml:/config.yaml -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY xelalex/dregsy
 ```
 
 To use the mirror registry, set the `REGISTRY` env variable:
