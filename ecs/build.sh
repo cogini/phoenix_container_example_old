@@ -98,4 +98,4 @@ if [ "$WRITE_CACHE" = "false" ]; then
     CACHE_TO=""
 fi
 
-docker buildx build $CACHE_FROM $CACHE_TO "$BUILD_ARGS" $PLATFORM "$TARGET_ARG" "$TAGS" -f "$DOCKERFILE" $PROGRESS "$OUTPUT" "."
+docker buildx build $CACHE_FROM $CACHE_TO $BUILD_ARGS $PLATFORM $TARGET_ARG $TAGS -f "$DOCKERFILE" $PROGRESS "$OUTPUT" "."
