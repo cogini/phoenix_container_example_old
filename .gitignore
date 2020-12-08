@@ -42,3 +42,5 @@ npm-debug.log
 /.vscode-server/
 /tmp/
 /dregsy.yml
+
+/artifacts/
