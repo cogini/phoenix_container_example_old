@@ -428,7 +428,7 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         sudo \
         tar \
         nodejs npm \
-    # Installer newer version of nodejs
+    # Install newer version of nodejs
     && npm install -g n \
     # Install lts version
     # && n lts \
