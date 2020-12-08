@@ -46,7 +46,8 @@ WRITE_CACHE=false
 # OUTPUT=--output=type=local,dest=path
 # OUTPUT=--output=type=image
 # OUTPUT="--output type=image,push=true"
-OUTPUT="--output type=local,dest=artifacts"
+# OUTPUT="--output type=local,dest=artifacts"
+OUTPUT="${OUTPUT:-"--output type=local,dest=artifacts"}"
 
 PLATFORM="${PLATFORM:-""}"
 # PLATFORM="--platform linux/amd64,linux/arm64"
