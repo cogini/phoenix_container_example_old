@@ -139,9 +139,8 @@ You can make a mirror of the base images that your build depends on to you own
 registry. This is particularly useful since Docker started rate limiting
 requests to public images.
 
-Dregsy is a utility which mirrors repositories from one registry to another.
-
-https://github.com/xelalexv/dregsy
+[Dregsy](https://github.com/xelalexv/dregsy) is a utility which mirrors
+repositories from one registry to another.
 
 `dregsy.yml`
 
