@@ -1,7 +1,6 @@
-# syntax=docker/dockerfile:1.0-experimental
 # syntax=docker/dockerfile:experimental
 #
-# Build an Elixir/Phoenix app.
+# Build app.
 #
 # It takes advantage of caching and parallel build support in BuildKit.
 #
@@ -14,7 +13,6 @@
 # ARG ELIXIR_VERSION=alpine
 ARG ELIXIR_VERSION=1.11.2
 ARG ERLANG_VERSION=23.1.2
-
 ARG NODE_VERSION=14.4
 
 ARG ALPINE_VERSION=3.12.1
@@ -58,6 +56,7 @@ ARG LANG
 
 WORKDIR /app
 
+# Get Elixir app deps
 COPY config ./config
 COPY mix.exs .
 COPY mix.lock .
@@ -73,8 +72,6 @@ FROM deps AS test
 
 ARG MIX_ENV
 ARG LANG
-
-ENV LANG=$LANG
 
 WORKDIR /app
 
@@ -94,6 +91,9 @@ RUN --mount=type=cache,target=~/.hex/packages/hexpm,sharing=locked \
 # Using stretch because it has Python
 
 FROM ${REGISTRY}node:${NODE_VERSION}-stretch AS assets
+
+ARG LANG
+
 WORKDIR /app/assets
 
 # Copy deps to get assets from phoenix
@@ -110,21 +110,14 @@ COPY assets .
 
 RUN npm run deploy
 
-# Generate assets the old way
-# RUN npm install \
-#   && node node_modules/webpack/bin/webpack.js --mode production
-
-# Install AWS cli binaries
-# COPY --from=installer /usr/local/aws-cli/ /usr/local/aws-cli/
-# COPY --from=installer /aws-cli-bin/ /usr/local/bin/
 
 ##########################################################################
 # Create Phoenix digest
 
 FROM deps AS digest
 
-ARG MIX_ENV
 ARG LANG
+ARG MIX_ENV
 
 COPY --from=assets /app/priv ./priv
 
@@ -137,7 +130,6 @@ RUN --mount=type=cache,target=~/.hex/packages/hexpm,sharing=locked \
 # Doing "mix do compile, phx.digest, release" in a single stage is worse,
 # because a single line of code changed causes a complete recompile.
 # With the stages separated most of the compilation is cached.
-
 
 ##########################################################################
 # Create release
@@ -156,21 +148,21 @@ COPY rel ./rel
 
 RUN --mount=type=cache,target=~/.hex/packages/hexpm,sharing=locked \
     --mount=type=cache,target=~/.cache/rebar3,sharing=locked \
-    mix do compile, release $RELEASE
+    mix do compile, release "$RELEASE"
 
 
 ##########################################################################
-# Create actual image that is deployed
+# Create final image that is deployed
 
 FROM ${REGISTRY}alpine:${ALPINE_VERSION} AS deploy
 
-ARG MIX_ENV
 ARG LANG
+ARG MIX_ENV
 ARG RELEASE
 
 ARG APP_NAME
 ARG APP_USER
-ARG APP_GROUP=$APP_USER
+ARG APP_GROUP="$APP_USER"
 ARG APP_DIR
 
 # Set environment vars used by the app
@@ -178,7 +170,7 @@ ARG APP_DIR
 # maybe set COOKIE and other things
 ENV LANG=$LANG \
     HOME=$APP_DIR \
-    RELEASE_TMP=/run/$APP_NAME \
+    RELEASE_TMP="/run/$APP_NAME" \
     RELEASE=${RELEASE} \
     PORT=4000
 
@@ -194,14 +186,16 @@ RUN --mount=type=cache,id=apk,target=/var/cache/apk,sharing=locked \
     && apk add openssl ncurses-libs
 
 # Create user and group to run under with specific uid
-RUN addgroup -g 1000 -S $APP_GROUP \
-    && adduser -u 1000 -S $APP_USER -G $APP_GROUP
+RUN addgroup -g 1000 -S "$APP_GROUP" \
+    && adduser -u 1000 -S "$APP_USER" -G "$APP_GROUP"
 
 # Create dirs writable by app user
 RUN mkdir -p \
-        /run/$APP_NAME \
-    && chown -R $APP_USER:$APP_GROUP \
-        /run/$APP_NAME
+        "/run/$APP_NAME" \
+    # Make dirs writable by app
+    && chown -R "$APP_USER:$APP_GROUP" \
+        # Needed for RELEASE_TMP
+        "/run/$APP_NAME"
 
 USER $APP_USER
 
@@ -221,7 +215,7 @@ USER $APP_USER
 # TODO: For more security, change specific files to have group read/execute
 # permissions while leaving them owned by root
 
-COPY --from=release --chown=$APP_USER:$APP_GROUP /app/_build/$MIX_ENV/rel/${RELEASE} ./
+COPY --from=release --chown="$APP_USER:$APP_GROUP" "/app/_build/$MIX_ENV/rel/${RELEASE}" ./
 
 EXPOSE $PORT
 
