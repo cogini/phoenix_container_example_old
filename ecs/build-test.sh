@@ -97,7 +97,5 @@ esac
 if [ "$WRITE_CACHE" = "false" ]; then
     CACHE_TO=""
 fi
-# echo "CACHE_FROM: ${CACHE_FROM}"
-# echo "CACHE_TO: ${CACHE_TO}"
 
 docker buildx build $CACHE_FROM $CACHE_TO $BUILD_ARGS $PLATFORM $TARGET_ARG $TAGS -f "$DOCKERFILE" $PROGRESS "$OUTPUT" "."
