@@ -516,7 +516,7 @@ ARG RELEASE
 # maybe set COOKIE and other things
 ENV LANG=$LANG \
     HOME=$APP_DIR \
-    RELEASE_TMP=/run/$APP_NAME \
+    RELEASE_TMP="/run/$APP_NAME" \
     RELEASE=${RELEASE} \
     PORT=4000
 
