@@ -157,7 +157,7 @@ repositories from one registry to another.
       source:
         registry: docker.io
         # Authenticate with Docker Hub to get higher rate limits
-        # echo '{"username":"cogini","password":"xxx"}' | base64
+        # echo '{"username":"cogini","password":"sekrit"}' | base64
         # auth: xxx
       target:
         registry: 1234567890.dkr.ecr.ap-northeast-1.amazonaws.com
@@ -169,7 +169,7 @@ repositories from one registry to another.
 
         # CodeBuild base image
         - from: ubuntu
-          tags: ['focal']
+          tags: ['bionic', 'focal']
 
         # Target base image, choose one
         - from: alpine
