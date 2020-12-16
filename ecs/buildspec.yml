@@ -46,11 +46,11 @@ phases:
 
       - export REGISTRY="$(dirname $REPO_URL)/"
 
-      - echo Logging in to Amazon ECR...
+      - echo "Logging in to Amazon ECR..."
       # Use new aws cli for login
-      # - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $REGISTRY
+      # - aws ecr get-login-password --region "$AWS_DEFAULT_REGION" | docker login --username AWS --password-stdin "$REGISTRY"
       # Use old aws cli for login
-      # - $(aws ecr get-login --region $AWS_DEFAULT_REGION --no-include-email)
+      # - $(aws ecr get-login --region "$AWS_DEFAULT_REGION" --no-include-email)
       # Use amazon-ecr-credential-helper for login, installed in custom build image
       - mkdir -p /root/.docker
       - echo '{"credsStore":"ecr-login"}' | tee /root/.docker/config.json
@@ -78,22 +78,20 @@ phases:
 
       # - docker buildx use docker-container
 
-      - echo Building app container for tests...
+      - echo "Building app container for tests..."
       # - env DOCKERFILE=deploy/Dockerfile.debian MIX_ENV=test TARGET=test $TEMPLATE_DIR/build-test.sh
       - docker-compose build test
 
-      # - echo Building db container...
+      # - echo "Building db container..."
       # - $TEMPLATE_DIR/build-db.sh
 
-      - echo Running unit tests...
+      - echo "Running unit tests..."
       - DATABASE_HOST=db docker-compose up test
       - DATABASE_HOST=db docker-compose run test mix test
 
       # Build and push final deploy container
       # - $TEMPLATE_DIR/build.sh
       # - env DOCKERFILE=deploy/Dockerfile.debian $TEMPLATE_DIR/build.sh
-      - docker-compose build app
-      - docker-compose push app
 
       # Build multiple architectures
       # - env PLATFORM="--platform linux/amd64,linux/arm64" DOCKERFILE=deploy/Dockerfile.alpine $TEMPLATE_DIR/build.sh
@@ -103,6 +101,10 @@ phases:
 
       # - CACHE_REPO_URL="${REGISTRY}foo-app-ecs-build-cache"
       # - CACHE_TYPE=registry $TEMPLATE_DIR/build.sh
+
+      - echo "Pushing Docker images to container registry..."
+      - docker-compose build app
+      - docker-compose push app
 
       - echo "Writing image definition files..."
       # https://docs.aws.amazon.com/codepipeline/latest/userguide/file-reference.html
