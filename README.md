@@ -12,7 +12,7 @@ app using containers.
 * Supports Alpine and Debian, using [hexpm/elixir](https://hub.docker.com/r/hexpm/elixir)
   base images.
 
-* Uses Erlang releases for the prod image, resulting in images as small as 10MB.
+* Uses Erlang releases for the final image, resulting in images as small as 10MB.
 
 * Supports mirroring base images from Docker Hub to AWS ECR to avoid rate
   limits and ensure consistent builds.
@@ -39,16 +39,15 @@ useful for development or running tests in a CI/CD environment which depend on
 a database.
 
   ```shell
-  # Registry for mirrored source images, defaults to Docker Hub
-  # AWS ECR
+  # Registry for mirrored source images, default is Docker Hub if not set
   export REGISTRY=123456789.dkr.ecr.us-east-1.amazonaws.com/
 
   # Destination repository for app final image
   export REPO_URL=${REGISTRY}foo/app
 
   # Login to docker, needed to push to repo or use mirrored base images
-  aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $REGISTRY
   # docker login --username cogini --password <access-token> # Docker Hub
+  aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $REGISTRY
 
   # Build all images (dev, test and app prod, local Postgres db)
   docker-compose build
