@@ -11,7 +11,7 @@
 
 ARG ELIXIR_VERSION=1.11.2
 ARG ERLANG_VERSION=23.1.2
-ARG NODE_VERSION=14.15.1
+ARG NODE_VERSION=14.4
 # ARG PHOENIX_VERSION=1.5.7
 
 ARG AWS_CLI_VERSION=2.0.61
@@ -334,7 +334,7 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
 
     # Microsoft ODBC Driver for SQL Server
     # && curl -sL https://packages.microsoft.com/keys/microsoft.asc -o /etc/apt/trusted.gpg.d/microsoft.asc \
-    # && curl https://packages.microsoft.com/config/debian/10/prod.list > /etc/apt/sources.list.d/mssql-release.list \
+    # && curl -s https://packages.microsoft.com/config/debian/10/prod.list -o /etc/apt/sources.list.d/mssql-release.list \
     # && export ACCEPT_EULA=Y \
     # && apt-get -qq update && apt-get install $APT_OPTS msodbcsql17 \
     && rm -rf /var/lib/dpkg
@@ -467,7 +467,7 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
 
     # Microsoft ODBC Driver for SQL Server
     # && curl -sL https://packages.microsoft.com/keys/microsoft.asc -o /etc/apt/trusted.gpg.d/microsoft.asc \
-    # && curl https://packages.microsoft.com/config/debian/10/prod.list > /etc/apt/sources.list.d/mssql-release.list \
+    # && curl -s https://packages.microsoft.com/config/debian/10/prod.list -o /etc/apt/sources.list.d/mssql-release.list \
     # && export ACCEPT_EULA=Y \
     # && apt-get -qq update && apt-get install $APT_OPTS msodbcsql17 \
     && rm -rf /var/lib/dpkg
