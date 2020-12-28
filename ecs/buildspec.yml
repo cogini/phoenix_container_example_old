@@ -108,7 +108,7 @@ phases:
       # Scan for vulnerabilities
       - trivy --exit-code 0 --severity HIGH --no-progress "${REPO_URL}:${IMAGE_TAG}"
       - trivy --exit-code 1 --severity CRITICAL --no-progress "${REPO_URL}:${IMAGE_TAG}"
-      - grype "${REPO_URL}:${IMAGE_TAG}"
+      - grype --fail-on medium "${REPO_URL}:${IMAGE_TAG}"
 
       # Push final image to container registry
       - docker-compose push app
