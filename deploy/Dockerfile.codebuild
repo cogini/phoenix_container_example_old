@@ -120,20 +120,19 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
 # Install Docker
 # https://docs.docker.com/engine/install/ubuntu/
 
-# Add repos
-RUN set -exu \
-    # Docker
-    # && curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -qq - \
-    && curl -sL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/trusted.gpg.d/docker.asc \
-    && echo "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list \
-    # Trivy security scanner
-    && curl -sL https://aquasecurity.github.io/trivy-repo/deb/public.key -o /etc/apt/trusted.gpg.d/trivy.asc \
-    && echo "deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | tee -a /etc/apt/sources.list.d/trivy.list
-
 RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
     --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
     set -exu \
+    # Add Docker repo
+    # && curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -qq - \
+    && curl -sL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/trusted.gpg.d/docker.asc \
+    && echo "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list \
+
+    # Add Trivy security scanner repo
+    && curl -sL https://aquasecurity.github.io/trivy-repo/deb/public.key -o /etc/apt/trusted.gpg.d/trivy.asc \
+    && echo "deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | tee -a /etc/apt/sources.list.d/trivy.list \
+
     && apt-get update $APT_OPTS_UPDATE \
     && apt-get install $APT_OPTS \
         # Docker
@@ -141,8 +140,16 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         docker-ce-cli \
         containerd.io \
 
+        # Use ecr-credential-helper to access ECR repos
+        # https://github.com/awslabs/amazon-ecr-credential-helper
+        # This package is not in Ubuntu 18.04, it requires a newer release
+        amazon-ecr-credential-helper \
+
         # Trivy
-        trivy
+        trivy \
+
+    # Grype
+    && curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin
 
 # Install latest AWS CLI using pip
 # RUN --mount=type=cache,id=pip,target=/root/.cache/pip \
@@ -157,16 +164,6 @@ COPY --from=installer /aws-cli-bin/ /usr/local/bin/
 # Install docker-compose
 COPY --from=installer /usr/local/bin/docker-compose /usr/local/bin/docker-compose
 
-# Use ecr-credential-helper to access ECR repos
-# https://github.com/awslabs/amazon-ecr-credential-helper
-# This package is not in Ubuntu 18.04, it requires a newer release
-RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
-    --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
-    set -exu \
-    && apt-get update $APT_OPTS_UPDATE \
-    && apt-get install $APT_OPTS \
-        amazon-ecr-credential-helper
 
 # RUN set -ex \
 #     && mkdir -p /root/.docker \
