@@ -71,6 +71,7 @@ ARG APT_OPTS
 ARG CODENAME
 
 # Configure apt caching for use with BuildKit
+# The default Debian image has special config to avoid caches, but we want them now
 RUN set -exu \
     && rm -f /etc/apt/apt.conf.d/docker-clean \
     && echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache \
@@ -98,10 +99,11 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     && curl -sL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /etc/apt/trusted.gpg.d/postgresql-ACCC4CF8.asc \
     && echo "deb http://apt.postgresql.org/pub/repos/apt/ $CODENAME-pgdg main" | tee /etc/apt/sources.list.d/pgdg.list \
     && echo "Package: *\nPin: release o=apt.postgresql.org\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/pgdg.pref \
-    && apt-get update \
+    && apt-get update -qq \
     && apt-get install $APT_OPTS \
         libpq-dev \
         postgresql-client
+    # && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -241,6 +243,9 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         # gnupg \
         unzip \
   && rm -rf /var/lib/dpkg \
+  # && rm -rf /var/lib/apt/lists/* \
+
+  # Install AWS CLI
   && curl https://awscli.amazonaws.com/awscli-exe-linux-x86_64-${AWS_CLI_VERSION}.zip -o awscli-exe-linux-x86_64.zip \
   && unzip awscli-exe-linux-x86_64.zip \
   # Specify --bin-dir so we can copy the entire bin directory into
@@ -326,7 +331,7 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     && curl -sL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /etc/apt/trusted.gpg.d/postgresql-ACCC4CF8.asc \
     && echo "deb http://apt.postgresql.org/pub/repos/apt/ $CODENAME-pgdg main" | tee /etc/apt/sources.list.d/pgdg.list \
     && echo "Package: *\nPin: release o=apt.postgresql.org\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/pgdg.pref \
-    && apt-get update \
+    && apt-get update -qq \
     && apt-get install $APT_OPTS \
         libpq-dev \
         postgresql-client \
@@ -337,6 +342,7 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     # && export ACCEPT_EULA=Y \
     # && apt-get -qq update && apt-get install $APT_OPTS msodbcsql17 \
     && rm -rf /var/lib/dpkg
+  # && rm -rf /var/lib/apt/lists/*
 
 # Install AWS CLI 2.x binaries
 # COPY --from=installer /usr/local/aws-cli/ /usr/local/aws-cli/
@@ -459,7 +465,7 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     && curl -sL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /etc/apt/trusted.gpg.d/postgresql-ACCC4CF8.asc \
     && echo "deb http://apt.postgresql.org/pub/repos/apt/ $DEBIAN_CODENAME-pgdg main" | tee /etc/apt/sources.list.d/pgdg.list \
     && echo "Package: *\nPin: release o=apt.postgresql.org\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/pgdg.pref \
-    && apt-get update \
+    && apt-get update -qq \
     && apt-get install $APT_OPTS \
         libpq-dev \
         postgresql-client \
@@ -470,7 +476,7 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     # && export ACCEPT_EULA=Y \
     # && apt-get -qq update && apt-get install $APT_OPTS msodbcsql17 \
     && rm -rf /var/lib/dpkg
-
+    # && rm -rf /var/lib/apt/lists/*
 
 # Create user and group to run under with specific uid
 RUN groupadd -g 1000 "$APP_GROUP" \
