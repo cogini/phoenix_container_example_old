@@ -184,12 +184,12 @@ repositories from one registry to another.
         - from: hexpm/elixir
           tags:
             # Choose one
-            - '1.11.2-erlang-23.1.2-alpine-3.12.1'
-            - '1.11.2-erlang-23.1.2-debian-buster-20201012'
+            - '1.11.2-erlang-23.2.1-alpine-3.12.1'
+            - '1.11.2-erlang-23.2.1-debian-buster-20201012'
         - from: node
           tags:
-            - '14.4-stretch'
-            - '14.15.1-stretch'
+            - '14.4-buster'
+            - '14.15.1-buster'
   ```
 
 ```shell
