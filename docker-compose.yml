@@ -90,8 +90,24 @@ services:
         BUILDKIT_INLINE_CACHE: 1
         REGISTRY: ${REGISTRY}
         MIX_ENV: test
+    stdin_open: true
+    tty: true
     depends_on:
       - db
+
+  vuln:
+    image: "app-vuln"
+    build:
+      dockerfile: deploy/Dockerfile.alpine
+      # dockerfile: deploy/Dockerfile.debian
+      target: vuln
+      context: .
+      args:
+        BUILDKIT_INLINE_CACHE: 1
+        REGISTRY: ${REGISTRY}
+        MIX_ENV: prod
+    stdin_open: true
+    tty: true
 
   # https://github.com/docker-library/docs/blob/master/postgres/README.md
   db:

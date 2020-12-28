@@ -340,14 +340,14 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     && apt-get update $APT_OPTS_UPDATE \
     && apt-get install $APT_OPTS \
         libpq-dev \
-        postgresql-client \
+        postgresql-client
 
     # Microsoft ODBC Driver for SQL Server
     # && curl -sL https://packages.microsoft.com/keys/microsoft.asc -o /etc/apt/trusted.gpg.d/microsoft.asc \
     # && curl -s https://packages.microsoft.com/config/debian/10/prod.list -o /etc/apt/sources.list.d/mssql-release.list \
     # && export ACCEPT_EULA=Y \
     # && apt-get -qq update && apt-get install $APT_OPTS msodbcsql17 \
-    && rm -rf /var/lib/dpkg
+    # && rm -rf /var/lib/dpkg
   # && rm -rf /var/lib/apt/lists/*
 
 # Install AWS CLI 2.x binaries
@@ -476,14 +476,14 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     && apt-get update $APT_OPTS_UPDATE \
     && apt-get install $APT_OPTS \
         libpq-dev \
-        postgresql-client \
+        postgresql-client
 
     # Microsoft ODBC Driver for SQL Server
     # && curl -sL https://packages.microsoft.com/keys/microsoft.asc -o /etc/apt/trusted.gpg.d/microsoft.asc \
     # && curl -s https://packages.microsoft.com/config/debian/10/prod.list -o /etc/apt/sources.list.d/mssql-release.list \
     # && export ACCEPT_EULA=Y \
     # && apt-get -qq update && apt-get install $APT_OPTS msodbcsql17 \
-    && rm -rf /var/lib/dpkg
+    # && rm -rf /var/lib/dpkg
     # && rm -rf /var/lib/apt/lists/*
 
 # Create user and group to run under with specific uid
@@ -568,6 +568,39 @@ CMD ["start"]
 
 # Startup script
 # CMD ["/app/bin/start-docker"]
+
+##########################################################################
+# Scan for security vulnerabilities
+
+FROM deploy as vuln
+
+ARG APT_OPTS
+ARG APT_OPTS_UPDATE
+
+USER root
+
+RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
+    --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
+    apt-get install $APT_OPTS \
+        apt-transport-https \
+        ca-certificates \
+        curl \
+        gnupg \
+        gnupg-agent \
+        # software-properties-common \
+        lsb-release \
+    && curl -sL https://aquasecurity.github.io/trivy-repo/deb/public.key -o /etc/apt/trusted.gpg.d/trivy.asc \
+    && echo "deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | tee -a /etc/apt/sources.list.d/trivy.list \
+    && apt-get update $APT_OPTS_UPDATE \
+    && apt-get install $APT_OPTS \
+        trivy \
+    # && trivy filesystem -d --exit-code 1 --no-progress /
+    && trivy filesystem --exit-code 0 --severity HIGH --no-progress / \
+    && trivy filesystem --exit-code 1 --severity CRITICAL --no-progress /
+
+    # && curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin \
+    # && grype -vv --fail-on medium dir:/ \
 
 ##########################################################################
 # Copy build artifacts to host

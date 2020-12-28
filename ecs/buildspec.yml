@@ -108,11 +108,11 @@ phases:
       - docker-compose build app
 
       # Scan for vulnerabilities
+      - docker-compose build vuln
+
       # - trivy --exit-code 0 --severity HIGH --no-progress "${REPO_URL}:${IMAGE_TAG}"
       # - trivy --exit-code 1 --severity CRITICAL --no-progress "${REPO_URL}:${IMAGE_TAG}"
       # - grype -vv --fail-on medium "${REPO_URL}:${IMAGE_TAG}"
-
-      - docker buildx build --target=vuln -t app-vuln -f deploy/Dockerfile.alpine "."
 
       # Push final image to container registry
       - docker-compose push app
