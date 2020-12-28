@@ -70,7 +70,7 @@ services:
       # - type: bind
       #   source: .
       #   target: /app
-    # - 'nfsmount:/app'
+      # - 'nfsmount:/app'
 
   test:
     image: "app-test"
@@ -90,8 +90,6 @@ services:
         BUILDKIT_INLINE_CACHE: 1
         REGISTRY: ${REGISTRY}
         MIX_ENV: test
-    stdin_open: true
-    tty: true
     depends_on:
       - db
 
@@ -106,8 +104,6 @@ services:
         BUILDKIT_INLINE_CACHE: 1
         REGISTRY: ${REGISTRY}
         MIX_ENV: prod
-    stdin_open: true
-    tty: true
 
   # https://github.com/docker-library/docs/blob/master/postgres/README.md
   db:
@@ -118,7 +114,6 @@ services:
       context: .
       args:
         REGISTRY: ${REGISTRY}
-      #   MIX_ENV: prod
     restart: always
     volumes:
       - ./tmp/db:/var/lib/postgresql/data
