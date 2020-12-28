@@ -104,6 +104,10 @@ phases:
 
       - echo "Pushing Docker images to container registry..."
       - docker-compose build app
+
+      - trivy --exit-code 0 --severity HIGH --no-progress "${REPO_URL}:${IMAGE_TAG}"
+      - trivy --exit-code 1 --severity CRITICAL --no-progress "${REPO_URL}:${IMAGE_TAG}"
+
       - docker-compose push app
 
       - echo "Writing image definition files..."
@@ -145,4 +149,5 @@ artifacts:
 cache:
   paths:
     - '/root/.cache/docker/**/*'
+    - '/root/.cache/trivy/**/*'
     # - '/var/lib/docker/**/*'

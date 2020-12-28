@@ -100,8 +100,10 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         apt-transport-https \
         ca-certificates \
         curl \
+        gnupg \
         gnupg-agent \
         software-properties-common \
+        lsb-release \
 
         # Arm emulation
         binfmt-support \
@@ -116,10 +118,15 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
 # Install Docker
 # https://docs.docker.com/engine/install/ubuntu/
 
-# Add Docker repo
+# Add repos
 RUN set -exu \
-    && curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -qq - \
-    && echo "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list
+    # Docker
+    # && curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -qq - \
+    && curl -sL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/trusted.gpg.d/docker.asc \
+    && echo "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list \
+    # Trivy security scanner
+    && curl -sL https://aquasecurity.github.io/trivy-repo/deb/public.key -o /etc/apt/trusted.gpg.d/trivy.asc \
+    && echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main | tee -a /etc/apt/sources.list.d/trivy.list
 
 RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
@@ -127,9 +134,13 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     set -exu \
     && apt-get update -qq \
     && apt-get install $APT_OPTS \
+        # Docker
         docker-ce \
         docker-ce-cli \
-        containerd.io
+        containerd.io \
+
+        # Trivy
+        trivy
 
 # Install latest AWS CLI using pip
 # RUN --mount=type=cache,id=pip,target=/root/.cache/pip \
