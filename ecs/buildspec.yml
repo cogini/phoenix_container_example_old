@@ -44,6 +44,9 @@ phases:
       - docker buildx use docker-container
       - docker buildx inspect --bootstrap
 
+      # Install grype vulerability scanner
+      - curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin
+
       - export REGISTRY="$(dirname $REPO_URL)/"
 
       - echo "Logging in to Amazon ECR..."
@@ -102,12 +105,15 @@ phases:
       # - CACHE_REPO_URL="${REGISTRY}foo-app-ecs-build-cache"
       # - CACHE_TYPE=registry $TEMPLATE_DIR/build.sh
 
-      - echo "Pushing Docker images to container registry..."
+      - echo "Building final image..."
       - docker-compose build app
 
+      - echo "Scanning for vulnerabilities..."
       - trivy --exit-code 0 --severity HIGH --no-progress "${REPO_URL}:${IMAGE_TAG}"
       - trivy --exit-code 1 --severity CRITICAL --no-progress "${REPO_URL}:${IMAGE_TAG}"
+      - grype "${REPO_URL}:${IMAGE_TAG}"
 
+      - echo "Pushing final image to container registry..."
       - docker-compose push app
 
       - echo "Writing image definition files..."
