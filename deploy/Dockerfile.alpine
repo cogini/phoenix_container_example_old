@@ -182,7 +182,7 @@ RUN --mount=type=cache,id=apk,target=/var/cache/apk,sharing=locked \
     ln -s /var/cache/apk /etc/apk/cache \
     && apk update \
     # Upgrading ensures that we get the latest packages, but makes the build nondeterministic
-    && apk upgrade --update-cache -a \
+    # && apk upgrade --update-cache -a \
     # Install openssl, allowing the app to listen on HTTPS.
     # May not be needed if handled outside the application (e.g. in Kubernetes ingress).
     && apk add openssl ncurses-libs
