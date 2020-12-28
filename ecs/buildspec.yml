@@ -25,7 +25,7 @@ phases:
     commands:
       - /usr/sbin/service docker start
       # Install grype vulerability scanner
-      - curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin
+      # - curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin
   pre_build:
     commands:
       # - cat /etc/lsb-release
