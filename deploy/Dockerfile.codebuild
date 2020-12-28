@@ -13,8 +13,8 @@
 ARG DOCKER_COMPOSE_VERSION=1.27.4
 ARG AWS_CLI_VERSION=2.0.61
 
-ARG UBUNTU_VERSION=focal
-ARG UBUNTU_CODENAME=focal
+ARG BASE_IMAGE=ubuntu
+ARG BASE_IMAGE_TAG=focal
 
 # Docker registry for base images, default is docker.io
 # If specified, should have a trailing slash
@@ -23,14 +23,16 @@ ARG REGISTRY=""
 # Make apt-get be quiet
 ARG DEBIAN_FRONTEND=noninteractive
 ARG APT_OPTS="-y -qq -o=Dpkg::Use-Pty=0 --no-install-recommends"
+ARG APT_OPTS_UPDATE="-qq"
 
 ##########################################################################
 # Stage binary installer files
 
-FROM ${REGISTRY}ubuntu:${UBUNTU_VERSION} AS installer
+FROM ${REGISTRY}${BASE_IMAGE}:${BASE_IMAGE_TAG} AS installer
 
 ARG DEBIAN_FRONTEND
 ARG APT_OPTS
+ARG APT_OPTS_UPDATE
 ARG AWS_CLI_VERSION
 ARG DOCKER_COMPOSE_VERSION
 
@@ -47,7 +49,7 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
     --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
     set -exu \
-    && apt-get update -qq \
+    && apt-get update $APT_OPTS_UPDATE \
     # Avoid warnings
     # && apt-get install $APT_OPTS dialog apt-utils \
     # Enable installation of packages over https
@@ -75,11 +77,11 @@ RUN set -exu \
 ##########################################################################
 # Create build image
 
-FROM ${REGISTRY}ubuntu:${UBUNTU_VERSION}
+FROM ${REGISTRY}${BASE_IMAGE}:${BASE_IMAGE_TAG}
 
-ARG UBUNTU_CODENAME
 ARG DEBIAN_FRONTEND
 ARG APT_OPTS
+ARG APT_OPTS_UPDATE
 
 # Configure apt caching for use with BuildKit
 RUN set -exu \
@@ -92,7 +94,7 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
     --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
     set -exu \
-    && apt-get update -qq \
+    && apt-get update $APT_OPTS_UPDATE \
     # Avoid warnings
     && apt-get install $APT_OPTS dialog apt-utils \
     # Enable installation of packages over https
@@ -126,13 +128,13 @@ RUN set -exu \
     && echo "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list \
     # Trivy security scanner
     && curl -sL https://aquasecurity.github.io/trivy-repo/deb/public.key -o /etc/apt/trusted.gpg.d/trivy.asc \
-    && echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main | tee -a /etc/apt/sources.list.d/trivy.list
+    && echo "deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | tee -a /etc/apt/sources.list.d/trivy.list
 
 RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
     --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
     set -exu \
-    && apt-get update -qq \
+    && apt-get update $APT_OPTS_UPDATE \
     && apt-get install $APT_OPTS \
         # Docker
         docker-ce \
@@ -162,7 +164,7 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
     --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
     set -exu \
-    && apt-get update -qq \
+    && apt-get update $APT_OPTS_UPDATE \
     && apt-get install $APT_OPTS \
         amazon-ecr-credential-helper
 
