@@ -182,7 +182,7 @@ RUN --mount=type=cache,id=apk,target=/var/cache/apk,sharing=locked \
     ln -s /var/cache/apk /etc/apk/cache \
     && apk update \
     # Upgrading ensures that we get the latest packages, but makes the build nondeterministic
-    # && apk upgrade --update-cache -a \
+    && apk upgrade --update-cache -a \
     # Install openssl, allowing the app to listen on HTTPS.
     # May not be needed if handled outside the application (e.g. in Kubernetes ingress).
     && apk add openssl ncurses-libs
@@ -199,7 +199,7 @@ RUN mkdir -p \
         # Needed for RELEASE_TMP
         "/run/$APP_NAME"
 
-USER $APP_USER
+# USER $APP_USER
 
 # Setting WORKDIR after USER makes directory be owned by the user.
 # Setting it before makes it owned by root, which is more secure.
@@ -227,6 +227,23 @@ ENTRYPOINT ["bin/prod"]
 # Run app in foreground
 CMD ["start"]
 
+##########################################################################
+# Scan for security vulnerabilities
+
+FROM deploy as vuln
+
+USER root
+
+RUN --mount=type=cache,id=apk,target=/var/cache/apk,sharing=locked \
+    apk add curl \
+    && curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+
+# RUN trivy filesystem --exit-code 0 --severity HIGH --no-progress / \
+#     && trivy filesystem --exit-code 1 --severity CRITICAL --no-progress /
+RUN trivy filesystem --exit-code 1 --no-progress /
+
+    # && curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin \
+    # && grype -vv --fail-on medium dir:/ \
 
 ##########################################################################
 # Copy build artifacts to host
