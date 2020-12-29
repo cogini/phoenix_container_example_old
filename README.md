@@ -313,7 +313,7 @@ It includes:
 * `amazon-ecr-credential-helper`
 
   ```shell
-  aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $REPO_URL
+  aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $REGISTRY
 
   docker-compose build codebuild
   docker-compose push codebuild
