@@ -123,6 +123,15 @@ services:
     expose:
       - "5432"
 
+  codebuild:
+    image: "${REPO_URL}:latest"
+    build:
+      dockerfile: deploy/Dockerfile.codebuild
+      context: .
+      args:
+        BUILDKIT_INLINE_CACHE: 1
+        REGISTRY: ${REGISTRY}
+
 # volumes:
 #   nfsmount:
 #     driver: local
