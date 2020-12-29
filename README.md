@@ -2,22 +2,22 @@ This is a full featured example of building and deploying an Elixir / Phoenix
 app using containers.
 
 * Uses Docker [BuildKit](https://github.com/moby/buildkit)
-  for parallel multistage builds and caching of OS files and language
-  packages external to layers. Multistage builds compile dependencies
-  separately from app code, speeding rebuilds and reducing final image size.
-  Caching of packages reduces size of container layers and allows sharing of
-  data betwen container targets.  With proper caching, rebuilds take less than
-  5 seconds.
+  for parallel multistage builds and caching of OS files and language packages
+  external to layers. Multistage builds compile dependencies separately from
+  app code, speeding rebuilds and reducing final image size.  Caching of
+  packages reduces size of container layers and allows sharing of data betwen
+  container targets.  With proper caching, rebuilds take less than 5 seconds.
 
 * Supports Alpine and Debian, using [hexpm/elixir](https://hub.docker.com/r/hexpm/elixir)
   base images.
 
-* Uses Erlang releases for the final image, resulting in images as small as 10MB.
+* Uses Erlang releases for the final image, resulting in images as small as
+  10MB.
 
 * Supports mirroring base images from Docker Hub to AWS ECR to avoid rate
   limits and ensure consistent builds.
 
-* Supports development in a Docker container with Visual Studio Code on Windows.
+* Supports development in a Docker container with Visual Studio Code.
 
 * Supports building for multiple architectures, e.g. AWS
   [Gravaton](https://aws.amazon.com/ec2/graviton/) ARM processor.
@@ -25,8 +25,9 @@ app using containers.
   should work the other direction on Apple Silicon.
 
 * Supports deploying to AWS ECS using CodeBuild, CodeDeploy Blue/Green
-  deployment, and AWS Parameter Store for configuration. See [ecs/buildspec.yml](ecs/buildspec.yml).
-  Terraform is used to set up the environment, see https://github.com/cogini/multi-env-deploy
+  deployment, and AWS Parameter Store for configuration. See
+  [ecs/buildspec.yml](ecs/buildspec.yml). Terraform is used to set up the
+  environment, see https://github.com/cogini/multi-env-deploy
 
 * Supports compiling assets such as JS/CSS within the container, then
   exporting them to the Docker host so that they can be uploaded to a CDN.
@@ -45,8 +46,10 @@ a database.
   # Destination repository for app final image
   export REPO_URL=${REGISTRY}foo/app
 
-  # Login to docker, needed to push to repo or use mirrored base images
-  # docker login --username cogini --password <access-token> # Docker Hub
+  # Login to registry, needed to push to repo or use mirrored base images
+  # Docker Hub
+  # docker login --username cogini --password <access-token>
+  # AWS ECR
   aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $REGISTRY
 
   # Build all images (dev, test and app prod, local Postgres db)
@@ -117,8 +120,9 @@ The new BuildKit features are enabled with environment vars:
 Dockerfile caching syntax with the standard `docker build` command. It requires Docker version 18.09.
 
 `DOCKER_CLI_EXPERIMENTAL=enabled` enables the new Docker
-[buildx](https://github.com/docker/buildx) CLI command (and the new file syntax).
-It is built in with Docker version 19.03, but can be installed manually before that.
+[buildx](https://github.com/docker/buildx) CLI command (and the new file
+syntax). It is built in with Docker version 19.03, but can be installed
+manually before that.
 
 `COMPOSE_DOCKER_CLI_BUILD=1` tells [docker-compose](https://docs.docker.com/compose/) to use `buildx`.
 
