@@ -104,7 +104,7 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         curl \
         gnupg \
         gnupg-agent \
-        software-properties-common \
+        # software-properties-common \
         lsb-release \
 
         # Arm emulation
@@ -130,8 +130,8 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     && echo "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list \
 
     # Add Trivy security scanner repo
-    && curl -sL https://aquasecurity.github.io/trivy-repo/deb/public.key -o /etc/apt/trusted.gpg.d/trivy.asc \
-    && echo "deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | tee -a /etc/apt/sources.list.d/trivy.list \
+    # && curl -sL https://aquasecurity.github.io/trivy-repo/deb/public.key -o /etc/apt/trusted.gpg.d/trivy.asc \
+    # && echo "deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | tee -a /etc/apt/sources.list.d/trivy.list \
 
     && apt-get update $APT_OPTS_UPDATE \
     && apt-get install $APT_OPTS \
@@ -143,13 +143,13 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         # Use ecr-credential-helper to access ECR repos
         # https://github.com/awslabs/amazon-ecr-credential-helper
         # This package is not in Ubuntu 18.04, it requires a newer release
-        amazon-ecr-credential-helper \
+        amazon-ecr-credential-helper
 
         # Trivy
-        trivy \
+        #trivy \
 
     # Grype
-    && curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin
+    # && curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin
 
 # Install latest AWS CLI using pip
 # RUN --mount=type=cache,id=pip,target=/root/.cache/pip \
