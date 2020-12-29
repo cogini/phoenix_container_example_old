@@ -11,8 +11,9 @@ app using containers.
 * Supports Alpine and Debian, using [hexpm/elixir](https://hub.docker.com/r/hexpm/elixir)
   base images.
 
-* Uses Erlang releases for the final image, resulting in images as small as
-  10MB.
+* Uses Erlang releases for the final image, resulting in an image size of
+  less than 20MB (5.6 MB Alpine OS files, 1.3 MB TLS libraries, 12 MB Erlang VM
+  + app).
 
 * Supports mirroring base images from Docker Hub to AWS ECR to avoid rate
   limits and ensure consistent builds.
