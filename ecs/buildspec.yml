@@ -78,6 +78,12 @@ phases:
 
       # - docker buildx use docker-container
 
+      # Scan for app vulnerabilities
+      - trivy filesystem --exit-code 0 --severity HIGH --no-progress .
+      - trivy filesystem --exit-code 1 --severity CRITICAL --no-progress .
+      # - grype -vv --fail-on medium .
+      - grype -vv .
+
       # Build app container for tests
       # - env DOCKERFILE=deploy/Dockerfile.debian MIX_ENV=test TARGET=test $TEMPLATE_DIR/build-test.sh
       - docker-compose build test
@@ -105,7 +111,7 @@ phases:
       # Build final image
       - docker-compose build app
 
-      # Scan for vulnerabilities
+      # Scan for security vulnerabilities
       - docker-compose build vuln
 
       # Push final image to container registry
@@ -149,3 +155,5 @@ cache:
   paths:
     - '/root/.cache/docker/**/*'
     # - '/var/lib/docker/**/*'
+    - '/root/.cache/trivy/**/*'
+    - '/root/.cache/grype/**/*'
