@@ -124,7 +124,8 @@ services:
       - "5432"
 
   codebuild:
-    image: "${REPO_URL}:latest"
+    # Custom build image for AWS CodeBuild
+    image: "${REGISTRY}foo-app-ecs-build:latest"
     build:
       dockerfile: deploy/Dockerfile.codebuild
       context: .

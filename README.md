@@ -313,15 +313,10 @@ It includes:
 * `amazon-ecr-credential-helper`
 
   ```shell
-  # The repo is used by CodePipeline/CodeBuild, get the repo URL from there
-  pushd ~/work/multi-env-deploy/terraform/foo/dev/ecr-build-app-ecs
-  export REPO_URL=$(terragrunt output repository_url)
-  popd
-
-  export REGISTRY="$(dirname $REPO_URL)/"
-
   aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $REPO_URL
-  DOCKER_CLI_EXPERIMENTAL=enabled docker buildx build --push -t $REPO_URL -f deploy/Dockerfile.codebuild .
+
+  docker-compose build codebuild
+  docker-compose push codebuild
   ```
 
 ## AWS CodeDeploy
