@@ -103,7 +103,6 @@ services:
       args:
         BUILDKIT_INLINE_CACHE: 1
         REGISTRY: ${REGISTRY}
-        MIX_ENV: prod
 
   # https://github.com/docker-library/docs/blob/master/postgres/README.md
   db:
