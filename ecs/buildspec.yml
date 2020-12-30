@@ -24,6 +24,9 @@ phases:
     #   docker: 19
     commands:
       - /usr/sbin/service docker start
+      # https://docs.aws.amazon.com/codebuild/latest/APIReference/API_ProjectEnvironment.html
+      # - nohup /usr/local/bin/dockerd --host=unix:///var/run/docker.sock --host=tcp://0.0.0.0:2375 --storage-driver=overlay&
+      - timeout 15 sh -c "until docker info; do echo .; sleep 1; done"
   pre_build:
     commands:
       # - cat /etc/lsb-release
@@ -85,11 +88,8 @@ phases:
       - grype -vv .
 
       # Build app container for tests
-      # - env DOCKERFILE=deploy/Dockerfile.debian MIX_ENV=test TARGET=test $TEMPLATE_DIR/build-test.sh
       - docker-compose build test
 
-      # - Build db container
-      # - $TEMPLATE_DIR/build-db.sh
 
       # Run tests
       - DATABASE_HOST=db docker-compose up test
@@ -102,7 +102,7 @@ phases:
       # Build multiple architectures
       # - env PLATFORM="--platform linux/amd64,linux/arm64" DOCKERFILE=deploy/Dockerfile.alpine $TEMPLATE_DIR/build.sh
 
-      # - echo Extracting assets from build container...
+      # Extract assets from build container
       # - $TEMPLATE_DIR/build-artifacts.sh
 
       # - CACHE_REPO_URL="${REGISTRY}foo-app-ecs-build-cache"
@@ -153,7 +153,7 @@ artifacts:
     - taskdef.json
 cache:
   paths:
-    - '/root/.cache/docker/**/*'
     # - '/var/lib/docker/**/*'
+    - '/root/.cache/docker/**/*'
     - '/root/.cache/trivy/**/*'
     - '/root/.cache/grype/**/*'
