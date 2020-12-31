@@ -1,10 +1,8 @@
 version: '3.8'
 services:
   app:
-    # image: "${REGISTRY}foo-app"
+    # image: "${REGISTRY}cogini/foo-app"
     image: "${REPO_URL}:${IMAGE_TAG}"
-    # image: "cogini/foo-app
-    # image: 123456789.dkr.ecr.us-east-1.amazonaws.com/app
     environment:
       - SECRET_KEY_BASE
       - DATABASE_URL
@@ -67,9 +65,6 @@ services:
     tty: true
     volumes:
       - ".:/app:delegated"
-      # - type: bind
-      #   source: .
-      #   target: /app
       # - 'nfsmount:/app'
 
   test:
