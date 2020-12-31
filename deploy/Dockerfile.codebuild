@@ -109,13 +109,13 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
 
         # Arm emulation
         binfmt-support \
-        qemu-user-static
+        qemu-user-static \
 
         # Needed to install aws cli from pip
-        # python3-dev \
-        # python3-minimal \
-        # python3-pip \
-        # python3-setuptools
+        python3-dev \
+        python3-minimal \
+        python3-pip \
+        python3-setuptools
 
 # Install Docker
 # https://docs.docker.com/engine/install/ubuntu/
@@ -165,7 +165,6 @@ COPY --from=installer /aws-cli-bin/ /usr/local/bin/
 
 # Install docker-compose
 COPY --from=installer /usr/local/bin/docker-compose /usr/local/bin/docker-compose
-
 
 # RUN set -ex \
 #     && mkdir -p /root/.docker \
