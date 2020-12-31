@@ -14,9 +14,10 @@ ARG ERLANG_VERSION=23.2.1
 ARG NODE_VERSION=14.4
 
 ARG ALPINE_VERSION=3.12.1
+
 # Run "apk upgrade" to update packages to a newer version than what is in the base image.
 # This ensures that we get the latest packages, but makes the build nondeterministic.
-# It is most useful for security updates.
+# It is most useful in case there is a vulnerability which is not yet released in an Alpine base image.
 # ARG APK_UPGRADE="apk upgrade --update-cache -a"
 ARG APK_UPGRADE=":"
 
