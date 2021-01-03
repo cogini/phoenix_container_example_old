@@ -52,11 +52,10 @@ ARG LANG=C.UTF-8
 # If specified, should have a trailing slash
 ARG REGISTRY=""
 
-
 ##########################################################################
-# Fetch dependencies
+# Fetch OS build dependencies, e.g. libraries
 
-FROM ${REGISTRY}${ELIXIR_IMAGE_NAME}:${ELIXIR_IMAGE_TAG} AS deps
+FROM ${REGISTRY}${ELIXIR_IMAGE_NAME}:${ELIXIR_IMAGE_TAG} AS os-deps
 
 ARG APK_UPGRADE
 
@@ -64,13 +63,27 @@ ARG http_proxy
 ARG https_proxy=$http_proxy
 
 ARG LANG
-ARG MIX_ENV
 
 RUN --mount=type=cache,id=apk,target=/var/cache/apk,sharing=locked \
     ln -s /var/cache/apk /etc/apk/cache \
     && apk update \
     && $APK_UPGRADE \
-    && apk add alpine-sdk
+    && apk add alpine-sdk \
+    && apk add curl \
+    && apk add nodejs npm \
+    && curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+
+
+##########################################################################
+# Fetch app library dependencies
+
+FROM os-deps AS deps
+
+ARG http_proxy
+ARG https_proxy=$http_proxy
+
+ARG LANG
+ARG MIX_ENV
 
 WORKDIR /app
 
@@ -81,7 +94,10 @@ COPY mix.lock .
 
 RUN --mount=type=cache,target=~/.hex/packages/hexpm,sharing=locked \
     --mount=type=cache,target=~/.cache/rebar3,sharing=locked \
-    mix do local.rebar --force, local.hex --force, deps.get --only $MIX_ENV
+#    --mount=type=cache,target=~/_build,sharing=locked \
+    mix do local.rebar --force, local.hex --force, deps.get
+
+#    mix do local.rebar --force, local.hex --force, deps.get --only $MIX_ENV
 
 ##########################################################################
 # Run tests
@@ -99,16 +115,19 @@ WORKDIR /app
 COPY lib ./lib
 COPY priv ./priv
 COPY test ./test
+COPY bin ./bin
 
 RUN --mount=type=cache,target=~/.hex/packages/hexpm,sharing=locked \
     --mount=type=cache,target=~/.cache/rebar3,sharing=locked \
+#    --mount=type=cache,target=~/_build,sharing=locked \
     mix do compile
 
 ##########################################################################
 # Build Phoenix assets
 # Using Debian because it has Python
 
-FROM ${REGISTRY}node:${NODE_VERSION}-buster AS assets
+# FROM ${REGISTRY}node:${NODE_VERSION}-buster AS assets
+FROM deps AS assets
 
 ARG LANG
 
@@ -128,7 +147,6 @@ COPY assets .
 
 RUN npm run deploy
 
-
 ##########################################################################
 # Create Phoenix digest
 
@@ -142,6 +160,7 @@ COPY --from=assets /app/priv ./priv
 # https://hexdocs.pm/phoenix/Mix.Tasks.Phx.Digest.html
 RUN --mount=type=cache,target=~/.hex/packages/hexpm,sharing=locked \
     --mount=type=cache,target=~/.cache/rebar3,sharing=locked \
+#    --mount=type=cache,target=~/_build,sharing=locked \
     mix phx.digest
 
 # This does a partial compile.
@@ -166,6 +185,7 @@ COPY rel ./rel
 
 RUN --mount=type=cache,target=~/.hex/packages/hexpm,sharing=locked \
     --mount=type=cache,target=~/.cache/rebar3,sharing=locked \
+#     --mount=type=cache,target=~/_build,sharing=locked \
     mix do compile, release "$RELEASE"
 
 
@@ -203,13 +223,17 @@ RUN --mount=type=cache,id=apk,target=/var/cache/apk,sharing=locked \
     && apk update \
     # Upgrading ensures that we get the latest packages, but makes the build nondeterministic
     && $APK_UPGRADE \
+    # https://github.com/krallin/tini
+    # && apk add tini \
+    # Make DNS resolution more reliable
+    && apk add bind-tools \
     # Install openssl, allowing the app to listen on HTTPS.
     # May not be needed if handled outside the application (e.g. in Kubernetes ingress).
     && apk add openssl ncurses-libs
 
 # Create user and group to run under with specific uid
-RUN addgroup -g 1000 -S "$APP_GROUP" \
-    && adduser -u 1000 -S "$APP_USER" -G "$APP_GROUP"
+RUN addgroup -g 10001 -S "$APP_GROUP" \
+    && adduser -u 10000 -S "$APP_USER" -G "$APP_GROUP" -h "$HOME"
 
 # Create app dirs
 RUN mkdir -p \
@@ -232,7 +256,7 @@ USER $APP_USER
 
 # Chown files while copying. Running "RUN chown -R app:app /app"
 # adds an extra layer which is about 10Mb, a huge difference when the
-# image for a new phoenix app is around 20Mb.
+# imagae for a new phoenix app is around 20Mb.
 
 # TODO: For more security, change specific files to have group read/execute
 # permissions while leaving them owned by root
@@ -242,6 +266,7 @@ COPY --from=release --chown="$APP_USER:$APP_GROUP" "/app/_build/$MIX_ENV/rel/${R
 EXPOSE $PORT
 
 ENTRYPOINT ["bin/prod"]
+# ENTRYPOINT ["/sbin/tini", "--", "bin/prod"]
 
 # Run app in foreground
 CMD ["start"]
@@ -258,6 +283,7 @@ RUN --mount=type=cache,id=apk,target=/var/cache/apk,sharing=locked \
     && curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
 
 RUN --mount=type=cache,id=apk,target=/var/cache/apk,sharing=locked \
+    --mount=type=cache,target=/root/.cache/trivy,sharing=locked \
     # Succeed for issues of severity = HIGH
     trivy filesystem --exit-code 0 --severity HIGH --no-progress / \
     # Fail build if there are any issues of severity = CRITICAL
