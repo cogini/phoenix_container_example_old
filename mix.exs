@@ -10,6 +10,22 @@ defmodule PhoenixContainerExample.MixProject do
       compilers: [:phoenix, :gettext] ++ Mix.compilers(),
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
+      dialyzer: [
+        # plt_add_deps: :project,
+        # plt_add_apps: [:ssl, :mnesia, :compiler, :xmerl, :inets],
+        # plt_add_apps: [:poison],
+        # plt_add_deps: true,
+        # flags: ["-Werror_handling", "-Wrace_conditions"],
+        # flags: ["-Wunmatched_returns", :error_handling, :race_conditions, :underspecs],
+        # ignore_warnings: "dialyzer.ignore-warnings"
+      ],
+      test_coverage: [tool: ExCoveralls],
+      preferred_cli_env: [
+        coveralls: :test,
+        "coveralls.detail": :test,
+        "coveralls.post": :test,
+        "coveralls.html": :test
+      ],
       deps: deps(),
       default_release: :prod,
       releases: releases()
@@ -45,6 +61,9 @@ defmodule PhoenixContainerExample.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
+      {:credo, "~> 1.5", only: [:dev, :test], runtime: false},
+      {:coverex, "~> 1.5", only: [:dev, :test], runtime: false},
+      {:dialyxir, "~> 1.0", only: [:dev, :test], runtime: false},
       {:phoenix, "~> 1.5.3"},
       {:phoenix_ecto, "~> 4.1"},
       {:ecto_sql, "~> 3.4"},
