@@ -90,7 +90,6 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         apt-transport-https \
         ca-certificates \
         curl \
-        git \
         gnupg \
         gnupg-agent \
         # software-properties-common \
@@ -98,10 +97,18 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         git \
         lsb-release \
 
-        python3-dev \
-        python3-minimal \
-        python3-pip \
-        python3-setuptools \
+        # node needs python2
+        python-dev \
+        python-minimal \
+        python-pip \
+        python-setuptools \
+        # Installed via pip
+        # python-virtualenv \
+
+        # python3-dev \
+        # python3-minimal \
+        # python3-pip \
+        # python3-setuptools \
 
     # Install using n
     && curl -L https://raw.githubusercontent.com/tj/n/master/bin/n -o /usr/local/bin/n \
