@@ -226,7 +226,8 @@ RUN --mount=type=cache,id=apk,target=/var/cache/apk,sharing=locked \
     # https://github.com/krallin/tini
     # && apk add tini \
     # Make DNS resolution more reliable
-    && apk add bind-tools \
+    # https://github.com/sourcegraph/godockerize/commit/5cf4e6d81720f2551e6a7b2b18c63d1460bbbe4e
+    # && apk add bind-tools \
     # Install openssl, allowing the app to listen on HTTPS.
     # May not be needed if handled outside the application (e.g. in Kubernetes ingress).
     && apk add openssl ncurses-libs
