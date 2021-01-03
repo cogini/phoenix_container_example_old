@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+
+# Build task
+
+set -e
+
+export LANG="${LANG:-"en_US.UTF-8"}"
+export MIX_ENV="${MIX_ENV:-prod}"
+
+CURDIR="$PWD"
+BINDIR=$(dirname "$0")
+cd "$BINDIR"; BINDIR="$PWD"; cd "$CURDIR"
+
+BASEDIR="$BINDIR/.."
+cd "$BASEDIR"
+
+echo "==> Running build task"
+
+echo "===> Installing Hex and Rebar"
+mix local.hex --force
+mix local.rebar --force
+
+echo "===> Updating Elixir libs"
+mix deps.get --only "$MIX_ENV"
+
+echo "===> Compiling"
+mix compile
+
+echo "===> Installing node modules"
+(cd assets && npm install)
+
+echo "===> Generating assets"
+# (cd assets && node node_modules/brunch/bin/brunch build)
+# (cd assets && node node_modules/webpack/bin/webpack.js --mode development)
+(cd assets && node node_modules/webpack/bin/webpack.js --mode production)
+
+echo "Building digest files"
+mix phx.digest
+
+echo "===> Generating systemd files"
+mix systemd.init
+mix systemd.generate
+
+echo "===> Generating deploy files"
+mix deploy.init
+mix deploy.generate
+
+chmod +x bin/*
+
+echo "===> Building release"
+# mix release --verbose
+mix release

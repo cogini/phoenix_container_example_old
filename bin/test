@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+
+# Test task
+
+set -e
+
+export LANG="${LANG:-"en_US.UTF-8"}"
+export MIX_ENV="${MIX_ENV:-test}"
+
+CURDIR="$PWD"
+BINDIR=$(dirname "$0")
+cd "$BINDIR"; BINDIR="$PWD"; cd "$CURDIR"
+
+BASEDIR="$BINDIR/.."
+cd "$BASEDIR"
+
+# echo "==> Running test task"
+
+# echo "===> Installing Hex and Rebar"
+# mix local.hex --force
+# mix local.rebar --force
+
+# echo "===> Updating Elixir libs"
+# mix deps.get --only "$MIX_ENV"
+
+# echo "===> Compiling"
+# mix compile
+
+echo "===> Running app tests"
+mix test
+
+# echo "===> Running static code analysis"
+# mix credo
+# mix dialyzer
+
+# echo "===> Running vulnerability checks"
+trivy filesystem --exit-code 0 --severity HIGH --no-progress .
+trivy filesystem --exit-code 1 --severity CRITICAL --no-progress .
+# grype --fail-on medium .
