@@ -94,10 +94,8 @@ COPY mix.lock .
 
 RUN --mount=type=cache,target=~/.hex/packages/hexpm,sharing=locked \
     --mount=type=cache,target=~/.cache/rebar3,sharing=locked \
-#    --mount=type=cache,target=~/_build,sharing=locked \
     mix do local.rebar --force, local.hex --force, deps.get
-
-#    mix do local.rebar --force, local.hex --force, deps.get --only $MIX_ENV
+    # mix do local.rebar --force, local.hex --force, deps.get --only $MIX_ENV
 
 ##########################################################################
 # Run tests
@@ -119,7 +117,6 @@ COPY bin ./bin
 
 RUN --mount=type=cache,target=~/.hex/packages/hexpm,sharing=locked \
     --mount=type=cache,target=~/.cache/rebar3,sharing=locked \
-#    --mount=type=cache,target=~/_build,sharing=locked \
     mix do compile
 
 ##########################################################################
@@ -160,7 +157,6 @@ COPY --from=assets /app/priv ./priv
 # https://hexdocs.pm/phoenix/Mix.Tasks.Phx.Digest.html
 RUN --mount=type=cache,target=~/.hex/packages/hexpm,sharing=locked \
     --mount=type=cache,target=~/.cache/rebar3,sharing=locked \
-#    --mount=type=cache,target=~/_build,sharing=locked \
     mix phx.digest
 
 # This does a partial compile.
@@ -185,7 +181,6 @@ COPY rel ./rel
 
 RUN --mount=type=cache,target=~/.hex/packages/hexpm,sharing=locked \
     --mount=type=cache,target=~/.cache/rebar3,sharing=locked \
-#     --mount=type=cache,target=~/_build,sharing=locked \
     mix do compile, release "$RELEASE"
 
 
@@ -257,7 +252,7 @@ USER $APP_USER
 
 # Chown files while copying. Running "RUN chown -R app:app /app"
 # adds an extra layer which is about 10Mb, a huge difference when the
-# imagae for a new phoenix app is around 20Mb.
+# image for a new phoenix app is around 20Mb.
 
 # TODO: For more security, change specific files to have group read/execute
 # permissions while leaving them owned by root
