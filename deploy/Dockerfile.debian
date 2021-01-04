@@ -585,7 +585,7 @@ ENV LANG=$LANG \
 # /tmp or, more securely, /run/foo
 WORKDIR $APP_DIR
 
-# Startup script
+# When using a startup script, copy to /app/bin
 # COPY bin ./bin
 
 USER $APP_USER
@@ -597,20 +597,21 @@ USER $APP_USER
 # TODO: For more security, change specific files to have group read/execute
 # permissions while leaving them owned by root
 
-# Release is unpacked under current
+# When using a startup script, unpack release under "/app/current" dir
 # WORKDIR $APP_DIR/current
 
 COPY --from=release --chown="$APP_USER:$APP_GROUP" "/app/_build/$MIX_ENV/rel/${RELEASE}" ./
 
 EXPOSE $PORT
 
+# "bin" is the directory under the unpacked release, and "prod" is the name of the release
 ENTRYPOINT ["bin/prod"]
 # ENTRYPOINT ["/sbin/tini", "--", "bin/prod"]
 
 # Run app in foreground
 CMD ["start"]
 
-# Startup script
+# Run via startup script
 # CMD ["/app/bin/start-docker"]
 
 ##########################################################################
