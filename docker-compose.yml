@@ -28,6 +28,34 @@ services:
     depends_on:
       - db
 
+  app-debian:
+    # image: "${REGISTRY}cogini/foo-app"
+    image: "${REPO_URL}:${IMAGE_TAG}"
+    environment:
+      - SECRET_KEY_BASE
+      - DATABASE_URL
+      - DATABASE_HOST=db
+      - DATABASE_DB
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
+      - AWS_REGION
+      - AWS_DEFAULT_REGION
+    build:
+      # dockerfile: deploy/Dockerfile.alpine
+      dockerfile: deploy/Dockerfile.debian
+      target: deploy
+      context: .
+      args:
+        BUILDKIT_INLINE_CACHE: 1
+        REGISTRY: ${REGISTRY}
+        MIX_ENV: prod
+    # platform: "linux/arm64"
+    # platform: "linux/amd64"
+    ports:
+      - "4000:4000"
+    depends_on:
+      - db
+
   dev:
     image: "foo-app-dev"
     environment:
