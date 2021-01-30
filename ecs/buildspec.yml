@@ -41,7 +41,7 @@ phases:
       # - ls -l /proc/sys/fs/binfmt_misc/*
       # - ls -1 /proc/sys/fs/binfmt_misc/qemu-*
 
-      - ls -l /root/.cache/docker
+      # - ls -l /root/.cache/docker
       - ls -l /var/lib/docker
 
       # Create builder instance
