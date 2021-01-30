@@ -15,7 +15,7 @@ variable "REGISTRY" {
 }
 
 variable "CACHE_DIR" {
-    default = "/root/.docker/cache"
+    default = "/root/.cache/docker"
 }
 
 group "default" {
