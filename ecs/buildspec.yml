@@ -88,6 +88,8 @@ phases:
       # - grype -vv --fail-on medium .
       - grype -vv .
 
+      - docker buildx bake -f docker-bake.hcl
+
       # Build app container for tests
       - docker-compose build test
 
@@ -154,6 +156,6 @@ artifacts:
 cache:
   paths:
     # - '/var/lib/docker/**/*'
-    # - '/root/.cache/docker/**/*'
+    - '/root/.cache/docker/**/*'
     # - '/root/.cache/trivy/**/*'
     # - '/root/.cache/grype/**/*'
