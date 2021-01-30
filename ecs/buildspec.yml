@@ -154,6 +154,6 @@ artifacts:
 cache:
   paths:
     # - '/var/lib/docker/**/*'
-    - '/root/.cache/docker/**/*'
-    - '/root/.cache/trivy/**/*'
-    - '/root/.cache/grype/**/*'
+    # - '/root/.cache/docker/**/*'
+    # - '/root/.cache/trivy/**/*'
+    # - '/root/.cache/grype/**/*'
