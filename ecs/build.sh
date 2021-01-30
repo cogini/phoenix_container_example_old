@@ -70,11 +70,11 @@ case "$CACHE_TYPE" in
         # buildx can't handle cache not existing,  only use --cache-from if present
         if [ -s "$CACHE_DIR/index.json" ]
         then
-            CACHE_FROM="--cache-from=type=local,src=$CACHE_DIR"
+            CACHE_FROM="--cache-from=type=local,src=${CACHE_DIR}"
         else
             CACHE_FROM=""
         fi
-        CACHE_TO="--cache-to=type=local,dest=$CACHE_DIR,mode=max"
+        CACHE_TO="--cache-to=type=local,dest=${CACHE_DIR},mode=max"
         ;;
     registry)
         # Use repo for caching
