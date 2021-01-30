@@ -37,7 +37,7 @@ MIX_ENV="${MIX_ENV:-prod}"
 BUILD_ARGS="--build-arg MIX_ENV=${MIX_ENV} --build-arg REGISTRY=${REGISTRY}"
 
 # Cache directory for build files
-CACHE_DIR=$HOME/.cache/docker/${TARGET}
+CACHE_DIR="$HOME/.cache/docker/${TARGET}"
 WRITE_CACHE=true
 
 # OUTPUT=--load
