@@ -47,7 +47,7 @@ target "app" {
     #     "linux/amd64",
     #     "linux/arm64",
     # ]
-    output = ["type=docker"]
+    # output = ["type=docker"]
     # output = ["type=registry"]
 }
 
@@ -80,7 +80,7 @@ target "test" {
     cache-to = [
         "type=local,dest=${CACHE_DIR}/test,mode=max"
     ]
-    output = ["type=docker"]
+    # output = ["type=docker"]
 }
 
 target "vuln" {
@@ -106,5 +106,5 @@ target "db" {
     # cache-to = [
     #     "type=local,dest=${CACHE_DIR}/db,mode=max"
     # ]
-    output = ["type=docker"]
+    # output = ["type=docker"]
 }
