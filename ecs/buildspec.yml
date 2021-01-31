@@ -42,7 +42,7 @@ phases:
       # - ls -1 /proc/sys/fs/binfmt_misc/qemu-*
 
       # - ls -l /root/.cache/docker
-      - ls -l /var/lib/docker
+      # - ls -l /var/lib/docker
 
       # Create builder instance
       - docker buildx create --name docker-container
@@ -88,10 +88,10 @@ phases:
       # - grype -vv --fail-on medium .
       - grype -vv .
 
-      - docker buildx bake -f docker-bake.hcl
+      - docker buildx bake -f docker-bake.hcl ci
 
       # Build app container for tests
-      - docker-compose build test
+      # - docker-compose build test
 
       # Run tests
       - DATABASE_HOST=db docker-compose up test
@@ -111,10 +111,10 @@ phases:
       # - CACHE_TYPE=registry $TEMPLATE_DIR/build.sh
 
       # Build final image
-      - docker-compose build app
+      # - docker-compose build app
 
       # Scan for security vulnerabilities
-      - docker-compose build vuln
+      # - docker-compose build vuln
 
       # Push final image to container registry
       - docker-compose push app

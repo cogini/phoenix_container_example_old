@@ -22,6 +22,14 @@ group "default" {
     targets = ["app", "test", "db"]
 }
 
+group "ci" {
+    targets = ["app", "test", "vuln", "db"]
+}
+
+group "dev" {
+    targets = ["dev", "db"]
+}
+
 target "app" {
     dockerfile = "deploy/Dockerfile.alpine"
     target = "deploy"
