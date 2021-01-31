@@ -47,7 +47,7 @@ phases:
       # Create builder instance
       - docker buildx create --name docker-container
       - docker buildx use docker-container
-      - docker buildx inspect --bootstrap
+      # - docker buildx inspect --bootstrap
 
       - export REGISTRY="$(dirname $REPO_URL)/"
 
@@ -86,7 +86,7 @@ phases:
       - trivy filesystem --exit-code 0 --severity HIGH --no-progress .
       - trivy filesystem --exit-code 1 --severity CRITICAL --no-progress .
       # - grype -vv --fail-on medium .
-      - grype -vv .
+      # - grype -vv .
 
       - docker buildx bake -f docker-bake.hcl ci
 
@@ -159,5 +159,5 @@ cache:
   paths:
     # - '/var/lib/docker/**/*'
     - '/root/.cache/docker/**/*'
-    # - '/root/.cache/trivy/**/*'
+    - '/root/.cache/trivy/**/*'
     # - '/root/.cache/grype/**/*'
