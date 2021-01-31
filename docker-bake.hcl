@@ -84,12 +84,10 @@ target "test" {
         "app-test"
     ]
     cache-from = [
-        # "type=local,src=${CACHE_DIR}/test"
-        "type=local,src=${CACHE_DIR}"
+        "type=local,src=${CACHE_DIR}/test"
     ]
     cache-to = [
-        # "type=local,dest=${CACHE_DIR}/test,mode=max"
-        "type=local,dest=${CACHE_DIR},mode=max"
+        "type=local,dest=${CACHE_DIR}/test,mode=max"
     ]
     output = ["type=docker"]
 }
@@ -101,12 +99,10 @@ target "vuln" {
         REGISTRY = "${REGISTRY}"
     }
     cache-from = [
-        # "type=local,src=${CACHE_DIR}/vuln"
-        "type=local,src=${CACHE_DIR}"
+        "type=local,src=${CACHE_DIR}/vuln"
     ]
     cache-to = [
-        # "type=local,dest=${CACHE_DIR}/vuln,mode=max"
-        "type=local,dest=${CACHE_DIR},mode=max"
+        "type=local,dest=${CACHE_DIR}/vuln,mode=max"
     ]
     output = ["type=docker"]
 }
@@ -121,12 +117,10 @@ target "db" {
         "app-db"
     ]
     cache-from = [
-        # "type=local,src=${CACHE_DIR}/db"
-        "type=local,src=${CACHE_DIR}"
+        "type=local,src=${CACHE_DIR}/db"
     ]
     cache-to = [
-        # "type=local,dest=${CACHE_DIR}/db,mode=max"
-        "type=local,dest=${CACHE_DIR},mode=max"
+        "type=local,dest=${CACHE_DIR}/db,mode=max"
     ]
     output = ["type=docker"]
 }
