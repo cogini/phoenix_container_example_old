@@ -117,7 +117,8 @@ phases:
       # - docker-compose build vuln
 
       # Push final image to container registry
-      - docker-compose push app
+      # - docker-compose push app
+      - docker buildx bake -f docker-bake.hcl --push app
 
       # Write image definition files
       # https://docs.aws.amazon.com/codepipeline/latest/userguide/file-reference.html

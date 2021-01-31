@@ -24,7 +24,7 @@ group "default" {
 
 group "ci" {
     # targets = ["app", "test", "vuln", "db"]
-    targets = ["app", "test", "db"]
+    targets = ["test", "db", "app"]
 }
 
 group "dev" {
@@ -54,7 +54,7 @@ target "app" {
     #     "linux/amd64",
     #     "linux/arm64",
     # ]
-    # output = ["type=docker"]
+    output = ["type=docker"]
     # output = ["type=registry"]
 }
 
@@ -90,7 +90,7 @@ target "test" {
     cache-to = [
         "type=local,dest=${CACHE_DIR}/test,mode=max"
     ]
-    # output = ["type=docker"]
+    output = ["type=docker"]
 }
 
 target "vuln" {
@@ -105,6 +105,7 @@ target "vuln" {
     cache-to = [
         "type=local,dest=${CACHE_DIR}/vuln,mode=max"
     ]
+    output = ["type=docker"]
 }
 
 target "db" {
@@ -122,5 +123,5 @@ target "db" {
     cache-to = [
         "type=local,dest=${CACHE_DIR}/db,mode=max"
     ]
-    # output = ["type=docker"]
+    output = ["type=docker"]
 }
