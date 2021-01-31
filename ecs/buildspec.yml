@@ -60,7 +60,7 @@ phases:
       - mkdir -p /root/.docker
       - echo '{"credsStore":"ecr-login"}' | tee /root/.docker/config.json
 
-      - rm -rf /root/.cache/docker
+      # - rm -rf /root/.cache/docker
 
       - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
       - IMAGE_TAG=${COMMIT_HASH:=latest}
