@@ -23,7 +23,8 @@ group "default" {
 }
 
 group "ci" {
-    targets = ["app", "test", "vuln", "db"]
+    # targets = ["app", "test", "vuln", "db"]
+    targets = ["app", "test", "db"]
 }
 
 group "dev" {
