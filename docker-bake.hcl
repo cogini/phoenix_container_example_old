@@ -36,8 +36,6 @@ target "app" {
     context = "."
     args = {
         MIX_ENV = "prod"
-        # MIX_ENV = "${MIX_ENV}"
-        # DOCKER_REPO = ${DOCKER_REPO}"
         # BUILDKIT_INLINE_CACHE: 1
         REGISTRY = "${REGISTRY}"
     }
@@ -82,6 +80,9 @@ target "test" {
         MIX_ENV = "test"
         REGISTRY = "${REGISTRY}"
     }
+    tags = [
+        "app-test"
+    ]
     cache-from = [
         "type=local,src=${CACHE_DIR}/test"
     ]
@@ -97,6 +98,12 @@ target "vuln" {
     args = {
         REGISTRY = "${REGISTRY}"
     }
+    cache-from = [
+        "type=local,src=${CACHE_DIR}/vuln"
+    ]
+    cache-to = [
+        "type=local,dest=${CACHE_DIR}/vuln,mode=max"
+    ]
 }
 
 target "db" {
@@ -108,11 +115,11 @@ target "db" {
     tags = [
         "app-db"
     ]
-    # cache-from = [
-    #     "type=local,src=${CACHE_DIR}/db"
-    # ]
-    # cache-to = [
-    #     "type=local,dest=${CACHE_DIR}/db,mode=max"
-    # ]
+    cache-from = [
+        "type=local,src=${CACHE_DIR}/db"
+    ]
+    cache-to = [
+        "type=local,dest=${CACHE_DIR}/db,mode=max"
+    ]
     # output = ["type=docker"]
 }
