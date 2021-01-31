@@ -82,11 +82,11 @@ phases:
 
       # - docker buildx use docker-container
 
-      # # Scan for app vulnerabilities
-      # - trivy filesystem --exit-code 0 --severity HIGH --no-progress .
-      # - trivy filesystem --exit-code 1 --severity CRITICAL --no-progress .
-      # # - grype -vv --fail-on medium .
-      # - grype -vv .
+      # Scan for app vulnerabilities
+      - trivy filesystem --exit-code 0 --severity HIGH --no-progress .
+      - trivy filesystem --exit-code 1 --severity CRITICAL --no-progress .
+      # - grype -vv --fail-on medium .
+      - grype -vv .
 
       - docker buildx bake -f docker-bake.hcl ci
 
@@ -115,6 +115,7 @@ phases:
 
       # Scan for security vulnerabilities
       # - docker-compose build vuln
+      - docker buildx bake -f docker-bake.hcl vuln
 
       # Push final image to container registry
       # - docker-compose push app
