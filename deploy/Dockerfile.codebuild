@@ -169,8 +169,8 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
 COPY --from=installer /usr/local/aws-cli/ /usr/local/aws-cli/
 COPY --from=installer /aws-cli-bin/ /usr/local/bin/
 
-# Install docker-compose
 COPY --from=installer /usr/local/bin/docker-compose /usr/local/bin/docker-compose
+COPY --from=installer /usr/local/bin/earthly /usr/local/bin/earthly
 
 # RUN set -ex \
 #     && mkdir -p /root/.docker \
