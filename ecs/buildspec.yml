@@ -35,6 +35,9 @@ phases:
       # - docker version
       # - docker-compose --version
       - ls -l /usr/local/bin/*
+      - uname -s
+      - uname -m
+      - uname -a
       - earthly --version
 
       # Add support for cross arch builds (Arm)
