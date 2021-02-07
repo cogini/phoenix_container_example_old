@@ -34,11 +34,7 @@ phases:
       # - aws --version
       # - docker version
       # - docker-compose --version
-      - ls -l /usr/local/bin/*
-      - uname -s
-      - uname -m
-      - uname -a
-      - earthly --version
+      # - earthly --version
 
       # Add support for cross arch builds (Arm)
       # - docker run --rm --privileged linuxkit/binfmt:v0.8
