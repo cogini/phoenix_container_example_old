@@ -177,7 +177,7 @@ repositories from one registry to another.
 
         # Target base image, choose one
         - from: alpine
-          tags: ['3.12.1']
+          tags: ['3.13.1']
         - from: debian
           tags: ['buster-slim']
 
@@ -189,18 +189,20 @@ repositories from one registry to another.
         - from: hexpm/elixir
           tags:
             # Choose one
-            - '1.11.2-erlang-23.2.1-alpine-3.12.1'
-            - '1.11.2-erlang-23.2.1-debian-buster-20201012'
+            - '1.11.2-erlang-23.2.4-alpine-3.13.1'
+            - '1.11.2-erlang-23.2.4-debian-buster-20201012'
         - from: node
           tags:
             - '14.4-buster'
             - '14.15.1-buster'
   ```
 
+Run `dregsy` to sync docker images, using AWS credentials from your
+`~/.aws/config` file specified by `AWS_PROFILE` environment var:
 ```shell
 docker run --rm -v $(pwd)/dregsy.yml:/config.yaml -v $HOME/.aws:/root/.aws -e AWS_PROFILE xelalex/dregsy
 ```
-or
+or get AWS credentials from `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` env vars:
 ```shell
 docker run --rm -v $(pwd)/dregsy.yml:/config.yaml -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY xelalex/dregsy
 ```

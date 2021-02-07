@@ -10,10 +10,10 @@
 # https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/experimental.md
 
 ARG ELIXIR_VERSION=1.11.2
-ARG ERLANG_VERSION=23.2.1
+ARG ERLANG_VERSION=23.2.4
 ARG NODE_VERSION=14.4
 
-ARG ALPINE_VERSION=3.12.1
+ARG ALPINE_VERSION=3.13.1
 
 # Run "apk upgrade" to update packages to a newer version than what is in the base image.
 # This ensures that we get the latest packages, but makes the build nondeterministic.
