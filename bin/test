@@ -30,8 +30,10 @@ echo "===> Running app tests"
 mix test
 
 # echo "===> Running static code analysis"
-# mix credo
-# mix dialyzer
+mix credo
+mix dialyzer
+mix deps.audit
+mix sobelow
 
 # echo "===> Running vulnerability checks"
 trivy filesystem --exit-code 0 --severity HIGH --no-progress .

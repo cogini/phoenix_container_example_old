@@ -61,6 +61,7 @@ defmodule PhoenixContainerExample.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
+      {:mix_audit, "~> 0.1", only: [:dev, :test], runtime: false},
       {:credo, "~> 1.5", only: [:dev, :test], runtime: false},
       {:coverex, "~> 1.5", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.0", only: [:dev, :test], runtime: false},
@@ -71,6 +72,7 @@ defmodule PhoenixContainerExample.MixProject do
       {:phoenix_html, "~> 2.11"},
       {:phoenix_live_reload, "~> 1.2", only: :dev},
       {:phoenix_live_dashboard, "~> 0.2.0"},
+      {:sobelow, "~> 0.11.0", only: [:dev, :test], runtime: false},
       {:telemetry_metrics, "~> 0.4"},
       {:telemetry_poller, "~> 0.4"},
       {:gettext, "~> 0.11"},
