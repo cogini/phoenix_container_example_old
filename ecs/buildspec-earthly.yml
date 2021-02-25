@@ -1,4 +1,4 @@
-g--
+---
 # Build app in Docker and push to repo
 #
 # https://docs.aws.amazon.com/AmazonECS/latest/userguide/ecs-cd-pipeline.html
