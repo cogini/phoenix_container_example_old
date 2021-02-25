@@ -236,6 +236,7 @@ docker:
             # Needed for RELEASE_TMP
             "/run/$APP_NAME"
 
+    RUN echo "image: $OUTPUT_IMAGE_NAME:$OUTPUT_IMAGE_TAG"
     # USER $APP_USER
 
     # Setting WORKDIR after USER makes directory be owned by the user.

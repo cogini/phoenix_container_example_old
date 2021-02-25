@@ -1,4 +1,4 @@
----
+g--
 # Build app in Docker and push to repo
 #
 # https://docs.aws.amazon.com/AmazonECS/latest/userguide/ecs-cd-pipeline.html
@@ -64,7 +64,7 @@ phases:
       - earthly +vuln
 
       # Push final image to container registry
-      - earthly --push +docker
+      - earthly -v --push +docker
 
       # Write image definition files
       # https://docs.aws.amazon.com/codepipeline/latest/userguide/file-reference.html
