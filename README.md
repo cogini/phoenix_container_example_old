@@ -342,6 +342,7 @@ See https://docs.aws.amazon.com/codepipeline/latest/userguide/file-reference.htm
 * https://docs.aws.amazon.com/codepipeline/latest/userguide/tutorials-ecs-ecr-codedeploy.html
 * https://www.giantswarm.io/blog/container-image-building-with-buildkit
 * https://docs.docker.com/engine/reference/commandline/build/
+* https://github.com/phoenixframework/phoenix/blob/master/Earthfile
 
 ## Step by step
 
