@@ -17,7 +17,8 @@ ARG ALPINE_VERSION=3.13.1
 
 # Run "apk upgrade" to update packages to a newer version than what is in the base image.
 # This ensures that we get the latest packages, but makes the build nondeterministic.
-# It is most useful in case there is a vulnerability which is not yet released in an Alpine base image.
+# It is most useful when here is a vulnerability which is fixed in packages but
+# not yet released in an Alpine base image.
 # ARG APK_UPGRADE="apk upgrade --update-cache -a"
 ARG APK_UPGRADE=":"
 
@@ -35,6 +36,14 @@ ARG ELIXIR_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${ERLANG_VERSION}-alpine-${ALPINE_
 ARG MIX_ENV=prod
 
 # Name of Elixir release
+# This should match mix.exs, e.g.
+# defp releases do
+#   [
+#     prod: [
+#       include_executables_for: [:unix],
+#     ],
+#   ]
+# end
 ARG RELEASE=prod
 
 # Name of app, e.g. for directories
@@ -209,10 +218,9 @@ ENV LANG=$LANG \
     RELEASE=${RELEASE} \
     PORT=4000
 
-# Install Alpine libraries needed to compile the project.
+# Install Alpine libraries needed at runtime
 # See https://wiki.alpinelinux.org/wiki/Local_APK_cache for details
 # on the local cache and need for the symlink
-
 RUN --mount=type=cache,id=apk,target=/var/cache/apk,sharing=locked \
     ln -s /var/cache/apk /etc/apk/cache \
     && apk update \
@@ -224,7 +232,7 @@ RUN --mount=type=cache,id=apk,target=/var/cache/apk,sharing=locked \
     # https://github.com/sourcegraph/godockerize/commit/5cf4e6d81720f2551e6a7b2b18c63d1460bbbe4e
     # && apk add bind-tools \
     # Install openssl, allowing the app to listen on HTTPS.
-    # May not be needed if handled outside the application (e.g. in Kubernetes ingress).
+    # May not be needed if HTTPS is handled outside the application, e.g. in load balancer.
     && apk add openssl ncurses-libs
 
 # Create user and group to run under with specific uid
