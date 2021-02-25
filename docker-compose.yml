@@ -155,6 +155,28 @@ services:
         BUILDKIT_INLINE_CACHE: 1
         REGISTRY: ${REGISTRY}
 
+  postgres:
+    image: "${REGISTRY}postgres:12"
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_PASSWORD: postgres
+
+  mysql:
+    image: "${REGISTRY}mysql:8"
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    environment:
+      ACCEPT_EULA: Y
+      SA_PASSWORD: some!Password
+    ports:
+      - "1433:1433"
+
 # volumes:
 #   nfsmount:
 #     driver: local
