@@ -1,0 +1,108 @@
+---
+# Build app in Docker and push to repo
+#
+# https://docs.aws.amazon.com/AmazonECS/latest/userguide/ecs-cd-pipeline.html
+# Environment vars:
+#   REPO_URL: ECS app repository
+#   CACHE_REPO_URL: ECS repository for caching
+#   CONTAINER_NAME: container name in service task definition
+# https://docs.aws.amazon.com/codebuild/latest/userguide/build-env-ref-env-vars.html
+#   AWS_DEFAULT_REGION
+#   CODEBUILD_RESOLVED_SOURCE_VERSION
+# https://docs.aws.amazon.com/codebuild/latest/userguide/build-spec-ref.html
+version: 0.2
+env:
+  variables:
+    TEMPLATE_DIR: ecs
+
+phases:
+  install:
+    commands:
+      - /usr/sbin/service docker start
+      # https://docs.aws.amazon.com/codebuild/latest/APIReference/API_ProjectEnvironment.html
+      # - nohup /usr/local/bin/dockerd --host=unix:///var/run/docker.sock --host=tcp://0.0.0.0:2375 --storage-driver=overlay&
+      - timeout 15 sh -c "until docker info; do echo .; sleep 1; done"
+      # - wget https://github.com/earthly/earthly/releases/latest/download/earthly-linux-amd64 -O /usr/local/bin/earthly && chmod +x /usr/local/bin/earthly
+  pre_build:
+    commands:
+      - export REGISTRY="$(dirname $REPO_URL)/"
+
+      # Log into Amazon ECR
+      # Use new aws cli for login
+      # - aws ecr get-login-password --region "$AWS_DEFAULT_REGION" | docker login --username AWS --password-stdin "$REGISTRY"
+      # Use old aws cli for login
+      # - $(aws ecr get-login --region "$AWS_DEFAULT_REGION" --no-include-email)
+      # Use amazon-ecr-credential-helper for login, installed in custom build image
+      - mkdir -p /root/.docker
+      - echo '{"credsStore":"ecr-login"}' | tee /root/.docker/config.json
+
+      # - rm -rf /root/.cache/docker
+
+      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      - IMAGE_TAG=${COMMIT_HASH:=latest}
+  build:
+    commands:
+      # Scan for app vulnerabilities
+      - trivy filesystem --exit-code 0 --severity HIGH --no-progress .
+      - trivy filesystem --exit-code 1 --severity CRITICAL --no-progress .
+      # - grype -vv --fail-on medium .
+      # - grype -vv .
+
+      - earthly --version
+
+      # Run tests
+      - earthly +test
+
+      - DATABASE_HOST=db docker-compose up test
+      - DATABASE_HOST=db docker-compose run test mix test
+      - DATABASE_HOST=db docker-compose run test mix credo
+      - DATABASE_HOST=db docker-compose run test mix deps.audit
+      - DATABASE_HOST=db docker-compose run test mix sobelow
+
+      # Scan for security vulnerabilities
+      # - docker-compose build vuln
+      - earthly +vuln
+
+      # Push final image to container registry
+      - earthly --push +docker
+
+      # Write image definition files
+      # https://docs.aws.amazon.com/codepipeline/latest/userguide/file-reference.html
+      # Generate imagedefinitions.json file for standard ECS deploy action
+      - printf '[{"name":"%s","imageUri":"%s"}]' "$CONTAINER_NAME" "$REPO_URL:$IMAGE_TAG" | tee imagedefinitions.json
+      # Generate imageDetail.json file for CodeDeploy ECS blue/green deploy action
+      - printf '{"ImageURI":"%s"}' "$REPO_URL:$IMAGE_TAG" | tee imageDetail.json
+
+      - sed -i 's!<NAME>!'$CONTAINER_NAME'!g' $TEMPLATE_DIR/appspec.yml $TEMPLATE_DIR/taskdef.json
+      - sed -i 's!<PORT>!'$PORT'!g' ecs/appspec.yml $TEMPLATE_DIR/taskdef.json
+      - sed -i 's!<TASK_ROLE_ARN>!'$TASK_ROLE_ARN'!g' $TEMPLATE_DIR/taskdef.json
+      - sed -i 's!<EXECUTION_ROLE_ARN>!'$EXECUTION_ROLE_ARN'!g' $TEMPLATE_DIR/taskdef.json
+      - sed -i 's!<CPU>!'$CPU'!g' $TEMPLATE_DIR/taskdef.json
+      - sed -i 's!<MEMORY>!'$MEMORY'!g' $TEMPLATE_DIR/taskdef.json
+      - sed -i 's!<AWSLOGS_GROUP>!'$AWSLOGS_GROUP'!g' $TEMPLATE_DIR/taskdef.json
+      - sed -i 's!<AWSLOGS_REGION>!'$AWS_REGION'!g' $TEMPLATE_DIR/taskdef.json
+      - sed -i 's!<AWSLOGS_STREAM_PREFIX>!'$AWSLOGS_STREAM_PREFIX'!g' $TEMPLATE_DIR/taskdef.json
+
+      - sed -i 's!<CONFIG_S3_BUCKET>!'$CONFIG_S3_BUCKET'!g' $TEMPLATE_DIR/taskdef.json
+      - sed -i 's!<CONFIG_S3_PREFIX>!'$CONFIG_S3_PREFIX'!g' $TEMPLATE_DIR/taskdef.json
+      - sed -i 's!<AWS_REGION>!'$AWS_REGION'!g' $TEMPLATE_DIR/taskdef.json
+      - sed -i 's!<AWS_ACCOUNT_ID>!'$AWS_ACCOUNT_ID'!g' $TEMPLATE_DIR/taskdef.json
+
+      - cat $TEMPLATE_DIR/appspec.yml
+      - cat $TEMPLATE_DIR/taskdef.json
+      - cp $TEMPLATE_DIR/appspec.yml .
+      - cp $TEMPLATE_DIR/taskdef.json .
+  # post_build:
+  #   commands:
+artifacts:
+  files:
+    - imagedefinitions.json
+    - imageDetail.json
+    - appspec.yml
+    - taskdef.json
+cache:
+  paths:
+    # - '/var/lib/docker/**/*'
+    # - '/root/.cache/docker/**/*'
+    # - '/root/.cache/trivy/**/*'
+    # - '/root/.cache/grype/**/*'
