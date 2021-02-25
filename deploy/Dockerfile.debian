@@ -31,6 +31,14 @@ ARG ELIXIR_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${ERLANG_VERSION}-debian-${ELIXIR_
 ARG MIX_ENV=prod
 
 # Name of Elixir release
+# This should match mix.exs, e.g.
+# defp releases do
+#   [
+#     prod: [
+#       include_executables_for: [:unix],
+#     ],
+#   ]
+# end
 ARG RELEASE=prod
 
 # Name of app, e.g. for directories
