@@ -149,9 +149,9 @@ test:
 assets:
     FROM +deps
 
-    WORKDIR /app
 
     # Get assets from phoenix
+    WORKDIR /app
     COPY +deps/deps deps
 
     WORKDIR /app/assets
