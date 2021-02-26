@@ -65,7 +65,7 @@ phases:
       # - earthly -V --build-arg REGISTRY --build-arg REPO_URL --build-arg IMAGE_TAG +vuln
 
       # Push final image to container registry
-      - earthly -V --build-arg REGISTRY --build-arg REPO_URL --build-arg IMAGE_TAG -v --push +docker
+      - earthly -V --build-arg REGISTRY --build-arg REPO_URL --build-arg IMAGE_TAG --push +docker
 
       # Write image definition files
       # https://docs.aws.amazon.com/codepipeline/latest/userguide/file-reference.html
