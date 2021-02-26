@@ -63,6 +63,7 @@ ARG LANG=C.UTF-8
 ARG http_proxy
 ARG https_proxy=$http_proxy
 
+
 all:
     BUILD +test
     BUILD +run-test
@@ -213,9 +214,8 @@ docker:
     # on the local cache and need for the symlink
     RUN --mount=type=cache,target=/var/cache/apk \
         ln -s /var/cache/apk /etc/apk/cache && \
-        apk update && \
         # Upgrading ensures that we get the latest packages, but makes the build nondeterministic
-        $APK_UPGRADE && \
+        apk update && $APK_UPGRADE && \
         # https://github.com/krallin/tini
         # apk add tini && \
         # Make DNS resolution more reliable
@@ -236,7 +236,6 @@ docker:
             # Needed for RELEASE_TMP
             "/run/$APP_NAME"
 
-    RUN echo "image: $OUTPUT_IMAGE_NAME:$OUTPUT_IMAGE_TAG"
     # USER $APP_USER
 
     # Setting WORKDIR after USER makes directory be owned by the user.
@@ -265,6 +264,7 @@ docker:
 
     # Run app in foreground
     CMD ["start"]
+
     SAVE IMAGE --push $OUTPUT_IMAGE_NAME:$OUTPUT_IMAGE_TAG
 
 # Scan for security vulnerabilities

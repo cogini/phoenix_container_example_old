@@ -15,6 +15,16 @@ ARG NODE_VERSION=14.4
 
 ARG ALPINE_VERSION=3.13.1
 
+# Build image
+# ARG BUILD_IMAGE_NAME=elixir
+# ARG BUILD_IMAGE_TAG=${ELIXIR_VERSION}
+ARG BUILD_IMAGE_NAME=hexpm/elixir
+ARG BUILD_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${ERLANG_VERSION}-alpine-${ALPINE_VERSION}
+
+# Deploy base image
+ARG DEPLOY_IMAGE_NAME=alpine
+ARG DEPLOY_IMAGE_TAG=$ALPINE_VERSION
+
 # Run "apk upgrade" to update packages to a newer version than what is in the base image.
 # This ensures that we get the latest packages, but makes the build nondeterministic.
 # It is most useful when here is a vulnerability which is fixed in packages but
@@ -22,15 +32,9 @@ ARG ALPINE_VERSION=3.13.1
 # ARG APK_UPGRADE="apk upgrade --update-cache -a"
 ARG APK_UPGRADE=":"
 
-# Base image for deploy
-ARG BASE_IMAGE_NAME=alpine
-ARG BASE_IMAGE_TAG=$ALPINE_VERSION
-
-# ARG ELIXIR_IMAGE_NAME=elixir
-ARG ELIXIR_IMAGE_NAME=hexpm/elixir
-
-# ARG ELIXIR_IMAGE_TAG=${ELIXIR_VERSION}
-ARG ELIXIR_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${ERLANG_VERSION}-alpine-${ALPINE_VERSION}
+# Docker registry for base images, default is docker.io
+# If specified, should have a trailing slash
+ARG REGISTRY=""
 
 # Elixir release env to build
 ARG MIX_ENV=prod
@@ -46,38 +50,38 @@ ARG MIX_ENV=prod
 # end
 ARG RELEASE=prod
 
-# Name of app, e.g. for directories
+# Name of app, used for directories
 ARG APP_NAME=app
 
 # OS user that app runs under
 ARG APP_USER=app
+
+# OS group that app runs under
+ARG APP_GROUP="$APP_USER"
 
 # Runtime dir
 ARG APP_DIR=/app
 
 ARG LANG=C.UTF-8
 
-# Docker registry for base images, default is docker.io
-# If specified, should have a trailing slash
-ARG REGISTRY=""
+ARG http_proxy
+ARG https_proxy=$http_proxy
 
 ##########################################################################
 # Fetch OS build dependencies, e.g. libraries
 
-FROM ${REGISTRY}${ELIXIR_IMAGE_NAME}:${ELIXIR_IMAGE_TAG} AS os-deps
+FROM ${REGISTRY}${BUILD_IMAGE_NAME}:${BUILD_IMAGE_TAG} AS os-deps
 
 ARG APK_UPGRADE
 
-ARG http_proxy
-ARG https_proxy=$http_proxy
 
 ARG LANG
 
 RUN --mount=type=cache,id=apk,target=/var/cache/apk,sharing=locked \
     ln -s /var/cache/apk /etc/apk/cache \
-    && apk update \
-    && $APK_UPGRADE \
-    && apk add alpine-sdk \
+    && apk update && $APK_UPGRADE \
+    # && apk add alpine-sdk \
+    && apk add --no-progress git build-base \
     && apk add curl \
     && apk add nodejs npm \
     && curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
@@ -89,8 +93,7 @@ RUN --mount=type=cache,id=apk,target=/var/cache/apk,sharing=locked \
 FROM os-deps AS deps
 
 ARG http_proxy
-ARG https_proxy=$http_proxy
-
+ARG https_proxy
 ARG LANG
 ARG MIX_ENV
 
@@ -139,17 +142,16 @@ ARG LANG
 
 WORKDIR /app/assets
 
-# Copy deps to get assets from phoenix
+# Get assets from phoenix
 COPY --from=deps /app/deps /app/deps/
 
 COPY assets/package.json assets/package-lock.json ./
 
 # Cache npm cache directory as type=cache
 RUN --mount=type=cache,target=~/.npm,sharing=locked \
-    npm --prefer-offline --no-audit --progress=false \
-    --loglevel=error ci
+    npm --prefer-offline --no-audit --progress=false --loglevel=error ci
 
-COPY assets .
+COPY assets ./
 
 RUN npm run deploy
 
@@ -182,9 +184,6 @@ ARG MIX_ENV
 ARG LANG
 ARG RELEASE
 
-# Instead of copying sources, could use bind mount, e.g.
-# RUN --mount=target=.
-# see https://adoptingerlang.org/docs/production/docker/#efficient-caching
 COPY lib ./lib
 COPY rel ./rel
 
@@ -196,14 +195,14 @@ RUN --mount=type=cache,target=~/.hex/packages/hexpm,sharing=locked \
 ##########################################################################
 # Create final image that is deployed
 
-FROM ${REGISTRY}${BASE_IMAGE_NAME}:${BASE_IMAGE_TAG} AS deploy
+FROM ${REGISTRY}${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG} AS deploy
 
 ARG APK_UPGRADE
 
 ARG LANG
 ARG APP_NAME
 ARG APP_USER
-ARG APP_GROUP="$APP_USER"
+ARG APP_GROUP
 ARG APP_DIR
 
 ARG MIX_ENV
@@ -223,9 +222,8 @@ ENV LANG=$LANG \
 # on the local cache and need for the symlink
 RUN --mount=type=cache,id=apk,target=/var/cache/apk,sharing=locked \
     ln -s /var/cache/apk /etc/apk/cache \
-    && apk update \
     # Upgrading ensures that we get the latest packages, but makes the build nondeterministic
-    && $APK_UPGRADE \
+    && apk update && $APK_UPGRADE \
     # https://github.com/krallin/tini
     # && apk add tini \
     # Make DNS resolution more reliable
@@ -239,9 +237,8 @@ RUN --mount=type=cache,id=apk,target=/var/cache/apk,sharing=locked \
 RUN addgroup -g 10001 -S "$APP_GROUP" \
     && adduser -u 10000 -S "$APP_USER" -G "$APP_GROUP" -h "$HOME"
 
-# Create app dirs
-RUN mkdir -p \
-        "/run/$APP_NAME" \
+    # Create app dirs
+RUN mkdir -p "/run/$APP_NAME" \
     # Make dirs writable by app
     && chown -R "$APP_USER:$APP_GROUP" \
         # Needed for RELEASE_TMP
