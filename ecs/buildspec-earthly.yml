@@ -51,7 +51,7 @@ phases:
       - earthly --version
 
       # Run tests
-      - earthly --build-arg REGISTRY --build-arg REPO_URL --build-arg IMAGE_TAG +test
+      - earthly -V --build-arg REGISTRY --build-arg REPO_URL --build-arg IMAGE_TAG +test
 
       - DATABASE_HOST=db docker-compose up test
       - DATABASE_HOST=db docker-compose run test mix test
@@ -61,10 +61,10 @@ phases:
 
       # Scan for security vulnerabilities
       # - docker-compose build vuln
-      - earthly --build-arg REGISTRY --build-arg REPO_URL --build-arg IMAGE_TAG +vuln
+      - earthly -V --build-arg REGISTRY --build-arg REPO_URL --build-arg IMAGE_TAG +vuln
 
       # Push final image to container registry
-      - earthly --build-arg REGISTRY --build-arg REPO_URL --build-arg IMAGE_TAG -v --push +docker
+      - earthly -V --build-arg REGISTRY --build-arg REPO_URL --build-arg IMAGE_TAG -v --push +docker
 
       # Write image definition files
       # https://docs.aws.amazon.com/codepipeline/latest/userguide/file-reference.html
