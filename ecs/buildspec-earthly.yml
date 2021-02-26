@@ -51,7 +51,8 @@ phases:
       - earthly --version
 
       # Run tests
-      - earthly -V --build-arg REGISTRY --build-arg REPO_URL --build-arg IMAGE_TAG +test
+      # - earthly -V --build-arg REGISTRY --build-arg REPO_URL --build-arg IMAGE_TAG +test
+      - earthly -V --build-arg REGISTRY --build-arg REPO_URL --build-arg IMAGE_TAG +all
 
       - DATABASE_HOST=db docker-compose up test
       - DATABASE_HOST=db docker-compose run test mix test
@@ -61,7 +62,7 @@ phases:
 
       # Scan for security vulnerabilities
       # - docker-compose build vuln
-      - earthly -V --build-arg REGISTRY --build-arg REPO_URL --build-arg IMAGE_TAG +vuln
+      # - earthly -V --build-arg REGISTRY --build-arg REPO_URL --build-arg IMAGE_TAG +vuln
 
       # Push final image to container registry
       - earthly -V --build-arg REGISTRY --build-arg REPO_URL --build-arg IMAGE_TAG -v --push +docker

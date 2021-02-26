@@ -66,7 +66,7 @@ ARG https_proxy=$http_proxy
 
 all:
     BUILD +test
-    BUILD +run-test
+    # BUILD +run-test
     BUILD +vuln
     BUILD +docker
 
