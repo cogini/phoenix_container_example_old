@@ -63,6 +63,14 @@ ARG LANG=C.UTF-8
 ARG http_proxy
 ARG https_proxy=$http_proxy
 
+# The inner buildkit requires Docker hub creds to prevent rate-limiting issues.
+# ARG DOCKERHUB_USER_SECRET
+# ARG DOCKERHUB_TOKEN_SECRET
+# RUN --secret USERNAME=$DOCKERHUB_USER_SECRET \
+#     --secret TOKEN=$DOCKERHUB_TOKEN_SECRET \
+#     if [ "$USERNAME" != "" ]; then \
+#         docker login --username="$USERNAME" --password="$TOKEN" ;\
+#     fi
 
 all:
     BUILD +test
