@@ -9,11 +9,11 @@
 # https://docs.docker.com/develop/develop-images/build_enhancements/
 # https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/experimental.md
 
-ARG ELIXIR_VERSION=1.11.2
-ARG ERLANG_VERSION=23.2.4
+ARG ELIXIR_VERSION=1.11.3
+ARG ERLANG_VERSION=23.2.6
 ARG NODE_VERSION=14.4
 
-ARG ELIXIR_DEBIAN_VERSION=buster-20201012
+ARG ELIXIR_DEBIAN_VERSION=buster-20210208
 
 ARG AWS_CLI_VERSION=2.0.61
 
@@ -173,7 +173,7 @@ RUN --mount=type=cache,target=~/.hex/packages/hexpm,sharing=locked \
     # mix do local.rebar --force, local.hex --force, deps.get --only $MIX_ENV
 
 ##########################################################################
-# Run tests
+# Environment to run tests
 
 FROM deps AS test
 
@@ -196,17 +196,16 @@ RUN --mount=type=cache,target=~/.hex/packages/hexpm,sharing=locked \
 
 ##########################################################################
 # Build Phoenix assets
-# Using Debian because it has Python
 
-# FROM ${REGISTRY}node:${NODE_VERSION}-buster AS assets
 FROM os-deps AS assets
 
 ARG LANG
 
-WORKDIR /app/assets
-
 # Get assets from phoenix
 COPY --from=deps /app/deps /app/deps/
+
+WORKDIR /app/assets
+
 
 COPY assets/package.json assets/package-lock.json ./
 

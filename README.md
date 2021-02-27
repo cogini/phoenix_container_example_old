@@ -176,7 +176,7 @@ repositories from one registry to another.
 
         # Target base image, choose one
         - from: alpine
-          tags: ['3.13.1']
+          tags: ['3.13.2']
         - from: debian
           tags: ['buster-slim']
 
@@ -188,8 +188,8 @@ repositories from one registry to another.
         - from: hexpm/elixir
           tags:
             # Choose one
-            - '1.11.2-erlang-23.2.4-alpine-3.13.1'
-            - '1.11.2-erlang-23.2.4-debian-buster-20201012'
+            - '1.11.3-erlang-23.2.6-alpine-3.13.2'
+            - '1.11.3-erlang-23.2.6-debian-buster-20210208'
         - from: node
           tags:
             - '14.4-buster'
