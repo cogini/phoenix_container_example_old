@@ -14,7 +14,8 @@ version: 0.2
 env:
   variables:
     TEMPLATE_DIR: ecs
-
+    # Disable color in earthly
+    NO_COLOR: 1
 phases:
   install:
     commands:
