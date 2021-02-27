@@ -93,9 +93,9 @@ os-deps:
         # Vulnerability checking
         curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
 
-    # Install tooling needed to check if the DBs are actually up when performing integration tests
-    # RUN apk add postgresql-client mysql-client
-    # RUN apk add --no-cache curl gnupg --virtual .build-dependencies -- && \
+    # Database command line clients to check if DBs are up when performing integration tests
+    # RUN apk add --no-progress postgresql-client mysql-client
+    # RUN apk add --no-progress --no-cache curl gnupg --virtual .build-dependencies -- && \
     #     curl -O https://download.microsoft.com/download/e/4/e/e4e67866-dffd-428c-aac7-8d28ddafb39b/msodbcsql17_17.5.2.1-1_amd64.apk && \
     #     curl -O https://download.microsoft.com/download/e/4/e/e4e67866-dffd-428c-aac7-8d28ddafb39b/mssql-tools_17.5.2.1-1_amd64.apk && \
     #     echo y | apk add --allow-untrusted msodbcsql17_17.5.2.1-1_amd64.apk mssql-tools_17.5.2.1-1_amd64.apk && \
@@ -157,13 +157,11 @@ test:
 assets:
     FROM +deps
 
-
     # Get assets from phoenix
     WORKDIR /app
     COPY +deps/deps deps
 
     WORKDIR /app/assets
-
     COPY assets/package.json ./
     COPY assets/package-lock.json ./
 
@@ -189,7 +187,7 @@ digest:
 
     # This does a partial compile.
     # Doing "mix do compile, phx.digest, release" in a single stage is worse,
-    # because a single line of code changed causes a complete recompile.
+    # because a change to application code causes a complete recompile.
     # With the stages separated most of the compilation is cached.
 
 # Create release
@@ -275,7 +273,7 @@ docker:
 
     SAVE IMAGE --push $OUTPUT_IMAGE_NAME:$OUTPUT_IMAGE_TAG
 
-# Scan for security vulnerabilities
+# Scan for security vulnerabilities in release image
 vuln:
     FROM +docker
 
