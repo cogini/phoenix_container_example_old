@@ -147,54 +147,68 @@ repositories from one registry to another.
 
 `dregsy.yml`
 
-  ```yaml
-  relay: skopeo
+```yaml
+relay: skopeo
 
-  skopeo:
-    binary: skopeo
+skopeo:
+  binary: skopeo
 
-  tasks:
-    - name: task1
-      verbose: true
+tasks:
+  - name: docker
+    verbose: true
 
-      source:
-        registry: docker.io
-        # Authenticate with Docker Hub to get higher rate limits
-        # echo '{"username":"cogini","password":"sekrit"}' | base64
-        # auth: xxx
-      target:
-        registry: 1234567890.dkr.ecr.ap-northeast-1.amazonaws.com
-        auth-refresh: 10h
+    source:
+      registry: docker.io
+      # Authenticate with Docker Hub to get higher rate limits
+      # echo '{"username":"cogini","password":"sekrit"}' | base64
+      # auth: xxx
+    target:
+      registry: 1234567890.dkr.ecr.ap-northeast-1.amazonaws.com
+      auth-refresh: 10h
 
-      mappings:
-        # - from: moby/buildkit
-        #   tags: ['latest']
+    mappings:
+      # - from: moby/buildkit
+      #   tags: ['latest']
 
-        # CodeBuild base image
-        - from: ubuntu
-          tags: ['bionic', 'focal']
+      # CodeBuild base image
+      - from: ubuntu
+        tags: ['bionic', 'focal']
 
-        # Target base image, choose one
-        - from: alpine
-          tags: ['3.13.2']
-        - from: debian
-          tags: ['buster-slim']
+      # Target base image, choose one
+      - from: alpine
+        tags: ['3.13.2']
+      - from: debian
+        tags: ['buster-slim']
 
-        - from: postgres
-          tags: ['12']
+      - from: postgres
+        tags: ['12']
 
-        # Build base images
-        # - from: hexpm/erlang
-        - from: hexpm/elixir
-          tags:
-            # Choose one
-            - '1.11.3-erlang-23.2.6-alpine-3.13.2'
-            - '1.11.3-erlang-23.2.6-debian-buster-20210208'
-        - from: node
-          tags:
-            - '14.4-buster'
-            - '14.15.1-buster'
-  ```
+      # Build base images
+      # - from: hexpm/erlang
+      - from: hexpm/elixir
+        tags:
+          # Choose one
+          - '1.11.3-erlang-23.2.6-alpine-3.13.2'
+          - '1.11.3-erlang-23.2.6-debian-buster-20210208'
+      - from: node
+        tags:
+          - '14.4-buster'
+          - '14.15.1-buster'
+
+  - name: microsoft
+    verbose: true
+
+    source:
+      registry: mcr.microsoft.com
+
+    target:
+      registry: 770916339360.dkr.ecr.ap-northeast-1.amazonaws.com
+      auth-refresh: 10h
+
+    mappings:
+      - from: mssql/server
+        tags: ['2019-latest']
+```
 
 Run `dregsy` to sync docker images, using AWS credentials from your
 `~/.aws/config` file specified by `AWS_PROFILE` environment var:
