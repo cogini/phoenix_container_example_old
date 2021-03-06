@@ -53,13 +53,13 @@ phases:
 
       # Run tests
       # - earthly -V --build-arg REGISTRY --build-arg REPO_URL --build-arg IMAGE_TAG +test
-      - earthly -V --build-arg REGISTRY --build-arg REPO_URL --build-arg IMAGE_TAG +all
+      - earthly -P -V --build-arg REGISTRY --build-arg REPO_URL --build-arg IMAGE_TAG +all
 
-      - DATABASE_HOST=db docker-compose up test
-      - DATABASE_HOST=db docker-compose run test mix test
-      - DATABASE_HOST=db docker-compose run test mix credo
-      - DATABASE_HOST=db docker-compose run test mix deps.audit
-      - DATABASE_HOST=db docker-compose run test mix sobelow
+      # - DATABASE_HOST=db docker-compose up test
+      # - DATABASE_HOST=db docker-compose run test mix test
+      # - DATABASE_HOST=db docker-compose run test mix credo
+      # - DATABASE_HOST=db docker-compose run test mix deps.audit
+      # - DATABASE_HOST=db docker-compose run test mix sobelow
 
       # Scan for security vulnerabilities
       # - docker-compose build vuln

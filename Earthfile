@@ -74,7 +74,7 @@ ARG https_proxy=$http_proxy
 
 all:
     BUILD +test
-    # BUILD +run-test
+    BUILD +run-tests
     BUILD +vuln
     BUILD +docker
 
@@ -124,6 +124,7 @@ test:
     FROM +deps
 
     ENV MIX_ENV=test
+    # ENV DATABASE_HOST=db
 
     WORKDIR /app
 
@@ -133,25 +134,35 @@ test:
         --mount=type=cache,target=~/.cache/rebar3 \
         mix do compile
 
-    SAVE IMAGE app-test
+    SAVE IMAGE app-test:latest
 
-# run-tests:
-#     FROM earthly/dind:alpine
-#     # FROM +test
-#
-#     ARG DATABASE_HOST=db
-#     COPY docker-compose.yml ./
-#
-#     WITH DOCKER \
-#             --load test:latest=+test \
-#             --compose docker-compose.yml \
-#             --service db \
-#             --service test
-#         RUN docker run test mix test && \
-#             docker run test mix credo && \
-#             docker run test mix deps.audit && \
-#             docker run test mix sobelow
-#     END
+# Test database
+postgres:
+    FROM "${REGISTRY}postgres:12"
+    ENV POSTGRES_USER=postgres
+    ENV POSTGRES_PASSWORD=postgres
+    EXPOSE 5432
+    SAVE IMAGE app-db:latest
+
+# Run tests in test environment with database
+run-tests:
+    FROM earthly/dind:alpine
+    # ENV DATABASE_HOST=db
+
+    COPY docker-compose.test.yml ./docker-compose.yml
+
+    WITH DOCKER \
+            # --pull "${REGISTRY}postgres:12" \
+            --load test:latest=+test \
+            --load app-db:latest=+postgres \
+            --compose docker-compose.yml
+            # --service postgres
+            # --service test
+        RUN docker-compose run test mix test && \
+            docker-compose run test mix credo && \
+            docker-compose run test mix deps.audit && \
+            docker-compose run test mix sobelow
+    END
 
 # Build Phoenix assets, i.e. JS and CS
 assets:

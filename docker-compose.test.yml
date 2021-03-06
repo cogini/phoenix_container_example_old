@@ -1,0 +1,21 @@
+version: "3"
+services:
+  # https://github.com/docker-library/docs/blob/master/postgres/README.md
+  db:
+    image: app-db:latest
+    ports:
+      - 5432:5432
+    # hostname: db
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+
+  test:
+    image: test:latest
+    environment:
+      - MIX_ENV=test
+      - DATABASE_URL
+      - DATABASE_HOST=db
+      - DATABASE_DB
+    depends_on:
+      - db
