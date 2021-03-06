@@ -44,8 +44,8 @@ phases:
   build:
     commands:
       # Scan for app vulnerabilities
-      - trivy filesystem --exit-code 0 --severity HIGH --no-progress .
-      - trivy filesystem --exit-code 1 --severity CRITICAL --no-progress .
+      # - trivy filesystem --exit-code 0 --severity HIGH --no-progress .
+      # - trivy filesystem --exit-code 1 --severity CRITICAL --no-progress .
       # - grype -vv --fail-on medium .
       # - grype -vv .
 
@@ -53,7 +53,7 @@ phases:
 
       # Run tests
       # - earthly -V --build-arg REGISTRY --build-arg REPO_URL --build-arg IMAGE_TAG +test
-      - earthly -P -V --build-arg REGISTRY --build-arg REPO_URL --build-arg IMAGE_TAG --push +all
+      # - earthly -P -V --build-arg REGISTRY --build-arg REPO_URL --build-arg IMAGE_TAG --push +all
 
       # - DATABASE_HOST=db docker-compose up test
       # - DATABASE_HOST=db docker-compose run test mix test
@@ -66,7 +66,7 @@ phases:
       # - earthly -V --build-arg REGISTRY --build-arg REPO_URL --build-arg IMAGE_TAG +vuln
 
       # Push final image to container registry
-      # - earthly -V --build-arg REGISTRY --build-arg REPO_URL --build-arg IMAGE_TAG --push +docker
+      - earthly -V --build-arg REGISTRY --build-arg REPO_URL --build-arg IMAGE_TAG --push +docker
 
       # Write image definition files
       # https://docs.aws.amazon.com/codepipeline/latest/userguide/file-reference.html
