@@ -11,7 +11,7 @@
 # https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/experimental.md
 
 ARG DOCKER_COMPOSE_VERSION=1.27.4
-ARG EARTHLY_VERSION=v0.5.0
+ARG EARTHLY_VERSION=v0.5.4
 ARG AWS_CLI_VERSION=2.0.61
 
 ARG BASE_IMAGE=ubuntu
