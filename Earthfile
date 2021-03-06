@@ -119,7 +119,7 @@ deps:
 
     SAVE ARTIFACT deps /deps
 
-# Environment to run tests
+# Create environment to run tests
 test:
     FROM +deps
 
@@ -136,7 +136,7 @@ test:
 
     SAVE IMAGE app-test:latest
 
-# Test database
+# Create database for tests
 postgres:
     FROM "${REGISTRY}postgres:12"
     ENV POSTGRES_USER=postgres
@@ -201,7 +201,7 @@ digest:
     # because a change to application code causes a complete recompile.
     # With the stages separated most of the compilation is cached.
 
-# Create release
+# Create Erlang release
 release:
     FROM +digest
 
@@ -214,6 +214,7 @@ release:
     SAVE ARTIFACT "_build/$MIX_ENV/rel/${RELEASE}" /release AS LOCAL "build/release/${RELEASE}"
     SAVE ARTIFACT priv/static /static AS LOCAL build/static
 
+# Create final deploy image
 docker:
     FROM ${REGISTRY}${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG}
 
