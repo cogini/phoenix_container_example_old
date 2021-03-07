@@ -17,6 +17,7 @@ ARG DEPLOY_IMAGE_TAG=$ALPINE_VERSION
 # Output image
 ARG REPO_URL=foo-app
 # ARG EARTHLY_GIT_HASH
+ARG IMAGE_TAG=latest
 ARG OUTPUT_IMAGE_NAME=$REPO_URL
 
 # Run "apk upgrade" to update packages to a newer version than what is in the base image.
@@ -151,12 +152,9 @@ run-tests:
     COPY docker-compose.test.yml ./docker-compose.yml
 
     WITH DOCKER \
-            # --pull "${REGISTRY}postgres:12" \
             --load test:latest=+test \
             --load app-db:latest=+postgres \
             --compose docker-compose.yml
-            # --service postgres
-            # --service test
         RUN docker-compose run test mix test && \
             docker-compose run test mix credo && \
             docker-compose run test mix deps.audit && \
@@ -200,7 +198,8 @@ digest:
     # because a change to application code causes a complete recompile.
     # With the stages separated most of the compilation is cached.
 
-    SAVE IMAGE --push $OUTPUT_IMAGE_NAME:digest
+    # SAVE IMAGE --push $OUTPUT_IMAGE_NAME:digest
+    SAVE IMAGE --cache-hint
 
 # Create Erlang release
 release:
@@ -218,8 +217,6 @@ release:
 # Create final deploy image
 docker:
     FROM ${REGISTRY}${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG}
-
-    ARG IMAGE_TAG=latest
 
     # Set environment vars used by the app
     # SECRET_KEY_BASE and DATABASE_URL env vars should be set when running the application
