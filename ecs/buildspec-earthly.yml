@@ -13,7 +13,6 @@
 version: 0.2
 env:
   variables:
-    TEMPLATE_DIR: ecs
     # Disable color in earthly
     NO_COLOR: 1
 phases:
@@ -65,25 +64,26 @@ phases:
       # Generate imageDetail.json file for CodeDeploy ECS blue/green deploy action
       - printf '{"ImageURI":"%s"}' "$REPO_URL:$IMAGE_TAG" | tee imageDetail.json
 
-      - sed -i 's!<NAME>!'$CONTAINER_NAME'!g' $TEMPLATE_DIR/appspec.yml $TEMPLATE_DIR/taskdef.json
-      - sed -i 's!<PORT>!'$PORT'!g' ecs/appspec.yml $TEMPLATE_DIR/taskdef.json
-      - sed -i 's!<TASK_ROLE_ARN>!'$TASK_ROLE_ARN'!g' $TEMPLATE_DIR/taskdef.json
-      - sed -i 's!<EXECUTION_ROLE_ARN>!'$EXECUTION_ROLE_ARN'!g' $TEMPLATE_DIR/taskdef.json
-      - sed -i 's!<CPU>!'$CPU'!g' $TEMPLATE_DIR/taskdef.json
-      - sed -i 's!<MEMORY>!'$MEMORY'!g' $TEMPLATE_DIR/taskdef.json
-      - sed -i 's!<AWSLOGS_GROUP>!'$AWSLOGS_GROUP'!g' $TEMPLATE_DIR/taskdef.json
-      - sed -i 's!<AWSLOGS_REGION>!'$AWS_REGION'!g' $TEMPLATE_DIR/taskdef.json
-      - sed -i 's!<AWSLOGS_STREAM_PREFIX>!'$AWSLOGS_STREAM_PREFIX'!g' $TEMPLATE_DIR/taskdef.json
+      # Generate ECS files based on env vars passed from Terraform
+      - sed -i 's!<NAME>!'$CONTAINER_NAME'!g' ecs/appspec.yml ecs/taskdef.json
+      - sed -i 's!<PORT>!'$PORT'!g' ecs/appspec.yml ecs/taskdef.json
+      - sed -i 's!<TASK_ROLE_ARN>!'$TASK_ROLE_ARN'!g' ecs/taskdef.json
+      - sed -i 's!<EXECUTION_ROLE_ARN>!'$EXECUTION_ROLE_ARN'!g' ecs/taskdef.json
+      - sed -i 's!<CPU>!'$CPU'!g' ecs/taskdef.json
+      - sed -i 's!<MEMORY>!'$MEMORY'!g' ecs/taskdef.json
+      - sed -i 's!<AWSLOGS_GROUP>!'$AWSLOGS_GROUP'!g' ecs/taskdef.json
+      - sed -i 's!<AWSLOGS_REGION>!'$AWS_REGION'!g' ecs/taskdef.json
+      - sed -i 's!<AWSLOGS_STREAM_PREFIX>!'$AWSLOGS_STREAM_PREFIX'!g' ecs/taskdef.json
 
-      - sed -i 's!<CONFIG_S3_BUCKET>!'$CONFIG_S3_BUCKET'!g' $TEMPLATE_DIR/taskdef.json
-      - sed -i 's!<CONFIG_S3_PREFIX>!'$CONFIG_S3_PREFIX'!g' $TEMPLATE_DIR/taskdef.json
-      - sed -i 's!<AWS_REGION>!'$AWS_REGION'!g' $TEMPLATE_DIR/taskdef.json
-      - sed -i 's!<AWS_ACCOUNT_ID>!'$AWS_ACCOUNT_ID'!g' $TEMPLATE_DIR/taskdef.json
+      - sed -i 's!<CONFIG_S3_BUCKET>!'$CONFIG_S3_BUCKET'!g' ecs/taskdef.json
+      - sed -i 's!<CONFIG_S3_PREFIX>!'$CONFIG_S3_PREFIX'!g' ecs/taskdef.json
+      - sed -i 's!<AWS_REGION>!'$AWS_REGION'!g' ecs/taskdef.json
+      - sed -i 's!<AWS_ACCOUNT_ID>!'$AWS_ACCOUNT_ID'!g' ecs/taskdef.json
 
-      - cat $TEMPLATE_DIR/appspec.yml
-      - cat $TEMPLATE_DIR/taskdef.json
-      - cp $TEMPLATE_DIR/appspec.yml .
-      - cp $TEMPLATE_DIR/taskdef.json .
+      - cat ecs/appspec.yml
+      - cat ecs/taskdef.json
+      - cp ecs/appspec.yml .
+      - cp ecs/taskdef.json .
   # post_build:
   #   commands:
 artifacts:
