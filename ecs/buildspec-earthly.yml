@@ -64,7 +64,8 @@ phases:
       # Generate imageDetail.json file for CodeDeploy ECS blue/green deploy action
       - printf '{"ImageURI":"%s"}' "$REPO_URL:$IMAGE_TAG" | tee imageDetail.json
 
-      # Generate ECS files based on env vars passed from Terraform
+      # Generate files based on env vars passed from Terraform
+      # https://docs.aws.amazon.com/codedeploy/latest/userguide/reference-appspec-file-structure-resources.html
       - sed -i 's!<NAME>!'$CONTAINER_NAME'!g' ecs/appspec.yml ecs/taskdef.json
       - sed -i 's!<PORT>!'$PORT'!g' ecs/appspec.yml ecs/taskdef.json
       - sed -i 's!<TASK_ROLE_ARN>!'$TASK_ROLE_ARN'!g' ecs/taskdef.json
