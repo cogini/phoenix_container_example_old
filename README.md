@@ -3,9 +3,9 @@ app using containers.
 
 * Uses Docker [BuildKit](https://github.com/moby/buildkit)
   for parallel [multistage builds](https://docs.docker.com/develop/develop-images/multistage-build/)
-  and caching of OS files and language packages external to layers. Multistage
-  builds compile dependencies separately from app code, speeding rebuilds and
-  reducing final image size.  Caching of packages reduces size of container
+  and caching of OS files and language packages. Multistage builds compile
+  dependencies separately from app code, speeding rebuilds and reducing final
+  image size.  Caching of packages reduces size of container
   layers and allows sharing of data betwen container targets.
 
 * Supports Alpine and Debian, using [hexpm/elixir](https://hub.docker.com/r/hexpm/elixir)
@@ -27,10 +27,17 @@ app using containers.
 * Supports deploying to AWS ECS using CodeBuild, CodeDeploy Blue/Green
   deployment, and AWS Parameter Store for configuration. See
   [ecs/buildspec.yml](ecs/buildspec.yml). Terraform is used to set up the
-  environment, see https://github.com/cogini/multi-env-deploy
+  environment, see https://github.com/cogini/multi-env-deploy/
 
 * Supports compiling assets such as JS/CSS within the container, then
   exporting them to the Docker host so that they can be uploaded to a CDN.
+
+* Supports building with `docker buildx bake`, a docker-native build tool
+  similar to docker-compose which uses the more powerful HCL syntax
+  and supports native caching functionality.
+
+* Supports building with [Earthly](https://earthly.dev/), an improved Dockerfile
+  with better syntax, caching, and testing workflows.
 
 ## Usage
 
