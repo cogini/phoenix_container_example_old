@@ -39,9 +39,12 @@ defmodule PhoenixContainerExample.MixProject do
     [
       mod: {PhoenixContainerExample.Application, []},
       # extra_applications: [:logger, :runtime_tools]
-      extra_applications: [:logger, :runtime_tools, :ssl]
+      extra_applications: [:logger, :runtime_tools, :ssl] ++ extra_applications(Mix.env()),
     ]
   end
+
+  def extra_applications(:test), do: [:tools]
+  def extra_applications(_), do: []
 
   # Specifies which paths to compile per environment.
   defp elixirc_paths(:test), do: ["lib", "test/support"]
