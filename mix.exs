@@ -43,7 +43,7 @@ defmodule PhoenixContainerExample.MixProject do
     ]
   end
 
-  def extra_applications(:test), do: [:tools, :eex]
+  # def extra_applications(:test), do: [:tools, :eex]
   def extra_applications(_), do: []
 
   # Specifies which paths to compile per environment.
