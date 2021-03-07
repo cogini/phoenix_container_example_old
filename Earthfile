@@ -15,6 +15,8 @@ ARG DEPLOY_IMAGE_NAME=alpine
 ARG DEPLOY_IMAGE_TAG=$ALPINE_VERSION
 
 # Output image
+ARG EARTHLY_GIT_HASH
+ARG IMAGE_TAG=latest
 ARG REPO_URL=foo-app
 ARG OUTPUT_IMAGE_NAME=$REPO_URL
 
@@ -216,9 +218,6 @@ release:
 docker:
     FROM ${REGISTRY}${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG}
 
-    ARG IMAGE_TAG=latest
-    ARG EARTHLY_GIT_HASH
-
     # Set environment vars used by the app
     # SECRET_KEY_BASE and DATABASE_URL env vars should be set when running the application
     # maybe set COOKIE and other things
@@ -285,7 +284,7 @@ docker:
     CMD ["start"]
 
     # SAVE IMAGE --push $OUTPUT_IMAGE_NAME:$IMAGE_TAG
-    SAVE IMAGE --push ${OUTPUT_IMAGE_NAME}:${EARTHLY_GIT_HASH}
+    SAVE IMAGE --push $OUTPUT_IMAGE_NAME:$EARTHLY_GIT_HASH
 
 # Scan for security vulnerabilities in release image
 vuln:
