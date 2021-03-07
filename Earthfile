@@ -133,8 +133,8 @@ test:
         --mount=type=cache,target=~/.cache/rebar3 \
         mix do compile
 
-    # SAVE IMAGE app-test:latest
-    SAVE IMAGE --push $OUTPUT_IMAGE_NAME:test
+    SAVE IMAGE app-test:latest
+    # SAVE IMAGE --push $OUTPUT_IMAGE_NAME:test
 
 # Create database for tests
 postgres:
@@ -147,7 +147,6 @@ postgres:
 # Run tests in test environment with database
 run-tests:
     FROM earthly/dind:alpine
-    # ENV DATABASE_HOST=db
 
     COPY docker-compose.test.yml ./docker-compose.yml
 
@@ -159,6 +158,42 @@ run-tests:
             docker-compose run test mix credo && \
             docker-compose run test mix deps.audit && \
             docker-compose run test mix sobelow
+    END
+
+run-tests-split:
+    BUILD +run-test
+    BUILD +run-test-credo
+    BUILD +run-test-deps-audit
+    BUILD +run-test-sobelow
+
+run-test:
+    FROM earthly/dind:alpine
+
+    COPY docker-compose.test.yml ./docker-compose.yml
+
+    WITH DOCKER \
+            --load test:latest=+test \
+            --load app-db:latest=+postgres \
+            --compose docker-compose.yml
+        RUN docker-compose run test mix test
+    END
+
+run-test-credo:
+    FROM earthly/dind:alpine
+    WITH DOCKER --load test:latest=+test
+        RUN docker run test mix credo
+    END
+
+run-test-deps-audit:
+    FROM earthly/dind:alpine
+    WITH DOCKER --load test:latest=+test
+        RUN docker run test mix deps.audit
+    END
+
+run-test-sobelow:
+    FROM earthly/dind:alpine
+    WITH DOCKER --load test:latest=+test
+        RUN docker run test mix sobelow
     END
 
 # Build Phoenix assets, i.e. JS and CS
@@ -198,7 +233,7 @@ digest:
     # because a change to application code causes a complete recompile.
     # With the stages separated most of the compilation is cached.
 
-    SAVE IMAGE --push $OUTPUT_IMAGE_NAME:digest
+    # SAVE IMAGE --push $OUTPUT_IMAGE_NAME:digest
     # SAVE IMAGE --cache-hint
 
 # Create Erlang release
