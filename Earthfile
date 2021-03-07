@@ -226,6 +226,8 @@ docker:
     ENV RELEASE=${RELEASE}
     ENV PORT=4000
 
+    ARG EARTHLY_GIT_HASH
+    ARG TAG=$EARTHLY_GIT_HASH
     RUN "echo: EARTHLY_GIT_HASH: $EARTHLY_GIT_HASH"
 
     # Install Alpine runtime libraries
@@ -285,7 +287,7 @@ docker:
     CMD ["start"]
 
     # SAVE IMAGE --push $OUTPUT_IMAGE_NAME:$IMAGE_TAG
-    SAVE IMAGE --push $OUTPUT_IMAGE_NAME:$EARTHLY_GIT_HASH
+    SAVE IMAGE --push $OUTPUT_IMAGE_NAME:$TAG
 
 # Scan for security vulnerabilities in release image
 vuln:
