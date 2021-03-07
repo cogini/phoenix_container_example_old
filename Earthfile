@@ -15,7 +15,6 @@ ARG DEPLOY_IMAGE_NAME=alpine
 ARG DEPLOY_IMAGE_TAG=$ALPINE_VERSION
 
 # Output image
-ARG EARTHLY_GIT_HASH
 ARG IMAGE_TAG=latest
 ARG REPO_URL=foo-app
 ARG OUTPUT_IMAGE_NAME=$REPO_URL
@@ -226,6 +225,8 @@ docker:
     ENV RELEASE_TMP="/run/$APP_NAME"
     ENV RELEASE=${RELEASE}
     ENV PORT=4000
+
+    RUN "echo: EARTHLY_GIT_HASH: $EARTHLY_GIT_HASH"
 
     # Install Alpine runtime libraries
     # See https://wiki.alpinelinux.org/wiki/Local_APK_cache for details
