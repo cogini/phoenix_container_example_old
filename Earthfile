@@ -15,6 +15,7 @@ ARG DEPLOY_IMAGE_NAME=alpine
 ARG DEPLOY_IMAGE_TAG=$ALPINE_VERSION
 
 # Output image
+# ARG EARTHLY_GIT_HASH
 ARG IMAGE_TAG=latest
 ARG REPO_URL=foo-app
 ARG OUTPUT_IMAGE_NAME=$REPO_URL
@@ -226,10 +227,6 @@ docker:
     ENV RELEASE=${RELEASE}
     ENV PORT=4000
 
-    ARG EARTHLY_GIT_HASH
-    ARG TAG=$EARTHLY_GIT_HASH
-    RUN echo "EARTHLY_GIT_HASH: $EARTHLY_GIT_HASH"
-
     # Install Alpine runtime libraries
     # See https://wiki.alpinelinux.org/wiki/Local_APK_cache for details
     # on the local cache and need for the symlink
@@ -286,8 +283,7 @@ docker:
     # Run app in foreground
     CMD ["start"]
 
-    # SAVE IMAGE --push $OUTPUT_IMAGE_NAME:$IMAGE_TAG
-    SAVE IMAGE --push $OUTPUT_IMAGE_NAME:$TAG
+    SAVE IMAGE --push $OUTPUT_IMAGE_NAME:$IMAGE_TAG
 
 # Scan for security vulnerabilities in release image
 vuln:

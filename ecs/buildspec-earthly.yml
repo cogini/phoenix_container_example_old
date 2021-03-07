@@ -54,9 +54,8 @@ phases:
 
       # Run tests
       # - earthly -V --build-arg REGISTRY --build-arg REPO_URL --build-arg IMAGE_TAG +test
-      # - earthly -P -V --build-arg REGISTRY --build-arg REPO_URL --build-arg IMAGE_TAG --ci --push +all
+      - earthly -P -V --build-arg REGISTRY --build-arg REPO_URL --build-arg IMAGE_TAG --ci --push +all
       # - earthly -P -V --build-arg REGISTRY --build-arg REPO_URL --build-arg IMAGE_TAG --ci --remote-cache=$REPO_URL:cache --push +all
-      - earthly -P -V --build-arg REGISTRY --build-arg REPO_URL --ci --push +all
 
       # - DATABASE_HOST=db docker-compose up test
       # - DATABASE_HOST=db docker-compose run test mix test
