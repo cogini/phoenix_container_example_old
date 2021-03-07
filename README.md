@@ -397,13 +397,8 @@ Comment out import in in `config/prod.exs`
 
 Allow db configuration to be overridden by env vars:
 
-diff --git config/dev.exs config/dev.exs
-index 89617ee..f7de153 100644
---- config/dev.exs
-+++ config/dev.exs
-@@ -2,10 +2,10 @@ use Mix.Config
-
 `config/dev.exs` and `config/test.exs':
+
 ```elixir
  # Configure your database
  config :phoenix_container_example, PhoenixContainerExample.Repo,
