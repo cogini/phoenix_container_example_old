@@ -228,7 +228,7 @@ docker:
 
     ARG EARTHLY_GIT_HASH
     ARG TAG=$EARTHLY_GIT_HASH
-    RUN "echo: EARTHLY_GIT_HASH: $EARTHLY_GIT_HASH"
+    RUN echo "EARTHLY_GIT_HASH: $EARTHLY_GIT_HASH"
 
     # Install Alpine runtime libraries
     # See https://wiki.alpinelinux.org/wiki/Local_APK_cache for details
