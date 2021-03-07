@@ -16,8 +16,6 @@ ARG DEPLOY_IMAGE_TAG=$ALPINE_VERSION
 
 # Output image
 ARG REPO_URL=foo-app
-# ARG EARTHLY_GIT_HASH
-ARG IMAGE_TAG=latest
 ARG OUTPUT_IMAGE_NAME=$REPO_URL
 
 # Run "apk upgrade" to update packages to a newer version than what is in the base image.
@@ -198,8 +196,8 @@ digest:
     # because a change to application code causes a complete recompile.
     # With the stages separated most of the compilation is cached.
 
-    # SAVE IMAGE --push $OUTPUT_IMAGE_NAME:digest
-    SAVE IMAGE --cache-hint
+    SAVE IMAGE --push $OUTPUT_IMAGE_NAME:digest
+    # SAVE IMAGE --cache-hint
 
 # Create Erlang release
 release:
@@ -217,6 +215,9 @@ release:
 # Create final deploy image
 docker:
     FROM ${REGISTRY}${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG}
+
+    ARG IMAGE_TAG=latest
+    ARG EARTHLY_GIT_HASH
 
     # Set environment vars used by the app
     # SECRET_KEY_BASE and DATABASE_URL env vars should be set when running the application
@@ -283,7 +284,8 @@ docker:
     # Run app in foreground
     CMD ["start"]
 
-    SAVE IMAGE --push $OUTPUT_IMAGE_NAME:$IMAGE_TAG
+    # SAVE IMAGE --push $OUTPUT_IMAGE_NAME:$IMAGE_TAG
+    SAVE IMAGE --push ${OUTPUT_IMAGE_NAME}:${EARTHLY_GIT_HASH}
 
 # Scan for security vulnerabilities in release image
 vuln:

@@ -39,7 +39,8 @@ phases:
 
       # - rm -rf /root/.cache/docker
 
-      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+        # - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      - COMMIT_HASH=$CODEBUILD_RESOLVED_SOURCE_VERSION
       - IMAGE_TAG=${COMMIT_HASH:=latest}
   build:
     commands:
@@ -54,7 +55,8 @@ phases:
       # Run tests
       # - earthly -V --build-arg REGISTRY --build-arg REPO_URL --build-arg IMAGE_TAG +test
       # - earthly -P -V --build-arg REGISTRY --build-arg REPO_URL --build-arg IMAGE_TAG --ci --push +all
-      - earthly -P -V --build-arg REGISTRY --build-arg REPO_URL --build-arg IMAGE_TAG --ci --remote-cache=$REPO_URL:cache --push +all
+      # - earthly -P -V --build-arg REGISTRY --build-arg REPO_URL --build-arg IMAGE_TAG --ci --remote-cache=$REPO_URL:cache --push +all
+      - earthly -P -V --build-arg REGISTRY --build-arg REPO_URL --ci --push +all
 
       # - DATABASE_HOST=db docker-compose up test
       # - DATABASE_HOST=db docker-compose run test mix test
