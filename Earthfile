@@ -321,7 +321,7 @@ docker:
     # Run app in foreground
     CMD ["start"]
 
-    SAVE IMAGE --push $OUTPUT_IMAGE_NAME:$IMAGE_TAG $OUTPUT_IMAGE_NAME:latest
+    SAVE IMAGE --push $OUTPUT_IMAGE_NAME:latest $OUTPUT_IMAGE_NAME:$IMAGE_TAG $OUTPUT_IMAGE_NAME:$EARTHLY_GIT_HASH
 
 # Scan for security vulnerabilities in release image
 vuln:
