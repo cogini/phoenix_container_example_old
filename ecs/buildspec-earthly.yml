@@ -37,8 +37,6 @@ phases:
       - echo '{"credsStore":"ecr-login"}' | tee /root/.docker/config.json
 
       # - rm -rf /root/.cache/docker
-      - git --version
-      - git rev-parse HEAD
 
       # - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
       - COMMIT_HASH=$CODEBUILD_RESOLVED_SOURCE_VERSION

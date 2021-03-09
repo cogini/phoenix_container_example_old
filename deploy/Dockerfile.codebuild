@@ -108,7 +108,6 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         apt-transport-https \
         ca-certificates \
         curl \
-        git \
         gnupg \
         gnupg-agent \
         # software-properties-common \
