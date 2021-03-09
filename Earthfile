@@ -318,7 +318,7 @@ docker:
     # Run app in foreground
     CMD ["start"]
 
-    SAVE IMAGE --push $OUTPUT_IMAGE_NAME:$IMAGE_TAG
+    SAVE IMAGE --push $OUTPUT_IMAGE_NAME:$IMAGE_TAG $OUTPUT_IMAGE_NAME:latest
 
 # Scan for security vulnerabilities in release image
 vuln:
