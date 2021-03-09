@@ -133,8 +133,8 @@ test:
         --mount=type=cache,target=~/.cache/rebar3 \
         mix do compile
 
-    SAVE IMAGE app-test:latest
-    # SAVE IMAGE --push $OUTPUT_IMAGE_NAME:test
+    # SAVE IMAGE app-test:latest
+    SAVE IMAGE --push $OUTPUT_IMAGE_NAME:test
 
 # Create database for tests
 postgres:
@@ -233,7 +233,7 @@ digest:
     # because a change to application code causes a complete recompile.
     # With the stages separated most of the compilation is cached.
 
-    # SAVE IMAGE --push $OUTPUT_IMAGE_NAME:digest
+    SAVE IMAGE --push $OUTPUT_IMAGE_NAME:digest
     # SAVE IMAGE --cache-hint
 
 # Create Erlang release
