@@ -56,8 +56,9 @@ phases:
       # - earthly -P -V --build-arg REGISTRY --build-arg REPO_URL --build-arg IMAGE_TAG --ci --push +all
       # - earthly -P -V --build-arg REGISTRY --build-arg REPO_URL --build-arg IMAGE_TAG --ci --remote-cache=$REPO_URL:cache --push +all
       # - earthly -P -V --build-arg REGISTRY --build-arg REPO_URL --build-arg IMAGE_TAG --push +all
-      - earthly -P -V --build-arg REGISTRY --build-arg REPO_URL --build-arg IMAGE_TAG --ci --push +all
-        # - docker tag ${REPO_URL} ${REPO_URL}:${IMAGE_TAG}
+      - earthly -P -V --build-arg REGISTRY --build-arg REPO_URL --push +all
+      - docker tag ${REPO_URL} ${REPO_URL}:${IMAGE_TAG}
+      - docker push ${REPO_URL}:${IMAGE_TAG}
 
       # Write image definition files
       # https://docs.aws.amazon.com/codepipeline/latest/userguide/file-reference.html
