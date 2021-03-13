@@ -216,6 +216,7 @@ assets:
     RUN npm run deploy
 
     SAVE ARTIFACT ../priv /priv
+    SAVE IMAGE --push $OUTPUT_IMAGE_NAME:assets
 
 # Create digested version of assets
 digest:
