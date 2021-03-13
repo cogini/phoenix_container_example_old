@@ -101,6 +101,8 @@ os-deps:
     #     apk del .build-dependencies && rm -f msodbcsql*.sig mssql-tools*.apk
     # ENV PATH="/opt/mssql-tools/bin:${PATH}"
 
+    SAVE IMAGE --push $OUTPUT_IMAGE_NAME:os-deps
+
 # Fetch app library dependencies
 deps:
     FROM +os-deps
@@ -117,6 +119,7 @@ deps:
         # mix do local.rebar --force, local.hex --force, deps.get --only $MIX_ENV
 
     SAVE ARTIFACT deps /deps
+    SAVE IMAGE --push $OUTPUT_IMAGE_NAME:deps
 
 # Create environment to run tests
 test:
