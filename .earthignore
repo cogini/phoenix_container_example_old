@@ -26,14 +26,5 @@ deploy
 container
 
 artifacts
-assets
-bin
-build
-config
-container
-lib
-priv
-rel
-test
 
 erl_crash.dump
