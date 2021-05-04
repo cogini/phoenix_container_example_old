@@ -64,7 +64,7 @@ ARG https_proxy=$http_proxy
 # Make apt-get be quiet
 ARG DEBIAN_FRONTEND=noninteractive
 ARG APT_OPTS="-y -qq -o=Dpkg::Use-Pty=0 --no-install-recommends"
-ARG APT_OPTS_UPDATE="-qq"
+ARG APT_OPTS_UPDATE="-qq --no-install-recommends"
 
 ##########################################################################
 # Fetch OS build dependencies, e.g. libraries
@@ -88,8 +88,8 @@ ARG NODE_VERSION
 # The default Debian image has special config to avoid caches, but we want them now
 RUN set -exu \
     && rm -f /etc/apt/apt.conf.d/docker-clean \
-    && echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache \
-    && echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression
+    && printf 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache \
+    && printf 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression
 
 RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
@@ -97,9 +97,9 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     set -exu \
     && apt-get update $APT_OPTS_UPDATE \
     # Avoid warnings
-    # && apt-get install $APT_OPTS dialog apt-utils \
+    # && apt-get -y install $APT_OPTS dialog apt-utils \
     # Enable installation of packages over https
-    && apt-get install $APT_OPTS \
+    && apt-get -y install $APT_OPTS \
         apt-transport-https \
         ca-certificates \
         curl \
@@ -137,7 +137,7 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     # && echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -sc)-pgdg main" | tee /etc/apt/sources.list.d/pgdg.list \
     # && echo "Package: *\nPin: release o=apt.postgresql.org\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/pgdg.pref \
     # && apt-get update $APT_OPTS_UPDATE \
-    # && apt-get install $APT_OPTS \
+    # && apt-get -y install $APT_OPTS \
     #     libpq-dev \
     #     postgresql-client
 
@@ -145,7 +145,7 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     # && curl -sL https://packages.microsoft.com/keys/microsoft.asc -o /etc/apt/trusted.gpg.d/microsoft.asc \
     # && curl -s https://packages.microsoft.com/config/debian/10/prod.list -o /etc/apt/sources.list.d/mssql-release.list \
     # && export ACCEPT_EULA=Y \
-    # && apt-get -qq update && apt-get install $APT_OPTS msodbcsql17 \
+    # && apt-get -qq update $APT_OPTS_UPDATE && apt-get -y install $APT_OPTS msodbcsql17 \
     # && rm -rf /var/lib/dpkg
 
     # && rm -rf /var/lib/apt/lists/*
@@ -192,7 +192,7 @@ COPY bin ./bin
 
 RUN --mount=type=cache,target=~/.hex/packages/hexpm,sharing=locked \
     --mount=type=cache,target=~/.cache/rebar3,sharing=locked \
-    mix do compile
+    mix compile
 
 ##########################################################################
 # Build Phoenix assets
@@ -286,9 +286,9 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     set -exu \
     && apt-get update $APT_OPTS_UPDATE \
     # Avoid warnings
-    # && apt-get install $APT_OPTS dialog apt-utils \
+    # && apt-get -y install $APT_OPTS dialog apt-utils \
     # Enable installation of packages over https
-    && apt-get install $APT_OPTS \
+    && apt-get -y install $APT_OPTS \
         # apt-transport-https \
         ca-certificates \
         curl \
@@ -345,7 +345,7 @@ RUN set -exu \
 #     --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
 #     set -exu \
 #     && apt-get update $APT_OPTS_UPDATE \
-#     && apt-get install $APT_OPTS \
+#     && apt-get -y install $APT_OPTS \
 #       locales
 #     && localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
 #
@@ -363,9 +363,9 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     set -exu \
     && apt-get update $APT_OPTS_UPDATE \
     # Avoid warnings
-    # && apt-get install $APT_OPTS dialog apt-utils \
+    # && apt-get -y install $APT_OPTS dialog apt-utils \
     # Enable installation of packages over https
-    && apt-get install $APT_OPTS \
+    && apt-get -y install $APT_OPTS \
         apt-transport-https \
         ca-certificates \
         curl \
@@ -374,7 +374,7 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         # software-properties-common \
         lsb-release \
     # App deps
-    && apt-get install $APT_OPTS \
+    && apt-get -y install $APT_OPTS \
         # Runtime deps
         openssl
         # tini \
@@ -389,7 +389,7 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     # && echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -sc)-pgdg main" | tee /etc/apt/sources.list.d/pgdg.list \
     # && echo "Package: *\nPin: release o=apt.postgresql.org\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/pgdg.pref \
     # && apt-get update $APT_OPTS_UPDATE \
-    # && apt-get install $APT_OPTS \
+    # && apt-get -y install $APT_OPTS \
     #     libpq-dev \
     #     postgresql-client \
 
@@ -397,7 +397,7 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     # && curl -sL https://packages.microsoft.com/keys/microsoft.asc -o /etc/apt/trusted.gpg.d/microsoft.asc \
     # && curl -s https://packages.microsoft.com/config/debian/10/prod.list -o /etc/apt/sources.list.d/mssql-release.list \
     # && export ACCEPT_EULA=Y \
-    # && apt-get -qq update && apt-get install $APT_OPTS msodbcsql17 \
+    # && apt-get -qq update && apt-get -y install $APT_OPTS msodbcsql17 \
     # && rm -rf /var/lib/dpkg
     # && rm -rf /var/lib/apt/lists/*
 
@@ -454,7 +454,7 @@ RUN set -exu \
 #     --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
 #     set -exu \
 #     && apt-get update $APT_OPTS_UPDATE \
-#     && apt-get install $APT_OPTS \
+#     && apt-get -y install $APT_OPTS \
 #       locales
 #     && localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
 #
@@ -472,9 +472,9 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     set -exu \
     && apt-get update $APT_OPTS_UPDATE \
     # Avoid warnings
-    # && apt-get install $APT_OPTS dialog apt-utils \
+    # && apt-get -y install $APT_OPTS dialog apt-utils \
     # Enable installation of packages over https
-    && apt-get install $APT_OPTS \
+    && apt-get -y install $APT_OPTS \
         apt-transport-https \
         ca-certificates \
         curl \
@@ -483,7 +483,7 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         # software-properties-common \
         lsb-release \
     # App deps
-    && apt-get install $APT_OPTS \
+    && apt-get -y install $APT_OPTS \
         # Runtime deps
         openssl \
 
@@ -521,10 +521,10 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
 
     # Latest postgres
     && curl -sL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /etc/apt/trusted.gpg.d/postgresql-ACCC4CF8.asc \
-    && echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -sc)-pgdg main" | tee /etc/apt/sources.list.d/pgdg.list \
-    && echo "Package: *\nPin: release o=apt.postgresql.org\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/pgdg.pref \
+    && printf "deb http://apt.postgresql.org/pub/repos/apt/ %s-pgdg main" "$(lsb_release -sc)" | tee /etc/apt/sources.list.d/pgdg.list \
+    && printf "Package: *\nPin: release o=apt.postgresql.org\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/pgdg.pref \
     && apt-get update $APT_OPTS_UPDATE \
-    && apt-get install $APT_OPTS \
+    && apt-get -y install $APT_OPTS \
         libpq-dev \
         postgresql-client
 
@@ -532,7 +532,7 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     # && curl -sL https://packages.microsoft.com/keys/microsoft.asc -o /etc/apt/trusted.gpg.d/microsoft.asc \
     # && curl -s https://packages.microsoft.com/config/debian/10/prod.list -o /etc/apt/sources.list.d/mssql-release.list \
     # && export ACCEPT_EULA=Y \
-    # && apt-get -qq update && apt-get install $APT_OPTS msodbcsql17 \
+    # && apt-get -qq update && apt-get -y install $APT_OPTS msodbcsql17 \
     # && rm -rf /var/lib/dpkg
     # && rm -rf /var/lib/apt/lists/*
 
@@ -628,12 +628,12 @@ FROM deploy as vuln
 ARG APT_OPTS
 ARG APT_OPTS_UPDATE
 
-USER root
+# USER root
 
 RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
     --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
-    apt-get install $APT_OPTS \
+    apt-get -y install $APT_OPTS \
         apt-transport-https \
         ca-certificates \
         curl \
@@ -642,9 +642,9 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         # software-properties-common \
         lsb-release \
     && curl -sL https://aquasecurity.github.io/trivy-repo/deb/public.key -o /etc/apt/trusted.gpg.d/trivy.asc \
-    && echo "deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | tee -a /etc/apt/sources.list.d/trivy.list \
+    && printf "deb https://aquasecurity.github.io/trivy-repo/deb %s main" "$(lsb_release -sc)" | tee -a /etc/apt/sources.list.d/trivy.list \
     && apt-get update $APT_OPTS_UPDATE \
-    && apt-get install $APT_OPTS \
+    && apt-get -y install $APT_OPTS \
         trivy
 
 RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
