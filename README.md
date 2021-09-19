@@ -145,7 +145,7 @@ Generate it with the command `mix phx.gen.secret`.
 
 ## Mirroring source images
 
-You can make a mirror of the base images that your build depends on to you own
+You can make a mirror of the base images that your build depends on to your own
 registry. This is particularly useful since Docker started rate limiting
 requests to public images.
 
