@@ -22,7 +22,7 @@ ARG OUTPUT_IMAGE_NAME=$REPO_URL
 
 # Run "apk upgrade" to update packages to a newer version than what is in the base image.
 # This ensures that we get the latest packages, but makes the build nondeterministic.
-# It is most useful when here is a vulnerability which is fixed in packages but
+# It is most useful when there is a vulnerability which is fixed in packages but
 # not yet released in an Alpine base image.
 # ARG APK_UPGRADE="apk upgrade --update-cache -a"
 ARG APK_UPGRADE=":"
