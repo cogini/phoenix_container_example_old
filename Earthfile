@@ -20,10 +20,12 @@ ARG IMAGE_TAG=latest
 ARG REPO_URL=foo-app
 ARG OUTPUT_IMAGE_NAME=$REPO_URL
 
-# Run "apk upgrade" to update packages to a newer version than what is in the base image.
+# Whether to update packages to a newer version than what is in the base image.
 # This ensures that we get the latest packages, but makes the build nondeterministic.
 # It is most useful when there is a vulnerability which is fixed in packages but
 # not yet released in an Alpine base image.
+# ARG APK_UPDATE="apk update"
+ARG APK_UPDATE=":"
 # ARG APK_UPGRADE="apk upgrade --update-cache -a"
 ARG APK_UPGRADE=":"
 
@@ -57,6 +59,11 @@ ARG APP_GROUP="$APP_USER"
 # Runtime dir
 ARG APP_DIR=/app
 
+ARG MIX_HOME=/opt/mix
+ARG HEX_HOME=/opt/hex
+ARG XDG_CACHE_HOME=/opt/cache
+ARG HOME=$APP_DIR
+
 ARG LANG=C.UTF-8
 
 ARG http_proxy
@@ -73,7 +80,8 @@ ARG https_proxy=$http_proxy
 
 all:
     BUILD +test
-    BUILD +run-tests
+    # BUILD +run-tests
+    BUILD +run-tests-split
     BUILD +vuln
     BUILD +docker
 
@@ -84,7 +92,7 @@ os-deps:
     # See https://wiki.alpinelinux.org/wiki/Local_APK_cache for details
     # on the local cache and need for the symlink
     RUN --mount=type=cache,target=/var/cache/apk \
-        apk update && $APK_UPGRADE && \
+        $APK_UPDATE && $APK_UPGRADE && \
         # apk add --no-progress alpine-sdk && \
         apk add --no-progress git build-base && \
         apk add --no-progress curl && \
@@ -107,37 +115,67 @@ os-deps:
 deps:
     FROM +os-deps
 
-    WORKDIR /app
+    WORKDIR $APP_DIR
 
     # Get Elixir app deps
-    COPY config config
+    COPY --dir config ./
     COPY mix.exs mix.lock ./
 
-    RUN --mount=type=cache,target=~/.hex/packages/hexpm \
-        --mount=type=cache,target=~/.cache/rebar3 \
-        mix do local.rebar --force, local.hex --force, deps.get
-        # mix do local.rebar --force, local.hex --force, deps.get --only $MIX_ENV
+    # RUN --mount=type=cache,target=/root/.mix \
+    #     --mount=type=cache,target=/root/.hex \
+    #     --mount=type=cache,target=/root/.cache \
+    #     mix do local.rebar --force, local.hex --force, deps.get
 
-    SAVE ARTIFACT deps /deps
+    RUN mix do local.rebar --force, local.hex --force, deps.get
+        # --only $MIX_ENV
+
+    # SAVE ARTIFACT deps /deps
     SAVE IMAGE --push $OUTPUT_IMAGE_NAME:deps
 
 # Create environment to run tests
-test:
+test-deps:
     FROM +deps
+
+    ENV MIX_ENV=test
+
+    WORKDIR $APP_DIR
+
+    # RUN --mount=type=cache,target=/opt/mix \
+    #     --mount=type=cache,target=/opt/hex \
+    #     --mount=type=cache,target=/opt/cache \
+    #    mix do local.rebar --force, local.hex --force, deps.get, deps.compile
+    RUN mix do deps.get, deps.compile
+
+test:
+    FROM +test-deps
+
+    ENV LANG=$LANG
+    ENV HOME=$APP_DIR
+
+    ENV MIX_HOME=$MIX_HOME
+    ENV HEX_HOME=$HEX_HOME
+    ENV XDG_CACHE_HOME=$XDG_CACHE_HOME
 
     ENV MIX_ENV=test
     # ENV DATABASE_HOST=db
 
-    WORKDIR /app
+    WORKDIR $APP_DIR
 
     COPY --dir lib priv test bin ./
 
-    RUN --mount=type=cache,target=~/.hex/packages/hexpm \
-        --mount=type=cache,target=~/.cache/rebar3 \
-        mix do compile
+    # RUN --mount=type=cache,target=/root/.mix \
+    #     --mount=type=cache,target=/root/.hex \
+    #     --mount=type=cache,target=/root/.cache \
+    RUN mix do compile
 
     # SAVE IMAGE app-test:latest
     SAVE IMAGE --push $OUTPUT_IMAGE_NAME:test
+
+dialyzer-plt:
+    FROM +test
+
+    WORKDIR $APP_DIR
+    RUN mix dialyzer --plt
 
 # Create database for tests
 postgres:
@@ -160,7 +198,8 @@ run-tests:
         RUN docker-compose run test mix test && \
             docker-compose run test mix credo && \
             docker-compose run test mix deps.audit && \
-            docker-compose run test mix sobelow
+            docker-compose run test mix sobelow && \
+            docker-compose run test mix dialyzer
     END
 
 run-tests-split:
@@ -168,6 +207,7 @@ run-tests-split:
     BUILD +run-test-credo
     BUILD +run-test-deps-audit
     BUILD +run-test-sobelow
+    BUILD +run-test-dialyzer
 
 run-test:
     FROM earthly/dind:alpine
@@ -199,19 +239,26 @@ run-test-sobelow:
         RUN docker run test mix sobelow
     END
 
+run-test-dialyzer:
+    FROM earthly/dind:alpine
+    WITH DOCKER --load test:latest=+dialyzer-plt
+        RUN docker run test mix dialyzer
+    END
+
 # Build Phoenix assets, i.e. JS and CS
 assets:
     FROM +deps
 
     # Get assets from phoenix
-    WORKDIR /app
-    COPY +deps/deps deps
+    WORKDIR $APP_DIR
+
+    # COPY +deps/deps deps
 
     WORKDIR /app/assets
     COPY assets/package.json ./
     COPY assets/package-lock.json ./
 
-    RUN --mount=type=cache,target=~/.npm \
+    RUN --mount=type=cache,target=/root/.npm \
         npm --prefer-offline --no-audit --progress=false --loglevel=error ci
 
     COPY assets ./
@@ -228,9 +275,10 @@ digest:
     COPY +assets/priv priv
 
     # https://hexdocs.pm/phoenix/Mix.Tasks.Phx.Digest.html
-    RUN --mount=type=cache,target=~/.hex/packages/hexpm \
-        --mount=type=cache,target=~/.cache/rebar3 \
-        mix phx.digest
+    # RUN --mount=type=cache,target=/opt/mix \
+    #     --mount=type=cache,target=/opt/hex \
+    #    --mount=type=cache,target=/opt/cache \
+    RUN mix phx.digest
 
     # This does a partial compile.
     # Doing "mix do compile, phx.digest, release" in a single stage is worse,
@@ -246,9 +294,10 @@ release:
 
     COPY --dir lib rel ./
 
-    RUN --mount=type=cache,target=~/.hex/packages/hexpm \
-        --mount=type=cache,target=~/.cache/rebar3 \
-        mix do compile, release "$RELEASE"
+    # RUN --mount=type=cache,target=/root/.mix \
+    #     --mount=type=cache,target=/root/.hex \
+    #     --mount=type=cache,target=/root/.cache \
+    RUN mix do compile, release "$RELEASE"
 
     # SAVE ARTIFACT "_build/$MIX_ENV/rel/${RELEASE}" /release AS LOCAL "build/release/${RELEASE}"
     SAVE ARTIFACT "_build/$MIX_ENV/rel/${RELEASE}" /release
@@ -274,7 +323,7 @@ docker:
     RUN --mount=type=cache,target=/var/cache/apk \
         ln -s /var/cache/apk /etc/apk/cache && \
         # Upgrading ensures that we get the latest packages, but makes the build nondeterministic
-        apk update && $APK_UPGRADE && \
+        $APK_UPDATE && $APK_UPGRADE && \
         # https://github.com/krallin/tini
         # apk add tini && \
         # Make DNS resolution more reliable
@@ -339,7 +388,8 @@ vuln:
     # Succeed for issues of severity = HIGH
     # Fail build if there are any issues of severity = CRITICAL
     RUN --mount=type=cache,target=/var/cache/apk \
-        --mount=type=cache,target=/root/.cache/trivy \
+        # --mount=type=cache,target=/root/.cache/trivy \
+        --mount=type=cache,target=/root/.cache \
         trivy filesystem --exit-code 0 --severity HIGH --no-progress / && \
         trivy filesystem --exit-code 1 --severity CRITICAL --no-progress /
         # Fail build if there are any issues
