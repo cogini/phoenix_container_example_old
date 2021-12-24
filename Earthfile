@@ -1,11 +1,9 @@
 # Build Elixir/Phoenix app
 
-# ARG ELIXIR_VERSION=1.11.3
-# ARG ELIXIR_VERSION=1.12.1
+# App versions
 ARG ELIXIR_VERSION=1.13.1
 ARG OTP_VERSION=23.3.4.10
 ARG NODE_VERSION=14.4
-
 ARG ALPINE_VERSION=3.14.3
 
 # Build image
@@ -16,29 +14,32 @@ ARG BUILD_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-alpine-${ALPINE_VERS
 ARG DEPLOY_IMAGE_NAME=alpine
 ARG DEPLOY_IMAGE_TAG=$ALPINE_VERSION
 
-# Output image
-# ARG EARTHLY_GIT_HASH
-ARG IMAGE_TAG=latest
-ARG REPO_URL=foo-app
-ARG OUTPUT_IMAGE_NAME=$REPO_URL
-
-# Whether to update packages to a newer version than what is in the base image.
-# This ensures that we get the latest packages, but makes the build nondeterministic.
-# It is most useful when there is a vulnerability which is fixed in packages but
-# not yet released in an Alpine base image.
-# ARG APK_UPDATE="apk update"
-ARG APK_UPDATE=":"
-# ARG APK_UPGRADE="apk upgrade --update-cache -a"
-ARG APK_UPGRADE=":"
-
 # Docker registry for base images, default is docker.io
 # If specified, should have a trailing slash
 ARG REGISTRY=""
+
+# Output image
+# ARG EARTHLY_GIT_HASH
+ARG OUTPUT_IMAGE_NAME=foo-app
+ARG OUTPUT_IMAGE_TAG=latest
+ARG OUTPUT_URL="${REGISTRY}${OUTPUT_IMAGE_NAME}"
+
+# By default, packages come from the APK index for the base Alpine image.
+# Package versions are consistent between builds, and we normally upgrade by
+# upgrading the Alpine version.
+ARG APK_UPDATE=":"
+ARG APK_UPGRADE=":"
+# If a vulnerability is fixed in packages but not yet released in an Alpine base image,
+# Then we can run update/upgrade as part of the build.
+# ARG APK_UPDATE="apk update"
+# ARG APK_UPGRADE="apk upgrade --update-cache -a"
+
 
 # Elixir release env to build
 ARG MIX_ENV=prod
 
 # Name of Elixir release
+ARG RELEASE=prod
 # This should match mix.exs, e.g.
 # defp releases do
 #   [
@@ -47,9 +48,8 @@ ARG MIX_ENV=prod
 #     ],
 #   ]
 # end
-ARG RELEASE=prod
 
-# Name of app, used for directories
+# App name, used to name directories
 ARG APP_NAME=app
 
 # OS user that app runs under
@@ -58,14 +58,20 @@ ARG APP_USER=app
 # OS group that app runs under
 ARG APP_GROUP="$APP_USER"
 
-# Runtime dir
+# Dir that app runs under
 ARG APP_DIR=/app
 
+# App listen port
+ARG APP_PORT=4000
+
+ARG HOME=$APP_DIR
+
+# Build cache dirs
 ARG MIX_HOME=/opt/mix
 ARG HEX_HOME=/opt/hex
 ARG XDG_CACHE_HOME=/opt/cache
-ARG HOME=$APP_DIR
 
+# Set a specific LOCALE
 ARG LANG=C.UTF-8
 
 ARG http_proxy
@@ -80,15 +86,22 @@ ARG https_proxy=$http_proxy
 #         docker login --username="$USERNAME" --password="$TOKEN" ;\
 #     fi
 
+# External targets
 all:
     BUILD +test
-    # BUILD +run-tests
-    BUILD +run-tests-split
-    BUILD +vuln
     BUILD +deploy
+    BUILD +deploy-scan
 
-# Fetch OS build dependencies
-os-deps:
+# These can also be called individually
+test:
+    BUILD +test-app
+    BUILD +test-credo
+    BUILD +test-deps-audit
+    BUILD +test-sobelow
+    BUILD +test-dialyzer
+
+# Create base build image with OS dependencies
+build-os-deps:
     FROM ${REGISTRY}${BUILD_IMAGE_NAME}:${BUILD_IMAGE_TAG}
 
     # See https://wiki.alpinelinux.org/wiki/Local_APK_cache for details
@@ -113,9 +126,9 @@ os-deps:
 
     SAVE IMAGE --push $OUTPUT_IMAGE_NAME:os-deps
 
-# Fetch app library dependencies
-deps:
-    FROM +os-deps
+# Get app deps
+build-deps-get:
+    FROM +build-os-deps
 
     WORKDIR $APP_DIR
 
@@ -128,15 +141,16 @@ deps:
     #     --mount=type=cache,target=/root/.cache \
     #     mix do local.rebar --force, local.hex --force, deps.get
 
+    # Install build tools and get app deps
     RUN mix do local.rebar --force, local.hex --force, deps.get
-        # --only $MIX_ENV
+    # -only $MIX_ENV
 
     # SAVE ARTIFACT deps /deps
     SAVE IMAGE --push $OUTPUT_IMAGE_NAME:deps
 
-# Create environment to run tests
-test-deps:
-    FROM +deps
+# Compile deps separately from application, allowing it to be cached
+test-deps-compile:
+    FROM +build-deps-get
 
     ENV MIX_ENV=test
 
@@ -145,11 +159,11 @@ test-deps:
     # RUN --mount=type=cache,target=/opt/mix \
     #     --mount=type=cache,target=/opt/hex \
     #     --mount=type=cache,target=/opt/cache \
-    #    mix do local.rebar --force, local.hex --force, deps.get, deps.compile
-    RUN mix do deps.get, deps.compile
+    RUN mix do deps.compile
 
-test:
-    FROM +test-deps
+# Base image used for running tests
+test-image:
+    FROM +test-deps-compile
 
     ENV LANG=$LANG
     ENV HOME=$APP_DIR
@@ -169,14 +183,47 @@ test:
     #     --mount=type=cache,target=/root/.cache \
     RUN mix do compile
 
+    # RUN mix dialyzer --plt
+
     # SAVE IMAGE app-test:latest
     SAVE IMAGE --push $OUTPUT_IMAGE_NAME:test
 
-dialyzer-plt:
-    FROM +test
+# Build Dialyzer PLT file for OTP and deps separately and cache
+# test-dialyzer-plt:
+#     FROM +test-deps-compile
+#
+#     ENV MIX_ENV=test
+#
+#     WORKDIR $APP_DIR
+#
+#     RUN mix dialyzer --plt
+
+test-dialyzer-plt:
+    FROM +build-deps-get
+
+    ENV MIX_ENV=dev
 
     WORKDIR $APP_DIR
+
     RUN mix dialyzer --plt
+
+test-image-dialyzer:
+    FROM +test-dialyzer-plt
+
+    ENV LANG=$LANG
+    ENV HOME=$APP_DIR
+
+    ENV MIX_HOME=$MIX_HOME
+    ENV HEX_HOME=$HEX_HOME
+    ENV XDG_CACHE_HOME=$XDG_CACHE_HOME
+
+    ENV MIX_ENV=dev
+
+    WORKDIR $APP_DIR
+
+    COPY --dir lib priv test bin ./
+
+    SAVE IMAGE test-dializer:latest
 
 # Create database for tests
 postgres:
@@ -186,76 +233,69 @@ postgres:
     EXPOSE 5432
     SAVE IMAGE app-db:latest
 
-# Run tests in test environment with database
-run-tests:
+# tests:
+#     FROM earthly/dind:alpine
+#
+#     COPY docker-compose.test.yml ./docker-compose.yml
+#
+#     WITH DOCKER \
+#             --load test:latest=+test-image \
+#             --load app-db:latest=+postgres \
+#             --compose docker-compose.yml
+#         RUN docker-compose run test mix test && \
+#             docker-compose run test mix credo && \
+#             docker-compose run test mix deps.audit && \
+#             docker-compose run test mix sobelow && \
+#             docker-compose run test mix dialyzer
+#     END
+
+# Run app tests in test environment with database
+test-app:
     FROM earthly/dind:alpine
 
     COPY docker-compose.test.yml ./docker-compose.yml
 
     WITH DOCKER \
-            --load test:latest=+test \
-            --load app-db:latest=+postgres \
-            --compose docker-compose.yml
-        RUN docker-compose run test mix test && \
-            docker-compose run test mix credo && \
-            docker-compose run test mix deps.audit && \
-            docker-compose run test mix sobelow && \
-            docker-compose run test mix dialyzer
-    END
-
-run-tests-split:
-    BUILD +run-test
-    BUILD +run-test-credo
-    BUILD +run-test-deps-audit
-    BUILD +run-test-sobelow
-    BUILD +run-test-dialyzer
-
-run-test:
-    FROM earthly/dind:alpine
-
-    COPY docker-compose.test.yml ./docker-compose.yml
-
-    WITH DOCKER \
-            --load test:latest=+test \
+            --load test:latest=+test-image \
             --load app-db:latest=+postgres \
             --compose docker-compose.yml
         RUN docker-compose run test mix test
     END
 
-run-test-credo:
+test-credo:
     FROM earthly/dind:alpine
-    WITH DOCKER --load test:latest=+test
+    WITH DOCKER --load test:latest=+test-image
         RUN docker run test mix credo
     END
 
-run-test-deps-audit:
+test-deps-audit:
     FROM earthly/dind:alpine
-    WITH DOCKER --load test:latest=+test
+    WITH DOCKER --load test:latest=+test-image
         RUN docker run test mix deps.audit
     END
 
-run-test-sobelow:
+test-sobelow:
     FROM earthly/dind:alpine
-    WITH DOCKER --load test:latest=+test
+    WITH DOCKER --load test:latest=+test-image
         RUN docker run test mix sobelow
     END
 
-run-test-dialyzer:
+test-dialyzer:
     FROM earthly/dind:alpine
-    WITH DOCKER --load test:latest=+dialyzer-plt
+    WITH DOCKER --load test:latest=+test-image-dialyzer
         RUN docker run test mix dialyzer
     END
 
 # Build Phoenix assets, i.e. JS and CS
-assets:
-    FROM +deps
+deploy-assets:
+    FROM +build-deps-get
 
-    # Get assets from phoenix
     WORKDIR $APP_DIR
 
     # COPY +deps/deps deps
 
     WORKDIR /app/assets
+
     COPY assets/package.json ./
     COPY assets/package-lock.json ./
 
@@ -270,10 +310,10 @@ assets:
     SAVE IMAGE --push $OUTPUT_IMAGE_NAME:assets
 
 # Create digested version of assets
-digest:
-    FROM +deps
+deploy-digest:
+    FROM +build-deps-get
 
-    COPY +assets/priv priv
+    COPY +deploy-assets/priv priv
 
     # https://hexdocs.pm/phoenix/Mix.Tasks.Phx.Digest.html
     # RUN --mount=type=cache,target=/opt/mix \
@@ -290,8 +330,8 @@ digest:
     # SAVE IMAGE --cache-hint
 
 # Create Erlang release
-release:
-    FROM +digest
+deploy-release:
+    FROM +deploy-digest
 
     COPY --dir lib rel ./
 
@@ -314,9 +354,11 @@ deploy:
     # maybe set COOKIE and other things
     ENV LANG=$LANG
     ENV HOME=$APP_DIR
+
+    ENV PORT=$APP_PORT
+
     ENV RELEASE_TMP="/run/$APP_NAME"
     ENV RELEASE=${RELEASE}
-    ENV PORT=4000
 
     # Install Alpine runtime libraries
     # See https://wiki.alpinelinux.org/wiki/Local_APK_cache for details
@@ -363,7 +405,7 @@ deploy:
     # TODO: For more security, change specific files to have group read/execute
     # permissions while leaving them owned by root
 
-    COPY +release/release ./
+    COPY +deploy-release/release ./
 
     EXPOSE $PORT
 
@@ -374,10 +416,10 @@ deploy:
     # Run app in foreground
     CMD ["start"]
 
-    SAVE IMAGE --push $OUTPUT_IMAGE_NAME:latest $OUTPUT_IMAGE_NAME:$IMAGE_TAG
+    SAVE IMAGE --push $OUTPUT_URL:latest $OUTPUT_URL:$OUTPUT_IMAGE_TAG
 
 # Scan for security vulnerabilities in release image
-vuln:
+deploy-scan:
     FROM +deploy
 
     USER root
