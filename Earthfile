@@ -1,14 +1,16 @@
 # Build Elixir/Phoenix app
 
-ARG ELIXIR_VERSION=1.11.3
-ARG ERLANG_VERSION=23.2.6
+# ARG ELIXIR_VERSION=1.11.3
+# ARG ELIXIR_VERSION=1.12.1
+ARG ELIXIR_VERSION=1.13.1
+ARG OTP_VERSION=23.3.4.10
 ARG NODE_VERSION=14.4
 
-ARG ALPINE_VERSION=3.13.2
+ARG ALPINE_VERSION=3.14.3
 
 # Build image
 ARG BUILD_IMAGE_NAME=hexpm/elixir
-ARG BUILD_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${ERLANG_VERSION}-alpine-${ALPINE_VERSION}
+ARG BUILD_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-alpine-${ALPINE_VERSION}
 
 # Deploy base image
 ARG DEPLOY_IMAGE_NAME=alpine
@@ -83,7 +85,7 @@ all:
     # BUILD +run-tests
     BUILD +run-tests-split
     BUILD +vuln
-    BUILD +docker
+    BUILD +deploy
 
 # Fetch OS build dependencies
 os-deps:
@@ -157,7 +159,6 @@ test:
     ENV XDG_CACHE_HOME=$XDG_CACHE_HOME
 
     ENV MIX_ENV=test
-    # ENV DATABASE_HOST=db
 
     WORKDIR $APP_DIR
 
@@ -305,7 +306,7 @@ release:
     SAVE ARTIFACT priv/static /static
 
 # Create final deploy image
-docker:
+deploy:
     FROM ${REGISTRY}${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG}
 
     # Set environment vars used by the app
@@ -377,7 +378,7 @@ docker:
 
 # Scan for security vulnerabilities in release image
 vuln:
-    FROM +docker
+    FROM +deploy
 
     USER root
 
