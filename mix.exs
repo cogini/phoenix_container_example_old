@@ -64,20 +64,20 @@ defmodule PhoenixContainerExample.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
-      {:mix_audit, "~> 0.1", only: [:dev, :test], runtime: false},
+      {:mix_audit, "~> 1.0.0", only: [:dev, :test], runtime: false},
       {:credo, "~> 1.5", only: [:dev, :test], runtime: false},
       {:coverex, "~> 1.5", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.0", only: [:dev, :test], runtime: false},
-      {:phoenix, "~> 1.5.3"},
+      {:phoenix, "~> 1.6.5"},
       {:phoenix_ecto, "~> 4.1"},
-      {:ecto_sql, "~> 3.4"},
+      {:ecto_sql, "~> 3.7"},
       {:postgrex, ">= 0.0.0"},
-      {:phoenix_html, "~> 2.11"},
-      {:phoenix_live_reload, "~> 1.2", only: :dev},
-      {:phoenix_live_dashboard, "~> 0.4.0"},
+      {:phoenix_html, "~> 3.2.0"},
+      {:phoenix_live_reload, "~> 1.3.3", only: :dev},
+      {:phoenix_live_dashboard, "~> 0.6.2"},
       {:sobelow, "~> 0.11.0", only: [:dev, :test], runtime: false},
       {:telemetry_metrics, "~> 0.6"},
-      {:telemetry_poller, "~> 0.4"},
+      {:telemetry_poller, "~> 1.0"},
       {:gettext, "~> 0.11"},
       {:jason, "~> 1.0"},
       {:plug_cowboy, "~> 2.0"}
