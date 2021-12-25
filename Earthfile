@@ -34,7 +34,6 @@ ARG APK_UPGRADE=":"
 # ARG APK_UPDATE="apk update"
 # ARG APK_UPGRADE="apk upgrade --update-cache -a"
 
-
 # Elixir release env to build
 ARG MIX_ENV=prod
 
@@ -124,7 +123,7 @@ build-os-deps:
     #     apk del .build-dependencies && rm -f msodbcsql*.sig mssql-tools*.apk
     # ENV PATH="/opt/mssql-tools/bin:${PATH}"
 
-    SAVE IMAGE --push $OUTPUT_IMAGE_NAME:os-deps
+    SAVE IMAGE --push ${OUTPUT_IMAGE_NAME}:os-deps
 
 # Get app deps
 build-deps-get:
@@ -143,10 +142,9 @@ build-deps-get:
 
     # Install build tools and get app deps
     RUN mix do local.rebar --force, local.hex --force, deps.get
-    # -only $MIX_ENV
 
     # SAVE ARTIFACT deps /deps
-    SAVE IMAGE --push $OUTPUT_IMAGE_NAME:deps
+    SAVE IMAGE --push ${OUTPUT_IMAGE_NAME}:deps
 
 # Compile deps separately from application, allowing it to be cached
 test-deps-compile:
@@ -183,20 +181,8 @@ test-image:
     #     --mount=type=cache,target=/root/.cache \
     RUN mix do compile
 
-    # RUN mix dialyzer --plt
-
     # SAVE IMAGE app-test:latest
-    SAVE IMAGE --push $OUTPUT_IMAGE_NAME:test
-
-# Build Dialyzer PLT file for OTP and deps separately and cache
-# test-dialyzer-plt:
-#     FROM +test-deps-compile
-#
-#     ENV MIX_ENV=test
-#
-#     WORKDIR $APP_DIR
-#
-#     RUN mix dialyzer --plt
+    SAVE IMAGE --push ${OUTPUT_IMAGE_NAME}:test
 
 test-dialyzer-plt:
     FROM +build-deps-get
@@ -416,7 +402,7 @@ deploy:
     # Run app in foreground
     CMD ["start"]
 
-    SAVE IMAGE --push $OUTPUT_URL:latest $OUTPUT_URL:$OUTPUT_IMAGE_TAG
+    SAVE IMAGE --push ${OUTPUT_URL}:latest ${OUTPUT_URL}:${OUTPUT_IMAGE_TAG}
 
 # Scan for security vulnerabilities in release image
 deploy-scan:
