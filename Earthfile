@@ -269,8 +269,8 @@ test-sobelow:
 
 test-dialyzer:
     FROM earthly/dind:alpine
-    WITH DOCKER --load test:latest=+test-image-dialyzer
-        RUN docker run test mix dialyzer
+    WITH DOCKER --load test-dialyzer:latest=+test-image-dialyzer
+        RUN docker run test-dialyzer mix dialyzer
     END
 
 # Compile deps separately from application, allowing it to be cached
@@ -309,7 +309,7 @@ deploy-assets:
 
 # Create digested version of assets
 deploy-digest:
-    FROM +build-deps-get
+    FROM +deploy-deps-compile
 
     COPY +deploy-assets/priv priv
 
