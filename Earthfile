@@ -157,7 +157,7 @@ test-deps-compile:
     # RUN --mount=type=cache,target=/opt/mix \
     #     --mount=type=cache,target=/opt/hex \
     #     --mount=type=cache,target=/opt/cache \
-    RUN mix do deps.compile
+    RUN mix deps.compile
 
 # Base image used for running tests
 test-image:
@@ -179,7 +179,7 @@ test-image:
     # RUN --mount=type=cache,target=/root/.mix \
     #     --mount=type=cache,target=/root/.hex \
     #     --mount=type=cache,target=/root/.cache \
-    RUN mix do compile
+    RUN mix compile
 
     # SAVE IMAGE app-test:latest
     SAVE IMAGE --push ${OUTPUT_IMAGE_NAME}:test
@@ -252,6 +252,7 @@ test-credo:
     FROM earthly/dind:alpine
     WITH DOCKER --load test:latest=+test-image
         RUN docker run test mix credo
+        # RUN docker run test mix credo --mute-exit-status
     END
 
 test-deps-audit:
@@ -272,9 +273,20 @@ test-dialyzer:
         RUN docker run test mix dialyzer
     END
 
+# Compile deps separately from application, allowing it to be cached
+deploy-deps-compile:
+    FROM +build-deps-get
+
+    WORKDIR $APP_DIR
+
+    # RUN --mount=type=cache,target=/opt/mix \
+    #     --mount=type=cache,target=/opt/hex \
+    #     --mount=type=cache,target=/opt/cache \
+    RUN mix deps.compile
+
 # Build Phoenix assets, i.e. JS and CS
 deploy-assets:
-    FROM +build-deps-get
+    FROM +deploy-deps-compile
 
     WORKDIR $APP_DIR
 
