@@ -2,9 +2,12 @@
 
 # App versions
 ARG ELIXIR_VERSION=1.13.1
-ARG OTP_VERSION=23.3.4.10
+# ARG OTP_VERSION=23.3.4.10
+ARG OTP_VERSION=24.2
 ARG NODE_VERSION=14.4
-ARG ALPINE_VERSION=3.14.3
+# ARG ALPINE_VERSION=3.14.3
+ARG ALPINE_VERSION=3.15.0
+# 1.13.1-erlang-24.2-alpine-3.15.0
 
 # Build image
 ARG BUILD_IMAGE_NAME=hexpm/elixir
@@ -110,7 +113,7 @@ build-os-deps:
         # apk add --no-progress alpine-sdk && \
         apk add --no-progress git build-base && \
         apk add --no-progress curl && \
-        apk add --no-progress nodejs npm && \
+        apk add --no-progress nodejs npm python3 && \
         # Vulnerability checking
         curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
 
@@ -213,7 +216,8 @@ test-image-dialyzer:
 
 # Create database for tests
 postgres:
-    FROM "${REGISTRY}postgres:12"
+    # FROM "${REGISTRY}postgres:12"
+    FROM "${REGISTRY}postgres:14.1-alpine"
     ENV POSTGRES_USER=postgres
     ENV POSTGRES_PASSWORD=postgres
     EXPOSE 5432
@@ -329,7 +333,8 @@ deploy-digest:
 
 # Create Erlang release
 deploy-release:
-    FROM +deploy-digest
+    # FROM +deploy-digest
+    FROM +deploy-deps-compile
 
     COPY --dir lib rel ./
 
@@ -341,7 +346,7 @@ deploy-release:
     # SAVE ARTIFACT "_build/$MIX_ENV/rel/${RELEASE}" /release AS LOCAL "build/release/${RELEASE}"
     SAVE ARTIFACT "_build/$MIX_ENV/rel/${RELEASE}" /release
     # SAVE ARTIFACT priv/static /static AS LOCAL build/static
-    SAVE ARTIFACT priv/static /static
+    # SAVE ARTIFACT priv/static /static
 
 # Create final deploy image
 deploy:
