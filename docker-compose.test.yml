@@ -1,15 +1,19 @@
-version: "3"
+version: "3.8"
 services:
   # https://github.com/docker-library/docs/blob/master/postgres/README.md
+  # https://geshan.com.np/blog/2021/12/docker-postgres/
   db:
     image: app-db:latest
+    restart: always
     ports:
-      - 5432:5432
+      - '5432:5432'
     # hostname: db
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
-
+    volumes:
+      - db:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/create_tables.sql
   test:
     image: test:latest
     environment:
@@ -19,3 +23,6 @@ services:
       - DATABASE_DB
     depends_on:
       - db
+volumes:
+  db:
+    driver: local
