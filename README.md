@@ -157,11 +157,22 @@ repositories from one registry to another.
 ```yaml
 relay: skopeo
 
+# relay config sections
 skopeo:
+  # path to the skopeo binary; defaults to 'skopeo', in which case it needs to
+  # be in PATH
   binary: skopeo
 
+# list of sync tasks
 tasks:
   - name: docker
+
+    # interval in seconds at which the task should be run; when omitted,
+    # the task is only run once at start-up
+    # interval: 60
+
+    # determines whether for this task, more verbose output should be
+    # produced; defaults to false when omitted
     verbose: true
 
     source:
@@ -173,6 +184,15 @@ tasks:
       registry: 1234567890.dkr.ecr.ap-northeast-1.amazonaws.com
       auth-refresh: 10h
 
+    # 'mappings' is a list of 'from':'to' pairs that define mappings of image
+    # paths in the source registry to paths in the destination; 'from' is
+    # required, while 'to' can be dropped if the path should remain the same as
+    # 'from'. Additionally, the tags being synced for a mapping can be limited
+    # by providing a 'tags' list. When omitted, all image tags are synced.
+    # mappings:
+    #   - from: test/image
+    #     to: archive/test/image
+    #     tags: ['0.1.0', '0.1.1']
     mappings:
       # - from: moby/buildkit
       #   tags: ['latest']
@@ -183,12 +203,18 @@ tasks:
 
       # Target base image, choose one
       - from: alpine
-        tags: ['3.13.2']
+        tags:
+          - '3.12.1'
+          - '3.13.2'
+          - '3.15.0'
+
       - from: debian
         tags: ['buster-slim']
 
       - from: postgres
-        tags: ['12']
+        tags:
+          - '12'
+          - '14.1-alpine'
 
       # Build base images
       # - from: hexpm/erlang
@@ -197,6 +223,7 @@ tasks:
           # Choose one
           - '1.11.3-erlang-23.2.6-alpine-3.13.2'
           - '1.11.3-erlang-23.2.6-debian-buster-20210208'
+          - '1.13.1-erlang-24.2-alpine-3.15.0'
       - from: node
         tags:
           - '14.4-buster'
