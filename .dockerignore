@@ -31,4 +31,4 @@ container
 artifacts
 
 erl_crash.dump
-
+.DS_Store
