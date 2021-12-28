@@ -2,7 +2,7 @@ version: "3.8"
 services:
   # https://github.com/docker-library/docs/blob/master/postgres/README.md
   # https://geshan.com.np/blog/2021/12/docker-postgres/
-  db:
+  postgres:
     image: app-db:latest
     restart: always
     ports:
@@ -19,10 +19,10 @@ services:
     environment:
       - MIX_ENV=test
       - DATABASE_URL
-      - DATABASE_HOST=db
+      - DATABASE_HOST=postgres
       - DATABASE_DB
     depends_on:
-      - db
+      - postgres
 volumes:
   db:
     driver: local
