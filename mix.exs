@@ -19,6 +19,7 @@ defmodule PhoenixContainerExample.MixProject do
         # flags: ["-Wunmatched_returns", :error_handling, :race_conditions, :underspecs],
         # ignore_warnings: "dialyzer.ignore-warnings"
       ],
+      # elixirc_options: [warnings_as_errors: Mix.env() != :dev],
       test_coverage: [tool: ExCoveralls],
       preferred_cli_env: [
         coveralls: :test,
@@ -67,6 +68,7 @@ defmodule PhoenixContainerExample.MixProject do
       {:mix_audit, "~> 1.0.0", only: [:dev, :test], runtime: false},
       {:credo, "~> 1.5", only: [:dev, :test], runtime: false},
       {:coverex, "~> 1.5", only: [:dev, :test], runtime: false},
+      {:excoveralls, "~> 0.10", only: :test},
       {:dialyxir, "~> 1.0", only: [:dev, :test], runtime: false},
       {:phoenix, "~> 1.6.5"},
       {:phoenix_ecto, "~> 4.1"},

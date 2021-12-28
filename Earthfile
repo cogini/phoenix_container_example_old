@@ -98,6 +98,7 @@ all:
 test:
     BUILD +test-app
     BUILD +test-credo
+    # BUILD +test-format
     BUILD +test-deps-audit
     BUILD +test-sobelow
     BUILD +test-dialyzer
@@ -177,6 +178,7 @@ test-image:
 
     WORKDIR $APP_DIR
 
+    COPY .formatter.exs ./
     COPY --dir lib priv test bin ./
 
     # RUN --mount=type=cache,target=/root/.mix \
@@ -249,7 +251,9 @@ test-app:
             --load test:latest=+test-image \
             --load app-db:latest=+postgres \
             --compose docker-compose.yml
-        RUN docker-compose run test mix test
+        RUN docker-compose run test mix ecto.create && \
+            docker-compose run test mix test && \
+            docker-compose run test mix coveralls
     END
 
 test-credo:
@@ -257,6 +261,12 @@ test-credo:
     WITH DOCKER --load test:latest=+test-image
         RUN docker run test mix credo
         # RUN docker run test mix credo --mute-exit-status
+    END
+
+test-format:
+    FROM earthly/dind:alpine
+    WITH DOCKER --load test:latest=+test-image
+        RUN docker run test mix format --check-formatted
     END
 
 test-deps-audit:
