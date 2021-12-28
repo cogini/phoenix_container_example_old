@@ -1,6 +1,4 @@
 ---
-# .github/workflows/ci.yml
-
 name: CI
 
 on: [push]
