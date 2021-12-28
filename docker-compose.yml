@@ -1,8 +1,17 @@
 version: '3.8'
 services:
   app:
-    # image: "${REGISTRY}cogini/foo-app"
-    image: "${REPO_URL}:${IMAGE_TAG}"
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.alpine
+      args:
+        BUILDKIT_INLINE_CACHE: "1"
+        MIX_ENV: prod
+        REGISTRY: ${REGISTRY}
+      target: deploy
+    depends_on:
+      db:
+        condition: service_started
     environment:
       - SECRET_KEY_BASE
       - DATABASE_URL
@@ -12,25 +21,25 @@ services:
       - AWS_SECRET_ACCESS_KEY
       - AWS_REGION
       - AWS_DEFAULT_REGION
-    build:
-      dockerfile: deploy/Dockerfile.alpine
-      # dockerfile: deploy/Dockerfile.debian
-      target: deploy
-      context: .
-      args:
-        BUILDKIT_INLINE_CACHE: 1
-        REGISTRY: ${REGISTRY}
-        MIX_ENV: prod
+    # image: "${REGISTRY}cogini/foo-app"
+    image: "${REPO_URL}:${IMAGE_TAG}"
     # platform: "linux/arm64"
     # platform: "linux/amd64"
     ports:
       - "4000:4000"
-    depends_on:
-      - db
 
   app-debian:
-    # image: "${REGISTRY}cogini/foo-app"
-    image: "${REPO_URL}:${IMAGE_TAG}"
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.debian
+      args:
+        BUILDKIT_INLINE_CACHE: "1"
+        MIX_ENV: prod
+        REGISTRY: ${REGISTRY}
+      target: deploy
+    depends_on:
+      db:
+        condition: service_started
     environment:
       - SECRET_KEY_BASE
       - DATABASE_URL
@@ -40,24 +49,62 @@ services:
       - AWS_SECRET_ACCESS_KEY
       - AWS_REGION
       - AWS_DEFAULT_REGION
-    build:
-      # dockerfile: deploy/Dockerfile.alpine
-      dockerfile: deploy/Dockerfile.debian
-      target: deploy
-      context: .
-      args:
-        BUILDKIT_INLINE_CACHE: 1
-        REGISTRY: ${REGISTRY}
-        MIX_ENV: prod
-    # platform: "linux/arm64"
-    # platform: "linux/amd64"
+    image: "${REPO_URL}:${IMAGE_TAG}"
     ports:
       - "4000:4000"
-    depends_on:
-      - db
+    # platform: "linux/arm64"
+    # platform: "linux/amd64"
+    # image: "${REGISTRY}cogini/foo-app"
+
+  codebuild:
+    # Custom build image for AWS CodeBuild
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.codebuild
+      args:
+        BUILDKIT_INLINE_CACHE: "1"
+        REGISTRY: ${REGISTRY}
+    image: "${REGISTRY}foo-app-ecs-build:latest"
+
+  # https://github.com/docker-library/docs/blob/master/postgres/README.md
+  db:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.postgres
+      args:
+        REGISTRY: ${REGISTRY}
+    environment:
+      # POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    expose:
+      - "5432"
+    image: app-db
+    # image: postgres:latest
+    restart: always
+    volumes:
+      - ./tmp/db:/var/lib/postgresql/data
 
   dev:
-    image: "foo-app-dev"
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.debian
+      args:
+        BUILDKIT_INLINE_CACHE: "1"
+        MIX_ENV: dev
+        REGISTRY: ${REGISTRY}
+      target: dev
+    # command: /bin/bash -c /app/bin/app-start-dev
+    # command: /app/bin/app-start-dev
+    # command: /bin/sh -c "/app/_build/prod/rel/app/bin/app foreground"
+
+    # VSCode devcontainer needs something running
+    # command: ["tail", "-f", "/dev/null"]
+    # command: ["sleep", "infinity"]
+    # command: /bin/sh -c "while sleep 1000; do :; done"
+    command: mix phx.server
+    depends_on:
+      db:
+        condition: service_started
     environment:
       - MIX_ENV=dev
       - SECRET_KEY_BASE
@@ -68,116 +115,71 @@ services:
       - AWS_SECRET_ACCESS_KEY
       - AWS_REGION
       - AWS_DEFAULT_REGION
-    # command: /bin/bash -c /app/bin/app-start-dev
-    # command: /app/bin/app-start-dev
-    # command: /bin/sh -c "/app/_build/prod/rel/app/bin/app foreground"
-
-    # VSCode devcontainer needs something running
-    # command: ["tail", "-f", "/dev/null"]
-    # command: ["sleep", "infinity"]
-    # command: /bin/sh -c "while sleep 1000; do :; done"
-    command: mix phx.server
-    build:
-      dockerfile: deploy/Dockerfile.debian
-      target: dev
-      context: .
-      args:
-        BUILDKIT_INLINE_CACHE: 1
-        REGISTRY: ${REGISTRY}
-        MIX_ENV: dev
+    image: foo-app-dev
     ports:
       - "4000:4000"
-    depends_on:
-      - db
     stdin_open: true
     tty: true
     volumes:
       - ".:/app:delegated"
       # - 'nfsmount:/app'
 
+  mssql:
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: some!Password
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    ports:
+      - "1433:1433"
+
+  mysql:
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+      # MYSQL_ROOT_PASSWORD: example
+    # command: --default-authentication-plugin=mysql_native_password
+    image: "${REGISTRY}mysql:8"
+    ports:
+      - "3306:3306"
+
+  postgres:
+    environment:
+      POSTGRES_PASSWORD: postgres
+    image: "${REGISTRY}postgres:12"
+    ports:
+      - "5432:5432"
+
   test:
-    image: "app-test"
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.alpine
+      # dockerfile: deploy/Dockerfile.debian
+      args:
+        BUILDKIT_INLINE_CACHE: "1"
+        MIX_ENV: test
+        REGISTRY: ${REGISTRY}
+      target: test
+    # command: sh -c 'while !</dev/tcp/db/5432; do sleep 1; done; set -ex mix test'
+    # command: sh -c 'mix test'
+    depends_on:
+      db:
+        condition: service_started
     environment:
       - MIX_ENV=test
       - DATABASE_URL
       - DATABASE_HOST=db
       - DATABASE_DB
-    # command: sh -c 'while !</dev/tcp/db/5432; do sleep 1; done; set -ex mix test'
-    # command: sh -c 'mix test'
-    build:
-      dockerfile: deploy/Dockerfile.alpine
-      # dockerfile: deploy/Dockerfile.debian
-      target: test
-      context: .
-      args:
-        BUILDKIT_INLINE_CACHE: 1
-        REGISTRY: ${REGISTRY}
-        MIX_ENV: test
-    depends_on:
-      - db
+    image: app-test
 
   vuln:
-    image: "app-vuln"
     build:
+      context: .
       dockerfile: deploy/Dockerfile.alpine
       # dockerfile: deploy/Dockerfile.debian
+      args:
+        BUILDKIT_INLINE_CACHE: "1"
+        REGISTRY: ${REGISTRY}
       target: vuln
-      context: .
-      args:
-        BUILDKIT_INLINE_CACHE: 1
-        REGISTRY: ${REGISTRY}
-
-  # https://github.com/docker-library/docs/blob/master/postgres/README.md
-  db:
-    image: "app-db"
-    # image: postgres:latest
-    build:
-      dockerfile: deploy/Dockerfile.postgres
-      context: .
-      args:
-        REGISTRY: ${REGISTRY}
-    restart: always
-    volumes:
-      - ./tmp/db:/var/lib/postgresql/data
-    environment:
-      # POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-    expose:
-      - "5432"
-
-  codebuild:
-    # Custom build image for AWS CodeBuild
-    image: "${REGISTRY}foo-app-ecs-build:latest"
-    build:
-      dockerfile: deploy/Dockerfile.codebuild
-      context: .
-      args:
-        BUILDKIT_INLINE_CACHE: 1
-        REGISTRY: ${REGISTRY}
-
-  postgres:
-    image: "${REGISTRY}postgres:12"
-    ports:
-      - "5432:5432"
-    environment:
-      POSTGRES_PASSWORD: postgres
-
-  mysql:
-    image: "${REGISTRY}mysql:8"
-    ports:
-      - "3306:3306"
-    environment:
-      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
-      # MYSQL_ROOT_PASSWORD: example
-    # command: --default-authentication-plugin=mysql_native_password
-
-  mssql:
-    image: mcr.microsoft.com/mssql/server:2019-latest
-    environment:
-      ACCEPT_EULA: Y
-      SA_PASSWORD: some!Password
-    ports:
-      - "1433:1433"
+    image: app-vuln
 
 # volumes:
 #   nfsmount:
