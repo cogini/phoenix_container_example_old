@@ -3,7 +3,10 @@ services:
   # https://github.com/docker-library/docs/blob/master/postgres/README.md
   # https://geshan.com.np/blog/2021/12/docker-postgres/
   postgres:
-    image: app-db:latest
+    # image: app-db:latest
+    image: postgres:14-alpine
+    # image: postgres:14
+    # platform: linux/amd64
     restart: always
     ports:
       - '5432:5432'

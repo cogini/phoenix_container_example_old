@@ -92,7 +92,9 @@ ARG https_proxy=$http_proxy
 
 all-platforms:
     # BUILD --platform=linux/amd64 --platform=linux/arm/v7 +all
+    # BUILD --platform=linux/amd64 --platform=linux/arm64/v8 +all
     BUILD --platform=linux/amd64 --platform=linux/arm64 +all
+    # BUILD --platform=linux/amd64 --platform=linux/arm/v5 +all
 
 all:
     BUILD +test
@@ -223,7 +225,7 @@ test-image-dialyzer:
 
 # Create database for tests
 postgres:
-    # FROM "${REGISTRY}postgres:12"
+    # FROM "${REGISTRY}postgres:14"
     FROM "${REGISTRY}postgres:14.1-alpine"
     ENV POSTGRES_USER=postgres
     ENV POSTGRES_PASSWORD=postgres
