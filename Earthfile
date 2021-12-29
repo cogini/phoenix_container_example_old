@@ -89,6 +89,11 @@ ARG https_proxy=$http_proxy
 #     fi
 
 # External targets
+
+all-platforms:
+    # BUILD --platform=linux/amd64 --platform=linux/arm/v7 +all
+    BUILD --platform=linux/amd64 --platform=linux/arm64 +all
+
 all:
     BUILD +test
     BUILD +deploy
