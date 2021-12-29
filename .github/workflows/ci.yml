@@ -42,6 +42,7 @@ jobs:
         # run: earthly --ci --push +build
         # run: earthly -P -V +all
         # run: earthly -P -V +all-platforms
-        run: earthly -P -V --platform=linux/arm64 +deploy
+        # run: earthly -P -V --platform=linux/arm64 +deploy
+        run: earthly -P -V --platform=linux/arm64 +deploy-scan
       - name: Docker logout
         run: docker logout
