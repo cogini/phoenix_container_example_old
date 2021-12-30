@@ -24,7 +24,8 @@ ARG REGISTRY=""
 # Output image
 # ARG EARTHLY_GIT_HASH
 ARG OUTPUT_IMAGE_NAME=foo-app
-ARG OUTPUT_IMAGE_TAG=latest
+ARG IMAGE_TAG=latest
+ARG OUTPUT_IMAGE_TAG="$IMAGE_TAG"
 ARG OUTPUT_URL="${REGISTRY}${OUTPUT_IMAGE_NAME}"
 
 # By default, packages come from the APK index for the base Alpine image.
@@ -121,7 +122,8 @@ build-os-deps:
         # apk add --no-progress alpine-sdk && \
         apk add --no-progress git build-base && \
         apk add --no-progress curl && \
-        apk add --no-progress nodejs npm python3 && \
+        apk add --no-progress nodejs npm && \
+        # apk add --no-progress python3 && \
         # Vulnerability checking
         curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
 
@@ -436,6 +438,7 @@ deploy:
     # Run app in foreground
     CMD ["start"]
 
+    # TODO: tag with commit
     SAVE IMAGE --push ${OUTPUT_URL}:latest ${OUTPUT_URL}:${OUTPUT_IMAGE_TAG}
 
 # Scan for security vulnerabilities in release image
@@ -448,8 +451,8 @@ deploy-scan:
         apk add curl && \
         curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
 
-    # Succeed for issues of severity = HIGH
     # Fail build if there are any issues of severity = CRITICAL
+    # Succeed for issues of severity = HIGH
     RUN --mount=type=cache,target=/var/cache/apk \
         # --mount=type=cache,target=/root/.cache/trivy \
         --mount=type=cache,target=/root/.cache \
