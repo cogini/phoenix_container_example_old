@@ -26,24 +26,26 @@ mix deps.get --only "$MIX_ENV"
 echo "===> Compiling"
 mix compile
 
-echo "===> Installing node modules"
-(cd assets && npm install)
+# echo "===> Installing node modules"
+# (cd assets && npm install)
 
 echo "===> Generating assets"
 # (cd assets && node node_modules/brunch/bin/brunch build)
 # (cd assets && node node_modules/webpack/bin/webpack.js --mode development)
-(cd assets && node node_modules/webpack/bin/webpack.js --mode production)
+# (cd assets && node node_modules/webpack/bin/webpack.js --mode production)
 
-echo "Building digest files"
-mix phx.digest
+# echo "Building digest files"
+# mix phx.digest
 
-echo "===> Generating systemd files"
-mix systemd.init
-mix systemd.generate
+mix assets.deploy
 
-echo "===> Generating deploy files"
-mix deploy.init
-mix deploy.generate
+# echo "===> Generating systemd files"
+# mix systemd.init
+# mix systemd.generate
+
+# echo "===> Generating deploy files"
+# mix deploy.init
+# mix deploy.generate
 
 chmod +x bin/*
 

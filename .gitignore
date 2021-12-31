@@ -22,16 +22,22 @@ erl_crash.dump
 # Ignore package tarball (built via "mix hex.build").
 phoenix_container_example-*.tar
 
-# If NPM crashes, it generates a log, let's ignore it too.
-npm-debug.log
+# Ignore assets that are produced by build tools.
+/priv/static/assets/
 
-# The directory NPM downloads your dependencies sources to.
-/assets/node_modules/
+# Ignore digested assets cache.
+/priv/static/cache_manifest.json
 
 # Since we are building assets from assets/,
 # we ignore priv/static. You may want to comment
 # this depending on your deployment strategy.
-/priv/static/
+# /priv/static/
+
+# In case you use Node.js/npm, you want to ignore these.
+npm-debug.log
+
+# The directory NPM downloads your dependencies sources to.
+/assets/node_modules/
 
 /.env
 /.gitconfig

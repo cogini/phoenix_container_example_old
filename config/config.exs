@@ -1,5 +1,5 @@
 # This file is responsible for configuring your application
-# and its dependencies with the aid of the Mix.Config module.
+# and its dependencies with the aid of the Config module.
 #
 # This configuration file is loaded before any dependency and
 # is restricted to this project.
@@ -13,10 +13,31 @@ config :phoenix_container_example,
 # Configures the endpoint
 config :phoenix_container_example, PhoenixContainerExampleWeb.Endpoint,
   url: [host: "localhost"],
-  secret_key_base: "RKbLg7NAE0pwJaybW3hMJm1r1IFOPhszYnvg4lBFjfmAVcdDvsTOeAllb8eL6vpc",
   render_errors: [view: PhoenixContainerExampleWeb.ErrorView, accepts: ~w(html json), layout: false],
   pubsub_server: PhoenixContainerExample.PubSub,
-  live_view: [signing_salt: "h8yAjCd8"]
+  live_view: [signing_salt: "jYa25KyQ"]
+
+# Configures the mailer
+#
+# By default it uses the "Local" adapter which stores the emails
+# locally. You can see the emails in your browser, at "/dev/mailbox".
+#
+# For production it's recommended to configure a different adapter
+# at the `config/runtime.exs`.
+config :phoenix_container_example, PhoenixContainerExample.Mailer, adapter: Swoosh.Adapters.Local
+
+# Swoosh API client is needed for adapters other than SMTP.
+config :swoosh, :api_client, false
+
+# Configure esbuild (the version is required)
+config :esbuild,
+  version: "0.14.0",
+  default: [
+    args:
+      ~w(js/app.js --bundle --target=es2017 --outdir=../priv/static/assets --external:/fonts/* --external:/images/*),
+    cd: Path.expand("../assets", __DIR__),
+    env: %{"NODE_PATH" => Path.expand("../deps", __DIR__)}
+  ]
 
 # Configures Elixir's Logger
 config :logger, :console,

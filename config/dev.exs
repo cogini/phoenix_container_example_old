@@ -4,8 +4,8 @@ import Config
 config :phoenix_container_example, PhoenixContainerExample.Repo,
   username: System.get_env("DATABASE_USER") || "postgres",
   password: System.get_env("DATABASE_PASS") || "postgres",
-  database: System.get_env("DATABASE_DB") || "app_dev",
   hostname: System.get_env("DATABASE_HOST") || "localhost",
+  database: System.get_env("DATABASE_DB") || "app_dev",
   show_sensitive_data_on_connection_error: true,
   pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10")
 
@@ -14,20 +14,19 @@ config :phoenix_container_example, PhoenixContainerExample.Repo,
 #
 # The watchers configuration can be used to run external
 # watchers to your application. For example, we use it
-# with webpack to recompile .js and .css sources.
+# with esbuild to bundle .js and .css sources.
 config :phoenix_container_example, PhoenixContainerExampleWeb.Endpoint,
+  # Binding to loopback ipv4 address prevents access from other machines.
+  # Change to `ip: {0, 0, 0, 0}` to allow access from other machines.
+  # http: [ip: {127, 0, 0, 1}, port: 4000],
   http: [port: 4000],
-  debug_errors: true,
-  code_reloader: true,
   check_origin: false,
+  code_reloader: true,
+  debug_errors: true,
+  secret_key_base: "wSKhk5QDe+kITD/b6Zn16kaOZpyoEvPWLV50DF12lc3RbVwvvxkF/61hl0sEyHbO",
   watchers: [
-    node: [
-      "node_modules/webpack/bin/webpack.js",
-      "--mode",
-      "development",
-      "--watch-stdin",
-      cd: Path.expand("../assets", __DIR__)
-    ]
+    # Start the esbuild watcher by calling Esbuild.install_and_run(:default, args)
+    esbuild: {Esbuild, :install_and_run, [:default, ~w(--sourcemap=inline --watch)]}
   ]
 
 # ## SSL Support

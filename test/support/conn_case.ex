@@ -32,12 +32,8 @@ defmodule PhoenixContainerExampleWeb.ConnCase do
   end
 
   setup tags do
-    :ok = Ecto.Adapters.SQL.Sandbox.checkout(PhoenixContainerExample.Repo)
-
-    unless tags[:async] do
-      Ecto.Adapters.SQL.Sandbox.mode(PhoenixContainerExample.Repo, {:shared, self()})
-    end
-
+    pid = Ecto.Adapters.SQL.Sandbox.start_owner!(PhoenixContainerExample.Repo, shared: not tags[:async])
+    on_exit(fn -> Ecto.Adapters.SQL.Sandbox.stop_owner(pid) end)
     {:ok, conn: Phoenix.ConnTest.build_conn()}
   end
 end
