@@ -195,7 +195,7 @@ test-image:
     #     --mount=type=cache,target=/root/.cache \
     RUN mix compile
 
-    # SAVE IMAGE app-test:latest
+    # SAVE IMAGE test-image:latest
     SAVE IMAGE --push ${OUTPUT_IMAGE_NAME}:test
 
 test-dialyzer-plt:
@@ -229,8 +229,10 @@ test-image-dialyzer:
 postgres:
     # FROM "${REGISTRY}postgres:14"
     FROM "${REGISTRY}postgres:14.1-alpine"
+
     ENV POSTGRES_USER=postgres
     ENV POSTGRES_PASSWORD=postgres
+
     EXPOSE 5432
     SAVE IMAGE app-db:latest
 
@@ -439,7 +441,6 @@ deploy:
     # Run app in foreground
     CMD ["start"]
 
-    # TODO: tag with commit
     SAVE IMAGE --push ${OUTPUT_URL}:latest ${OUTPUT_URL}:${OUTPUT_IMAGE_TAG}
 
 # Scan for security vulnerabilities in release image
