@@ -1,11 +1,13 @@
 .elixir_ls
 .git
+.github
 .gitconfig
 .gitignore
 .gnupg
 .hex
 .mix
 .env
+.hound.yml
 
 .devcontainer
 .vscode
