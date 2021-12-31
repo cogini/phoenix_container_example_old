@@ -148,10 +148,6 @@ build-deps-get:
     COPY --dir config ./
     COPY mix.exs mix.lock ./
 
-    # RUN --mount=type=cache,target=/root/.mix \
-    #     --mount=type=cache,target=/root/.hex \
-    #     --mount=type=cache,target=/root/.cache \
-    #     mix do local.rebar --force, local.hex --force, deps.get
 
     # Install build tools and get app deps
     RUN mix do local.rebar --force, local.hex --force, deps.get
@@ -190,9 +186,6 @@ test-image:
     COPY .formatter.exs ./
     COPY --dir lib priv test bin ./
 
-    # RUN --mount=type=cache,target=/root/.mix \
-    #     --mount=type=cache,target=/root/.hex \
-    #     --mount=type=cache,target=/root/.cache \
     RUN mix compile
 
     # SAVE IMAGE test-image:latest
@@ -360,9 +353,6 @@ deploy-release:
 
     COPY --dir lib rel ./
 
-    # RUN --mount=type=cache,target=/root/.mix \
-    #     --mount=type=cache,target=/root/.hex \
-    #     --mount=type=cache,target=/root/.cache \
     RUN mix do compile, release "$RELEASE"
 
     # SAVE ARTIFACT "_build/$MIX_ENV/rel/${RELEASE}" /release AS LOCAL "build/release/${RELEASE}"
