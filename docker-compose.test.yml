@@ -18,7 +18,7 @@ services:
       - db:/var/lib/postgresql/data
       - ./db/init.sql:/docker-entrypoint-initdb.d/create_tables.sql
   test:
-    image: test:latest
+    image: test
     environment:
       - MIX_ENV=test
       - DATABASE_URL
