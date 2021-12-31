@@ -14,9 +14,6 @@
 .dockerignore
 .earthignore
 
-LICENSE
-README.md
-
 assets/node_modules
 # test
 deps
