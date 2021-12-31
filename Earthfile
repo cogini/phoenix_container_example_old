@@ -258,8 +258,8 @@ test-app:
 
     WITH DOCKER \
             --pull postgres:14.1-alpine \
-            --load test:latest=+test-image \
             # --load app-db:latest=+postgres \
+            --load test:latest=+test-image \
             --compose docker-compose.yml
         RUN docker-compose run test mix ecto.create && \
             docker-compose run test mix test && \
