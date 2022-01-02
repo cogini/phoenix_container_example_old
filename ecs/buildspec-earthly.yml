@@ -45,8 +45,8 @@ phases:
   build:
     commands:
       # Scan app source for vulnerabilities
-      - trivy filesystem --exit-code 0 --severity HIGH --no-progress .
-      - trivy filesystem --exit-code 1 --severity CRITICAL --no-progress .
+      # - trivy filesystem --exit-code 0 --severity HIGH --no-progress .
+      # - trivy filesystem --exit-code 1 --severity CRITICAL --no-progress .
       # - grype -vv --fail-on medium .
       # - grype -vv .
 
