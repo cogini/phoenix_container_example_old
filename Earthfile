@@ -100,16 +100,16 @@ all-platforms:
 all:
     BUILD +test
     BUILD +deploy
-    BUILD +deploy-scan
+    # BUILD +deploy-scan
 
 # These can also be called individually
 test:
     BUILD +test-app
-    BUILD +test-credo
+    # BUILD +test-credo
     # BUILD +test-format
-    BUILD +test-deps-audit
-    BUILD +test-sobelow
-    BUILD +test-dialyzer
+    # BUILD +test-deps-audit
+    # BUILD +test-sobelow
+    # BUILD +test-dialyzer
 
 # Create base build image with OS dependencies
 build-os-deps:
@@ -247,7 +247,8 @@ postgres:
 
 # Run app tests in test environment with database
 test-app:
-    FROM earthly/dind:alpine
+    # FROM earthly/dind:alpine
+    FROM earthly/dind:ubuntu
 
     COPY docker-compose.test.yml ./docker-compose.yml
 
