@@ -22,6 +22,8 @@ phases:
       # https://docs.aws.amazon.com/codebuild/latest/APIReference/API_ProjectEnvironment.html
       # - nohup /usr/local/bin/dockerd --host=unix:///var/run/docker.sock --host=tcp://0.0.0.0:2375 --storage-driver=overlay&
       # - timeout 15 sh -c "until docker info; do echo .; sleep 1; done"
+      - sudo amazon-linux-extras enable docker
+      - sudo yum install amazon-ecr-credential-helper
       # - wget https://github.com/earthly/earthly/releases/latest/download/earthly-linux-amd64 -O /usr/local/bin/earthly && chmod +x /usr/local/bin/earthly
       # - wget https://github.com/earthly/earthly/releases/latest/download/earthly-linux-arm64 -O /usr/local/bin/earthly && chmod +x /usr/local/bin/earthly
       - curl -sL https://github.com/earthly/earthly/releases/latest/download/earthly-linux-arm64 -o /usr/local/bin/earthly && chmod +x /usr/local/bin/earthly && /usr/local/bin/earthly bootstrap
