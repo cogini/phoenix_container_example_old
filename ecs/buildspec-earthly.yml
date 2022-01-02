@@ -22,6 +22,7 @@ phases:
       # https://docs.aws.amazon.com/codebuild/latest/APIReference/API_ProjectEnvironment.html
       # - nohup /usr/local/bin/dockerd --host=unix:///var/run/docker.sock --host=tcp://0.0.0.0:2375 --storage-driver=overlay&
       # - timeout 15 sh -c "until docker info; do echo .; sleep 1; done"
+      # https://github.com/awslabs/amazon-ecr-credential-helper
       - PYTHON=python2 amazon-linux-extras enable docker
       # - yum clean metadata
       - yum -y install amazon-ecr-credential-helper
