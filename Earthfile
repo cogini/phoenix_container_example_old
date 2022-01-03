@@ -13,6 +13,10 @@ ARG ALPINE_VERSION=3.15.0
 ARG BUILD_IMAGE_NAME=hexpm/elixir
 ARG BUILD_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-alpine-${ALPINE_VERSION}
 
+# Docker-in-Docker host image, used for testing
+ARG DIND_IMAGE_NAME=earthly/dind
+ARG DIND_IMAGE_TAG=alpine
+
 # Deploy base image
 ARG DEPLOY_IMAGE_NAME=alpine
 ARG DEPLOY_IMAGE_TAG=$ALPINE_VERSION
@@ -247,8 +251,7 @@ postgres:
 
 # Run app tests in test environment with database
 test-app:
-    FROM earthly/dind:alpine
-    # FROM earthly/dind:ubuntu
+    FROM ${DIND_IMAGE_NAME}:${DIND_IMAGE_TAG}
 
     COPY docker-compose.test.yml ./docker-compose.yml
 
@@ -263,32 +266,32 @@ test-app:
     END
 
 test-credo:
-    FROM earthly/dind:alpine
+    FROM ${DIND_IMAGE_NAME}:${DIND_IMAGE_TAG}
     WITH DOCKER --load test:latest=+test-image
         RUN docker run test mix credo
         # RUN docker run test mix credo --mute-exit-status
     END
 
 test-format:
-    FROM earthly/dind:alpine
+    FROM ${DIND_IMAGE_NAME}:${DIND_IMAGE_TAG}
     WITH DOCKER --load test:latest=+test-image
         RUN docker run test mix format --check-formatted
     END
 
 test-deps-audit:
-    FROM earthly/dind:alpine
+    FROM ${DIND_IMAGE_NAME}:${DIND_IMAGE_TAG}
     WITH DOCKER --load test:latest=+test-image
         RUN docker run test mix deps.audit
     END
 
 test-sobelow:
-    FROM earthly/dind:alpine
+    FROM ${DIND_IMAGE_NAME}:${DIND_IMAGE_TAG}
     WITH DOCKER --load test:latest=+test-image
         RUN docker run test mix sobelow
     END
 
 test-dialyzer:
-    FROM earthly/dind:alpine
+    FROM ${DIND_IMAGE_NAME}:${DIND_IMAGE_TAG}
     WITH DOCKER --load test-dialyzer:latest=+test-image-dialyzer
         RUN docker run test-dialyzer mix dialyzer
     END
