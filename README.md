@@ -385,6 +385,14 @@ generating JSON output files.
 
 See https://docs.aws.amazon.com/codepipeline/latest/userguide/file-reference.html
 
+## Earthly
+
+To build with Earthy, run:
+
+  ```shell
+    earthly -V -P +all
+  ```
+
 ## Links
 
 * https://docs.aws.amazon.com/codepipeline/latest/userguide/tutorials-ecs-ecr-codedeploy.html
