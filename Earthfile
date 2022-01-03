@@ -30,7 +30,8 @@ ARG REGISTRY=""
 ARG OUTPUT_IMAGE_NAME=foo-app
 ARG IMAGE_TAG=latest
 ARG OUTPUT_IMAGE_TAG="$IMAGE_TAG"
-ARG OUTPUT_URL="${REGISTRY}${OUTPUT_IMAGE_NAME}"
+ARG REPO_URL="${REGISTRY}${OUTPUT_IMAGE_NAME}"
+ARG OUTPUT_URL=$REPO_URL
 
 # By default, packages come from the APK index for the base Alpine image.
 # Package versions are consistent between builds, and we normally upgrade by
