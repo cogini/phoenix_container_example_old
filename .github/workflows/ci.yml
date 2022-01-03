@@ -16,7 +16,7 @@ jobs:
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
       FORCE_COLOR: 1
     steps:
-      - name: Set up QEMU
+      - name: Set up QEMU for multi-platform builds
         id: qemu
         uses: docker/setup-qemu-action@v1
         with:
