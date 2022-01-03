@@ -29,6 +29,7 @@ phases:
       # - wget https://github.com/earthly/earthly/releases/latest/download/earthly-linux-amd64 -O /usr/local/bin/earthly && chmod +x /usr/local/bin/earthly
       # - wget https://github.com/earthly/earthly/releases/latest/download/earthly-linux-arm64 -O /usr/local/bin/earthly && chmod +x /usr/local/bin/earthly
       - curl -sL https://github.com/earthly/earthly/releases/latest/download/earthly-linux-arm64 -o /usr/local/bin/earthly && chmod +x /usr/local/bin/earthly && /usr/local/bin/earthly bootstrap
+      - earthly --version
 
   pre_build:
     commands:
@@ -39,11 +40,9 @@ phases:
       # - aws ecr get-login-password --region "$AWS_DEFAULT_REGION" | docker login --username AWS --password-stdin "$REGISTRY"
       # Use old aws cli for login
       # - $(aws ecr get-login --region "$AWS_DEFAULT_REGION" --no-include-email)
-      # Use amazon-ecr-credential-helper for login, installed in custom build image
+      # Use amazon-ecr-credential-helper for login
       - mkdir -p /root/.docker
       - echo '{"credsStore":"ecr-login"}' | tee /root/.docker/config.json
-
-      # - rm -rf /root/.cache/docker
 
       # - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
       - COMMIT_HASH=$CODEBUILD_RESOLVED_SOURCE_VERSION
@@ -56,15 +55,17 @@ phases:
       # - grype -vv --fail-on medium .
       # - grype -vv .
 
-      - earthly --version
 
       # Run tests
       # - earthly -V --build-arg REGISTRY --build-arg REPO_URL --build-arg IMAGE_TAG +test
       # - earthly -P -V --build-arg REGISTRY --build-arg REPO_URL --build-arg IMAGE_TAG --ci --push +all
       # - earthly -P -V --build-arg REGISTRY --build-arg REPO_URL --build-arg IMAGE_TAG --ci --remote-cache=$REPO_URL:cache --push +all
       # - earthly -P -V --build-arg REGISTRY --build-arg REPO_URL --build-arg IMAGE_TAG --push +all
-      - earthly -P -V +all
+      # - earthly -P -V +all
       # - earthly -P -V --build-arg REGISTRY --build-arg REPO_URL --use-inline-cache --save-inline-cache --push +all
+      - earthly -P -V --build-arg REGISTRY --build-arg REPO_URL --push +all
+
+      # Tag image separately from Docker build, as it tends to screw with caching.
       # - docker tag ${REPO_URL}:latest ${REPO_URL}:${IMAGE_TAG}
       # - docker push ${REPO_URL}:${IMAGE_TAG}
 
