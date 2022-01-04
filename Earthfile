@@ -187,10 +187,19 @@ test-image:
 
     WORKDIR $APP_DIR
 
+    # COPY coveralls.json ./
     COPY .formatter.exs ./
+    # Non-umbrella
     COPY --dir lib priv test bin ./
+    # Umbrella
+    # COPY --dir apps priv ./
 
+    # Non-umbrella
     RUN mix compile --warnings-as-errors
+
+    # For umbrella, using `mix cmd` ensures each app is compiled in
+    # isolation https://github.com/elixir-lang/elixir/issues/9407
+    # RUN mix cmd mix compile --warnings-as-errors
 
     # SAVE IMAGE test-image:latest
     SAVE IMAGE --push ${OUTPUT_IMAGE_NAME}:test
@@ -218,7 +227,11 @@ test-image-dialyzer:
 
     WORKDIR $APP_DIR
 
+    # Non-umbrella
     COPY --dir lib priv test bin ./
+
+    # Umbrella
+    # COPY --dir apps ./
 
     SAVE IMAGE test-dializer:latest
 
@@ -357,7 +370,10 @@ deploy-release:
     # FROM +deploy-digest
     FROM +deploy-deps-compile
 
+    # Non-umbrella
     COPY --dir lib rel ./
+    # Umbrella
+    # COPY --dir apps ./
 
     RUN mix do compile, release "$RELEASE"
 
