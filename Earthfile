@@ -7,7 +7,6 @@ ARG OTP_VERSION=24.2
 ARG NODE_VERSION=14.4
 # ARG ALPINE_VERSION=3.14.3
 ARG ALPINE_VERSION=3.15.0
-# 1.13.1-erlang-24.2-alpine-3.15.0
 
 # Build image
 ARG BUILD_IMAGE_NAME=hexpm/elixir
@@ -127,10 +126,10 @@ build-os-deps:
         # apk add --no-progress alpine-sdk && \
         apk add --no-progress git build-base && \
         apk add --no-progress curl && \
-        apk add --no-progress nodejs npm
+        apk add --no-progress nodejs npm && \
         # apk add --no-progress python3 && \
         # Vulnerability checking
-        # curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+        curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
 
     # Database command line clients to check if DBs are up when performing integration tests
     # RUN apk add --no-progress postgresql-client mysql-client
@@ -261,7 +260,7 @@ test-app:
             # --load app-db:latest=+postgres \
             --load test:latest=+test-image \
             --compose docker-compose.yml
-        RUN docker-compose run test mix ecto.create && \
+        RUN docker-compose run test mix ecto.setup && \
             docker-compose run test mix test && \
             docker-compose run test mix coveralls
     END
