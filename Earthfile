@@ -2,7 +2,7 @@
 
 # App versions
 ARG ELIXIR_VERSION=1.13.1
-# ARG OTP_VERSION=23.3.4.10
+# ARG OTP_VERSION=23.3.4
 ARG OTP_VERSION=24.2
 ARG NODE_VERSION=14.4
 # ARG ALPINE_VERSION=3.14.3
@@ -190,7 +190,7 @@ test-image:
     COPY .formatter.exs ./
     COPY --dir lib priv test bin ./
 
-    RUN mix compile
+    RUN mix compile --warnings-as-errors
 
     # SAVE IMAGE test-image:latest
     SAVE IMAGE --push ${OUTPUT_IMAGE_NAME}:test
@@ -256,11 +256,13 @@ test-app:
     COPY docker-compose.test.yml ./docker-compose.yml
 
     WITH DOCKER \
+            # Image names need to match docker-compose.test.yml
             --pull postgres:14.1-alpine \
             # --load app-db:latest=+postgres \
             --load test:latest=+test-image \
             --compose docker-compose.yml
-        RUN docker-compose run test mix ecto.setup && \
+        RUN \
+            docker-compose run test mix ecto.setup && \
             docker-compose run test mix test && \
             docker-compose run test mix coveralls
     END
@@ -269,7 +271,7 @@ test-credo:
     FROM ${DIND_IMAGE_NAME}:${DIND_IMAGE_TAG}
     WITH DOCKER --load test:latest=+test-image
         RUN docker run test mix credo
-        # RUN docker run test mix credo --mute-exit-status
+        # RUN docker run test mix credo --ignore refactor,duplicated --mute-exit-status
     END
 
 test-format:
@@ -287,13 +289,13 @@ test-deps-audit:
 test-sobelow:
     FROM ${DIND_IMAGE_NAME}:${DIND_IMAGE_TAG}
     WITH DOCKER --load test:latest=+test-image
-        RUN docker run test mix sobelow
+        RUN docker run test mix sobelow --exit
     END
 
 test-dialyzer:
     FROM ${DIND_IMAGE_NAME}:${DIND_IMAGE_TAG}
     WITH DOCKER --load test-dialyzer:latest=+test-image-dialyzer
-        RUN docker run test-dialyzer mix dialyzer
+        RUN docker run test-dialyzer mix dialyzer --halt-exit-status
     END
 
 # Compile deps separately from application, allowing it to be cached
