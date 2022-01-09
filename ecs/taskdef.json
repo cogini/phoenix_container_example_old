@@ -6,6 +6,7 @@
     "cpu": "<CPU>",
     "memory": "<MEMORY>",
     "requiresCompatibilities": ["FARGATE"],
+    "runtimePlatform": { "cpuArchitecture": "<CPU_ARCH>" },
     "containerDefinitions": [
         {
             "cpu": 0,
