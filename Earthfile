@@ -126,10 +126,10 @@ build-os-deps:
         # apk add --no-progress alpine-sdk && \
         apk add --no-progress git build-base && \
         apk add --no-progress curl && \
-        apk add --no-progress nodejs npm && \
+        apk add --no-progress nodejs npm
         # apk add --no-progress python3 && \
         # Vulnerability checking
-        curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+        # curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
 
     # Database command line clients to check if DBs are up when performing integration tests
     # RUN apk add --no-progress postgresql-client mysql-client
