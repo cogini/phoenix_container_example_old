@@ -66,7 +66,7 @@ phases:
       # - earthly -P -V --build-arg REGISTRY --build-arg REPO_URL --push +all
       # - earthly -P -V --build-arg REGISTRY --build-arg REPO_URL --no-cache --push +all
       # - earthly -P -V --build-arg REGISTRY --build-arg REPO_URL --platform=linux/arm64 --no-cache --push +all
-      - earthly -P -V --build-arg REGISTRY --build-arg REPO_URL --platform=linux/arm64 +all
+      - earthly -P -V --build-arg REGISTRY --build-arg REPO_URL --platform=linux/arm64 --no-cache +all
 
       # Tag image separately from the build, as the varying IMAGE_TAG screws with caching.
       - docker tag ${REPO_URL}:latest ${REPO_URL}:${IMAGE_TAG}
