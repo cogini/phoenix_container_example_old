@@ -93,6 +93,9 @@ ARG https_proxy=$http_proxy
 #         docker login --username="$USERNAME" --password="$TOKEN" ;\
 #     fi
 
+ARG TARGETPLATFORM
+ARG USERPLATFORM
+
 # External targets
 
 all-platforms:
@@ -201,7 +204,7 @@ test-image:
     # isolation https://github.com/elixir-lang/elixir/issues/9407
     # RUN mix cmd mix compile --warnings-as-errors
 
-    # SAVE IMAGE test-image:latest
+    SAVE IMAGE test-image:latest
     # SAVE IMAGE --push ${OUTPUT_IMAGE_NAME}:test
 
 test-dialyzer-plt:
