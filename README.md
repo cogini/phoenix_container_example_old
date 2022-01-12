@@ -218,6 +218,11 @@ docker.io:
 aws ecr get-login-password | skopeo login -u AWS --password-stdin $REGISTRY
 skopeo sync --all --src yaml --dest docker skopeo-sync.yml $REGISTRY
 ```
+https://polyverse.com/blog/skopeo-the-best-container-tool-you-need-to-know-about/
+https://github.com/onfido/ecr-mirror
+https://alexwlchan.net/2020/11/copying-images-from-docker-hub-to-amazon-ecr/
+
+https://shazi.info/docker-build-x86-arm-multi-arch-images-with-aws-ecr/
 
 [Dregsy](https://github.com/xelalexv/dregsy) is a utility which mirrors
 repositories from one registry to another.
