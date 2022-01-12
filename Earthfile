@@ -120,7 +120,7 @@ test:
 
 # Create base build image with OS dependencies
 build-os-deps:
-    FROM ${REGISTRY}${BUILD_IMAGE_NAME}:${BUILD_IMAGE_TAG}
+    FROM --platform=${TARGETPLATFORM} ${REGISTRY}${BUILD_IMAGE_NAME}:${BUILD_IMAGE_TAG}
 
     # See https://wiki.alpinelinux.org/wiki/Local_APK_cache for details
     # on the local cache and need for the symlink
