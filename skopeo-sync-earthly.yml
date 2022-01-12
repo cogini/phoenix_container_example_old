@@ -1,0 +1,8 @@
+---
+docker.io:
+  images:
+    earthly/buildkitd:
+      - 'v0.6.2'
+
+    earthly/dind:
+      - 'alpine'

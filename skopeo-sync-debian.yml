@@ -1,0 +1,5 @@
+---
+docker.io:
+  images:
+    debian:
+      - 'buster-slim'

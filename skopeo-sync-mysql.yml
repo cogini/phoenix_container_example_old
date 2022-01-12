@@ -1,0 +1,5 @@
+---
+docker.io:
+  images:
+    mysql:
+      - '8'

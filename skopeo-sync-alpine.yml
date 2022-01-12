@@ -1,0 +1,7 @@
+docker.io:
+  images:
+    # Target base image, choose one
+    alpine:
+      - '3.12.1'
+      - '3.13.2'
+      - '3.15.0'

@@ -1,0 +1,7 @@
+---
+docker.io:
+  images:
+    postgres:
+      - '12'
+      - '14'
+      - '14.1-alpine'

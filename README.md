@@ -20,7 +20,7 @@ app using containers.
 * Supports development in a Docker container with Visual Studio Code.
 
 * Supports building for multiple architectures, e.g. AWS
-  [Gravaton](https://aws.amazon.com/ec2/graviton/) ARM processor.
+  [Gravaton](https://aws.amazon.com/ec2/graviton/) Arm processor.
   Arm builds work on Intel with both Mac hardware and Linux (CodeBuild), and
   should work the other direction on Apple Silicon.
 
@@ -114,6 +114,7 @@ packages for Arm. The key in any case is getting caching optimized.
 
   ```shell
   PLATFORM="--platform linux/amd64,linux/arm64" ecs/build.sh
+  docker buildx imagetools inspect $REPO_URL
   ```
 
 It can also be configured in `docker-compose.yml`.
@@ -149,8 +150,80 @@ You can make a mirror of the base images that your build depends on to your own
 registry. This is particularly useful since Docker started rate limiting
 requests to public images.
 
+
+To use the mirror registry, set the `REGISTRY` env variable:
+
+```shell
+export REGISTRY=1234567890.dkr.ecr.ap-northeast-1.amazonaws.com/
+docker-compose build
+```
+
+## skopeo
+
+```yaml
+docker.io:
+  images:
+    earthly/buildkitd:
+      - 'v0.6.2'
+
+    earthly/dind:
+      - 'alpine'
+
+    ubuntu:
+      # CodeBuild base image
+      - 'focal'
+
+    # Target base image, choose one
+    alpine:
+      - '3.12.1'
+      - '3.13.2'
+      - '3.15.0'
+
+    debian:
+      - 'buster-slim'
+
+    postgres:
+      - '12'
+      - '14'
+      - '14.1-alpine'
+
+    mysql:
+      - '8'
+
+    # Build base images
+    hexpm/elixir:
+      # Choose one
+      # - '1.11.2-erlang-23.1.2-alpine-3.12.1'
+      # - '1.11.2-erlang-23.1.2-debian-buster-20201012'
+      - '1.11.2-erlang-23.2.1-alpine-3.12.1'
+      - '1.11.2-erlang-23.2.1-debian-buster-20201012'
+      - '1.11.2-erlang-23.2.4-alpine-3.13.1'
+      - '1.11.2-erlang-23.2.4-debian-buster-20201012'
+      - '1.11.3-erlang-23.2.6-alpine-3.13.2'
+      - '1.11.3-erlang-23.2.6-debian-buster-20210208'
+      - '1.13.1-erlang-24.2-alpine-3.15.0'
+
+    node:
+      - '14.4-stretch'
+      - '14.15.1-stretch'
+      - '14.4-buster'
+      - '14.15.1-buster'
+
+  mcr.microsoft.com:
+    mssql/server:
+      - '2019-latest'
+```
+
+```shell
+aws ecr get-login-password | skopeo login -u AWS --password-stdin $REGISTRY
+skopeo sync --all --src yaml --dest docker skopeo-sync.yml $REGISTRY
+```
+
 [Dregsy](https://github.com/xelalexv/dregsy) is a utility which mirrors
 repositories from one registry to another.
+
+NOTE: dregsy does not currently support multi-arch images
+https://github.com/xelalexv/dregsy/issues/43
 
 `dregsy.yml`
 
@@ -252,13 +325,6 @@ docker run --rm -v $(pwd)/dregsy.yml:/config.yaml -v $HOME/.aws:/root/.aws -e AW
 or get AWS credentials from `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` env vars:
 ```shell
 docker run --rm -v $(pwd)/dregsy.yml:/config.yaml -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY xelalex/dregsy
-```
-
-To use the mirror registry, set the `REGISTRY` env variable:
-
-```shell
-export REGISTRY=1234567890.dkr.ecr.ap-northeast-1.amazonaws.com/
-docker-compose build
 ```
 
 # Developing in a Docker container

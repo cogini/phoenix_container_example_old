@@ -1,0 +1,5 @@
+docker.io:
+  images:
+    ubuntu:
+      # CodeBuild base image
+      - 'focal'

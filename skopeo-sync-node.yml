@@ -1,0 +1,8 @@
+---
+docker.io:
+  images:
+    node:
+      - '14.4-stretch'
+      - '14.15.1-stretch'
+      - '14.4-buster'
+      - '14.15.1-buster'
