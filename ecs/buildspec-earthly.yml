@@ -71,8 +71,8 @@ phases:
       - earthly -P -V +all
 
       # Tag image separately from the build, as the varying IMAGE_TAG screws with caching.
-      # - docker tag ${REPO_URL}:latest ${REPO_URL}:${IMAGE_TAG}
-      # - docker push ${REPO_URL}:${IMAGE_TAG}
+      - docker tag ${REPO_URL}:latest ${REPO_URL}:${IMAGE_TAG}
+      - docker push ${REPO_URL}:${IMAGE_TAG}
 
       # Write image definition files
       # https://docs.aws.amazon.com/codepipeline/latest/userguide/file-reference.html
