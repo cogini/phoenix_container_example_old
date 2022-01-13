@@ -33,7 +33,8 @@ phases:
       - yum -y install amazon-ecr-credential-helper
       # - wget https://github.com/earthly/earthly/releases/latest/download/earthly-linux-amd64 -O /usr/local/bin/earthly && chmod +x /usr/local/bin/earthly
       # - wget https://github.com/earthly/earthly/releases/latest/download/earthly-linux-arm64 -O /usr/local/bin/earthly && chmod +x /usr/local/bin/earthly
-      - curl -sL https://github.com/earthly/earthly/releases/latest/download/earthly-linux-arm64 -o /usr/local/bin/earthly && chmod +x /usr/local/bin/earthly && /usr/local/bin/earthly bootstrap
+      # - curl -sL https://github.com/earthly/earthly/releases/latest/download/earthly-linux-arm64 -o /usr/local/bin/earthly && chmod +x /usr/local/bin/earthly && /usr/local/bin/earthly bootstrap
+      - curl -sL https://github.com/earthly/earthly/releases/latest/download/earthly-linux-arm64 -o /usr/local/bin/earthly && chmod +x /usr/local/bin/earthly && /usr/local/bin/earthly bootstrap --no-buildkit
       - earthly --version
       - docker --version
 

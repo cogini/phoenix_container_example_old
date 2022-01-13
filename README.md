@@ -150,6 +150,7 @@ You can make a mirror of the base images that your build depends on to your own
 registry. This is particularly useful since Docker started rate limiting
 requests to public images.
 
+See https://earthly.dev/blog/how-to-setup-and-use-amazons-elastic-container-registry/
 
 To use the mirror registry, set the `REGISTRY` env variable:
 
