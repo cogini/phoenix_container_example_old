@@ -143,7 +143,7 @@ build-os-deps:
     #     apk del .build-dependencies && rm -f msodbcsql*.sig mssql-tools*.apk
     # ENV PATH="/opt/mssql-tools/bin:${PATH}"
 
-    SAVE IMAGE --push ${OUTPUT_IMAGE_NAME}:os-deps
+    SAVE IMAGE --push ${OUTPUT_URL}:os-deps
 
 # Get app deps
 build-deps-get:
@@ -160,7 +160,7 @@ build-deps-get:
     RUN mix do local.rebar --force, local.hex --force, deps.get
 
     # SAVE ARTIFACT deps /deps
-    SAVE IMAGE --push ${OUTPUT_IMAGE_NAME}:deps
+    SAVE IMAGE --push ${OUTPUT_URL}:deps
 
 # Compile deps separately from application, allowing it to be cached
 test-deps-compile:
@@ -205,7 +205,7 @@ test-image:
     # RUN mix cmd mix compile --warnings-as-errors
 
     # SAVE IMAGE test-image:latest
-    SAVE IMAGE --push ${OUTPUT_IMAGE_NAME}:test
+    SAVE IMAGE --push ${OUTPUT_URL}:test
 
 test-dialyzer-plt:
     FROM +build-deps-get
@@ -346,7 +346,7 @@ deploy-assets:
     RUN npm run deploy
 
     SAVE ARTIFACT ../priv /priv
-    SAVE IMAGE --push $OUTPUT_IMAGE_NAME:assets
+    SAVE IMAGE --push ${OUTPUT_URL}:assets
 
 # Create digested version of assets
 deploy-digest:
@@ -365,7 +365,7 @@ deploy-digest:
     # because a change to application code causes a complete recompile.
     # With the stages separated most of the compilation is cached.
 
-    SAVE IMAGE --push $OUTPUT_IMAGE_NAME:digest
+    SAVE IMAGE --push ${OUTPUT_URL}:digest
     # SAVE IMAGE --cache-hint
 
 # Create Erlang release
