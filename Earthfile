@@ -190,8 +190,7 @@ test-image:
 
     WORKDIR $APP_DIR
 
-    # COPY coveralls.json ./
-    COPY .formatter.exs ./
+    COPY --if-exists coveralls.json .formatter.exs .credo.exs dialyzer-ignore ./
     # Non-umbrella
     COPY --dir lib priv test bin ./
     # Umbrella
