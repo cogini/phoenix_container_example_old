@@ -467,7 +467,7 @@ deploy:
     # Run app in foreground
     CMD ["start"]
 
-    SAVE IMAGE --push ${OUTPUT_URL}:latest ${OUTPUT_URL}:${OUTPUT_IMAGE_TAG}
+    SAVE IMAGE --push ${OUTPUT_URL}:${OUTPUT_IMAGE_TAG}
 
 # Scan for security vulnerabilities in release image
 deploy-scan:
