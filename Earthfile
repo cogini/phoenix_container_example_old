@@ -132,9 +132,9 @@ build-os-deps:
     # on the local cache and need for the symlink
     RUN --mount=type=cache,target=/var/cache/apk \
         $APK_UPDATE && $APK_UPGRADE && \
+        # Install build tools
         # apk add --no-progress alpine-sdk && \
-        apk add --no-progress git build-base && \
-        apk add --no-progress curl && \
+        apk add --no-progress git build-base curl && \
         apk add --no-progress nodejs npm
         # apk add --no-progress python3 && \
         # Vulnerability checking
