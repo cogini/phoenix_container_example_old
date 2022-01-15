@@ -90,6 +90,10 @@ ARG LANG=C.UTF-8
 ARG http_proxy
 ARG https_proxy=$http_proxy
 
+ARG RUNTIME_PKGS="ca-certificates shared-mime-info tzdata"
+# Left blank, allowing additional packages to be injected
+ARG DEV_PKGS=""
+
 # The inner buildkit requires Docker hub creds to prevent rate-limiting issues.
 # ARG DOCKERHUB_USER_SECRET
 # ARG DOCKERHUB_TOKEN_SECRET
@@ -113,7 +117,7 @@ all-platforms:
 all:
     BUILD +test
     BUILD +deploy
-    # BUILD +deploy-scan
+    BUILD +deploy-scan
 
 # These can also be called individually
 test:
@@ -133,12 +137,13 @@ build-os-deps:
     RUN --mount=type=cache,target=/var/cache/apk \
         $APK_UPDATE && $APK_UPGRADE && \
         # Install build tools
+        # alpine-sdk is good in general, but more than needed for a basic phoenix app
         # apk add --no-progress alpine-sdk && \
         apk add --no-progress git build-base curl && \
-        apk add --no-progress nodejs npm
+        apk add --no-progress nodejs npm && \
         # apk add --no-progress python3 && \
         # Vulnerability checking
-        # curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+        curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
 
     # Database command line clients to check if DBs are up when performing integration tests
     # RUN apk add --no-progress postgresql-client mysql-client
@@ -412,6 +417,7 @@ deploy:
         ln -s /var/cache/apk /etc/apk/cache && \
         # Upgrading ensures that we get the latest packages, but makes the build nondeterministic
         $APK_UPDATE && $APK_UPGRADE && \
+        apk add --no-progress $RUNTIME_PACKAGES && \
         # https://github.com/krallin/tini
         # apk add tini && \
         # Make DNS resolution more reliable
