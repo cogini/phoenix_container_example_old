@@ -8,7 +8,8 @@ ARG NODE_VERSION=14.4
 # ARG ALPINE_VERSION=3.14.3
 ARG ALPINE_VERSION=3.15.0
 
-ARG POSTGRES_TAG=14.1-alpine
+ARG POSTGRES_IMAGE_NAME=postgres
+ARG POSTGRES_IMAGE_TAG=14.1-alpine
 
 # ARG CREDO_OPTS="--ignore refactor,duplicated --mute-exit-status"
 ARG CREDO_OPTS=""
@@ -245,7 +246,7 @@ test-image-dialyzer:
 
 # Create database for tests
 postgres:
-    FROM "${REGISTRY}postgres:${POSTGRES_TAG}
+    FROM "${REGISTRY}${POSTGRES_IMAGE_NAME}:${POSTGRES_IMAGE_TAG}"
 
     ENV POSTGRES_USER=postgres
     ENV POSTGRES_PASSWORD=postgres
@@ -277,7 +278,7 @@ test-app:
 
     WITH DOCKER \
             # Image names need to match docker-compose.test.yml
-            --pull postgres:14.1-alpine \
+            --pull ${REGISTRY}${POSTGRES_IMAGE_NAME}:${POSTGRES_IMAGE_TAG} \
             # --load app-db:latest=+postgres \
             --load test:latest=+test-image \
             --compose docker-compose.yml
@@ -288,7 +289,7 @@ test-app:
     END
 
 test-credo:
-    FROM ${DIND_IMAGE_NAME}:${DIND_IMAGE_TAG}
+    FROM ${REGISTRY}${DIND_IMAGE_NAME}:${DIND_IMAGE_TAG}
     WITH DOCKER --load test:latest=+test-image
         RUN docker run test mix credo ${CREDO_OPTS}
     END
