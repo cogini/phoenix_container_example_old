@@ -8,6 +8,11 @@ ARG NODE_VERSION=14.4
 # ARG ALPINE_VERSION=3.14.3
 ARG ALPINE_VERSION=3.15.0
 
+ARG POSTGRES_TAG=14.1-alpine
+
+# ARG CREDO_OPTS="--ignore refactor,duplicated --mute-exit-status"
+ARG CREDO_OPTS=""
+
 # Build image
 ARG BUILD_IMAGE_NAME=hexpm/elixir
 ARG BUILD_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-alpine-${ALPINE_VERSION}
@@ -191,13 +196,14 @@ test-image:
     WORKDIR $APP_DIR
 
     COPY --if-exists coveralls.json .formatter.exs .credo.exs dialyzer-ignore ./
-    # Non-umbrella
-    COPY --dir lib priv test bin ./
-    # Umbrella
-    # COPY --dir apps priv ./
 
     # Non-umbrella
+    COPY --dir lib priv test bin ./
+
     RUN mix compile --warnings-as-errors
+
+    # Umbrella
+    # COPY --dir apps priv ./
 
     # For umbrella, using `mix cmd` ensures each app is compiled in
     # isolation https://github.com/elixir-lang/elixir/issues/9407
@@ -239,8 +245,7 @@ test-image-dialyzer:
 
 # Create database for tests
 postgres:
-    # FROM "${REGISTRY}postgres:14"
-    FROM "${REGISTRY}postgres:14.1-alpine"
+    FROM "${REGISTRY}postgres:${POSTGRES_TAG}
 
     ENV POSTGRES_USER=postgres
     ENV POSTGRES_PASSWORD=postgres
@@ -285,8 +290,7 @@ test-app:
 test-credo:
     FROM ${DIND_IMAGE_NAME}:${DIND_IMAGE_TAG}
     WITH DOCKER --load test:latest=+test-image
-        RUN docker run test mix credo
-        # RUN docker run test mix credo --ignore refactor,duplicated --mute-exit-status
+        RUN docker run test mix credo ${CREDO_OPTS}
     END
 
 test-format:
@@ -374,6 +378,7 @@ deploy-release:
 
     # Non-umbrella
     COPY --dir lib rel ./
+
     # Umbrella
     # COPY --dir apps ./
 
