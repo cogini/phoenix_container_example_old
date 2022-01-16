@@ -440,6 +440,13 @@ It includes:
   docker-compose push codebuild
   ```
 
+Same thing, built with Earthly:
+
+  ```shell
+  aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $REGISTRY
+  earthly -V --push --platform=linux/arm64 ./ecs/+deploy
+  ```
+
 ## AWS CodeDeploy
 
 After building a new contaner and pushing it to ECR, it's necessary to update

@@ -15,6 +15,12 @@ ARG BASE_IMAGE_TAG=focal
 # REGISTRY=123.dkr.ecr.ap-northeast-1.amazonaws.com/
 ARG REGISTRY=""
 
+# Output image
+# ARG EARTHLY_GIT_HASH
+ARG OUTPUT_IMAGE_NAME=foo-app-ecs-build
+ARG OUTPUT_IMAGE_TAG=latest
+ARG OUTPUT_URL="${REGISTRY}${OUTPUT_IMAGE_NAME}"
+
 # Make apt-get be quiet
 ARG DEBIAN_FRONTEND=noninteractive
 ARG APT_OPTS="-y -qq -o=Dpkg::Use-Pty=0 --no-install-recommends"
@@ -24,6 +30,9 @@ ARG TARGETARCH
 
 ##########################################################################
 # Stage binary installer files
+
+all-platforms:
+    BUILD --platform=linux/amd64 --platform=linux/arm64 +deploy
 
 deploy:
   FROM ${REGISTRY}${BASE_IMAGE}:${BASE_IMAGE_TAG}
@@ -48,6 +57,7 @@ deploy:
         gnupg \
         # software-properties-common \
         lsb-release \
+        jq \
 
         # Arm emulation
         binfmt-support \
@@ -129,6 +139,8 @@ deploy:
   # Grype
   # https://github.com/anchore/grype
   RUN set -exu && curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin
+
+  SAVE IMAGE --push ${OUTPUT_URL}:${OUTPUT_IMAGE_TAG}
 
 # https://github.com/aws/aws-codebuild-docker-images/blob/master/ubuntu/standard/5.0/Dockerfile
 
