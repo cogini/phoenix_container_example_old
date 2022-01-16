@@ -27,12 +27,12 @@ phases:
       # - nohup /usr/local/bin/dockerd --host=unix:///var/run/docker.sock --host=tcp://0.0.0.0:2375 --storage-driver=overlay&
       # - timeout 15 sh -c "until docker info; do echo .; sleep 1; done"
       # https://github.com/awslabs/amazon-ecr-credential-helper
-      - PYTHON=python2 amazon-linux-extras enable docker
+#      - PYTHON=python2 amazon-linux-extras enable docker
       # - yum clean metadata
-      - yum -y install amazon-ecr-credential-helper
+#      - yum -y install amazon-ecr-credential-helper
       # - wget https://github.com/earthly/earthly/releases/latest/download/earthly-linux-amd64 -O /usr/local/bin/earthly && chmod +x /usr/local/bin/earthly
       # - wget https://github.com/earthly/earthly/releases/latest/download/earthly-linux-arm64 -O /usr/local/bin/earthly && chmod +x /usr/local/bin/earthly
-      - curl -sL https://github.com/earthly/earthly/releases/latest/download/earthly-linux-arm64 -o /usr/local/bin/earthly && chmod +x /usr/local/bin/earthly && /usr/local/bin/earthly bootstrap
+#      - curl -sL https://github.com/earthly/earthly/releases/latest/download/earthly-linux-arm64 -o /usr/local/bin/earthly && chmod +x /usr/local/bin/earthly && /usr/local/bin/earthly bootstrap
       # - curl -sL https://github.com/earthly/earthly/releases/latest/download/earthly-linux-arm64 -o /usr/local/bin/earthly && chmod +x /usr/local/bin/earthly && /usr/local/bin/earthly bootstrap --no-buildkit
       - earthly --version
       - docker --version
