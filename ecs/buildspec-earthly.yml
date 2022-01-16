@@ -95,8 +95,10 @@ phases:
       - sed -i -e "s!<TASK_ROLE_ARN>!${TASK_ROLE_ARN}!g" ecs/taskdef.json
       - sed -i -e "s!<EXECUTION_ROLE_ARN>!${EXECUTION_ROLE_ARN}!g" ecs/taskdef.json
       - sed -i -e "s!<CPU>!${CPU}!g" -e "s!<MEMORY>!${MEMORY}!g" ecs/taskdef.json
+
       # - sed -i -e "s!<CPU_ARCH>!X86_64!g" ecs/taskdef.json
       - sed -i -e "s!<CPU_ARCH>!ARM64!g" ecs/taskdef.json
+
       - sed -i -e "s!<AWSLOGS_GROUP>!${AWSLOGS_GROUP}!g" ecs/taskdef.json
       - sed -i -e "s!<AWSLOGS_REGION>!${AWS_REGION}!g" ecs/taskdef.json
       - sed -i -e "s!<AWSLOGS_STREAM_PREFIX>!${AWSLOGS_STREAM_PREFIX}!g" ecs/taskdef.json
