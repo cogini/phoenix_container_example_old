@@ -227,6 +227,8 @@ test-dialyzer-plt:
 
     RUN mix dialyzer --plt
 
+    SAVE IMAGE --push ${OUTPUT_URL}:dialyzer-plt
+
 test-image-dialyzer:
     FROM +test-dialyzer-plt
 
