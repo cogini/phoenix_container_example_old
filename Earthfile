@@ -109,10 +109,7 @@ ARG USERPLATFORM
 # External targets
 
 all-platforms:
-    # BUILD --platform=linux/amd64 --platform=linux/arm/v7 +all
-    # BUILD --platform=linux/amd64 --platform=linux/arm64/v8 +all
     BUILD --platform=linux/amd64 --platform=linux/arm64 +all
-    # BUILD --platform=linux/amd64 --platform=linux/arm/v5 +all
 
 all:
     BUILD +test
@@ -181,9 +178,6 @@ test-deps-compile:
 
     WORKDIR $APP_DIR
 
-    # RUN --mount=type=cache,target=/opt/mix \
-    #     --mount=type=cache,target=/opt/hex \
-    #     --mount=type=cache,target=/opt/cache \
     RUN mix deps.compile
 
 # Base image used for running tests
