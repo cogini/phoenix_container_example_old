@@ -331,9 +331,6 @@ deploy-deps-compile:
 
     WORKDIR $APP_DIR
 
-    # RUN --mount=type=cache,target=/opt/mix \
-    #     --mount=type=cache,target=/opt/hex \
-    #     --mount=type=cache,target=/opt/cache \
     RUN mix deps.compile
 
 # Build Phoenix assets, i.e. JS and CS
@@ -366,9 +363,6 @@ deploy-digest:
     COPY +deploy-assets/priv priv
 
     # https://hexdocs.pm/phoenix/Mix.Tasks.Phx.Digest.html
-    # RUN --mount=type=cache,target=/opt/mix \
-    #     --mount=type=cache,target=/opt/hex \
-    #    --mount=type=cache,target=/opt/cache \
     RUN mix phx.digest
 
     # This does a partial compile.
