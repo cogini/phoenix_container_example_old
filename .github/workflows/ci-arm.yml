@@ -1,0 +1,23 @@
+---
+name: CI Arm
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: arn:aws:iam::770916339360:role/foo-dev-codebuild-github-action-role
+          aws-region: ap-northeast-1
+      - name: Run CodeBuild
+        uses: aws-actions/aws-codebuild-run-build@v1
+        with:
+          project-name: "foo-app-github-action-arm"
+          buildspec-override: ecs/buildspec-earthly.yaml
+        env:
+          # custom: my environment variable
+          requester: ${{ github.actor }}
+          event-name: ${{ github.event_name }}
