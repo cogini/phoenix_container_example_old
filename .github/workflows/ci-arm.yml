@@ -26,7 +26,7 @@ jobs:
         uses: aws-actions/aws-codebuild-run-build@v1
         with:
           project-name: "foo-app-github-action-arm"
-          buildspec-override: ecs/buildspec-earthly.yaml
+          buildspec-override: ecs/buildspec-earthly.yml
           env-vars-for-codebuild: |
             custom,
             requester,
