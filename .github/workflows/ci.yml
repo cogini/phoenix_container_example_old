@@ -16,13 +16,9 @@ jobs:
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
       FORCE_COLOR: 1
     steps:
-      - name: Set up QEMU for multi-platform builds
-        id: qemu
-        uses: docker/setup-qemu-action@v1
-        with:
-          image: tonistiigi/binfmt:latest
-          platforms: all
-      - uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v2
+
       - name: Put back the git branch into git (Earthly uses it for tagging)
         run: |
           branch=""
@@ -32,6 +28,13 @@ jobs:
             branch="${GITHUB_REF##*/}"
           fi
           git checkout -b "$branch" || true
+
+      - name: Set up QEMU for multi-platform builds
+        id: qemu
+        uses: docker/setup-qemu-action@v1
+        with:
+          image: tonistiigi/binfmt:latest
+          platforms: all
       - name: Docker Login
         run: echo "$DOCKERHUB_TOKEN" | docker login --username "$DOCKERHUB_USERNAME" --password-stdin
       - name: Download latest earthly
