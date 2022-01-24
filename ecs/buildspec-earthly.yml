@@ -19,6 +19,8 @@ env:
     DOCKER_BUILDKIT: 1
     DOCKER_CLI_EXPERIMENTAL: enabled
     COMPOSE_DOCKER_CLI_BUILD: 1
+    # TASKDEF=ecs/taskdef.json
+    TASKDEF=ecs/taskdef-otel.json
 phases:
   install:
     commands:
@@ -95,26 +97,26 @@ phases:
       # Generate files based on env vars passed from Terraform
       # https://docs.aws.amazon.com/codedeploy/latest/userguide/reference-appspec-file-structure-resources.html
       - sed -i -e "s!<NAME>!${CONTAINER_NAME}!g" -e "s!<PORT>!${PORT}!g" ecs/appspec.yml
-      - sed -i -e "s!<NAME>!${CONTAINER_NAME}!g" -e "s!<PORT>!${PORT}!g" ecs/taskdef.json
-      - sed -i -e "s!<TASK_ROLE_ARN>!${TASK_ROLE_ARN}!g" ecs/taskdef.json
-      - sed -i -e "s!<EXECUTION_ROLE_ARN>!${EXECUTION_ROLE_ARN}!g" ecs/taskdef.json
-      - sed -i -e "s!<CPU>!${CPU}!g" -e "s!<MEMORY>!${MEMORY}!g" ecs/taskdef.json
+      - sed -i -e "s!<NAME>!${CONTAINER_NAME}!g" -e "s!<PORT>!${PORT}!g" $TASKDEF
+      - sed -i -e "s!<TASK_ROLE_ARN>!${TASK_ROLE_ARN}!g" $TASKDEF
+      - sed -i -e "s!<EXECUTION_ROLE_ARN>!${EXECUTION_ROLE_ARN}!g" $TASKDEF
+      - sed -i -e "s!<CPU>!${CPU}!g" -e "s!<MEMORY>!${MEMORY}!g" $TASKDEF
 
-      # - sed -i -e "s!<CPU_ARCH>!X86_64!g" ecs/taskdef.json
-      - sed -i -e "s!<CPU_ARCH>!ARM64!g" ecs/taskdef.json
+      # - sed -i -e "s!<CPU_ARCH>!X86_64!g" $TASKDEF
+      - sed -i -e "s!<CPU_ARCH>!ARM64!g" $TASKDEF
 
-      - sed -i -e "s!<AWSLOGS_GROUP>!${AWSLOGS_GROUP}!g" ecs/taskdef.json
-      - sed -i -e "s!<AWSLOGS_REGION>!${AWS_REGION}!g" ecs/taskdef.json
-      - sed -i -e "s!<AWSLOGS_STREAM_PREFIX>!${AWSLOGS_STREAM_PREFIX}!g" ecs/taskdef.json
+      - sed -i -e "s!<AWSLOGS_GROUP>!${AWSLOGS_GROUP}!g" $TASKDEF
+      - sed -i -e "s!<AWSLOGS_REGION>!${AWS_REGION}!g" $TASKDEF
+      - sed -i -e "s!<AWSLOGS_STREAM_PREFIX>!${AWSLOGS_STREAM_PREFIX}!g" $TASKDEF
 
-      - sed -i -e "s!<CONFIG_S3_BUCKET>!${CONFIG_S3_BUCKET}!g" -e "s!<CONFIG_S3_PREFIX>!${CONFIG_S3_PREFIX}!g" ecs/taskdef.json
-      - sed -i "s!<AWS_REGION>!${AWS_REGION}!g" ecs/taskdef.json
-      - sed -i "s!<AWS_ACCOUNT_ID>!${AWS_ACCOUNT_ID}!g" ecs/taskdef.json
+      - sed -i -e "s!<CONFIG_S3_BUCKET>!${CONFIG_S3_BUCKET}!g" -e "s!<CONFIG_S3_PREFIX>!${CONFIG_S3_PREFIX}!g" $TASKDEF
+      - sed -i "s!<AWS_REGION>!${AWS_REGION}!g" $TASKDEF
+      - sed -i "s!<AWS_ACCOUNT_ID>!${AWS_ACCOUNT_ID}!g" $TASKDEF
 
       - cat ecs/appspec.yml
-      - cat ecs/taskdef.json
+      - cat $TASKDEF
       - cp ecs/appspec.yml .
-      - cp ecs/taskdef.json .
+      - cp $TASKDEF .
   # post_build:
   #   commands:
 artifacts:
