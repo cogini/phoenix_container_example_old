@@ -358,15 +358,17 @@ deploy-assets-esbuild:
     WORKDIR $APP_DIR
 
     COPY --dir assets priv ./
+
     RUN mix assets.deploy
 
     SAVE ARTIFACT priv /priv
 
 # Create digested version of assets
 deploy-digest:
-    FROM +deploy-deps-compile
+    FROM +deploy-assets-esbuild
+    # FROM +deploy-deps-compile
 
-    COPY +deploy-assets-esbuild/priv priv
+    # COPY +deploy-assets-esbuild/priv priv
 
     # https://hexdocs.pm/phoenix/Mix.Tasks.Phx.Digest.html
     RUN mix phx.digest
