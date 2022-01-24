@@ -116,7 +116,7 @@ phases:
       - cat ecs/appspec.yml
       - cat $TASKDEF
       - cp ecs/appspec.yml .
-      - cp $TASKDEF .
+      - cp $TASKDEF taskdef.json
   # post_build:
   #   commands:
 artifacts:
