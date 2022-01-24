@@ -87,8 +87,8 @@ ARG XDG_CACHE_HOME=/opt/cache
 # Set a specific LOCALE
 ARG LANG=C.UTF-8
 
-ARG http_proxy
-ARG https_proxy=$http_proxy
+# ARG http_proxy
+# ARG https_proxy=$http_proxy
 
 ARG RUNTIME_PKGS="ca-certificates shared-mime-info tzdata"
 # Left blank, allowing additional packages to be injected
@@ -163,9 +163,10 @@ build-deps-get:
     COPY --dir config ./
     COPY mix.exs mix.lock ./
 
-
     # Install build tools and get app deps
     RUN mix do local.rebar --force, local.hex --force, deps.get
+
+    RUN mix esbuild.install
 
     # SAVE ARTIFACT deps /deps
     SAVE IMAGE --push ${OUTPUT_URL}:deps
@@ -328,7 +329,7 @@ deploy-deps-compile:
     RUN mix deps.compile
 
 # Build Phoenix assets, i.e. JS and CS
-deploy-assets:
+deploy-assets-webpack:
     FROM +deploy-deps-compile
 
     WORKDIR $APP_DIR
@@ -350,11 +351,22 @@ deploy-assets:
     SAVE ARTIFACT ../priv /priv
     SAVE IMAGE --push ${OUTPUT_URL}:assets
 
+# Build Phoenix assets, i.e. JS and CS
+deploy-assets-esbuild:
+    FROM +deploy-deps-compile
+
+    WORKDIR $APP_DIR
+
+    COPY --dir assets priv ./
+    RUN mix assets.deploy
+
+    SAVE ARTIFACT priv /priv
+
 # Create digested version of assets
 deploy-digest:
     FROM +deploy-deps-compile
 
-    COPY +deploy-assets/priv priv
+    COPY +deploy-assets-esbuild/priv priv
 
     # https://hexdocs.pm/phoenix/Mix.Tasks.Phx.Digest.html
     RUN mix phx.digest
@@ -371,6 +383,8 @@ deploy-digest:
 deploy-release:
     # FROM +deploy-digest
     FROM +deploy-deps-compile
+
+    COPY +deploy-assets-esbuild/priv priv
 
     # Non-umbrella
     COPY --dir lib rel ./

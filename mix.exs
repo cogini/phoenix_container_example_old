@@ -78,7 +78,7 @@ defmodule PhoenixContainerExample.MixProject do
       {:opentelemetry_api, "~> 1.0", override: true},
       # {:opentelemetry_phoenix, "~> 0.2.0"},
       {:opentelemetry_phoenix, "~> 1.0.0-rc.7"},
-      {:opentelemetry_ecto, "~> 0.1.0"},
+      # {:opentelemetry_ecto, "~> 0.1.0"},
       {:postgrex, ">= 0.0.0"},
       {:phoenix_html, "~> 3.0"},
       {:phoenix_live_reload, "~> 1.2", only: :dev},
