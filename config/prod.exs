@@ -56,7 +56,7 @@ config :opentelemetry, :processors,
   otel_batch_processor: %{
     exporter: {
       :opentelemetry_exporter, %{
-        endpoints: ["http://localhost:9090"],
+        endpoints: ["http://localhost:4317"],
         headers: [{"x-honeycomb-dataset", "experiments"}]
       }
     }
