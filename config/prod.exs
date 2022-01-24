@@ -51,3 +51,13 @@ config :logger, level: :info
 # Finally import the config/prod.secret.exs which loads secrets
 # and configuration from environment variables.
 # import_config "prod.secret.exs"
+
+config :opentelemetry, :processors,
+  otel_batch_processor: %{
+    exporter: {
+      :opentelemetry_exporter, %{
+        endpoints: ["http://localhost:9090"],
+        headers: [{"x-honeycomb-dataset", "experiments"}]
+      }
+    }
+  }
