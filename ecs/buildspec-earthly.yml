@@ -20,7 +20,7 @@ env:
     DOCKER_CLI_EXPERIMENTAL: enabled
     COMPOSE_DOCKER_CLI_BUILD: 1
     # TASKDEF=ecs/taskdef.json
-    TASKDEF=ecs/taskdef-otel.json
+    TASKDEF: ecs/taskdef-otel.json
 phases:
   install:
     commands:
