@@ -1,6 +1,6 @@
 {
     "auths": {
-        "index.docker.io/v1": {
+        "https://index.docker.io/v1/": {
             "auth": "<DOCKERHUB_AUTH>"
         }
     },
