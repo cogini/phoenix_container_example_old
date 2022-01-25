@@ -1,0 +1,10 @@
+{
+    "auths": {
+        "index.docker.io/v1": {
+            "auth": "<DOCKERHUB_AUTH>"
+        }
+    },
+    "credHelpers": {
+        "<REGISTRY_NAME>": "ecr-login"
+    }
+}

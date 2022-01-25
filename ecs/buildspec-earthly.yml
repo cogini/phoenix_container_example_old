@@ -59,11 +59,10 @@ phases:
       # Use amazon-ecr-credential-helper for login
       - mkdir -p /root/.docker
       # - echo '{"credsStore":"ecr-login"}' | tee /root/.docker/config.json
-      # - printf '{"auths": {"index.docker.io/v1": {"auth": "%s"}}, "credHelpers": {"%s": "ecr-login"}}\n' "$DOCKERHUB_AUTH" "$REGISTRY_NAME" | tee /root/.docker/config.json
-      - printf '{"auths": {"index.docker.io/v1": {}}, "credHelpers": {"%s": "ecr-login"}}\n' "$REGISTRY_NAME" | tee /root/.docker/config.json
+      - sed -i -e "s!<REGISTRY_NAME>!${REGISTRY_NAME}!g" -e "s!<DOCKERHUB_AUTH>!${DOCKERHUB_AUTH}!g" ecs/docker-config.json | tee /root/.docker/config.json
 
       # Log into docker to avoid rate limits
-      - echo "$DOCKERHUB_TOKEN" | docker login --username "$DOCKERHUB_USERNAME" --password-stdin
+      # - echo "$DOCKERHUB_TOKEN" | docker login --username "$DOCKERHUB_USERNAME" --password-stdin
 
       # - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
       - COMMIT_HASH=$CODEBUILD_RESOLVED_SOURCE_VERSION
