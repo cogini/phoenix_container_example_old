@@ -396,8 +396,8 @@ deploy-release:
 
     RUN mix do compile, release "$RELEASE"
 
-    # SAVE ARTIFACT "_build/$MIX_ENV/rel/${RELEASE}" /release AS LOCAL "build/release/${RELEASE}"
-    SAVE ARTIFACT "_build/$MIX_ENV/rel/${RELEASE}" /release
+    SAVE ARTIFACT "_build/$MIX_ENV/rel/${RELEASE}" /release AS LOCAL "build/release/${RELEASE}"
+    # SAVE ARTIFACT "_build/$MIX_ENV/rel/${RELEASE}" /release
     # SAVE ARTIFACT priv/static /static AS LOCAL build/static
     # SAVE ARTIFACT priv/static /static
 
