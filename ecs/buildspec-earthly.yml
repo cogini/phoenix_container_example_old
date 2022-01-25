@@ -50,7 +50,7 @@ phases:
       - export REGISTRY="$(dirname $REPO_URL)/"
 
       # Log into docker to avoid rate limits
-      - docker login --username "$DOCKERHUB_USERNAME" --password "$DOCKERHUB_TOKEN"
+      - echo "$DOCKERHUB_TOKEN" | docker login --username "$DOCKERHUB_USERNAME" --password-stdin
 
       # Log into Amazon ECR
       # Use new aws cli for login
