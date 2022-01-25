@@ -136,7 +136,6 @@ build-os-deps:
     RUN --mount=type=cache,target=/var/cache/apk \
         $APK_UPDATE && $APK_UPGRADE && \
         # Install build tools
-        # alpine-sdk is good in general, but more than needed for a basic phoenix app
         # apk add --no-progress alpine-sdk && \
         apk add --no-progress git build-base curl && \
         apk add --no-progress nodejs npm && \
