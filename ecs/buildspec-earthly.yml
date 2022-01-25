@@ -49,9 +49,6 @@ phases:
     commands:
       - export REGISTRY="$(dirname $REPO_URL)/"
 
-      # Log into docker to avoid rate limits
-      - echo "$DOCKERHUB_TOKEN" | docker login --username "$DOCKERHUB_USERNAME" --password-stdin
-
       # Log into Amazon ECR
       # Use new aws cli for login
       # - aws ecr get-login-password --region "$AWS_DEFAULT_REGION" | docker login --username AWS --password-stdin "$REGISTRY"
@@ -59,7 +56,11 @@ phases:
       # - $(aws ecr get-login --region "$AWS_DEFAULT_REGION" --no-include-email)
       # Use amazon-ecr-credential-helper for login
       - mkdir -p /root/.docker
-      - echo '{"credsStore":"ecr-login"}' | tee /root/.docker/config.json
+      # - echo '{"credsStore":"ecr-login"}' | tee /root/.docker/config.json
+      - echo '{"auths": {"https://index.docker.io/v1/": {}}, "credHelpers": {"$(dirname $REPO_URL)": "ecr-login"}}' | tee /root/.docker/config.json
+
+      # Log into docker to avoid rate limits
+      - echo "$DOCKERHUB_TOKEN" | docker login --username "$DOCKERHUB_USERNAME" --password-stdin
 
       # - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
       - COMMIT_HASH=$CODEBUILD_RESOLVED_SOURCE_VERSION
