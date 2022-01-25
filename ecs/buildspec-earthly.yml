@@ -47,7 +47,9 @@ phases:
 
   pre_build:
     commands:
-      - export REGISTRY="$(dirname $REPO_URL)/"
+      - export REGISTRY_NAME="$(dirname $REPO_URL)"
+      - export REGISTRY="${REGISTRY_NAME}/"
+      - export DOCKERHUB_AUTH="$(echo "${DOCKERHUB_USERNAME}:${DOCKERHUB_TOKEN}" | base64)"
 
       # Log into Amazon ECR
       # Use new aws cli for login
@@ -57,7 +59,7 @@ phases:
       # Use amazon-ecr-credential-helper for login
       - mkdir -p /root/.docker
       # - echo '{"credsStore":"ecr-login"}' | tee /root/.docker/config.json
-      - echo '{"auths": {"https://index.docker.io/v1/": {}}, "credHelpers": {"$(dirname $REPO_URL)": "ecr-login"}}' | tee /root/.docker/config.json
+      - printf '{"auths": {"https://index.docker.io/v1/": {"auth": "%s"}}, "credHelpers": {"%s": "ecr-login"}}\n' "$DOCKERHUB_AUTH" "$REGISTRY_NAME" | tee /root/.docker/config.json
 
       # Log into docker to avoid rate limits
       - echo "$DOCKERHUB_TOKEN" | docker login --username "$DOCKERHUB_USERNAME" --password-stdin
