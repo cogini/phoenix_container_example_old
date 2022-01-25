@@ -29,6 +29,18 @@ phases:
     commands:
       - /usr/sbin/service docker start
 
+      - export REGISTRY_NAME="$(dirname $REPO_URL)"
+      - export REGISTRY="${REGISTRY_NAME}/"
+
+      - export DOCKERHUB_AUTH="$(echo "${DOCKERHUB_USERNAME}:${DOCKERHUB_TOKEN}" | base64)"
+      - mkdir -p /root/.docker
+        # - echo '{"credsStore":"ecr-login"}' | tee /root/.docker/config.json
+      - sed -i -e "s!<REGISTRY_NAME>!${REGISTRY_NAME}!g" -e "s!<DOCKERHUB_AUTH>!${DOCKERHUB_AUTH}!g" ecs/docker-config.json | tee /root/.docker/config.json
+      # - cat /root/.docker/config.json
+
+      # Log into docker to avoid rate limits
+      - echo "$DOCKERHUB_TOKEN" | docker login --username "$DOCKERHUB_USERNAME" --password-stdin
+
       # https://docs.aws.amazon.com/codebuild/latest/APIReference/API_ProjectEnvironment.html
       # - nohup /usr/local/bin/dockerd --host=unix:///var/run/docker.sock --host=tcp://0.0.0.0:2375 --storage-driver=overlay&
       # - timeout 15 sh -c "until docker info; do echo .; sleep 1; done"
@@ -47,23 +59,12 @@ phases:
 
   pre_build:
     commands:
-      - export REGISTRY_NAME="$(dirname $REPO_URL)"
-      - export REGISTRY="${REGISTRY_NAME}/"
-      - export DOCKERHUB_AUTH="$(echo "${DOCKERHUB_USERNAME}:${DOCKERHUB_TOKEN}" | base64)"
-
       # Log into Amazon ECR
       # Use new aws cli for login
       # - aws ecr get-login-password --region "$AWS_DEFAULT_REGION" | docker login --username AWS --password-stdin "$REGISTRY"
       # Use old aws cli for login
       # - $(aws ecr get-login --region "$AWS_DEFAULT_REGION" --no-include-email)
       # Use amazon-ecr-credential-helper for login
-      - mkdir -p /root/.docker
-      - echo '{"credsStore":"ecr-login"}' | tee /root/.docker/config.json
-      # - sed -i -e "s!<REGISTRY_NAME>!${REGISTRY_NAME}!g" -e "s!<DOCKERHUB_AUTH>!${DOCKERHUB_AUTH}!g" ecs/docker-config.json | tee /root/.docker/config.json
-      # - cat /root/.docker/config.json
-
-      # Log into docker to avoid rate limits
-      - echo "$DOCKERHUB_TOKEN" | docker login --username "$DOCKERHUB_USERNAME" --password-stdin
 
       # - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
       - COMMIT_HASH=$CODEBUILD_RESOLVED_SOURCE_VERSION
@@ -75,7 +76,6 @@ phases:
       # - trivy filesystem --exit-code 1 --severity CRITICAL --no-progress .
       # - grype -vv --fail-on medium .
       # - grype -vv .
-
 
       # Build and run tests
       # - earthly -V --build-arg REGISTRY --build-arg REPO_URL --build-arg IMAGE_TAG +test
