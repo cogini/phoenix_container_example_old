@@ -22,8 +22,8 @@ env:
     # TASKDEF=ecs/taskdef.json
     TASKDEF: ecs/taskdef-otel.json
   parameter-store:
-    DOCKERHUB_USERNAME: /cogini/phoenix_container_example/dev/creds/dockerhub_username
-    DOCKERHUB_TOKEN: /cogini/phoenix_container_example/dev/creds/dockerhub_token
+    DOCKERHUB_USERNAME: /cogini/foo/dev/creds/dockerhub_username
+    DOCKERHUB_TOKEN: /cogini/foo/dev/creds/dockerhub_token
 phases:
   install:
     commands:
