@@ -30,6 +30,8 @@ ARG DEPLOY_IMAGE_TAG=$ALPINE_VERSION
 # If specified, should have a trailing slash
 ARG REGISTRY=""
 
+ARG PUBLIC_REGISTRY=""
+
 # Output image
 # ARG EARTHLY_GIT_HASH
 ARG OUTPUT_IMAGE_NAME=foo-app
@@ -127,7 +129,7 @@ test:
 
 # Create base build image with OS dependencies
 build-os-deps:
-    FROM ${REGISTRY}${BUILD_IMAGE_NAME}:${BUILD_IMAGE_TAG}
+    FROM ${PUBLIC_REGISTRY}${BUILD_IMAGE_NAME}:${BUILD_IMAGE_TAG}
 
     # See https://wiki.alpinelinux.org/wiki/Local_APK_cache for details
     # on the local cache and need for the symlink
@@ -248,7 +250,7 @@ test-image-dialyzer:
 
 # Create database for tests
 postgres:
-    FROM "${REGISTRY}${POSTGRES_IMAGE_NAME}:${POSTGRES_IMAGE_TAG}"
+    FROM "${PUBLIC_REGISTRY}${POSTGRES_IMAGE_NAME}:${POSTGRES_IMAGE_TAG}"
 
     ENV POSTGRES_USER=postgres
     ENV POSTGRES_PASSWORD=postgres
@@ -280,7 +282,7 @@ test-app:
 
     WITH DOCKER \
             # Image names need to match docker-compose.test.yml
-            --pull ${REGISTRY}${POSTGRES_IMAGE_NAME}:${POSTGRES_IMAGE_TAG} \
+            --pull ${PUBLIC_REGISTRY}${POSTGRES_IMAGE_NAME}:${POSTGRES_IMAGE_TAG} \
             # --load app-db:latest=+postgres \
             --load test:latest=+test-image \
             --compose docker-compose.yml
@@ -291,31 +293,31 @@ test-app:
     END
 
 test-credo:
-    FROM ${REGISTRY}${DIND_IMAGE_NAME}:${DIND_IMAGE_TAG}
+    FROM ${PUBLIC_REGISTRY}${DIND_IMAGE_NAME}:${DIND_IMAGE_TAG}
     WITH DOCKER --load test:latest=+test-image
         RUN docker run test mix credo ${CREDO_OPTS}
     END
 
 test-format:
-    FROM ${DIND_IMAGE_NAME}:${DIND_IMAGE_TAG}
+    FROM ${PUBLIC_REGISTRY}${DIND_IMAGE_NAME}:${DIND_IMAGE_TAG}
     WITH DOCKER --load test:latest=+test-image
         RUN docker run test mix format --check-formatted
     END
 
 test-deps-audit:
-    FROM ${DIND_IMAGE_NAME}:${DIND_IMAGE_TAG}
+    FROM ${PUBLIC_REGISTRY}${DIND_IMAGE_NAME}:${DIND_IMAGE_TAG}
     WITH DOCKER --load test:latest=+test-image
         RUN docker run test mix deps.audit
     END
 
 test-sobelow:
-    FROM ${DIND_IMAGE_NAME}:${DIND_IMAGE_TAG}
+    FROM ${PUBLIC_REGISTRY}${DIND_IMAGE_NAME}:${DIND_IMAGE_TAG}
     WITH DOCKER --load test:latest=+test-image
         RUN docker run test mix sobelow --exit
     END
 
 test-dialyzer:
-    FROM ${DIND_IMAGE_NAME}:${DIND_IMAGE_TAG}
+    FROM ${PUBLIC_REGISTRY}${DIND_IMAGE_NAME}:${DIND_IMAGE_TAG}
     WITH DOCKER --load test-dialyzer:latest=+test-image-dialyzer
         RUN docker run test-dialyzer mix dialyzer --halt-exit-status
     END
