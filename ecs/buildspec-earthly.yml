@@ -32,14 +32,14 @@ phases:
       - export REGISTRY_NAME="$(dirname $REPO_URL)"
       - export REGISTRY="${REGISTRY_NAME}/"
 
-      - export DOCKERHUB_AUTH="$(echo "${DOCKERHUB_USERNAME}:${DOCKERHUB_TOKEN}" | base64)"
-      - mkdir -p /root/.docker
-        # - echo '{"credsStore":"ecr-login"}' | tee /root/.docker/config.json
-      - sed -i -e "s!<REGISTRY_NAME>!${REGISTRY_NAME}!g" -e "s!<DOCKERHUB_AUTH>!${DOCKERHUB_AUTH}!g" ecs/docker-config.json | tee /root/.docker/config.json
+      # - export DOCKERHUB_AUTH="$(echo "${DOCKERHUB_USERNAME}:${DOCKERHUB_TOKEN}" | base64)"
+      # - mkdir -p /root/.docker
+      # - echo '{"credsStore":"ecr-login"}' | tee /root/.docker/config.json
+      # - sed -i -e "s!<REGISTRY_NAME>!${REGISTRY_NAME}!g" -e "s!<DOCKERHUB_AUTH>!${DOCKERHUB_AUTH}!g" ecs/docker-config.json | tee /root/.docker/config.json
       # - cat /root/.docker/config.json
 
       # Log into docker to avoid rate limits
-      # - echo "$DOCKERHUB_TOKEN" | docker login --username "$DOCKERHUB_USERNAME" --password-stdin
+      - echo "$DOCKERHUB_TOKEN" | docker login --username "$DOCKERHUB_USERNAME" --password-stdin
 
       # https://docs.aws.amazon.com/codebuild/latest/APIReference/API_ProjectEnvironment.html
       # - nohup /usr/local/bin/dockerd --host=unix:///var/run/docker.sock --host=tcp://0.0.0.0:2375 --storage-driver=overlay&
@@ -61,7 +61,7 @@ phases:
     commands:
       # Log into Amazon ECR
       # Use new aws cli for login
-      # - aws ecr get-login-password --region "$AWS_DEFAULT_REGION" | docker login --username AWS --password-stdin "$REGISTRY"
+      - aws ecr get-login-password --region "$AWS_DEFAULT_REGION" | docker login --username AWS --password-stdin "$REGISTRY"
       # Use old aws cli for login
       # - $(aws ecr get-login --region "$AWS_DEFAULT_REGION" --no-include-email)
       # Use amazon-ecr-credential-helper for login
