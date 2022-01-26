@@ -84,10 +84,10 @@
         },
         {
             "name": "aws-otel-collector",
-            "image": "amazon/aws-otel-collector",
+            "image": "cogini/awscollector:v0.15.0",
             "cpu": 0,
             "memoryReservation": 256,
-            "command":["--config=/etc/ecs/container-insights/otel-task-metrics-config.yaml"],
+            "command":["--config=/etc/otel-config.yaml"],
             "essential": true,
             "logConfiguration": {
                 "logDriver": "awslogs",
