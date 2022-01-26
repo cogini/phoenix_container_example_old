@@ -1,10 +1,6 @@
 {
-    "auths": {
-        "docker.io": {
-            "auth": "<DOCKERHUB_AUTH>"
-        }
-    },
     "credHelpers": {
         "<REGISTRY_NAME>": "ecr-login"
+        "public.ecr.aws": "ecr-login"
     }
 }
