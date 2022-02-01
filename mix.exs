@@ -33,9 +33,7 @@ defmodule PhoenixContainerExample.MixProject do
     ]
   end
 
-  # Configuration for the OTP application.
-  #
-  # Type `mix help compile.app` for more information.
+  # Run "mix help compile.app" to learn about applications.
   def application do
     [
       mod: {PhoenixContainerExample.Application, []},
@@ -57,12 +55,11 @@ defmodule PhoenixContainerExample.MixProject do
         include_executables_for: [:unix],
         # Don't need to tar if we are just going to copy it
         # steps: [:assemble, :tar]
-      ],
+      ]
     ]
   end
 
-  #
-  # Type `mix help deps` for examples and options.
+  # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
       {:mix_audit, "~> 1.0.0", only: [:dev, :test], runtime: false},
