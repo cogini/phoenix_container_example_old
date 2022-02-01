@@ -1,10 +1,13 @@
 defmodule PhoenixContainerExample.MixProject do
   use Mix.Project
 
+  @version "0.1.0"
+  @app :phoenix_container_example
+
   def project do
     [
-      app: :phoenix_container_example,
-      version: "0.1.0",
+      app: @app,
+      version: @version,
       elixir: "~> 1.12",
       elixirc_paths: elixirc_paths(Mix.env()),
       compilers: [:gettext] ++ Mix.compilers(),
@@ -52,7 +55,9 @@ defmodule PhoenixContainerExample.MixProject do
   defp releases do
     [
       prod: [
+        version: @version,
         include_executables_for: [:unix]
+        applications: [:runtime_tools, :opentelemetry_exporter, {:opentelemetry, :temporary}, @app]
         # Don't need to tar if we are just going to copy it
         # steps: [:assemble, :tar]
       ]

@@ -58,11 +58,13 @@ config :opentelemetry, :processors,
     exporter: {
       :opentelemetry_exporter,
       %{
-        # Export using OpenTelemetry protocol
+        # protocol: :grpc,
         endpoints: [
           # gRPC
-          "http://localhost:4317"
+          # "http://localhost:4317"
           # HTTP
+          "http://localhost:4318"
+          # "http://localhost:55681"
           # {:http, 'localhost', 55681, []}
         ]
         # headers: [{"x-honeycomb-dataset", "experiments"}]

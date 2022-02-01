@@ -74,7 +74,25 @@ config :phoenix, :stacktrace_depth, 20
 # Initialize plugs at runtime for faster development compilation
 config :phoenix, :plug_init_mode, :runtime
 
+# config :opentelemetry, :processors,
+#   otel_batch_processor: %{
+#     exporter: {:otel_exporter_stdout, []}
+#   }
+
 config :opentelemetry, :processors,
   otel_batch_processor: %{
-    exporter: {:otel_exporter_stdout, []}
+    exporter: {
+      :opentelemetry_exporter,
+      %{
+        # protocol: :grpc,
+        endpoints: [
+          # gRPC
+          # "http://localhost:4317"
+          # HTTP
+          "http://localhost:55681"
+          # {:http, 'localhost', 55681, []}
+        ]
+        # headers: [{"x-honeycomb-dataset", "experiments"}]
+      }
+    }
   }
