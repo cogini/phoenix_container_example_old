@@ -56,8 +56,8 @@ defmodule PhoenixContainerExample.MixProject do
     [
       prod: [
         version: @version,
-        include_executables_for: [:unix]
-        applications: [:runtime_tools, :opentelemetry_exporter, {:opentelemetry, :temporary}, @app]
+        include_executables_for: [:unix],
+        applications: [:runtime_tools, :opentelemetry_exporter, {:opentelemetry, :temporary}, {@app, :permanent}]
         # Don't need to tar if we are just going to copy it
         # steps: [:assemble, :tar]
       ]
