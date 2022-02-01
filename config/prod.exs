@@ -57,7 +57,8 @@ config :opentelemetry, :processors,
     exporter: {
       :opentelemetry_exporter, %{
         endpoints: ["http://localhost:4317"],
-        headers: [{"x-honeycomb-dataset", "experiments"}]
+        # endpoints: [{:http, 'localhost', 55681, []}],
+        # headers: [{"x-honeycomb-dataset", "experiments"}]
       }
     }
   }
