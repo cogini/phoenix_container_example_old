@@ -52,7 +52,7 @@ defmodule PhoenixContainerExample.MixProject do
   defp releases do
     [
       prod: [
-        include_executables_for: [:unix],
+        include_executables_for: [:unix]
         # Don't need to tar if we are just going to copy it
         # steps: [:assemble, :tar]
       ]
@@ -73,6 +73,7 @@ defmodule PhoenixContainerExample.MixProject do
       {:ecto_sql, "~> 3.6"},
       {:opentelemetry, "~> 1.0", override: true},
       {:opentelemetry_api, "~> 1.0", override: true},
+      {:opentelemetry_exporter, "~> 1.0"},
       # {:opentelemetry_phoenix, "~> 0.2.0"},
       {:opentelemetry_phoenix, "~> 1.0.0-rc.7"},
       # {:opentelemetry_ecto, "~> 0.1.0"},
