@@ -40,8 +40,7 @@ defmodule PhoenixContainerExample.MixProject do
   def application do
     [
       mod: {PhoenixContainerExample.Application, []},
-      # extra_applications: [:logger, :runtime_tools]
-      extra_applications: [:logger, :runtime_tools, :ssl] ++ extra_applications(Mix.env()),
+      extra_applications: [:logger, :runtime_tools, :ssl] ++ extra_applications(Mix.env())
     ]
   end
 
@@ -56,8 +55,8 @@ defmodule PhoenixContainerExample.MixProject do
     [
       prod: [
         version: @version,
-        include_executables_for: [:unix],
-        applications: [:runtime_tools, :opentelemetry_exporter, {:opentelemetry, :temporary}, {@app, :permanent}]
+        include_executables_for: [:unix]
+        # applications: [:runtime_tools :permanent, :opentelemetry_exporter :load, :opentelemetry :temporary, @app :permanent]
         # Don't need to tar if we are just going to copy it
         # steps: [:assemble, :tar]
       ]
