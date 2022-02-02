@@ -447,6 +447,13 @@ Same thing, built with Earthly:
   earthly -V --push --platform=linux/arm64 ./ecs/+deploy
   ```
 
+```shell
+aws ssm put-parameter --name /cogini/foo/dev/creds/dockerhub_username --value "$DOCKERHUB_USERNAME" --type String --region $AWS_REGION
+aws ssm put-parameter --name /cogini/foo/dev/creds/dockerhub_token --value "$DOCKERHUB_TOKEN" --type SecureString --region $AWS_REGION
+```
+
+https://github.com/cogini/aws-otel-collector/blob/main/docs/developers/build-docker.md
+
 ## AWS CodeDeploy
 
 After building a new contaner and pushing it to ECR, it's necessary to update
@@ -531,9 +538,3 @@ Allow db configuration to be overridden by env vars:
    pool_size: 10
  ```
 
-```shell
-aws ssm put-parameter --name /cogini/foo/dev/creds/dockerhub_username --value "$DOCKERHUB_USERNAME" --type String --region $AWS_REGION
-aws ssm put-parameter --name /cogini/foo/dev/creds/dockerhub_token --value "$DOCKERHUB_TOKEN" --type SecureString --region $AWS_REGION
-```
-
-https://github.com/cogini/aws-otel-collector/blob/main/docs/developers/build-docker.md
