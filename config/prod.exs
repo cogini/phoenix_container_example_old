@@ -53,19 +53,21 @@ config :logger, level: :info
 # and configuration from environment variables.
 # import_config "prod.secret.exs"
 
+# https://hexdocs.pm/opentelemetry_exporter/1.0.0/readme.html
+# Maybe OTEL_EXPORTER_OTLP_ENDPOINT=http://opentelemetry-collector:55680
 config :opentelemetry, :processors,
   otel_batch_processor: %{
     exporter: {
       :opentelemetry_exporter,
       %{
-        # protocol: :grpc,
+        protocol: :grpc,
         endpoints: [
           # gRPC
-          # "http://localhost:4317"
+          'http://localhost:4317'
           # HTTP
-          "http://localhost:4318"
-          # "http://localhost:55681"
-          # {:http, 'localhost', 55681, []}
+          # 'http://localhost:4318'
+          # 'http://localhost:55681'
+          # {:http, 'localhost', 4318, []}
         ]
         # headers: [{"x-honeycomb-dataset", "experiments"}]
       }

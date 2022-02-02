@@ -74,23 +74,36 @@ config :phoenix, :stacktrace_depth, 20
 # Initialize plugs at runtime for faster development compilation
 config :phoenix, :plug_init_mode, :runtime
 
+# https://opentelemetry.io/docs/reference/specification/resource/semantic_conventions/
+config :opentelemetry, :resource,
+  [
+    # In production service.name is set based on OS env vars from Erlang release
+    service: [
+      name: Mix.Project.config[:app],
+      version: Mix.Project.config[:version]
+    ]
+  ]
+
 # config :opentelemetry, :processors,
 #   otel_batch_processor: %{
 #     exporter: {:otel_exporter_stdout, []}
 #   }
 
+# https://hexdocs.pm/opentelemetry_exporter/1.0.0/readme.html
+# Maybe OTEL_EXPORTER_OTLP_ENDPOINT=http://opentelemetry-collector:55680
 config :opentelemetry, :processors,
   otel_batch_processor: %{
     exporter: {
       :opentelemetry_exporter,
       %{
-        # protocol: :grpc,
+        protocol: :grpc,
         endpoints: [
           # gRPC
-          # "http://localhost:4317"
+          'http://localhost:4317'
           # HTTP
-          "http://localhost:55681"
-          # {:http, 'localhost', 55681, []}
+          # 'http://localhost:4318'
+          # 'http://localhost:55681'
+          # {:http, 'localhost', 4318, []}
         ]
         # headers: [{"x-honeycomb-dataset", "experiments"}]
       }
