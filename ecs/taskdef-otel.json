@@ -34,8 +34,8 @@
             },
             "dependsOn": [
                 {
-                "containerName": "aws-otel-collector",
-                "condition": "START"
+                    "containerName": "aws-otel-collector",
+                    "condition": "START"
                 }
             ],
             "mountPoints": [],
@@ -88,7 +88,34 @@
             "cpu": 0,
             "memoryReservation": 256,
             "command":["--config=/etc/otel-config.yaml"],
-            "essential": true,
+            "portMappings": [
+                {
+                    "hostPort": 4317,
+                    "containerPort": 4317
+                },
+                {
+                    "hostPort": 4318,
+                    "containerPort": 4318
+                },
+                {
+                    "hostPort": 8888,
+                    "containerPort": 8888
+                },
+                {
+                    "hostPort": 8889,
+                    "containerPort": 8889
+                },
+                {
+                    "hostPort": 13133,
+                    "containerPort": 13133
+                },
+                {
+                    "hostPort": 2000,
+                    "containerPort": 2000,
+                    "protocol": "udp"
+                }
+            ],
+            "essential": false,
             "logConfiguration": {
                 "logDriver": "awslogs",
                 "options": {
