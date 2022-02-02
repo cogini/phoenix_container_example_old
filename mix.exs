@@ -40,7 +40,9 @@ defmodule PhoenixContainerExample.MixProject do
   def application do
     [
       mod: {PhoenixContainerExample.Application, []},
-      extra_applications: [:logger, :runtime_tools, :ssl] ++ extra_applications(Mix.env())
+      extra_applications:
+        [:logger, :runtime_tools, :gproc, :tls_certificate_check, :ssl] ++
+          extra_applications(Mix.env())
     ]
   end
 
