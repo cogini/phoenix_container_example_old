@@ -13,7 +13,11 @@ config :phoenix_container_example,
 # Configures the endpoint
 config :phoenix_container_example, PhoenixContainerExampleWeb.Endpoint,
   url: [host: "localhost"],
-  render_errors: [view: PhoenixContainerExampleWeb.ErrorView, accepts: ~w(html json), layout: false],
+  render_errors: [
+    view: PhoenixContainerExampleWeb.ErrorView,
+    accepts: ~w(html json),
+    layout: false
+  ],
   pubsub_server: PhoenixContainerExample.PubSub,
   live_view: [signing_salt: "jYa25KyQ"]
 
