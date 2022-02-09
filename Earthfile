@@ -14,6 +14,9 @@ ARG POSTGRES_IMAGE_TAG=14.1-alpine
 # ARG CREDO_OPTS="--ignore refactor,duplicated --mute-exit-status"
 ARG CREDO_OPTS=""
 
+# ARG SOBELOW_OPTS="--exit"
+ARG SOBELOW_OPTS=""
+
 # Build image
 ARG BUILD_IMAGE_NAME=hexpm/elixir
 ARG BUILD_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-alpine-${ALPINE_VERSION}
@@ -110,24 +113,30 @@ ARG USERPLATFORM
 
 # External targets
 
-all-platforms:
-    BUILD --platform=linux/amd64 --platform=linux/arm64 +all
-
+# Main target for CI/CD
 all:
     BUILD +test
     BUILD +deploy
     BUILD +deploy-scan
 
+# Test target
 # These can also be called individually
 test:
     BUILD +test-app
-    # BUILD +test-credo
-    # BUILD +test-format
-    # BUILD +test-deps-audit
-    # BUILD +test-sobelow
-    # BUILD +test-dialyzer
+    BUILD +test-credo
+    BUILD +test-format
+    BUILD +test-deps-audit
+    BUILD +test-sobelow
+    BUILD +test-dialyzer
 
-# Create base build image with OS dependencies
+# Build for multiple platforms at once
+all-platforms:
+    BUILD --platform=linux/amd64 --platform=linux/arm64 +all
+
+
+# Internal targets
+
+# Create build base image with OS dependencies
 build-os-deps:
     FROM ${PUBLIC_REGISTRY}${BUILD_IMAGE_NAME}:${BUILD_IMAGE_TAG}
 
@@ -214,6 +223,7 @@ test-image:
     # SAVE IMAGE test-image:latest
     SAVE IMAGE --push ${OUTPUT_URL}:test
 
+# Generate Dizlyzer PLT file separately from app for better caching
 test-dialyzer-plt:
     FROM +build-deps-get
 
@@ -225,6 +235,7 @@ test-dialyzer-plt:
 
     SAVE IMAGE --push ${OUTPUT_URL}:dialyzer-plt
 
+# Run Dialyzer on app files
 test-image-dialyzer:
     FROM +test-dialyzer-plt
 
@@ -312,7 +323,7 @@ test-deps-audit:
 test-sobelow:
     FROM ${PUBLIC_REGISTRY}${DIND_IMAGE_NAME}:${DIND_IMAGE_TAG}
     WITH DOCKER --load test:latest=+test-image
-        RUN docker run test mix sobelow --exit
+        RUN docker run test mix sobelow ${SOBELOW_OPTS}
     END
 
 test-dialyzer:
@@ -321,7 +332,7 @@ test-dialyzer:
         RUN docker run test-dialyzer mix dialyzer --halt-exit-status
     END
 
-# Compile deps separately from application, allowing it to be cached
+# Compile deps separately from application for better caching
 deploy-deps-compile:
     FROM +build-deps-get
 
@@ -329,7 +340,7 @@ deploy-deps-compile:
 
     RUN mix deps.compile
 
-# Build Phoenix assets, i.e. JS and CS
+# Build JS and CS assets with Webpack
 deploy-assets-webpack:
     FROM +deploy-deps-compile
 
@@ -352,7 +363,7 @@ deploy-assets-webpack:
     SAVE ARTIFACT ../priv /priv
     SAVE IMAGE --push ${OUTPUT_URL}:assets
 
-# Build Phoenix assets, i.e. JS and CS
+# Build JS and CS with esbuild
 deploy-assets-esbuild:
     FROM +deploy-deps-compile
 
@@ -430,11 +441,12 @@ deploy:
         # Make DNS resolution more reliable
         # https://github.com/sourcegraph/godockerize/commit/5cf4e6d81720f2551e6a7b2b18c63d1460bbbe4e
         # apk add bind-tools && \
+
         # Install openssl, allowing the app to listen on HTTPS.
         # May not be needed if HTTPS is handled outside the application, e.g. in load balancer.
         apk add openssl ncurses-libs
 
-    # Create user and group to run under with specific uid
+    # Create user and group for app to run under with specific uid
     RUN addgroup -g 10001 -S "$APP_GROUP" && \
         adduser -u 10000 -S "$APP_USER" -G "$APP_GROUP" -h "$HOME"
 
@@ -458,7 +470,7 @@ deploy:
 
     # Chown files while copying. Running "RUN chown -R app:app /app"
     # adds an extra layer which is about 10Mb, a huge difference when the
-    # image for a new phoenix app is around 20Mb.
+    # app image is around 20Mb.
 
     # TODO: For more security, change specific files to have group read/execute
     # permissions while leaving them owned by root
@@ -476,7 +488,7 @@ deploy:
 
     SAVE IMAGE --push ${OUTPUT_URL}:${OUTPUT_IMAGE_TAG}
 
-# Scan for security vulnerabilities in release image
+# Scan release image for security vulnerabilities
 deploy-scan:
     FROM +deploy
 
