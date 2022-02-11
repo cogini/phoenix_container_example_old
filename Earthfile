@@ -1,12 +1,14 @@
 # Build Elixir/Phoenix app
 
 # App versions
-ARG ELIXIR_VERSION=1.13.1
+ARG ELIXIR_VERSION=1.13.2
 # ARG OTP_VERSION=23.3.4
 ARG OTP_VERSION=24.2
 ARG NODE_VERSION=14.4
 # ARG ALPINE_VERSION=3.14.3
 ARG ALPINE_VERSION=3.15.0
+# ARG ELIXIR_DEBIAN_VERSION=buster-20210208
+ARG ELIXIR_DEBIAN_VERSION=bullseye-20210902
 
 ARG POSTGRES_IMAGE_NAME=postgres
 ARG POSTGRES_IMAGE_TAG=14.1-alpine
@@ -17,17 +19,38 @@ ARG CREDO_OPTS=""
 # ARG SOBELOW_OPTS="--exit"
 ARG SOBELOW_OPTS=""
 
-# Build image
-ARG BUILD_IMAGE_NAME=hexpm/elixir
-ARG BUILD_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-alpine-${ALPINE_VERSION}
+# ARG BASE_OS=alpine
+ARG BASE_OS=debian
+
+FROM busybox
+IF [ "$BASE_OS" = "alpine" ]
+
+    # Build image
+    ARG BUILD_IMAGE_NAME=hexpm/elixir
+    ARG BUILD_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-alpine-${ALPINE_VERSION}
+
+    # Deploy base image
+    ARG DEPLOY_IMAGE_NAME=alpine
+    ARG DEPLOY_IMAGE_TAG=$ALPINE_VERSION
+
+    # Create build base image with OS dependencies
+    IMPORT ./deploy/alpine AS base
+ELSE
+    # Build image
+    ARG BUILD_IMAGE_NAME=hexpm/elixir
+    ARG BUILD_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-${ELIXIR_DEBIAN_VERSION}
+
+    # Deploy base image
+    ARG DEPLOY_IMAGE_NAME=debian
+    # ARG DEPLOY_IMAGE_TAG=buster-slim
+    ARG DEPLOY_IMAGE_TAG=bullseye-slim
+
+    IMPORT ./deploy/debian AS base
+END
 
 # Docker-in-Docker host image, used for testing
 ARG DIND_IMAGE_NAME=earthly/dind
 ARG DIND_IMAGE_TAG=alpine
-
-# Deploy base image
-ARG DEPLOY_IMAGE_NAME=alpine
-ARG DEPLOY_IMAGE_TAG=$ALPINE_VERSION
 
 # Docker registry for base images, default is docker.io
 # If specified, should have a trailing slash
@@ -108,6 +131,11 @@ ARG DEV_PKGS=""
 #         docker login --username="$USERNAME" --password="$TOKEN" ;\
 #     fi
 
+# Make apt-get be quiet
+ARG DEBIAN_FRONTEND=noninteractive
+ARG APT_OPTS="-y -qq -o=Dpkg::Use-Pty=0 --no-install-recommends"
+ARG APT_OPTS_UPDATE="-qq --no-install-recommends"
+
 ARG TARGETPLATFORM
 ARG USERPLATFORM
 
@@ -117,7 +145,7 @@ ARG USERPLATFORM
 all:
     BUILD +test
     BUILD +deploy
-    BUILD +deploy-scan
+    # BUILD +deploy-scan
 
 # Test target
 # These can also be called individually
@@ -136,36 +164,9 @@ all-platforms:
 
 # Internal targets
 
-# Create build base image with OS dependencies
-build-os-deps:
-    FROM ${PUBLIC_REGISTRY}${BUILD_IMAGE_NAME}:${BUILD_IMAGE_TAG}
-
-    # See https://wiki.alpinelinux.org/wiki/Local_APK_cache for details
-    # on the local cache and need for the symlink
-    RUN --mount=type=cache,target=/var/cache/apk \
-        $APK_UPDATE && $APK_UPGRADE && \
-        # Install build tools
-        # apk add --no-progress alpine-sdk && \
-        apk add --no-progress git build-base curl && \
-        apk add --no-progress nodejs npm && \
-        # apk add --no-progress python3 && \
-        # Vulnerability checking
-        curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
-
-    # Database command line clients to check if DBs are up when performing integration tests
-    # RUN apk add --no-progress postgresql-client mysql-client
-    # RUN apk add --no-progress --no-cache curl gnupg --virtual .build-dependencies -- && \
-    #     curl -O https://download.microsoft.com/download/e/4/e/e4e67866-dffd-428c-aac7-8d28ddafb39b/msodbcsql17_17.5.2.1-1_amd64.apk && \
-    #     curl -O https://download.microsoft.com/download/e/4/e/e4e67866-dffd-428c-aac7-8d28ddafb39b/mssql-tools_17.5.2.1-1_amd64.apk && \
-    #     echo y | apk add --allow-untrusted msodbcsql17_17.5.2.1-1_amd64.apk mssql-tools_17.5.2.1-1_amd64.apk && \
-    #     apk del .build-dependencies && rm -f msodbcsql*.sig mssql-tools*.apk
-    # ENV PATH="/opt/mssql-tools/bin:${PATH}"
-
-    SAVE IMAGE --push ${OUTPUT_URL}:os-deps
-
 # Get app deps
 build-deps-get:
-    FROM +build-os-deps
+    FROM base+build-os-deps
 
     WORKDIR $APP_DIR
 
@@ -413,9 +414,8 @@ deploy-release:
     # SAVE ARTIFACT priv/static /static AS LOCAL build/static
     # SAVE ARTIFACT priv/static /static
 
-# Create final deploy image
 deploy:
-    FROM ${REGISTRY}${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG}
+    FROM base+deploy-base
 
     # Set environment vars used by the app
     # SECRET_KEY_BASE and DATABASE_URL env vars should be set when running the application
@@ -427,35 +427,6 @@ deploy:
 
     ENV RELEASE_TMP="/run/$APP_NAME"
     ENV RELEASE=${RELEASE}
-
-    # Install Alpine runtime libraries
-    # See https://wiki.alpinelinux.org/wiki/Local_APK_cache for details
-    # on the local cache and need for the symlink
-    RUN --mount=type=cache,target=/var/cache/apk \
-        ln -s /var/cache/apk /etc/apk/cache && \
-        # Upgrading ensures that we get the latest packages, but makes the build nondeterministic
-        $APK_UPDATE && $APK_UPGRADE && \
-        apk add --no-progress $RUNTIME_PACKAGES && \
-        # https://github.com/krallin/tini
-        # apk add tini && \
-        # Make DNS resolution more reliable
-        # https://github.com/sourcegraph/godockerize/commit/5cf4e6d81720f2551e6a7b2b18c63d1460bbbe4e
-        # apk add bind-tools && \
-
-        # Install openssl, allowing the app to listen on HTTPS.
-        # May not be needed if HTTPS is handled outside the application, e.g. in load balancer.
-        apk add openssl ncurses-libs
-
-    # Create user and group for app to run under with specific uid
-    RUN addgroup -g 10001 -S "$APP_GROUP" && \
-        adduser -u 10000 -S "$APP_USER" -G "$APP_GROUP" -h "$HOME"
-
-        # Create app dirs
-    RUN mkdir -p "/run/$APP_NAME" && \
-        # Make dirs writable by app
-        chown -R "$APP_USER:$APP_GROUP" \
-            # Needed for RELEASE_TMP
-            "/run/$APP_NAME"
 
     # USER $APP_USER
 
@@ -487,26 +458,3 @@ deploy:
     CMD ["start"]
 
     SAVE IMAGE --push ${OUTPUT_URL}:${OUTPUT_IMAGE_TAG}
-
-# Scan release image for security vulnerabilities
-deploy-scan:
-    FROM +deploy
-
-    USER root
-
-    RUN --mount=type=cache,target=/var/cache/apk \
-        apk add curl && \
-        curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
-
-    # Fail build if there are any issues of severity = CRITICAL
-    # Succeed for issues of severity = HIGH
-    RUN --mount=type=cache,target=/var/cache/apk \
-        # --mount=type=cache,target=/root/.cache/trivy \
-        --mount=type=cache,target=/root/.cache \
-        trivy filesystem --exit-code 0 --severity HIGH --no-progress / && \
-        trivy filesystem --exit-code 1 --severity CRITICAL --no-progress /
-        # Fail build if there are any issues
-        # trivy filesystem -d --exit-code 1 --no-progress /
-
-        # curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin \
-        # grype -vv --fail-on medium dir:/ \

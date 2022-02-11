@@ -1,0 +1,129 @@
+# Build Elixir/Phoenix app
+
+# App versions
+ARG ELIXIR_VERSION=1.13.2
+# ARG OTP_VERSION=23.3.4
+ARG OTP_VERSION=24.2
+ARG NODE_VERSION=14.4
+
+ARG ALPINE_VERSION=3.15.0
+
+ARG BUILD_IMAGE_NAME=hexpm/elixir
+ARG BUILD_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-alpine-${ALPINE_VERSION}
+
+# Deploy base image
+ARG DEPLOY_IMAGE_NAME=alpine
+ARG DEPLOY_IMAGE_TAG=$ALPINE_VERSION
+
+# Docker registry for base images, default is docker.io
+# If specified, should have a trailing slash
+ARG REGISTRY=""
+
+ARG PUBLIC_REGISTRY=""
+
+# Output image
+# ARG EARTHLY_GIT_HASH
+ARG OUTPUT_IMAGE_NAME=foo-app
+ARG IMAGE_TAG=latest
+ARG OUTPUT_IMAGE_TAG="$IMAGE_TAG"
+ARG REPO_URL="${REGISTRY}${OUTPUT_IMAGE_NAME}"
+ARG OUTPUT_URL=$REPO_URL
+
+
+# App name, used to name directories
+ARG APP_NAME=app
+
+# OS user that app runs under
+ARG APP_USER=app
+
+# OS group that app runs under
+ARG APP_GROUP="$APP_USER"
+
+# Dir that app runs under
+ARG APP_DIR=/app
+
+ARG HOME=$APP_DIR
+
+# Set a specific LOCALE
+ARG LANG=C.UTF-8
+
+# Create build base image with OS dependencies
+build-os-deps:
+    FROM ${PUBLIC_REGISTRY}${BUILD_IMAGE_NAME}:${BUILD_IMAGE_TAG}
+
+    # See https://wiki.alpinelinux.org/wiki/Local_APK_cache for details
+    # on the local cache and need for the symlink
+    RUN --mount=type=cache,target=/var/cache/apk \
+        $APK_UPDATE && $APK_UPGRADE && \
+        # Install build tools
+        # apk add --no-progress alpine-sdk && \
+        apk add --no-progress git build-base curl && \
+        apk add --no-progress nodejs npm && \
+        # apk add --no-progress python3 && \
+        # Vulnerability checking
+        curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+
+    # Database command line clients to check if DBs are up when performing integration tests
+    # RUN apk add --no-progress postgresql-client mysql-client
+    # RUN apk add --no-progress --no-cache curl gnupg --virtual .build-dependencies -- && \
+    #     curl -O https://download.microsoft.com/download/e/4/e/e4e67866-dffd-428c-aac7-8d28ddafb39b/msodbcsql17_17.5.2.1-1_amd64.apk && \
+    #     curl -O https://download.microsoft.com/download/e/4/e/e4e67866-dffd-428c-aac7-8d28ddafb39b/mssql-tools_17.5.2.1-1_amd64.apk && \
+    #     echo y | apk add --allow-untrusted msodbcsql17_17.5.2.1-1_amd64.apk mssql-tools_17.5.2.1-1_amd64.apk && \
+    #     apk del .build-dependencies && rm -f msodbcsql*.sig mssql-tools*.apk
+    # ENV PATH="/opt/mssql-tools/bin:${PATH}"
+
+    SAVE IMAGE --push ${OUTPUT_URL}:os-deps
+
+deploy-base:
+    FROM ${REGISTRY}${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG}
+
+    ENV LANG=$LANG
+    ENV HOME=$APP_DIR
+
+    # Install Alpine runtime libraries
+    # See https://wiki.alpinelinux.org/wiki/Local_APK_cache for details
+    # on the local cache and need for the symlink
+    RUN --mount=type=cache,target=/var/cache/apk \
+        ln -s /var/cache/apk /etc/apk/cache && \
+        # Upgrading ensures that we get the latest packages, but makes the build nondeterministic
+        $APK_UPDATE && $APK_UPGRADE && \
+        apk add --no-progress $RUNTIME_PACKAGES && \
+        # https://github.com/krallin/tini
+        # apk add tini && \
+        # Make DNS resolution more reliable
+        # https://github.com/sourcegraph/godockerize/commit/5cf4e6d81720f2551e6a7b2b18c63d1460bbbe4e
+        # apk add bind-tools && \
+
+        # Install openssl, allowing the app to listen on HTTPS.
+        # May not be needed if HTTPS is handled outside the application, e.g. in load balancer.
+        apk add openssl ncurses-libs
+
+    # Create user and group for app to run under with specific uid
+    RUN addgroup -g 10001 -S "$APP_GROUP" && \
+        adduser -u 10000 -S "$APP_USER" -G "$APP_GROUP" -h "$HOME"
+
+    # Create dirs writable by app user
+    RUN mkdir -p "/run/$APP_NAME" && \
+        chown -R "$APP_USER:$APP_GROUP" \
+            # Needed for RELEASE_TMP
+            "/run/$APP_NAME"
+
+# Scan deploy image for security vulnerabilities
+deploy-scan:
+    FROM +deploy
+
+    USER root
+
+    RUN apk add curl && \
+        curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+
+    RUN  \
+        # Succeed for issues of severity = HIGH
+        trivy filesystem --exit-code 0 --severity HIGH --no-progress / && \
+        # Fail for issues of severity = CRITICAL
+        trivy filesystem --exit-code 1 --severity CRITICAL --no-progress /
+        # Fail for any issues
+        # trivy filesystem -d --exit-code 1 --no-progress /
+
+        # curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin && \
+        # grype -vv --fail-on medium dir:/ \
