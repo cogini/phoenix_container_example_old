@@ -9,8 +9,8 @@
 # https://docs.docker.com/develop/develop-images/build_enhancements/
 # https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/experimental.md
 
-ARG ELIXIR_VERSION=1.11.3
-ARG ERLANG_VERSION=23.2.6
+ARG ELIXIR_VERSION=1.13.2
+ARG OTP_VERSION=24.2
 ARG NODE_VERSION=14.4
 
 ARG ALPINE_VERSION=3.13.2
@@ -40,6 +40,7 @@ ARG REGISTRY=""
 ARG MIX_ENV=prod
 
 # Name of Elixir release
+ARG RELEASE=prod
 # This should match mix.exs, e.g.
 # defp releases do
 #   [
@@ -48,9 +49,8 @@ ARG MIX_ENV=prod
 #     ],
 #   ]
 # end
-ARG RELEASE=prod
 
-# Name of app, used for directories
+# App name, used to name directories
 ARG APP_NAME=app
 
 # OS user that app runs under
@@ -59,7 +59,7 @@ ARG APP_USER=app
 # OS group that app runs under
 ARG APP_GROUP="$APP_USER"
 
-# Runtime dir
+# Dir that app runs under
 ARG APP_DIR=/app
 
 ARG LANG=C.UTF-8
@@ -77,6 +77,8 @@ ARG APK_UPGRADE
 
 ARG LANG
 
+# Install tools and libraries to build binary libraries
+# Not necessary for a minimal Phoenix app, but likely needed
 RUN --mount=type=cache,id=apk,target=/var/cache/apk,sharing=locked \
     ln -s /var/cache/apk /etc/apk/cache \
     && apk update && $APK_UPGRADE \
@@ -129,7 +131,7 @@ COPY bin ./bin
 
 RUN --mount=type=cache,target=~/.hex/packages/hexpm,sharing=locked \
     --mount=type=cache,target=~/.cache/rebar3,sharing=locked \
-    mix do compile
+    mix compile
 
 ##########################################################################
 # Build Phoenix assets
