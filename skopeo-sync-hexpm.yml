@@ -13,3 +13,4 @@ docker.io:
       - '1.11.3-erlang-23.2.6-alpine-3.13.2'
       - '1.11.3-erlang-23.2.6-debian-buster-20210208'
       - '1.13.1-erlang-24.2-alpine-3.15.0'
+      - '1.13.1-erlang-24.2-bullseye-20210902'
