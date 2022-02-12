@@ -5,6 +5,7 @@ ARG ELIXIR_VERSION=1.13.3
 # ARG OTP_VERSION=23.3.4
 ARG OTP_VERSION=24.2
 ARG NODE_VERSION=14.4
+
 # ARG ALPINE_VERSION=3.14.3
 ARG ALPINE_VERSION=3.15.0
 # ARG ELIXIR_DEBIAN_VERSION=buster-20210208
@@ -417,6 +418,7 @@ deploy-release:
 
 deploy:
     FROM base+deploy-base
+    # FROM base+distroless-base
 
     # Set environment vars used by the app
     # SECRET_KEY_BASE and DATABASE_URL env vars should be set when running the application
@@ -452,7 +454,7 @@ deploy:
     EXPOSE $PORT
 
     # "bin" is the directory under the unpacked release, and "prod" is the name of the release
-    ENTRYPOINT ["bin/prod"]
+    ENTRYPOINT ["bin/server"]
     # ENTRYPOINT ["/sbin/tini", "--", "bin/prod"]
 
     # Run app in foreground
