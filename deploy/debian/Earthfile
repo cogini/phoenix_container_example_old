@@ -19,6 +19,12 @@ ARG DEPLOY_IMAGE_NAME=debian
 # ARG DEPLOY_IMAGE_TAG=buster-slim
 ARG DEPLOY_IMAGE_TAG=bullseye-slim
 
+# https://github.com/GoogleContainerTools/distroless
+ARG DISTROLESS_IMAGE_NAME=gcr.io/distroless/base-debian11
+# ARG DISTROLESS_IMAGE_TAG=static-debian11
+# ARG DISTROLESS_IMAGE_TAG=base-debian11
+ARG DISTROLESS_IMAGE_TAG=latest
+
 # Docker registry for base images, default is docker.io
 # If specified, should have a trailing slash
 ARG REGISTRY=""
@@ -124,7 +130,7 @@ build-os-deps:
 
         # rm -rf /var/lib/apt/lists/*
 
-    SAVE IMAGE --push ${OUTPUT_URL}:os-deps
+    # SAVE IMAGE --push ${OUTPUT_URL}:os-deps
 
 deploy-installer:
     FROM ${REGISTRY}${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG}
@@ -193,7 +199,7 @@ deploy-base:
     # Create dirs needed by postgresql-client but stripped from slim
     # RUN seq 1 8 | xargs -I{} mkdir -p /usr/share/man/man{}
 
-    RUN set -exu &\
+    RUN set -exu && \
         apt-get update $APT_OPTS_UPDATE && \
         # Avoid warnings
         # apt-get -y install $APT_OPTS dialog apt-utils && \
@@ -282,3 +288,9 @@ deploy-scan:
 
         # curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin && \
         # grype -vv --fail-on medium dir:/ \
+
+distroless-base:
+    FROM ${DISTROLESS_IMAGE_NAME}:${DISTROLESS_IMAGE_TAG}
+
+    ENV LANG=$LANG
+    ENV HOME=$APP_DIR
