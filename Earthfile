@@ -427,6 +427,7 @@ deploy:
     ENV HOME=$APP_DIR
 
     ENV PORT=$APP_PORT
+    ENV PHX_SERVER=true
 
     ENV RELEASE_TMP="/run/$APP_NAME"
     ENV RELEASE=${RELEASE}
