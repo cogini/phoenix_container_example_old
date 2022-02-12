@@ -454,7 +454,7 @@ deploy:
     EXPOSE $PORT
 
     # "bin" is the directory under the unpacked release, and "prod" is the name of the release
-    ENTRYPOINT ["bin/server"]
+    ENTRYPOINT ["bin/prod"]
     # ENTRYPOINT ["/sbin/tini", "--", "bin/prod"]
 
     # Run app in foreground
