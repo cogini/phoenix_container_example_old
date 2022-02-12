@@ -36,7 +36,9 @@ defmodule PhoenixContainerExample.MixProject do
     ]
   end
 
-  # Run "mix help compile.app" to learn about applications.
+  # Configuration for the OTP application.
+  #
+  # Type `mix help compile.app` for more information.
   def application do
     [
       mod: {PhoenixContainerExample.Application, []},
@@ -66,7 +68,9 @@ defmodule PhoenixContainerExample.MixProject do
     ]
   end
 
-  # Run "mix help deps" to learn about dependencies.
+  # Specifies your project dependencies.
+  #
+  # Type `mix help deps` for examples and options.
   defp deps do
     [
       {:mix_audit, "~> 1.0.0", only: [:dev, :test], runtime: false},
@@ -75,7 +79,7 @@ defmodule PhoenixContainerExample.MixProject do
       {:excoveralls, "~> 0.10", only: :test},
       {:dialyxir, "~> 1.0", only: [:dev, :test], runtime: false},
       {:sobelow, "~> 0.11.0", only: [:dev, :test], runtime: false},
-      {:phoenix, "~> 1.6.5"},
+      {:phoenix, "~> 1.6.6"},
       {:phoenix_ecto, "~> 4.4"},
       {:ecto_sql, "~> 3.6"},
       {:opentelemetry, "~> 1.0", override: true},
