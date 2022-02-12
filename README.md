@@ -495,6 +495,13 @@ Create initial project:
 
 Generate templates to customize release:
 
+    mix phx.gen.release
+    * creating rel/overlays/bin/server
+    * creating rel/overlays/bin/server.bat
+    * creating rel/overlays/bin/migrate
+    * creating rel/overlays/bin/migrate.bat
+    * creating lib/phoenix_container_example/release.ex
+
     mix release.init
 
     * creating rel/vm.args.eex
