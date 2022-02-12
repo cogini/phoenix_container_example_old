@@ -10,12 +10,11 @@ services:
         REGISTRY: ${REGISTRY}
       target: deploy
     depends_on:
-      db:
-        condition: service_started
+      - postgres
     environment:
       - SECRET_KEY_BASE
       - DATABASE_URL
-      - DATABASE_HOST=db
+      - DATABASE_HOST=postgres
       - DATABASE_DB
       - AWS_ACCESS_KEY_ID
       - AWS_SECRET_ACCESS_KEY
@@ -38,12 +37,11 @@ services:
         REGISTRY: ${REGISTRY}
       target: deploy
     depends_on:
-      db:
-        condition: service_started
+      - postgres
     environment:
       - SECRET_KEY_BASE
       - DATABASE_URL
-      - DATABASE_HOST=db
+      - DATABASE_HOST=postgres
       - DATABASE_DB
       - AWS_ACCESS_KEY_ID
       - AWS_SECRET_ACCESS_KEY
@@ -56,6 +54,24 @@ services:
     # platform: "linux/amd64"
     # image: "${REGISTRY}cogini/foo-app"
 
+  app-run:
+    depends_on:
+      - postgres
+    environment:
+      - SECRET_KEY_BASE
+      - DATABASE_URL
+      - DATABASE_HOST=postgres
+      - DATABASE_DB
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
+      - AWS_REGION
+      - AWS_DEFAULT_REGION
+    image: foo-app:latest
+    stdin_open: true
+    tty: true
+    ports:
+      - "4000:4000"
+
   codebuild:
     # Custom build image for AWS CodeBuild
     build:
@@ -65,24 +81,6 @@ services:
         BUILDKIT_INLINE_CACHE: "1"
         REGISTRY: ${REGISTRY}
     image: "${REGISTRY}foo-app-ecs-build:latest"
-
-  # https://github.com/docker-library/docs/blob/master/postgres/README.md
-  db:
-    build:
-      context: .
-      dockerfile: deploy/Dockerfile.postgres
-      args:
-        REGISTRY: ${REGISTRY}
-    environment:
-      # POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-    expose:
-      - "5432"
-    image: app-db
-    # image: postgres:latest
-    restart: always
-    volumes:
-      - ./tmp/db:/var/lib/postgresql/data
 
   dev:
     build:
@@ -103,13 +101,12 @@ services:
     # command: /bin/sh -c "while sleep 1000; do :; done"
     command: mix phx.server
     depends_on:
-      db:
-        condition: service_started
+      - postgres
     environment:
       - MIX_ENV=dev
       - SECRET_KEY_BASE
       - DATABASE_URL
-      - DATABASE_HOST=db
+      - DATABASE_HOST=postgres
       - DATABASE_DB
       - AWS_ACCESS_KEY_ID
       - AWS_SECRET_ACCESS_KEY
@@ -141,12 +138,28 @@ services:
     ports:
       - "3306:3306"
 
+  # https://github.com/docker-library/docs/blob/master/postgres/README.md
+  # https://geshan.com.np/blog/2021/12/docker-postgres/
   postgres:
-    environment:
-      POSTGRES_PASSWORD: postgres
-    image: "${REGISTRY}postgres:12"
+    # build:
+    #   context: .
+    #   dockerfile: deploy/Dockerfile.postgres
+    #   args:
+    #     REGISTRY: ${REGISTRY}
+    # image: app-db:latest
+    image: postgres:14.1-alpine
+    # image: postgres:14
+    # platform: linux/amd64
+    restart: always
     ports:
-      - "5432:5432"
+      - '5432:5432'
+    # hostname: db
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - db:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/create_tables.sql
 
   test:
     build:
@@ -161,12 +174,11 @@ services:
     # command: sh -c 'while !</dev/tcp/db/5432; do sleep 1; done; set -ex mix test'
     # command: sh -c 'mix test'
     depends_on:
-      db:
-        condition: service_started
+      - postgres
     environment:
       - MIX_ENV=test
       - DATABASE_URL
-      - DATABASE_HOST=db
+      - DATABASE_HOST=postgres
       - DATABASE_DB
     image: app-test
 
@@ -180,6 +192,10 @@ services:
         REGISTRY: ${REGISTRY}
       target: vuln
     image: app-vuln
+
+volumes:
+  db:
+    driver: local
 
 # volumes:
 #   nfsmount:
