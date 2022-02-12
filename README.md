@@ -545,3 +545,6 @@ Allow db configuration to be overridden by env vars:
    pool_size: 10
  ```
 
+```shell
+docker-compose run test mix ecto.setup
+```
