@@ -9,12 +9,14 @@
 # https://docs.docker.com/develop/develop-images/build_enhancements/
 # https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/experimental.md
 
-ARG ELIXIR_VERSION=1.13.2
+ARG ELIXIR_VERSION=1.13.3
 ARG OTP_VERSION=24.2
 ARG NODE_VERSION=14.4
 
 # ARG ELIXIR_DEBIAN_VERSION=buster-20210208
-ARG ELIXIR_DEBIAN_VERSION=bullseye-20210902
+ARG ELIXIR_DEBIAN_VERSION=bullseye-20210902-slim
+# ARG DEBIAN_VERSION=buster-slim
+ARG DEBIAN_VERSION=bullseye-slim
 
 ARG AWS_CLI_VERSION=2.0.61
 
@@ -26,8 +28,7 @@ ARG BUILD_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-${ELIXIR_DEBI
 
 # Deploy base image
 ARG DEPLOY_IMAGE_NAME=debian
-# ARG DEPLOY_IMAGE_TAG=buster-slim
-ARG DEPLOY_IMAGE_TAG=bullseye-slim
+ARG DEPLOY_IMAGE_TAG=$DEBIAN_VERSION
 
 # Make apt-get be quiet
 ARG DEBIAN_FRONTEND=noninteractive
