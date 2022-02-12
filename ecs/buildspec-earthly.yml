@@ -21,7 +21,7 @@ env:
     COMPOSE_DOCKER_CLI_BUILD: 1
     # TASKDEF=ecs/taskdef.json
     TASKDEF: ecs/taskdef-otel.json
-    # EARTHLY_BUILDKIT_CACHE_SIZE_MB: 20000
+    EARTHLY_BUILDKIT_CACHE_SIZE_MB: 20000
   parameter-store:
     DOCKERHUB_USERNAME: /cogini/foo/dev/creds/dockerhub_username
     DOCKERHUB_TOKEN: /cogini/foo/dev/creds/dockerhub_token
