@@ -449,12 +449,15 @@ deploy:
     # TODO: For more security, change specific files to have group read/execute
     # permissions while leaving them owned by root
 
+    # COPY +deploy-release/bin/bash /bin/
+
     COPY +deploy-release/release ./
 
     EXPOSE $PORT
 
     # "bin" is the directory under the unpacked release, and "prod" is the name of the release
     ENTRYPOINT ["bin/prod"]
+    # https://github.com/krallin/tini
     # ENTRYPOINT ["/sbin/tini", "--", "bin/prod"]
 
     # Run app in foreground
