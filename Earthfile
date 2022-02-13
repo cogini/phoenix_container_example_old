@@ -478,11 +478,12 @@ deploy:
     EXPOSE $PORT
 
     # "bin" is the directory under the unpacked release, and "prod" is the name of the release
-    ENTRYPOINT ["bin/prod"]
+    # ENTRYPOINT ["bin/prod"]
+    # CMD ["start"]
+
     # https://github.com/krallin/tini
     # ENTRYPOINT ["/sbin/tini", "--", "bin/prod"]
 
-    # Run app in foreground
-    CMD ["start"]
+    CMD ["bin/start-docker"]
 
     SAVE IMAGE --push ${OUTPUT_URL}:${OUTPUT_IMAGE_TAG}
