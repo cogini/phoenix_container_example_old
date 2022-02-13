@@ -7,7 +7,7 @@ import Config
 # any compile-time configuration in here, as it won't be applied.
 # The block below contains prod specific runtime configuration.
 
-# Start the phoenix server if environment is set and running in a  release
+# Start the phoenix server if environment is set and running in a release
 if System.get_env("PHX_SERVER") && System.get_env("RELEASE_NAME") do
   config :phoenix_container_example, PhoenixContainerExampleWeb.Endpoint, server: true
 end
@@ -60,7 +60,7 @@ if config_env() == :prod do
   # If you are doing OTP releases, you need to instruct Phoenix
   # to start each relevant endpoint:
   #
-  #   config :phoenix_container_example, PhoenixContainerExampleWeb.Endpoint, server: true
+  #     config :phoenix_container_example, PhoenixContainerExampleWeb.Endpoint, server: true
   #
   # Then you can assemble a release by calling `mix release`.
   # See `mix help release` for more information.
