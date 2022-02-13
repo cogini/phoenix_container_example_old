@@ -1,0 +1,4 @@
+#!/bin/sh
+cd -P -- "$(dirname -- "$0")"
+./prod eval PhoenixContainerExample.Release.migrate
+PHX_SERVER=true exec ./prod start

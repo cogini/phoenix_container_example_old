@@ -484,6 +484,6 @@ deploy:
     # https://github.com/krallin/tini
     # ENTRYPOINT ["/sbin/tini", "--", "bin/prod"]
 
-    ENTRYPOINT ["bin/start-docker"]
+    CMD ["bin/start-docker"]
 
     SAVE IMAGE --push ${OUTPUT_URL}:${OUTPUT_IMAGE_TAG}
