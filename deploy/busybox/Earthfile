@@ -1,0 +1,190 @@
+# Deploy using busybox image
+
+# App versions
+ARG ELIXIR_VERSION=1.13.3
+# ARG OTP_VERSION=23.3.4
+ARG OTP_VERSION=24.2
+ARG NODE_VERSION=14.4
+
+ARG AWS_CLI_VERSION=2.0.61
+
+# ARG ALPINE_VERSION=3.14.3
+ARG ALPINE_VERSION=3.15.0
+
+# ARG ELIXIR_DEBIAN_VERSION=buster-20210208
+ARG ELIXIR_DEBIAN_VERSION=bullseye-20210902-slim
+
+# ARG DEBIAN_VERSION=buster-slim
+ARG DEBIAN_VERSION=bullseye-slim
+
+ARG BUILD_IMAGE_NAME=hexpm/elixir
+ARG BUILD_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-${ELIXIR_DEBIAN_VERSION}
+
+ARG INSTALL_IMAGE_NAME=debian
+ARG INSTALL_IMAGE_TAG=bullseye-slim
+
+# Deploy base image
+ARG DEPLOY_IMAGE_NAME=busybox
+ARG DEPLOY_IMAGE_TAG=glibc
+
+# Docker registry for base images, default is docker.io
+# If specified, should have a trailing slash
+ARG REGISTRY=""
+
+ARG PUBLIC_REGISTRY=""
+
+# Output image
+# ARG EARTHLY_GIT_HASH
+ARG OUTPUT_IMAGE_NAME=foo-app
+ARG IMAGE_TAG=latest
+ARG OUTPUT_IMAGE_TAG="$IMAGE_TAG"
+ARG REPO_URL="${REGISTRY}${OUTPUT_IMAGE_NAME}"
+ARG OUTPUT_URL=$REPO_URL
+
+# App name, used to name directories
+ARG APP_NAME=app
+
+# OS user that app runs under
+ARG APP_USER=app
+
+# OS group that app runs under
+ARG APP_GROUP="$APP_USER"
+
+# Dir that app runs under
+ARG APP_DIR=/app
+
+ARG HOME=$APP_DIR
+
+# Set a specific LOCALE
+ARG LANG=C.UTF-8
+
+# Make apt-get be quiet
+ARG DEBIAN_FRONTEND=noninteractive
+ARG APT_OPTS="-y -qq -o=Dpkg::Use-Pty=0 --no-install-recommends"
+ARG APT_OPTS_UPDATE="-qq --no-install-recommends"
+
+# Create build base image with OS dependencies
+build-os-deps:
+    FROM ${PUBLIC_REGISTRY}${BUILD_IMAGE_NAME}:${BUILD_IMAGE_TAG}
+
+    # Configure apt caching for use with BuildKit
+    # The default Debian image has special config to avoid caches, but we want them now
+    # RUN set -exu \
+    #     && rm -f /etc/apt/apt.conf.d/docker-clean \
+    #     && printf 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache \
+    #     && printf 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression
+
+    RUN set -exu && \
+        apt-get update $APT_OPTS_UPDATE && \
+        # Avoid warnings
+        # apt-get -y install $APT_OPTS dialog apt-utils && \
+        # Enable installation of packages over https
+        apt-get -y install $APT_OPTS \
+            apt-transport-https \
+            ca-certificates \
+            curl \
+            gnupg \
+            gnupg-agent \
+            # software-properties-common \
+            build-essential \
+            git \
+            lsb-release && \
+
+            # node needs python2
+            # python-dev \
+            # python-minimal \
+            # python-pip \
+            # python-setuptools && \
+
+            # Installed via pip
+            # python-virtualenv \
+
+            # python3-dev \
+            # python3-minimal \
+            # python3-pip \
+            # python3-setuptools \
+
+        # Install node using n
+        curl -L https://raw.githubusercontent.com/tj/n/master/bin/n -o /usr/local/bin/n && \
+        chmod +x /usr/local/bin/n && \
+        # Install lts version
+        # && n lts \
+        # Install specific version
+        n "$NODE_VERSION" && \
+        rm /usr/local/bin/n
+
+        # Latest postgres
+        # curl -sL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /etc/apt/trusted.gpg.d/postgresql-ACCC4CF8.asc && \
+        # echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -sc)-pgdg main" | tee /etc/apt/sources.list.d/pgdg.list && \
+        # echo "Package: *\nPin: release o=apt.postgresql.org\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/pgdg.pref && \
+        # apt-get update $APT_OPTS_UPDATE && \
+        # apt-get -y install $APT_OPTS \
+        #     libpq-dev \
+        #     postgresql-client &&
+
+        # Microsoft ODBC Driver for SQL Server
+        # curl -sL https://packages.microsoft.com/keys/microsoft.asc -o /etc/apt/trusted.gpg.d/microsoft.asc && \
+        # curl -s https://packages.microsoft.com/config/debian/10/prod.list -o /etc/apt/sources.list.d/mssql-release.list && \
+        # export ACCEPT_EULA=Y && \
+        # apt-get -qq update $APT_OPTS_UPDATE && apt-get -y install $APT_OPTS msodbcsql17 && \
+        # rm -rf /var/lib/dpkg &&
+
+        # rm -rf /var/lib/apt/lists/*
+
+    # SAVE IMAGE --push ${OUTPUT_URL}:os-deps
+
+# Staging image for binaries which are copied into final deploy image
+deploy-install:
+    FROM ${REGISTRY}${INSTALL_IMAGE_NAME}:${INSTALL_IMAGE_TAG}
+
+    # Configure apt caching for use with BuildKit
+    # RUN set -exu && \
+    #     rm -f /etc/apt/apt.conf.d/docker-clean && \
+    #     echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache && \
+    #     echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression
+
+    RUN set -exu && \
+        apt-get update $APT_OPTS_UPDATE && \
+        # Avoid warnings
+        # apt-get -y install $APT_OPTS dialog apt-utils \
+
+        # Enable installation of packages over https
+        apt-get -y install $APT_OPTS \
+            # apt-transport-https \
+            ca-certificates \
+            curl \
+            # gnupg-agent \
+            # software-properties-common \
+            # gnupg \
+            unzip && \
+            rm -rf /var/lib/dpkg && \
+            rm -rf /var/lib/apt/lists/*
+
+    # Install AWS CLI v2 from binary package
+    # https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2-linux.html
+    RUN curl https://awscli.amazonaws.com/awscli-exe-linux-$(uname -m)-${AWS_CLI_VERSION}.zip -o "awscliv2.zip" && \
+        unzip awscliv2.zip && \
+        # Specify --bin-dir so we can copy the entire bin directory into
+        # /usr/local/bin of the final stage without accidentally copying over any
+        # other executables that may be present in /usr/local/bin of the installer stage.
+        ./aws/install --bin-dir /aws-cli-bin/
+
+    SAVE ARTIFACT /aws-cli-bin/
+
+deploy-base:
+    FROM ${REGISTRY}${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG}
+
+    ENV LANG=$LANG
+    ENV HOME=$APP_DIR
+
+    # Create user and group for app to run under with specific uid
+    RUN addgroup -g 10001 -S "$APP_GROUP" && \
+        adduser -u 10000 -S "$APP_USER" -G "$APP_GROUP" -h "$HOME"
+
+    # Create dirs writable by app user
+    RUN mkdir -p "/run/$APP_NAME" && \
+        chown -R "$APP_USER:$APP_GROUP" \
+            # Needed for RELEASE_TMP
+            "/run/$APP_NAME"
+
+    COPY +deploy-install/aws-cli-bin/ /usr/local/bin/

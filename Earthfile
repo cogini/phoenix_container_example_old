@@ -29,6 +29,7 @@ ARG SOBELOW_OPTS=""
 # ARG BASE_OS=alpine
 ARG BASE_OS=debian
 # ARG BASE_OS=distroless
+# ARG BASE_OS=busybox
 
 FROM busybox
 IF [ "$BASE_OS" = "alpine" ]
@@ -50,6 +51,17 @@ ELSE IF [ "$BASE_OS" = "distroless" ]
     ARG DEPLOY_IMAGE_TAG=latest
 
     IMPORT ./deploy/distroless AS base
+ELSE IF [ "$BASE_OS" = "busybox" ]
+    ARG BUILD_IMAGE_NAME=hexpm/elixir
+    ARG BUILD_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-${ELIXIR_DEBIAN_VERSION}
+
+    ARG INSTALL_IMAGE_NAME=debian
+    ARG INSTALL_IMAGE_TAG=$DEBIAN_VERSION
+
+    ARG DEPLOY_IMAGE_NAME=busybox
+    ARG DEPLOY_IMAGE_TAG=glibc
+
+    IMPORT ./deploy/busybox AS base
 ELSE
     # Build image
     ARG BUILD_IMAGE_NAME=hexpm/elixir
@@ -108,8 +120,7 @@ ARG RELEASE=prod
 ARG APP_NAME=app
 
 # OS user that app runs under
-# ARG APP_USER=app
-ARG APP_USER=nonroot
+ARG APP_USER=app
 
 # OS group that app runs under
 ARG APP_GROUP="$APP_USER"
