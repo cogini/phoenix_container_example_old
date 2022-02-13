@@ -1,4 +1,5 @@
-# Build Elixir/Phoenix app
+# Deploy using distroless image
+# https://github.com/GoogleContainerTools/distroless
 
 # App versions
 ARG ELIXIR_VERSION=1.13.3
@@ -24,9 +25,8 @@ ARG INSTALL_IMAGE_NAME=debian
 ARG INSTALL_IMAGE_TAG=bullseye-slim
 
 # Deploy base image
-ARG DEPLOY_IMAGE_NAME=debian
-# ARG DEPLOY_IMAGE_TAG=buster-slim
-ARG DEPLOY_IMAGE_TAG=bullseye-slim
+ARG DEPLOY_IMAGE_NAME=gcr.io/distroless/base-debian11
+ARG DEPLOY_IMAGE_TAG=latest
 
 # Docker registry for base images, default is docker.io
 # If specified, should have a trailing slash
@@ -134,14 +134,17 @@ build-os-deps:
 
     # SAVE IMAGE --push ${OUTPUT_URL}:os-deps
 
-deploy-installer:
-    FROM ${REGISTRY}${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG}
+# Staging image for binaries which are copied into final deploy image
+deploy-install:
+    FROM ${REGISTRY}${INSTALL_IMAGE_NAME}:${INSTALL_IMAGE_TAG}
 
     # Configure apt caching for use with BuildKit
     # RUN set -exu && \
     #     rm -f /etc/apt/apt.conf.d/docker-clean && \
     #     echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache && \
     #     echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression
+
+    SAVE ARTIFACT /bin
 
     RUN set -exu && \
         apt-get update $APT_OPTS_UPDATE && \
@@ -157,8 +160,8 @@ deploy-installer:
             # software-properties-common \
             # gnupg \
             unzip && \
-            rm -rf /var/lib/dpkg \
-            # rm -rf /var/lib/apt/lists/* \
+            rm -rf /var/lib/dpkg && \
+            rm -rf /var/lib/apt/lists/*
 
     # Install AWS CLI v2 from binary package
     # https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2-linux.html
@@ -169,118 +172,14 @@ deploy-installer:
         # other executables that may be present in /usr/local/bin of the installer stage.
         ./aws/install --bin-dir /aws-cli-bin/
 
+    SAVE ARTIFACT /aws-cli-bin/
+
 deploy-base:
     FROM ${REGISTRY}${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG}
 
     ENV LANG=$LANG
     ENV HOME=$APP_DIR
 
-    # Configure apt caching for use with BuildKit
-    # RUN set -exu && \
-    #     rm -f /etc/apt/apt.conf.d/docker-clean && \
-    #     echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache && \
-    #     echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression
+    COPY +deploy-install/bin/* /bin/
 
-    # If LANG=C.UTF-8 is not enough, build full featured locale
-    # RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
-    #     --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
-    #     set -exu \
-    #     && apt-get update $APT_OPTS_UPDATE \
-    #     && apt-get -y install $APT_OPTS \
-    #       locales
-    #     && localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
-    #
-    # ENV LANG en_US.utf8
-
-    # Create dirs needed by postgresql-client but stripped from slim
-    # RUN seq 1 8 | xargs -I{} mkdir -p /usr/share/man/man{}
-
-    RUN set -exu && \
-        apt-get update $APT_OPTS_UPDATE && \
-        # Avoid warnings
-        # apt-get -y install $APT_OPTS dialog apt-utils && \
-        apt-get -y install $APT_OPTS \
-            apt-transport-https \
-            ca-certificates \
-            curl \
-            gnupg \
-            gnupg-agent \
-            # software-properties-common \
-            lsb-release && \
-
-        # App deps
-        apt-get -y install $APT_OPTS \
-            # Runtime deps
-
-            # Install openssl, allowing the app to listen on HTTPS.
-            # May not be needed if handled outside the application (e.g. in load balancer).
-            openssl
-            # tini \
-            # bind-utils \
-
-            # Default Postgres
-            # libpq-dev \
-            # postgresql-client \
-
-            # Latest PostgreSQL
-            # curl -sL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /etc/apt/trusted.gpg.d/postgresql-ACCC4CF8.asc && \
-            # echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -sc)-pgdg main" | tee /etc/apt/sources.list.d/pgdg.list && \
-            # echo "Package: *\nPin: release o=apt.postgresql.org\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/pgdg.pref && \
-            # apt-get update $APT_OPTS_UPDATE && \
-            # apt-get -y install $APT_OPTS \
-            #     libpq-dev \
-            #     postgresql-client \
-
-            # Microsoft ODBC Driver for SQL Server
-            # curl -sL https://packages.microsoft.com/keys/microsoft.asc -o /etc/apt/trusted.gpg.d/microsoft.asc && \
-            # curl -s https://packages.microsoft.com/config/debian/10/prod.list -o /etc/apt/sources.list.d/mssql-release.list && \
-            # export ACCEPT_EULA=Y && \
-            # apt-get -qq update && apt-get -y install $APT_OPTS msodbcsql17 && \
-            # rm -rf /var/lib/dpkg &&
-            # rm -rf /var/lib/apt/lists/*
-
-    # Install AWS CLI 2.x binaries
-    # COPY --from=installer /usr/local/aws-cli/ /usr/local/aws-cli/
-    # COPY --from=installer /aws-cli-bin/ /usr/local/bin/
-
-    # Create OS user and group to run app under
-    RUN groupadd -g 1000 "$APP_GROUP" && \
-        useradd -u 1000 -g "$APP_GROUP" "$APP_USER" && \
-        rm /var/log/lastlog && \
-        rm /var/log/faillog
-
-    # Create dirs writable by app user
-    RUN mkdir -p "/run/$APP_NAME" && \
-        chown -R "$APP_USER:$APP_GROUP" \
-            # Needed for RELEASE_TMP
-            "/run/$APP_NAME"
-
-# Scan deploy image for security vulnerabilities
-deploy-scan:
-    FROM +deploy
-
-    RUN apt-get -y install $APT_OPTS \
-        apt-transport-https \
-        ca-certificates \
-        curl \
-        gnupg \
-        gnupg-agent \
-        # software-properties-common \
-        lsb-release && \
-
-        curl -sL https://aquasecurity.github.io/trivy-repo/deb/public.key -o /etc/apt/trusted.gpg.d/trivy.asc && \
-        printf "deb https://aquasecurity.github.io/trivy-repo/deb %s main" "$(lsb_release -sc)" | tee -a /etc/apt/sources.list.d/trivy.list && \
-        apt-get update $APT_OPTS_UPDATE && \
-        apt-get -y install $APT_OPTS \
-            trivy
-
-    RUN \
-        # Succeed for issues of severity = HIGH
-        trivy filesystem --exit-code 0 --severity HIGH --no-progress / && \
-        # Fail for issues of severity = CRITICAL
-        trivy filesystem --exit-code 1 --severity CRITICAL --no-progress /
-        # Fail for any issues
-        # trivy filesystem -d --exit-code 1 --no-progress /
-
-        # curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin && \
-        # grype -vv --fail-on medium dir:/ \
+    COPY +deploy-install/aws-cli-bin/ /usr/local/bin/

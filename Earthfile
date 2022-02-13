@@ -6,10 +6,14 @@ ARG ELIXIR_VERSION=1.13.3
 ARG OTP_VERSION=24.2
 ARG NODE_VERSION=14.4
 
+ARG AWS_CLI_VERSION=2.0.61
+
 # ARG ALPINE_VERSION=3.14.3
 ARG ALPINE_VERSION=3.15.0
+
 # ARG ELIXIR_DEBIAN_VERSION=buster-20210208
 ARG ELIXIR_DEBIAN_VERSION=bullseye-20210902-slim
+
 # ARG DEBIAN_VERSION=buster-slim
 ARG DEBIAN_VERSION=bullseye-slim
 
@@ -24,20 +28,28 @@ ARG SOBELOW_OPTS=""
 
 # ARG BASE_OS=alpine
 ARG BASE_OS=debian
+# ARG BASE_OS=distroless
 
 FROM busybox
 IF [ "$BASE_OS" = "alpine" ]
-
-    # Build image
     ARG BUILD_IMAGE_NAME=hexpm/elixir
     ARG BUILD_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-alpine-${ALPINE_VERSION}
 
-    # Deploy base image
     ARG DEPLOY_IMAGE_NAME=alpine
     ARG DEPLOY_IMAGE_TAG=$ALPINE_VERSION
 
-    # Create build base image with OS dependencies
     IMPORT ./deploy/alpine AS base
+ELSE IF [ "$BASE_OS" = "distroless" ]
+    ARG BUILD_IMAGE_NAME=hexpm/elixir
+    ARG BUILD_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-${ELIXIR_DEBIAN_VERSION}
+
+    ARG INSTALL_IMAGE_NAME=debian
+    ARG INSTALL_IMAGE_TAG=$DEBIAN_VERSION
+
+    ARG DEPLOY_IMAGE_NAME=gcr.io/distroless/base-debian11
+    ARG DEPLOY_IMAGE_TAG=latest
+
+    IMPORT ./deploy/distroless AS base
 ELSE
     # Build image
     ARG BUILD_IMAGE_NAME=hexpm/elixir
@@ -96,7 +108,8 @@ ARG RELEASE=prod
 ARG APP_NAME=app
 
 # OS user that app runs under
-ARG APP_USER=app
+# ARG APP_USER=app
+ARG APP_USER=nonroot
 
 # OS group that app runs under
 ARG APP_GROUP="$APP_USER"
@@ -418,7 +431,6 @@ deploy-release:
 
 deploy:
     FROM base+deploy-base
-    # FROM base+distroless-base
 
     # Set environment vars used by the app
     # SECRET_KEY_BASE and DATABASE_URL env vars should be set when running the application
@@ -449,8 +461,6 @@ deploy:
 
     # TODO: For more security, change specific files to have group read/execute
     # permissions while leaving them owned by root
-
-    # COPY +deploy-release/bin/bash /bin/
 
     COPY +deploy-release/release ./
 
