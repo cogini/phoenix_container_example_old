@@ -546,5 +546,6 @@ Allow db configuration to be overridden by env vars:
  ```
 
 ```shell
+createuser --createdb --encrypted --pwprompt postgres
 docker-compose run test mix ecto.setup
 ```
