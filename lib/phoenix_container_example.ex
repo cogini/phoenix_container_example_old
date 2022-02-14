@@ -6,6 +6,7 @@ defmodule PhoenixContainerExample do
   Contexts are also responsible for managing your data, regardless
   if it comes from the database, an external API or others.
   """
+  require OpenTelemetry.Tracer, as: Tracer
 
   def hello_otel do
     Tracer.with_span "operation" do
