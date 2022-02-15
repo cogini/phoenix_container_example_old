@@ -39,7 +39,7 @@ phases:
       - sed -i -e "s!<REGISTRY_NAME>!${REGISTRY_NAME}!g" -e "s!<DOCKERHUB_AUTH>!${DOCKERHUB_AUTH}!g" ecs/docker-config.json | tee /root/.docker/config.json
 
       # Log into docker to avoid rate limits
-      - echo "$DOCKERHUB_TOKEN" | docker login --username "$DOCKERHUB_USERNAME" --password-stdin
+      # - echo "$DOCKERHUB_TOKEN" | docker login --username "$DOCKERHUB_USERNAME" --password-stdin
 
       # https://docs.aws.amazon.com/codebuild/latest/APIReference/API_ProjectEnvironment.html
       # - nohup /usr/local/bin/dockerd --host=unix:///var/run/docker.sock --host=tcp://0.0.0.0:2375 --storage-driver=overlay&
