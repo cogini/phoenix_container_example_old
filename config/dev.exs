@@ -75,20 +75,20 @@ config :phoenix, :stacktrace_depth, 20
 config :phoenix, :plug_init_mode, :runtime
 
 # https://opentelemetry.io/docs/reference/specification/resource/semantic_conventions/
-config :opentelemetry, :resource,
-  [
-    # In production service.name is set based on OS env vars from Erlang release
-    {"service.name", to_string(Mix.Project.config[:app])},
-    # {"service.namespace", "MyNamespace"},
-    {"service.version", Mix.Project.config[:version]},
-  ]
-  # [
-  #   service: %{
-  #     name: to_string(Mix.Project.config[:app]),
-  #     namespace: "MyNamespace",
-  #     version: Mix.Project.config[:version],
-  #   }
-  # ]
+config :opentelemetry, :resource, [
+  # In production service.name is set based on OS env vars from Erlang release
+  {"service.name", to_string(Mix.Project.config()[:app])},
+  # {"service.namespace", "MyNamespace"},
+  {"service.version", Mix.Project.config()[:version]}
+]
+
+# [
+#   service: %{
+#     name: to_string(Mix.Project.config[:app]),
+#     namespace: "MyNamespace",
+#     version: Mix.Project.config[:version],
+#   }
+# ]
 
 # config :opentelemetry, :processors,
 #   otel_batch_processor: %{
