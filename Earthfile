@@ -26,8 +26,8 @@ ARG CREDO_OPTS=""
 # ARG SOBELOW_OPTS="--exit"
 ARG SOBELOW_OPTS=""
 
-# ARG BASE_OS=alpine
-ARG BASE_OS=debian
+ARG BASE_OS=alpine
+# ARG BASE_OS=debian
 # ARG BASE_OS=distroless
 # ARG BASE_OS=busybox
 
