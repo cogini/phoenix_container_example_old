@@ -36,7 +36,7 @@ phases:
       # - cat /etc/docker/daemon.json
 
       - /usr/sbin/service docker start
-      - /sbin/systemctl show --property=Environment docker
+      - /usr/sbin/systemctl show --property=Environment docker
       - ls -l /etc/systemd/system/docker*
 
       # - export DOCKERHUB_AUTH="$(echo "${DOCKERHUB_USERNAME}:${DOCKERHUB_TOKEN}" | base64)"
