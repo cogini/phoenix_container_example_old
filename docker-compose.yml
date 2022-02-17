@@ -96,12 +96,12 @@ services:
 
   codebuild:
     # Custom build image for AWS CodeBuild
-    build:
-      context: .
-      dockerfile: deploy/Dockerfile.codebuild
-      args:
-        BUILDKIT_INLINE_CACHE: "1"
-        REGISTRY: ${REGISTRY}
+    # build:
+    #   context: .
+    #   dockerfile: deploy/Dockerfile.codebuild
+    #   args:
+    #     BUILDKIT_INLINE_CACHE: "1"
+    #     REGISTRY: ${REGISTRY}
     image: "${REGISTRY}foo-app-ecs-build:latest"
 
   dev:
