@@ -28,11 +28,11 @@ ARG APT_OPTS_UPDATE="-qq"
 
 ARG TARGETARCH
 
-##########################################################################
-# Stage binary installer files
-
 all-platforms:
     BUILD --platform=linux/amd64 --platform=linux/arm64 +deploy
+
+##########################################################################
+# Stage binary installer files
 
 deploy:
   FROM ${REGISTRY}${BASE_IMAGE}:${BASE_IMAGE_TAG}
