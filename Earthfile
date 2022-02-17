@@ -28,6 +28,7 @@ ARG SOBELOW_OPTS=""
 
 # Docker registry for base images, default is docker.io
 # If specified, should have a trailing slash
+# ARG REGISTRY=123.dkr.ecr.ap-northeast-1.amazonaws.com/
 ARG REGISTRY=""
 
 ARG PUBLIC_REGISTRY=$REGISTRY
