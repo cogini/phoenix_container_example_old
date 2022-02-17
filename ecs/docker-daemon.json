@@ -1,4 +1,8 @@
 {
+  "experimental": true,
+  "features": {
+      "buildkit": true
+  },
+  "debug": true,
   "registry-mirrors": ["<REGISTRY_NAME>"]
 }
-
