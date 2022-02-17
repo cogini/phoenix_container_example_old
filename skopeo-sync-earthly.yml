@@ -5,6 +5,8 @@ docker.io:
       - 'v0.6.3'
       - 'v0.6.4'
       - 'v0.6.5'
+      - 'v0.6.6'
+      - 'v0.6.7'
 
     earthly/dind:
       - 'alpine'
