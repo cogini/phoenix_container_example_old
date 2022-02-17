@@ -103,6 +103,8 @@ services:
     #     BUILDKIT_INLINE_CACHE: "1"
     #     REGISTRY: ${REGISTRY}
     image: "${REGISTRY}foo-app-ecs-build:latest"
+    read_only: false
+    privileged: true
 
   dev:
     build:

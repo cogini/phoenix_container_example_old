@@ -4,5 +4,5 @@
       "buildkit": true
   },
   "debug": true,
-  "registry-mirrors": ["<REGISTRY_NAME>"]
+  "registry-mirrors": ["https://<REGISTRY_NAME>"]
 }
