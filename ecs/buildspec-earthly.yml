@@ -28,6 +28,7 @@ env:
 phases:
   install:
     commands:
+      - ls /etc/docker
       - /usr/sbin/service docker start
 
       - export REGISTRY_NAME="$(dirname $REPO_URL)"
