@@ -33,6 +33,7 @@ phases:
 
       - mkdir -p /etc/docker
       - sed -i -e "s!<REGISTRY_NAME>!${REGISTRY_NAME}!g" ecs/docker-daemon.json | tee /etc/docker/daemon.json
+      - cat /etc/docker/daemon.json
 
       - /usr/sbin/service docker start
 
