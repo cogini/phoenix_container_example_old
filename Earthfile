@@ -26,6 +26,12 @@ ARG CREDO_OPTS=""
 # ARG SOBELOW_OPTS="--exit"
 ARG SOBELOW_OPTS=""
 
+# Docker registry for base images, default is docker.io
+# If specified, should have a trailing slash
+ARG REGISTRY=""
+
+ARG PUBLIC_REGISTRY=$REGISTRY
+
 # ARG BASE_OS=alpine
 ARG BASE_OS=debian
 # ARG BASE_OS=distroless
@@ -78,11 +84,6 @@ END
 ARG DIND_IMAGE_NAME=earthly/dind
 ARG DIND_IMAGE_TAG=alpine
 
-# Docker registry for base images, default is docker.io
-# If specified, should have a trailing slash
-ARG REGISTRY=""
-
-ARG PUBLIC_REGISTRY=""
 
 # Output image
 # ARG EARTHLY_GIT_HASH

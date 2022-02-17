@@ -1,7 +1,7 @@
 # Build Elixir/Phoenix app
 
 # App versions
-ARG ELIXIR_VERSION=1.13.2
+ARG ELIXIR_VERSION=1.13.3
 # ARG OTP_VERSION=23.3.4
 ARG OTP_VERSION=24.2
 ARG NODE_VERSION=14.4
@@ -15,20 +15,11 @@ ARG BUILD_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-alpine-${ALPINE_VERS
 ARG DEPLOY_IMAGE_NAME=alpine
 ARG DEPLOY_IMAGE_TAG=$ALPINE_VERSION
 
-# Docker registry for base images, default is docker.io
-# If specified, should have a trailing slash
 ARG REGISTRY=""
 
+# Docker registry for base images, default is docker.io
+# If specified, should have a trailing slash
 ARG PUBLIC_REGISTRY=""
-
-# Output image
-# ARG EARTHLY_GIT_HASH
-ARG OUTPUT_IMAGE_NAME=foo-app
-ARG IMAGE_TAG=latest
-ARG OUTPUT_IMAGE_TAG="$IMAGE_TAG"
-ARG REPO_URL="${REGISTRY}${OUTPUT_IMAGE_NAME}"
-ARG OUTPUT_URL=$REPO_URL
-
 
 # App name, used to name directories
 ARG APP_NAME=app
@@ -75,7 +66,7 @@ build-os-deps:
     SAVE IMAGE --push ${OUTPUT_URL}:os-deps
 
 deploy-base:
-    FROM ${REGISTRY}${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG}
+    FROM ${PUBLIC_REGISTRY}${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG}
 
     ENV LANG=$LANG
     ENV HOME=$APP_DIR

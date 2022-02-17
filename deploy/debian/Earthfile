@@ -30,17 +30,7 @@ ARG DEPLOY_IMAGE_TAG=bullseye-slim
 
 # Docker registry for base images, default is docker.io
 # If specified, should have a trailing slash
-ARG REGISTRY=""
-
 ARG PUBLIC_REGISTRY=""
-
-# Output image
-# ARG EARTHLY_GIT_HASH
-ARG OUTPUT_IMAGE_NAME=foo-app
-ARG IMAGE_TAG=latest
-ARG OUTPUT_IMAGE_TAG="$IMAGE_TAG"
-ARG REPO_URL="${REGISTRY}${OUTPUT_IMAGE_NAME}"
-ARG OUTPUT_URL=$REPO_URL
 
 # App name, used to name directories
 ARG APP_NAME=app
