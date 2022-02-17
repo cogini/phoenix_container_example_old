@@ -60,6 +60,7 @@ deploy:
             # software-properties-common \
             lsb-release \
             jq \
+            git \
 
             # Arm emulation
             binfmt-support \
