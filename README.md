@@ -444,7 +444,7 @@ Same thing, built with Earthly:
 
   ```shell
   aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $REGISTRY
-  earthly -V --push --platform=linux/arm64 ./ecs/+deploy
+  earthly -V --build-arg REGISTRY --push ./ecs+deploy
   ```
 
 ```shell
