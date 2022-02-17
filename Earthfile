@@ -38,6 +38,7 @@ ARG BASE_OS=debian
 # ARG BASE_OS=distroless
 # ARG BASE_OS=busybox
 
+# FROM ${PUBLIC_REGISTRY}busybox
 FROM busybox
 IF [ "$BASE_OS" = "alpine" ]
     ARG BUILD_IMAGE_NAME=hexpm/elixir

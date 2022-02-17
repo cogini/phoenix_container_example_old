@@ -2,6 +2,7 @@
 
 # Sync images
 
+skopeo sync --all --src yaml --dest docker skopeo-sync-busybox.yml 770916339360.dkr.ecr.ap-northeast-1.amazonaws.com
 skopeo sync --all --src yaml --dest docker skopeo-sync-alpine.yml 770916339360.dkr.ecr.ap-northeast-1.amazonaws.com
 skopeo sync --all --src yaml --dest docker skopeo-sync-debian.yml 770916339360.dkr.ecr.ap-northeast-1.amazonaws.com
 skopeo sync --all --src yaml --dest docker skopeo-sync-earthly.yml 770916339360.dkr.ecr.ap-northeast-1.amazonaws.com/earthly
