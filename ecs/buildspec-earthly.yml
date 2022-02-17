@@ -32,10 +32,11 @@ phases:
       - export REGISTRY="${REGISTRY_NAME}/"
 
       - mkdir -p /etc/docker
-      - sed -i -e "s!<REGISTRY_NAME>!${REGISTRY_NAME}!g" ecs/docker-daemon.json | tee /etc/docker/daemon.json
-      - cat /etc/docker/daemon.json
+      # - sed -i -e "s!<REGISTRY_NAME>!${REGISTRY_NAME}!g" ecs/docker-daemon.json | tee /etc/docker/daemon.json
+      # - cat /etc/docker/daemon.json
 
       - /usr/sbin/service docker start
+      - ls -l /var/log/*
       - cat /var/log/docker.log
 
       # - export DOCKERHUB_AUTH="$(echo "${DOCKERHUB_USERNAME}:${DOCKERHUB_TOKEN}" | base64)"
