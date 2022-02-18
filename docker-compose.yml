@@ -102,9 +102,20 @@ services:
     #   args:
     #     BUILDKIT_INLINE_CACHE: "1"
     #     REGISTRY: ${REGISTRY}
+    environment:
+      - REPO_URL
+      - TASKDEF=ecs/taskdef-otel.json
+      # - EARTHLY_BUILDKIT_CACHE_SIZE_MB=30000
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
+      - AWS_DEFAULT_REGION
+      - DOCKERHUB_USERNAME
+      - DOCKERHUB_TOKEN
     image: "${REGISTRY}foo-app-ecs-build:latest"
     read_only: false
     privileged: true
+    volumes:
+      - ".:/app:delegated"
 
   dev:
     build:
