@@ -120,6 +120,7 @@ build-os-deps:
         # apt-get -qq update $APT_OPTS_UPDATE && apt-get -y install $APT_OPTS msodbcsql17 && \
         # rm -rf /var/lib/dpkg &&
 
+        # apt-get clean &&
         # rm -rf /var/lib/apt/lists/*
 
     # SAVE IMAGE --push ${OUTPUT_URL}:os-deps
@@ -226,6 +227,7 @@ deploy-base:
             # curl -s https://packages.microsoft.com/config/debian/10/prod.list -o /etc/apt/sources.list.d/mssql-release.list && \
             # export ACCEPT_EULA=Y && \
             # apt-get -qq update && apt-get -y install $APT_OPTS msodbcsql17 && \
+            # apt-get clean &&
             # rm -rf /var/lib/dpkg &&
             # rm -rf /var/lib/apt/lists/*
 
