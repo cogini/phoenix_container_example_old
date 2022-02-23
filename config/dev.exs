@@ -82,14 +82,6 @@ config :opentelemetry, :resource, [
   {"service.version", Mix.Project.config()[:version]}
 ]
 
-# [
-#   service: %{
-#     name: to_string(Mix.Project.config[:app]),
-#     namespace: "MyNamespace",
-#     version: Mix.Project.config[:version],
-#   }
-# ]
-
 # config :opentelemetry, :processors,
 #   otel_batch_processor: %{
 #     exporter: {:otel_exporter_stdout, []}
