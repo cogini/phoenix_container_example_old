@@ -13,7 +13,7 @@ config :phoenix_container_example, PhoenixContainerExampleWeb.Endpoint,
   cache_static_manifest: "priv/static/cache_manifest.json"
 
 # Do not print debug messages in production
-config :logger, level: :info
+config :logger, level: :info, metadata: :all
 
 # ## SSL Support
 #
@@ -52,6 +52,15 @@ config :logger, level: :info
 # Finally import the config/prod.secret.exs which loads secrets
 # and configuration from environment variables.
 # import_config "prod.secret.exs"
+
+# https://opentelemetry.io/docs/reference/specification/resource/semantic_conventions/
+# config :opentelemetry, :resource,
+#   [
+#     # In production service.name is set based on OS env vars from Erlang release
+#     {"service.name", to_string(Mix.Project.config[:app])},
+#     # {"service.namespace", "MyNamespace"},
+#     {"service.version", Mix.Project.config[:version]},
+#   ]
 
 # https://hexdocs.pm/opentelemetry_exporter/1.0.0/readme.html
 # Maybe OTEL_EXPORTER_OTLP_ENDPOINT=http://opentelemetry-collector:55680
