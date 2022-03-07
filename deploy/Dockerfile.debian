@@ -473,7 +473,7 @@ RUN set -exu \
 RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
     --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
-    set -exu \
+    set -exu -o pipefail \
     && apt-get update $APT_OPTS_UPDATE \
     # Avoid warnings
     # && apt-get -y install $APT_OPTS dialog apt-utils \

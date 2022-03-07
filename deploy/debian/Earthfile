@@ -188,24 +188,27 @@ deploy-base:
 
     RUN set -exu && \
         apt-get update $APT_OPTS_UPDATE && \
+        # Install deps
         # Avoid warnings
         # apt-get -y install $APT_OPTS dialog apt-utils && \
-        apt-get -y install $APT_OPTS \
-            apt-transport-https \
-            ca-certificates \
-            curl \
-            gnupg \
-            gnupg-agent \
-            # software-properties-common \
-            lsb-release && \
+        # apt-get -y install $APT_OPTS \
+        #    # apt-transport-https \
+        #    # ca-certificates \
+        #    # curl \
+        #    # gnupg \
+        #    # gnupg-agent \
+        #    # software-properties-common \
+        #    # lsb-release \
+        #    && \
 
         # App deps
         apt-get -y install $APT_OPTS \
             # Runtime deps
+            ca-certificates \
 
             # Install openssl, allowing the app to listen on HTTPS.
             # May not be needed if handled outside the application (e.g. in load balancer).
-            openssl
+            openssl && \
             # tini \
             # bind-utils \
 
@@ -227,9 +230,10 @@ deploy-base:
             # curl -s https://packages.microsoft.com/config/debian/10/prod.list -o /etc/apt/sources.list.d/mssql-release.list && \
             # export ACCEPT_EULA=Y && \
             # apt-get -qq update && apt-get -y install $APT_OPTS msodbcsql17 && \
-            # apt-get clean &&
-            # rm -rf /var/lib/dpkg &&
-            # rm -rf /var/lib/apt/lists/*
+            apt-get clean && \
+            rm -rf /var/cache/debconf && \
+            rm -rf /var/lib/dpkg && \
+            rm -rf /var/lib/apt/lists/*
 
     # Install AWS CLI 2.x binaries
     # COPY --from=installer /usr/local/aws-cli/ /usr/local/aws-cli/
