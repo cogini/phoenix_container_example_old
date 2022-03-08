@@ -156,3 +156,8 @@ cache:
     # - '/root/.cache/docker/**/*'
     # - '/root/.cache/trivy/**/*'
     # - '/root/.cache/grype/**/*'
+reports:
+  mix-test-reports:
+    files:
+      - "_build/test/lib/phoenix_container_example/reports/*.xml"
+    file-format: "JUNITXML"
