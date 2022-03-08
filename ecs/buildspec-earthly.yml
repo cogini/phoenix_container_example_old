@@ -41,7 +41,7 @@ phases:
 
       # - export DOCKERHUB_AUTH="$(echo "${DOCKERHUB_USERNAME}:${DOCKERHUB_TOKEN}" | base64)"
       - mkdir -p /root/.docker
-      - echo '{"credsStore":"ecr-login"}' | tee /root/.docker/config.json
+      # - echo '{"credsStore":"ecr-login"}' | tee /root/.docker/config.json
       #  - sed -i -e "s/<REGISTRY_NAME>/${REGISTRY_NAME}/g" -e "s/<DOCKERHUB_AUTH>/${DOCKERHUB_AUTH}/g" ecs/docker-config.json
       # - cp ecs/docker-config.json /root/.docker/config.json
       - sed -e "s/<REGISTRY_NAME>/${REGISTRY_NAME}/g" ecs/docker-config.json > /root/.docker/config.json
