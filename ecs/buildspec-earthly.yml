@@ -21,7 +21,7 @@ env:
     COMPOSE_DOCKER_CLI_BUILD: 1
     # TASKDEF=ecs/taskdef.json
     TASKDEF: ecs/taskdef-otel.json
-    EARTHLY_BUILDKIT_CACHE_SIZE_MB: 40000
+    # EARTHLY_BUILDKIT_CACHE_SIZE_MB: 4000
     EARTHLY_DISABLE_ANALYTICS: true
   parameter-store:
     DOCKERHUB_USERNAME: /cogini/foo/dev/creds/dockerhub_username
@@ -64,6 +64,8 @@ phases:
 #      - curl -sL https://github.com/earthly/earthly/releases/latest/download/earthly-linux-arm64 -o /usr/local/bin/earthly && chmod +x /usr/local/bin/earthly && /usr/local/bin/earthly bootstrap
       # - curl -sL https://github.com/earthly/earthly/releases/latest/download/earthly-linux-arm64 -o /usr/local/bin/earthly && chmod +x /usr/local/bin/earthly && /usr/local/bin/earthly bootstrap --no-buildkit
       - earthly bootstrap
+      - earthly config global.cache_size_mb 5000
+
       - earthly --version
       - docker --version
       - uname -s
