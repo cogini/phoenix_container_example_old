@@ -79,6 +79,7 @@ defmodule PhoenixContainerExample.MixProject do
       {:excoveralls, "~> 0.10", only: :test},
       {:dialyxir, "~> 1.0", only: [:dev, :test], runtime: false},
       {:sobelow, "~> 0.11.0", only: [:dev, :test], runtime: false},
+      {:junit_formatter, "~> 3.3", only: [:dev, :test], runtime: false},
       {:phoenix, "~> 1.6.6"},
       {:phoenix_ecto, "~> 4.4"},
       {:ecto_sql, "~> 3.6"},
