@@ -25,6 +25,7 @@ ARG INSTALL_IMAGE_NAME=debian
 ARG INSTALL_IMAGE_TAG=bullseye-slim
 
 # Deploy base image
+# https://github.com/GoogleContainerTools/distroless/blob/main/base/README.md
 ARG DEPLOY_IMAGE_NAME=gcr.io/distroless/base-debian11
 ARG DEPLOY_IMAGE_TAG=latest
 
