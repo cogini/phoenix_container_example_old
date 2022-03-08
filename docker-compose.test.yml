@@ -26,6 +26,8 @@ services:
       - DATABASE_DB
     depends_on:
       - postgres
+    volumes:
+      - /reports:/reports
 volumes:
   db:
     driver: local

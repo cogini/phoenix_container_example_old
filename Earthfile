@@ -320,6 +320,7 @@ test-app:
 
     COPY docker-compose.test.yml ./docker-compose.yml
 
+    RUN mkdir -p /reports
     WITH DOCKER \
             # Image names need to match docker-compose.test.yml
             --pull ${PUBLIC_REGISTRY}${POSTGRES_IMAGE_NAME}:${POSTGRES_IMAGE_TAG} \
@@ -331,6 +332,7 @@ test-app:
             docker-compose run test mix test && \
             docker-compose run test mix coveralls
     END
+    SAVE ARTIFACT /reports /reports AS LOCAL reports
 
 test-credo:
     FROM ${PUBLIC_REGISTRY}${DIND_IMAGE_NAME}:${DIND_IMAGE_TAG}

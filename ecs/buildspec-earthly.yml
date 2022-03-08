@@ -80,7 +80,7 @@ phases:
       # - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
       - COMMIT_HASH=$CODEBUILD_RESOLVED_SOURCE_VERSION
       - IMAGE_TAG=${COMMIT_HASH:=latest}
-      
+
       # Ensure that scripts are executable
       - chmod u+x rel/overlays/bin/*
   build:
@@ -159,5 +159,6 @@ cache:
 reports:
   mix-test-reports:
     files:
-      - "_build/test/lib/phoenix_container_example/reports/*.xml"
+      # - "_build/test/lib/phoenix_container_example/reports/*.xml"
+      - "reports/*.xml"
     file-format: "JUNITXML"
