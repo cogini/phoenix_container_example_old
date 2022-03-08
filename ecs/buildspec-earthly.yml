@@ -70,7 +70,7 @@ phases:
       - COMMIT_HASH=$CODEBUILD_RESOLVED_SOURCE_VERSION
       - IMAGE_TAG=${COMMIT_HASH:=latest}
       
-        # Make the scripts in bin folder are exeecutable
+      # Ensure that scripts are executable
       - chmod u+x rel/overlays/bin/*
   build:
     commands:
