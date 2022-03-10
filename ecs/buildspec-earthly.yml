@@ -47,7 +47,7 @@ phases:
       # - cp ecs/docker-config.json /root/.docker/config.json
       - sed -e "s/<REGISTRY_NAME>/${REGISTRY_NAME}/g" ecs/docker-config.json > /root/.docker/config.json
       # - jq --arg registry "$REGISTRY_NAME" '.credHelpers += {($registry):"ecr-login"}' ecs/docker-config.json
-      - cat /root/.docker/config.json
+      # - cat /root/.docker/config.json
 
       # Log into docker to avoid rate limits
       - echo "$DOCKERHUB_TOKEN" | docker login --username "$DOCKERHUB_USERNAME" --password-stdin
@@ -65,7 +65,7 @@ phases:
       # - curl -sL https://github.com/earthly/earthly/releases/latest/download/earthly-linux-arm64 -o /usr/local/bin/earthly && chmod +x /usr/local/bin/earthly && /usr/local/bin/earthly bootstrap --no-buildkit
       - earthly config global.cache_size_mb 10000
       - earthly config global.disable_analytics true
-      - cat ~/.earthly/config.yml
+      # - cat ~/.earthly/config.yml
       - earthly bootstrap
 
       - earthly --version
@@ -154,12 +154,12 @@ artifacts:
     - imageDetail.json
     - appspec.yml
     - taskdef.json
-cache:
-  paths:
-    # - '/var/lib/docker/**/*'
-    # - '/root/.cache/docker/**/*'
-    # - '/root/.cache/trivy/**/*'
-    # - '/root/.cache/grype/**/*'
+# cache:
+#   paths:
+#     # - '/var/lib/docker/**/*'
+#     # - '/root/.cache/docker/**/*'
+#     # - '/root/.cache/trivy/**/*'
+#     # - '/root/.cache/grype/**/*'
 reports:
   mix-test-reports:
     files:
