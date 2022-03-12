@@ -1,4 +1,6 @@
 #!/bin/sh
-cd -P -- "$(dirname -- "$0")"
-./prod eval PhoenixContainerExample.Release.migrate
-PHX_SERVER=true exec ./prod start
+
+BINDIR=$(dirname -- "$0")
+
+"${BINDIR}/prod" eval PhoenixContainerExample.Release.migrate
+PHX_SERVER=true exec "${BINDIR}/prod" start
