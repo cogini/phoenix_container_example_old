@@ -50,5 +50,6 @@ npm-debug.log
 /dregsy.yml
 
 /artifacts/
+/reports/
 
 .DS_Store
