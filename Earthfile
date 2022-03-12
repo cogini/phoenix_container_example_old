@@ -34,8 +34,8 @@ ARG REGISTRY=""
 ARG PUBLIC_REGISTRY=$REGISTRY
 
 # ARG BASE_OS=alpine
-ARG BASE_OS=debian
-# ARG BASE_OS=distroless
+# ARG BASE_OS=debian
+ARG BASE_OS=distroless
 # ARG BASE_OS=busybox
 
 # FROM ${PUBLIC_REGISTRY}busybox
@@ -56,7 +56,7 @@ ELSE IF [ "$BASE_OS" = "distroless" ]
     ARG INSTALL_IMAGE_TAG=$DEBIAN_VERSION
 
     ARG DEPLOY_IMAGE_NAME=gcr.io/distroless/base-debian11
-    ARG DEPLOY_IMAGE_TAG=latest
+    ARG DEPLOY_IMAGE_TAG=debug
 
     IMPORT ./deploy/distroless AS base
 ELSE IF [ "$BASE_OS" = "busybox" ]

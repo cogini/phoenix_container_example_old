@@ -26,8 +26,11 @@ ARG INSTALL_IMAGE_TAG=bullseye-slim
 
 # Deploy base image
 # https://github.com/GoogleContainerTools/distroless/blob/main/base/README.md
+# ARG DEPLOY_IMAGE_NAME=gcr.io/distroless/base-debian11
+# ARG DEPLOY_IMAGE_TAG=latest
 ARG DEPLOY_IMAGE_NAME=gcr.io/distroless/base-debian11
-ARG DEPLOY_IMAGE_TAG=latest
+# ARG DEPLOY_IMAGE_TAG=debug-nonroot
+ARG DEPLOY_IMAGE_TAG=debug
 
 # Docker registry for base images, default is docker.io
 # If specified, should have a trailing slash
@@ -145,8 +148,7 @@ deploy-install:
     #     echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache && \
     #     echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression
 
-    SAVE ARTIFACT /bin
-
+    # SAVE ARTIFACT /bin
     RUN set -exu && \
         apt-get update $APT_OPTS_UPDATE && \
         # Avoid warnings
@@ -181,6 +183,6 @@ deploy-base:
     ENV LANG=$LANG
     ENV HOME=$APP_DIR
 
-    COPY +deploy-install/bin/* /bin/
+    # COPY +deploy-install/bin/* /bin/
 
     COPY +deploy-install/aws-cli-bin/ /usr/local/bin/
