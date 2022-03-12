@@ -185,4 +185,4 @@ deploy-base:
 
     # COPY +deploy-install/bin/* /bin/
 
-    # COPY +deploy-install/aws-cli-bin/ /usr/local/bin/
+    COPY +deploy-install/aws-cli-bin/ /usr/local/bin/
