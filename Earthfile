@@ -123,7 +123,8 @@ ARG RELEASE=prod
 ARG APP_NAME=app
 
 # OS user that app runs under
-ARG APP_USER=app
+# ARG APP_USER=app
+ARG APP_USER=nonroot
 
 # OS group that app runs under
 ARG APP_GROUP="$APP_USER"
