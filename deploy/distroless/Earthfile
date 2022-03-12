@@ -148,7 +148,6 @@ deploy-install:
     #     echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache && \
     #     echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression
 
-    # SAVE ARTIFACT /bin
     RUN set -exu && \
         apt-get update $APT_OPTS_UPDATE && \
         # Avoid warnings
@@ -167,15 +166,12 @@ deploy-install:
             rm -rf /var/lib/apt/lists/*
 
     # Install AWS CLI v2 from binary package
-    # https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2-linux.html
+    # https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html
     RUN curl https://awscli.amazonaws.com/awscli-exe-linux-$(uname -m)-${AWS_CLI_VERSION}.zip -o "awscliv2.zip" && \
-        unzip awscliv2.zip && \
-        # Specify --bin-dir so we can copy the entire bin directory into
-        # /usr/local/bin of the final stage without accidentally copying over any
-        # other executables that may be present in /usr/local/bin of the installer stage.
-        ./aws/install --bin-dir /aws-cli-bin/
+        unzip -q awscliv2.zip && \
+        ./aws/install
 
-    SAVE ARTIFACT /aws-cli-bin/
+    SAVE ARTIFACT /usr/local/aws-cli /aws-cli
 
 deploy-base:
     FROM ${REGISTRY}${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG}
@@ -185,4 +181,4 @@ deploy-base:
 
     # COPY +deploy-install/bin/* /bin/
 
-    COPY +deploy-install/aws-cli-bin/ /usr/local/bin/
+    COPY +deploy-install/aws-cli /usr/local/aws-cli
