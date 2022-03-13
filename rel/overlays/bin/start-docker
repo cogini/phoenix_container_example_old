@@ -4,6 +4,8 @@ CURDIR=$PWD
 BINDIR=$(dirname -- "$0")
 cd "$BINDIR"; BINDIR=$PWD; cd "$CURDIR"
 
+echo "BINDIR: $BINDIR"
+echo "PWD: $PWD"
 ls -l "$BINDIR"
 
 "$BINDIR/prod" eval PhoenixContainerExample.Release.migrate
