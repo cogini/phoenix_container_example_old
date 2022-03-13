@@ -85,9 +85,6 @@ phases:
       - COMMIT_HASH=$CODEBUILD_RESOLVED_SOURCE_VERSION
       - IMAGE_TAG=${COMMIT_HASH:=latest}
 
-      # Ensure test reports dir exists
-      - mkdir -p reports
-
       # Ensure that scripts are executable
       - chmod u+x rel/overlays/bin/*
   build:
@@ -163,9 +160,9 @@ artifacts:
 #     # - '/root/.cache/docker/**/*'
 #     # - '/root/.cache/trivy/**/*'
 #     # - '/root/.cache/grype/**/*'
-reports:
-  mix-test-reports:
-    files:
-      # - "_build/test/lib/phoenix_container_example/reports/*.xml"
-      - "reports/*.xml"
-    file-format: "JUNITXML"
+# reports:
+#   mix-test-reports:
+#     files:
+#       # - "_build/test/lib/phoenix_container_example/reports/*.xml"
+#       - "reports/*.xml"
+#     file-format: "JUNITXML"
