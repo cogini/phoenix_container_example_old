@@ -4,5 +4,6 @@ CURDIR=$PWD
 BINDIR=$(dirname -- "$0")
 cd "$BINDIR"; BINDIR=$PWD; cd "$CURDIR"
 
-./prod eval PhoenixContainerExample.Release.migrate
-PHX_SERVER=true exec ./prod start
+echo "PWD: $PWD"
+"$BINDIR/prod" eval PhoenixContainerExample.Release.migrate
+PHX_SERVER=true exec "$BINDIR/prod" start
