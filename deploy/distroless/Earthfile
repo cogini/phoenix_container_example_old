@@ -179,6 +179,4 @@ deploy-base:
     ENV LANG=$LANG
     ENV HOME=$APP_DIR
 
-    # COPY +deploy-install/bin/* /bin/
-
-    COPY +deploy-install/aws-cli /usr/local/aws-cli
+    # COPY +deploy-install/aws-cli /usr/local/aws-cli
