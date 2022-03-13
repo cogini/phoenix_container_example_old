@@ -85,6 +85,9 @@ phases:
       - COMMIT_HASH=$CODEBUILD_RESOLVED_SOURCE_VERSION
       - IMAGE_TAG=${COMMIT_HASH:=latest}
 
+      # Ensure test reports dir exists
+      - mkdir -p reports
+
       # Ensure that scripts are executable
       - chmod u+x rel/overlays/bin/*
   build:
