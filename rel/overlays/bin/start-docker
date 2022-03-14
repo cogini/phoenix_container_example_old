@@ -6,28 +6,5 @@ CURDIR=$PWD
 BINDIR=$(dirname -- "$0")
 cd "$BINDIR"; BINDIR=$PWD; cd "$CURDIR"
 
-echo "BINDIR: $BINDIR"
-echo "PWD: $PWD"
-echo "SHELL: $SHELL"
-echo "PATH: $PATH"
-
-echo "id"
-id
-
-echo "ls -l $BINDIR/prod"
-ls -l "$BINDIR/prod"
-
-echo "ls -l $BINDIR"
-ls -l "$BINDIR"
-
-echo "ls -l /"
-ls -l /
-
-echo "ls -l /app"
-ls -l /app
-
-echo "ls -l /bin/sh"
-ls -l /bin/sh
-
 $BINDIR/prod eval PhoenixContainerExample.Release.migrate
 PHX_SERVER=true exec $BINDIR/prod start
