@@ -162,7 +162,7 @@ deploy-install:
             # software-properties-common \
             # gnupg \
             unzip \
-            busybox \
+            busybox-static \
             && \
             rm -rf /var/lib/dpkg && \
             rm -rf /var/lib/apt/lists/*
