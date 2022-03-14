@@ -179,4 +179,6 @@ deploy-base:
     ENV LANG=$LANG
     ENV HOME=$APP_DIR
 
+    RUN /busybox/ln -s /busybox/busybox /bin/sh
+
     # COPY +deploy-install/aws-cli /usr/local/aws-cli
