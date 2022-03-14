@@ -9,6 +9,7 @@ cd "$BINDIR"; BINDIR=$PWD; cd "$CURDIR"
 echo "BINDIR: $BINDIR"
 echo "PWD: $PWD"
 echo "SHELL: $SHELL"
+echo "PATH: $PATH"
 
 echo "id"
 id
