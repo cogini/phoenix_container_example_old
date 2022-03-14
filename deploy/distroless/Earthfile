@@ -186,12 +186,15 @@ deploy-install:
     # SAVE ARTIFACT /usr/local/aws-cli /aws-cli
 
     RUN mkdir -p /busybox && \
-        cp /bin/busybox /busybox/busybox && \
-        cd /busybox && \
-        ln -s busybox sh
+        cp /bin/busybox /busybox/sh
     SAVE ARTIFACT /busybox /busybox
 
     SAVE ARTIFACT /lib/${LINUX_ARCH}-linux-gnu/libtinfo* /libs/
+    # TODO: symlinks are copied as files
+    # drwxr-xr-x         0:0     375 kB  │   ├── aarch64-linux
+    # drwxr-xr-x         0:0     375 kB  │   │   └── gnu
+    # -rw-r--r--         0:0     188 kB  │   │       ├── libtinfo.so.6
+    # -rw-r--r--         0:0     188 kB  │   │       └── libtinfo.so.6.2
 
 deploy-base:
     FROM ${REGISTRY}${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG}
@@ -199,7 +202,7 @@ deploy-base:
     ENV LANG=$LANG
     ENV HOME=$APP_DIR
 
-    COPY +deploy-install/busybox/* /bin
+    COPY +deploy-install/busybox/sh /bin/
     COPY +deploy-install/libs/libtinfo* /lib/${LINUX_ARCH}-linux-gnu/
 
     # RUN ["/busybox/sh", "-c", "/busybox/ln", "-s", "/busybox/busybox", "/bin/sh"]
