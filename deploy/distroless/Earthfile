@@ -70,14 +70,13 @@ ARG APT_OPTS_UPDATE="-qq --no-install-recommends"
 
 # Set arch in Linux naming convention
 ARG TARGETARCH
-ARG LINUX_ARCH=aarch64
-# TODO: Get from $(uname -m)
-# FROM busybox
-# IF [ "$TARGETARCH" = "arm64" ]
-#     ARG LINUX_ARCH=aarch64
-# ELSE
-#     ARG LINUX_ARCH=
-# END
+# TODO: see if we can get this from `uname -m`
+FROM busybox
+IF [ "$TARGETARCH" = "arm64" ]
+    ARG LINUX_ARCH=aarch64
+ELSE
+    ARG LINUX_ARCH=
+END
 
 # Create build base image with OS dependencies
 build-os-deps:
