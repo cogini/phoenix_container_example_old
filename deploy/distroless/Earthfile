@@ -200,7 +200,7 @@ deploy-base:
     ENV HOME=$APP_DIR
 
     COPY +deploy-install/busybox/* /bin
-    COPY +deploy-install/libs/libtinfo* /lib/${LINUX_ARCH}-linux/gnu/
+    COPY +deploy-install/libs/libtinfo* /lib/${LINUX_ARCH}-linux-gnu/
 
     # RUN ["/busybox/sh", "-c", "/busybox/ln", "-s", "/busybox/busybox", "/bin/sh"]
 
