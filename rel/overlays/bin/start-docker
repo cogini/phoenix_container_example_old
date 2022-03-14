@@ -1,11 +1,14 @@
 #!/bin/sh
 
+set -e
+
 CURDIR=$PWD
 BINDIR=$(dirname -- "$0")
 cd "$BINDIR"; BINDIR=$PWD; cd "$CURDIR"
 
 echo "BINDIR: $BINDIR"
 echo "PWD: $PWD"
+echo "SHELL: $SHELL"
 
 echo "id"
 id
@@ -21,6 +24,9 @@ ls -l /
 
 echo "ls -l /app"
 ls -l /app
+
+echo "ls -l /bin/sh"
+ls -l /bin/sh
 
 $BINDIR/prod eval PhoenixContainerExample.Release.migrate
 PHX_SERVER=true exec $BINDIR/prod start
