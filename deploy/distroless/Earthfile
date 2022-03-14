@@ -173,7 +173,12 @@ deploy-install:
         unzip -q awscliv2.zip && \
         ./aws/install
 
-    SAVE ARTIFACT /bin/busybox /busybox
+    RUN mkdir /busybox && \
+        cp /bin/busybox /busybox/busybox && \
+        cd /busybox && \
+        ln -s busybox sh
+
+    SAVE ARTIFACT /busybox /busybox
     SAVE ARTIFACT /usr/local/aws-cli /aws-cli
 
 deploy-base:
@@ -182,7 +187,7 @@ deploy-base:
     ENV LANG=$LANG
     ENV HOME=$APP_DIR
 
-    COPY +deploy-install/busybox /bin/sh
+    COPY +deploy-install/busybox/* /bin
 
     # RUN ["/busybox/sh", "-c", "/busybox/ln", "-s", "/busybox/busybox", "/bin/sh"]
 
