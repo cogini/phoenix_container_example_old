@@ -192,7 +192,6 @@ deploy-install:
         cp /bin/busybox /busybox/sh
     SAVE ARTIFACT /busybox /busybox
 
-
     SAVE ARTIFACT /usr/lib/locale/C.UTF-8
 
     SAVE ARTIFACT /lib/${LINUX_ARCH}-linux-gnu/libtinfo* /libs/
@@ -201,10 +200,11 @@ deploy-install:
     # drwxr-xr-x         0:0     375 kB  │   │   └── gnu
     # -rw-r--r--         0:0     188 kB  │   │       ├── libtinfo.so.6
     # -rw-r--r--         0:0     188 kB  │   │       └── libtinfo.so.6.2
+
     SAVE IMAGE --push ${OUTPUT_URL}:deploy-install
 
 deploy-base:
-    FROM ${REGISTRY}${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG}
+    FROM ${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG}
 
     ENV LANG=$LANG
     ENV HOME=$APP_DIR
@@ -216,4 +216,5 @@ deploy-base:
     # RUN ["/busybox/sh", "-c", "/busybox/ln", "-s", "/busybox/busybox", "/bin/sh"]
 
     # COPY +deploy-install/aws-cli /usr/local/aws-cli
+
     SAVE IMAGE --push ${OUTPUT_URL}:deploy-base

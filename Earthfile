@@ -196,7 +196,10 @@ all-platforms:
 
 # Get app deps
 build-deps-get:
-    FROM base+build-os-deps
+    FROM base+build-os-deps \
+        --PUBLIC_REGISTRY=$PUBLIC_REGISTRY \
+        --BUILD_IMAGE_NAME=$BUILD_IMAGE_NAME --BUILD_IMAGE_TAG=$BUILD_IMAGE_TAG \
+        --OUTPUT_URL=$OUTPUT_URL
 
     WORKDIR $APP_DIR
 
@@ -447,7 +450,7 @@ deploy-release:
     # SAVE ARTIFACT priv/static /static
 
 deploy:
-    FROM base+deploy-base
+    FROM base+deploy-base --OUTPUT_URL=$OUTPUT_URL --REGISTRY=$REGISTRY --DEPLOY_IMAGE_NAME=$DEPLOY_IMAGE_NAME --DEPLOY_IMAGE_TAG=$DEPLOY_IMAGE_TAG
 
     # Set environment vars used by the app
     # SECRET_KEY_BASE and DATABASE_URL env vars should be set when running the application
