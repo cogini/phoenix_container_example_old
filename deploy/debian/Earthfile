@@ -172,6 +172,10 @@ deploy-base:
     #     echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache && \
     #     echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression
 
+    RUN apt-get update $APT_OPTS_UPDATE
+    RUN apt-get -y install $APT_OPTS locales
+    RUN localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
+
     # If LANG=C.UTF-8 is not enough, build full featured locale
     # RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     #     --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
@@ -187,7 +191,8 @@ deploy-base:
     # RUN seq 1 8 | xargs -I{} mkdir -p /usr/share/man/man{}
 
     RUN set -exu && \
-        apt-get update $APT_OPTS_UPDATE && \
+        # apt-get update $APT_OPTS_UPDATE && \
+
         # Install deps
         # Avoid warnings
         # apt-get -y install $APT_OPTS dialog apt-utils && \
