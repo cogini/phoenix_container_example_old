@@ -226,6 +226,8 @@ test-deps-compile:
 
     RUN mix deps.compile
 
+    SAVE IMAGE --cache-hint
+
 # Base image used for running tests
 test-image:
     FROM +test-deps-compile
@@ -381,6 +383,8 @@ deploy-deps-compile:
 
     RUN mix deps.compile
 
+    SAVE IMAGE --cache-hint
+
 # Build JS and CS assets with Webpack
 deploy-assets-webpack:
     FROM +deploy-deps-compile
@@ -416,6 +420,7 @@ deploy-assets-esbuild:
     RUN mix assets.deploy
 
     SAVE ARTIFACT priv /priv
+    SAVE IMAGE --cache-hint
 
 # Create digested version of assets
 deploy-digest:
@@ -454,6 +459,7 @@ deploy-release:
     # SAVE ARTIFACT "_build/$MIX_ENV/rel/${RELEASE}" /release
     # SAVE ARTIFACT priv/static /static AS LOCAL build/static
     # SAVE ARTIFACT priv/static /static
+    SAVE IMAGE --cache-hint
 
 deploy:
     FROM base+deploy-base --OUTPUT_URL=$OUTPUT_URL --REGISTRY=$REGISTRY --DEPLOY_IMAGE_NAME=$DEPLOY_IMAGE_NAME --DEPLOY_IMAGE_TAG=$DEPLOY_IMAGE_TAG
