@@ -174,7 +174,8 @@ deploy-base:
 
     RUN apt-get update $APT_OPTS_UPDATE
     RUN apt-get -y install $APT_OPTS locales
-    RUN localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
+    RUN locale-gen
+    # RUN localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
 
     # If LANG=C.UTF-8 is not enough, build full featured locale
     # RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
@@ -236,10 +237,13 @@ deploy-base:
             # apt-get -qq update && apt-get -y install $APT_OPTS msodbcsql17 && \
             && \
         apt-get clean && \
+        rm -rf /var/cache/debconf && \
+        # info on installed packages
+        # rm -rf /var/lib/dpkg && \
+        # Logs for installed packages
         rm -rf /var/log/apt/* && \
         rm -rf /var/log/dpkg.log && \
-        rm -rf /var/cache/debconf && \
-        rm -rf /var/lib/dpkg && \
+        # apt-get update files
         rm -rf /var/lib/apt/lists/*
 
     # Install AWS CLI 2.x binaries
