@@ -107,7 +107,7 @@ phases:
       # - earthly -P -V --build-arg REGISTRY --build-arg REPO_URL --platform=linux/arm64 --no-cache --push +all
       # - earthly -P -V --build-arg REGISTRY --no-cache +all
       # - earthly -P -V --build-arg REGISTRY +all
-      - earthly -P -V --build-arg REGISTRY --build-arg REPO_URL --push +all
+      - earthly -P -V --build-arg REGISTRY --build-arg REPO_URL --ci --push +all
       # - earthly -P -V --build-arg REGISTRY --build-arg REPO_URL --ci --push +all
       # - earthly -P -V --build-arg REGISTRY --build-arg REPO_URL +all
 
