@@ -213,7 +213,8 @@ build-deps-get:
     RUN mix esbuild.install
 
     # SAVE ARTIFACT deps /deps
-    SAVE IMAGE --push ${OUTPUT_URL}:deps
+    # SAVE IMAGE --push ${OUTPUT_URL}:deps
+    SAVE IMAGE --cache-hint
 
 # Compile deps separately from application, allowing it to be cached
 test-deps-compile:
@@ -255,7 +256,8 @@ test-image:
     # RUN mix cmd mix compile --warnings-as-errors
 
     # SAVE IMAGE test-image:latest
-    SAVE IMAGE --push ${OUTPUT_URL}:test
+    # SAVE IMAGE --push ${OUTPUT_URL}:test
+    SAVE IMAGE --cache-hint
 
 # Generate Dizlyzer PLT file separately from app for better caching
 test-dialyzer-plt:
@@ -267,7 +269,8 @@ test-dialyzer-plt:
 
     RUN mix dialyzer --plt
 
-    SAVE IMAGE --push ${OUTPUT_URL}:dialyzer-plt
+    # SAVE IMAGE --push ${OUTPUT_URL}:dialyzer-plt
+    SAVE IMAGE --cache-hint
 
 # Run Dialyzer on app files
 test-image-dialyzer:
@@ -290,7 +293,8 @@ test-image-dialyzer:
     # Umbrella
     # COPY --dir apps ./
 
-    SAVE IMAGE test-dializer:latest
+    # SAVE IMAGE test-dializer:latest
+    SAVE IMAGE --cache-hint
 
 # Create database for tests
 postgres:
@@ -300,7 +304,8 @@ postgres:
     ENV POSTGRES_PASSWORD=postgres
 
     EXPOSE 5432
-    SAVE IMAGE app-db:latest
+    # SAVE IMAGE app-db:latest
+    SAVE IMAGE --cache-hint
 
 # tests:
 #     FROM earthly/dind:alpine
@@ -397,7 +402,8 @@ deploy-assets-webpack:
     RUN npm run deploy
 
     SAVE ARTIFACT ../priv /priv
-    SAVE IMAGE --push ${OUTPUT_URL}:assets
+    # SAVE IMAGE --push ${OUTPUT_URL}:assets
+    SAVE IMAGE --cache-hint
 
 # Build JS and CS with esbuild
 deploy-assets-esbuild:
@@ -426,8 +432,8 @@ deploy-digest:
     # because a change to application code causes a complete recompile.
     # With the stages separated most of the compilation is cached.
 
-    SAVE IMAGE --push ${OUTPUT_URL}:digest
-    # SAVE IMAGE --cache-hint
+    # SAVE IMAGE --push ${OUTPUT_URL}:digest
+    SAVE IMAGE --cache-hint
 
 # Create Erlang release
 deploy-release:
