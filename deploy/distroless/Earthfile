@@ -177,7 +177,7 @@ deploy-install:
             # Needed by beam
             libtinfo6 \
             && \
-            locale-gen &&
+            locale-gen && \
             rm -rf /var/lib/dpkg && \
             rm -rf /var/lib/apt/lists/*
 
