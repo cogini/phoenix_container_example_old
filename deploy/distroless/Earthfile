@@ -146,7 +146,7 @@ build-os-deps:
 
         # rm -rf /var/lib/apt/lists/*
 
-    # SAVE IMAGE --push ${OUTPUT_URL}:os-deps
+    SAVE IMAGE --push ${OUTPUT_URL}:os-deps
 
 # Staging image for binaries which are copied into final deploy image
 deploy-install:
@@ -201,6 +201,7 @@ deploy-install:
     # drwxr-xr-x         0:0     375 kB  │   │   └── gnu
     # -rw-r--r--         0:0     188 kB  │   │       ├── libtinfo.so.6
     # -rw-r--r--         0:0     188 kB  │   │       └── libtinfo.so.6.2
+    SAVE IMAGE --push ${OUTPUT_URL}:deploy-install
 
 deploy-base:
     FROM ${REGISTRY}${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG}
@@ -215,3 +216,4 @@ deploy-base:
     # RUN ["/busybox/sh", "-c", "/busybox/ln", "-s", "/busybox/busybox", "/bin/sh"]
 
     # COPY +deploy-install/aws-cli /usr/local/aws-cli
+    SAVE IMAGE --push ${OUTPUT_URL}:deploy-base
