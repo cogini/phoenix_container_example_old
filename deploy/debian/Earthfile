@@ -243,9 +243,12 @@ deploy-base:
             # apt-get -qq update && apt-get -y install $APT_OPTS msodbcsql17 && \
             && \
         apt-get clean && \
-        rm -rf /var/cache/debconf && \
+        apt-get autoremove -y && \
+        apt-get purge -y --auto-remove && \
+
         # info on installed packages
         # rm -rf /var/lib/dpkg && \
+        # rm -rf /var/cache/debconf && \
         # Logs for installed packages
         rm -rf /var/log/apt/* && \
         rm -rf /var/log/dpkg.log && \
