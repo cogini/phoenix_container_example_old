@@ -5,7 +5,7 @@
 ARG ELIXIR_VERSION=1.13.3
 # ARG OTP_VERSION=23.3.4
 ARG OTP_VERSION=24.2
-ARG NODE_VERSION=14.4
+ARG NODE_VERSION=16.14.1
 
 ARG AWS_CLI_VERSION=2.0.61
 
@@ -103,7 +103,8 @@ build-os-deps:
             # software-properties-common \
             build-essential \
             git \
-            lsb-release && \
+            lsb-release \
+            && \
 
             # node needs python2
             # python-dev \
@@ -146,7 +147,6 @@ build-os-deps:
 
         # rm -rf /var/lib/apt/lists/*
 
-    # SAVE IMAGE --push ${OUTPUT_URL}:os-deps
     SAVE IMAGE --cache-hint
 
 # Staging image for binaries which are copied into final deploy image
@@ -202,7 +202,6 @@ deploy-install:
     # -rw-r--r--         0:0     188 kB  │   │       ├── libtinfo.so.6
     # -rw-r--r--         0:0     188 kB  │   │       └── libtinfo.so.6.2
 
-    # SAVE IMAGE --push ${OUTPUT_URL}:deploy-install
     SAVE IMAGE --cache-hint
 
 deploy-base:
@@ -219,5 +218,4 @@ deploy-base:
 
     # COPY +deploy-install/aws-cli /usr/local/aws-cli
 
-    # SAVE IMAGE --push ${OUTPUT_URL}:deploy-base
     SAVE IMAGE --cache-hint

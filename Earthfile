@@ -4,7 +4,8 @@
 ARG ELIXIR_VERSION=1.13.3
 # ARG OTP_VERSION=23.3.4
 ARG OTP_VERSION=24.2
-ARG NODE_VERSION=14.4
+# ARG NODE_VERSION=14.4
+ARG NODE_VERSION=16.14.1
 
 ARG AWS_CLI_VERSION=2.0.61
 
@@ -34,8 +35,8 @@ ARG REGISTRY=""
 ARG PUBLIC_REGISTRY=$REGISTRY
 
 # ARG BASE_OS=alpine
-# ARG BASE_OS=debian
-ARG BASE_OS=distroless
+ARG BASE_OS=debian
+# ARG BASE_OS=distroless
 # ARG BASE_OS=busybox
 
 # FROM ${PUBLIC_REGISTRY}busybox
@@ -213,7 +214,6 @@ build-deps-get:
     RUN mix esbuild.install
 
     # SAVE ARTIFACT deps /deps
-    # SAVE IMAGE --push ${OUTPUT_URL}:deps
     SAVE IMAGE --cache-hint
 
 # Compile deps separately from application, allowing it to be cached
@@ -258,7 +258,6 @@ test-image:
     # RUN mix cmd mix compile --warnings-as-errors
 
     # SAVE IMAGE test-image:latest
-    # SAVE IMAGE --push ${OUTPUT_URL}:test
     SAVE IMAGE --cache-hint
 
 # Generate Dizlyzer PLT file separately from app for better caching
@@ -295,7 +294,6 @@ test-image-dialyzer:
     # Umbrella
     # COPY --dir apps ./
 
-    # SAVE IMAGE test-dializer:latest
     SAVE IMAGE --cache-hint
 
 # Create database for tests
@@ -406,7 +404,6 @@ deploy-assets-webpack:
     RUN npm run deploy
 
     SAVE ARTIFACT ../priv /priv
-    # SAVE IMAGE --push ${OUTPUT_URL}:assets
     SAVE IMAGE --cache-hint
 
 # Build JS and CS with esbuild
@@ -437,7 +434,6 @@ deploy-digest:
     # because a change to application code causes a complete recompile.
     # With the stages separated most of the compilation is cached.
 
-    # SAVE IMAGE --push ${OUTPUT_URL}:digest
     SAVE IMAGE --cache-hint
 
 # Create Erlang release

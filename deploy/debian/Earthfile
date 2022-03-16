@@ -4,7 +4,9 @@
 ARG ELIXIR_VERSION=1.13.3
 # ARG OTP_VERSION=23.3.4
 ARG OTP_VERSION=24.2
-ARG NODE_VERSION=14.4
+# ARG NODE_VERSION=14.4
+ARG NODE_VERSION=16.14.1
+# ARG NODE_VERSION=lts
 
 ARG AWS_CLI_VERSION=2.0.61
 
@@ -79,7 +81,8 @@ build-os-deps:
             # software-properties-common \
             build-essential \
             git \
-            lsb-release && \
+            lsb-release \
+            && \
 
             # node needs python2
             # python-dev \
@@ -159,6 +162,8 @@ deploy-installer:
         # /usr/local/bin of the final stage without accidentally copying over any
         # other executables that may be present in /usr/local/bin of the installer stage.
         ./aws/install --bin-dir /aws-cli-bin/
+
+    SAVE IMAGE --cache-hint
 
 deploy-base:
     FROM ${REGISTRY}${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG}
@@ -262,6 +267,8 @@ deploy-base:
             # Needed for RELEASE_TMP
             "/run/$APP_NAME"
 
+    SAVE IMAGE --cache-hint
+
 # Scan deploy image for security vulnerabilities
 deploy-scan:
     FROM +deploy
@@ -291,3 +298,5 @@ deploy-scan:
 
         # curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin && \
         # grype -vv --fail-on medium dir:/ \
+
+    SAVE IMAGE --cache-hint

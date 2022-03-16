@@ -13,14 +13,14 @@
 version: 0.2
 env:
   variables:
-    # Disable color in earthly
-    NO_COLOR: 1
     # Enable new docker features
     DOCKER_BUILDKIT: 1
     DOCKER_CLI_EXPERIMENTAL: enabled
     COMPOSE_DOCKER_CLI_BUILD: 1
     # TASKDEF=ecs/taskdef.json
     TASKDEF: ecs/taskdef-otel.json
+    # Disable color in earthly
+    # NO_COLOR: 1
     # EARTHLY_BUILDKIT_CACHE_SIZE_MB: 4000
     # EARTHLY_DISABLE_ANALYTICS: true
   parameter-store:

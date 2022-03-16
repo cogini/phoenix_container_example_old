@@ -4,7 +4,7 @@
 ARG ELIXIR_VERSION=1.13.3
 # ARG OTP_VERSION=23.3.4
 ARG OTP_VERSION=24.2
-ARG NODE_VERSION=14.4
+ARG NODE_VERSION=16.14.1
 
 ARG ALPINE_VERSION=3.15.0
 
@@ -63,7 +63,7 @@ build-os-deps:
     #     apk del .build-dependencies && rm -f msodbcsql*.sig mssql-tools*.apk
     # ENV PATH="/opt/mssql-tools/bin:${PATH}"
 
-    SAVE IMAGE --push ${OUTPUT_URL}:os-deps
+    SAVE IMAGE --cache-hint
 
 deploy-base:
     FROM ${PUBLIC_REGISTRY}${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG}
@@ -99,6 +99,8 @@ deploy-base:
             # Needed for RELEASE_TMP
             "/run/$APP_NAME"
 
+    SAVE IMAGE --cache-hint
+
 # Scan deploy image for security vulnerabilities
 deploy-scan:
     FROM +deploy
@@ -118,3 +120,5 @@ deploy-scan:
 
         # curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin && \
         # grype -vv --fail-on medium dir:/ \
+
+    SAVE IMAGE --cache-hint
