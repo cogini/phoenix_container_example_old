@@ -74,8 +74,8 @@ ARG TARGETARCH
 FROM busybox
 IF [ "$TARGETARCH" = "arm64" ]
     ARG LINUX_ARCH=aarch64
-ELSE
-    ARG LINUX_ARCH=
+ELSE IF [ "$TARGETARCH" = "amd64" ]
+    ARG LINUX_ARCH=x86_64
 END
 
 # Create build base image with OS dependencies
