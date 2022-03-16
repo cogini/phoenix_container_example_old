@@ -88,7 +88,8 @@ build-os-deps:
             # software-properties-common \
             build-essential \
             git \
-            lsb-release && \
+            lsb-release \
+            && \
 
             # node needs python2
             # python-dev \
@@ -131,7 +132,7 @@ build-os-deps:
 
         # rm -rf /var/lib/apt/lists/*
 
-    # SAVE IMAGE --push ${OUTPUT_URL}:os-deps
+    SAVE IMAGE --cache-hint
 
 # Staging image for binaries which are copied into final deploy image
 deploy-install:
@@ -156,23 +157,22 @@ deploy-install:
             # gnupg-agent \
             # software-properties-common \
             # gnupg \
-            unzip && \
+            unzip \
+            && \
             rm -rf /var/lib/dpkg && \
             rm -rf /var/lib/apt/lists/*
 
     # Install AWS CLI v2 from binary package
-    # https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2-linux.html
-    RUN curl https://awscli.amazonaws.com/awscli-exe-linux-$(uname -m)-${AWS_CLI_VERSION}.zip -o "awscliv2.zip" && \
-        unzip awscliv2.zip && \
-        # Specify --bin-dir so we can copy the entire bin directory into
-        # /usr/local/bin of the final stage without accidentally copying over any
-        # other executables that may be present in /usr/local/bin of the installer stage.
-        ./aws/install --bin-dir /aws-cli-bin/
+    # https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html
+    # RUN curl https://awscli.amazonaws.com/awscli-exe-linux-$(uname -m)-${AWS_CLI_VERSION}.zip -o "awscliv2.zip" && \
+    #     unzip -q awscliv2.zip && \
+    #     ./aws/install
+    # SAVE ARTIFACT /usr/local/aws-cli /aws-cli
 
-    SAVE ARTIFACT /aws-cli-bin/
+    SAVE IMAGE --cache-hint
 
 deploy-base:
-    FROM ${REGISTRY}${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG}
+    FROM ${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG}
 
     ENV LANG=$LANG
     ENV HOME=$APP_DIR
@@ -187,4 +187,5 @@ deploy-base:
             # Needed for RELEASE_TMP
             "/run/$APP_NAME"
 
-    COPY +deploy-install/aws-cli-bin/ /usr/local/bin/
+    COPY +deploy-install/aws-cli /usr/local/aws-cli
+    SAVE IMAGE --cache-hint

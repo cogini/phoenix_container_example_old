@@ -34,8 +34,8 @@ ARG REGISTRY=""
 
 ARG PUBLIC_REGISTRY=$REGISTRY
 
-ARG BASE_OS=alpine
-# ARG BASE_OS=debian
+# ARG BASE_OS=alpine
+ARG BASE_OS=debian
 # ARG BASE_OS=distroless
 # ARG BASE_OS=busybox
 
@@ -458,7 +458,11 @@ deploy-release:
     SAVE IMAGE --cache-hint
 
 deploy:
-    FROM base+deploy-base --OUTPUT_URL=$OUTPUT_URL --REGISTRY=$REGISTRY --DEPLOY_IMAGE_NAME=$DEPLOY_IMAGE_NAME --DEPLOY_IMAGE_TAG=$DEPLOY_IMAGE_TAG
+    FROM base+deploy-base \
+        --LANG=$LANG \
+        --APP_USER=$APP_USER --APP_GROUP=$APP_GROUP --APP_NAME=$APP_NAME --APP_DIR=$APP_DIR \
+        --OUTPUT_URL=$OUTPUT_URL --REGISTRY=$REGISTRY \
+        --DEPLOY_IMAGE_NAME=$DEPLOY_IMAGE_NAME --DEPLOY_IMAGE_TAG=$DEPLOY_IMAGE_TAG
 
     # Set environment vars used by the app
     # SECRET_KEY_BASE and DATABASE_URL env vars should be set when running the application

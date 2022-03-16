@@ -4,13 +4,11 @@
 ARG ELIXIR_VERSION=1.13.3
 # ARG OTP_VERSION=23.3.4
 ARG OTP_VERSION=24.2
-# ARG NODE_VERSION=14.4
 ARG NODE_VERSION=16.14.1
 # ARG NODE_VERSION=lts
 
 ARG AWS_CLI_VERSION=2.0.61
 
-# ARG ALPINE_VERSION=3.14.3
 ARG ALPINE_VERSION=3.15.0
 
 # ARG ELIXIR_DEBIAN_VERSION=buster-20210208
@@ -32,6 +30,8 @@ ARG DEPLOY_IMAGE_TAG=bullseye-slim
 
 # Docker registry for base images, default is docker.io
 # If specified, should have a trailing slash
+ARG REGISTRY=""
+
 ARG PUBLIC_REGISTRY=""
 
 # App name, used to name directories
@@ -128,7 +128,8 @@ build-os-deps:
 
     # SAVE IMAGE --push ${OUTPUT_URL}:os-deps
 
-deploy-installer:
+# Staging image for binaries which are copied into final deploy image
+deploy-install:
     FROM ${REGISTRY}${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG}
 
     # Configure apt caching for use with BuildKit
@@ -155,7 +156,7 @@ deploy-installer:
             # rm -rf /var/lib/apt/lists/* \
 
     # Install AWS CLI v2 from binary package
-    # https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2-linux.html
+    # https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html
     RUN curl https://awscli.amazonaws.com/awscli-exe-linux-$(uname -m)-${AWS_CLI_VERSION}.zip -o "awscliv2.zip" && \
         unzip awscliv2.zip && \
         # Specify --bin-dir so we can copy the entire bin directory into

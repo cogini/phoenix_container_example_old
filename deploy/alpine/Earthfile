@@ -15,10 +15,10 @@ ARG BUILD_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-alpine-${ALPINE_VERS
 ARG DEPLOY_IMAGE_NAME=alpine
 ARG DEPLOY_IMAGE_TAG=$ALPINE_VERSION
 
-ARG REGISTRY=""
-
 # Docker registry for base images, default is docker.io
 # If specified, should have a trailing slash
+ARG REGISTRY=""
+
 ARG PUBLIC_REGISTRY=""
 
 # App name, used to name directories
@@ -110,7 +110,7 @@ deploy-scan:
     RUN apk add curl && \
         curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
 
-    RUN  \
+    RUN \
         # Succeed for issues of severity = HIGH
         trivy filesystem --exit-code 0 --severity HIGH --no-progress / && \
         # Fail for issues of severity = CRITICAL
