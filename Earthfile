@@ -174,7 +174,7 @@ ARG USERPLATFORM
 
 # Main target for CI/CD
 all:
-    # BUILD +test
+    BUILD +test
     BUILD +deploy
     # BUILD +deploy-scan
 
