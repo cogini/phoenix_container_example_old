@@ -216,9 +216,11 @@ docker.io:
 ```
 
 ```shell
+aws ecr create-repository --repository-name centos
 aws ecr get-login-password | skopeo login -u AWS --password-stdin $REGISTRY
 skopeo sync --all --src yaml --dest docker skopeo-sync.yml $REGISTRY
 ```
+
 https://polyverse.com/blog/skopeo-the-best-container-tool-you-need-to-know-about/
 https://github.com/onfido/ecr-mirror
 https://alexwlchan.net/2020/11/copying-images-from-docker-hub-to-amazon-ecr/
