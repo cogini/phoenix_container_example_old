@@ -1,9 +1,8 @@
 # Build Elixir/Phoenix app
 
-# App versions
 ARG ELIXIR_VERSION=1.13.3
 # ARG OTP_VERSION=23.3.4
-ARG OTP_VERSION=24.2
+ARG OTP_VERSION=24.3.2
 # ARG NODE_VERSION=14.4
 ARG NODE_VERSION=16.14.1
 
@@ -34,9 +33,10 @@ ARG REGISTRY=""
 
 ARG PUBLIC_REGISTRY=$REGISTRY
 
+# ARG BASE_OS=debian
 # ARG BASE_OS=alpine
-ARG BASE_OS=debian
 # ARG BASE_OS=distroless
+ARG BASE_OS=centos
 # ARG BASE_OS=busybox
 
 # FROM ${PUBLIC_REGISTRY}busybox
@@ -71,6 +71,20 @@ ELSE IF [ "$BASE_OS" = "busybox" ]
     ARG DEPLOY_IMAGE_TAG=glibc
 
     IMPORT ./deploy/busybox AS base
+ELSE IF [ "$BASE_OS" = "centos" ]
+    ARG BUILD_IMAGE_NAME=centos
+    ARG BUILD_IMAGE_TAG=7
+
+    ARG INSTALL_IMAGE_NAME=centos
+    ARG INSTALL_IMAGE_TAG=7
+
+    ARG DEPLOY_IMAGE_NAME=centos
+    ARG DEPLOY_IMAGE_TAG=7
+
+    COPY --dir ./bin ./
+    COPY .tool-versions ./
+
+    IMPORT ./deploy/centos AS base
 ELSE
     # Build image
     ARG BUILD_IMAGE_NAME=hexpm/elixir
@@ -87,7 +101,6 @@ END
 ARG DIND_IMAGE_NAME=earthly/dind
 ARG DIND_IMAGE_TAG=alpine
 
-
 # Output image
 # ARG EARTHLY_GIT_HASH
 ARG OUTPUT_IMAGE_NAME=foo-app
@@ -95,16 +108,6 @@ ARG IMAGE_TAG=latest
 ARG OUTPUT_IMAGE_TAG="$IMAGE_TAG"
 ARG REPO_URL="${REGISTRY}${OUTPUT_IMAGE_NAME}"
 ARG OUTPUT_URL=$REPO_URL
-
-# By default, packages come from the APK index for the base Alpine image.
-# Package versions are consistent between builds, and we normally upgrade by
-# upgrading the Alpine version.
-ARG APK_UPDATE=":"
-ARG APK_UPGRADE=":"
-# If a vulnerability is fixed in packages but not yet released in an Alpine base image,
-# Then we can run update/upgrade as part of the build.
-# ARG APK_UPDATE="apk update"
-# ARG APK_UPGRADE="apk upgrade --update-cache -a"
 
 # Elixir release env to build
 ARG MIX_ENV=prod
@@ -132,10 +135,6 @@ ARG APP_GROUP="$APP_USER"
 
 # Dir that app runs under
 ARG APP_DIR=/app
-
-# App listen port
-ARG APP_PORT=4000
-
 ARG HOME=$APP_DIR
 
 # Build cache dirs
@@ -145,6 +144,9 @@ ARG XDG_CACHE_HOME=/opt/cache
 
 # Set a specific LOCALE
 ARG LANG=C.UTF-8
+
+# App listen port
+ARG APP_PORT=4000
 
 # ARG http_proxy
 # ARG https_proxy=$http_proxy
@@ -162,14 +164,6 @@ ARG DEV_PKGS=""
 #         docker login --username="$USERNAME" --password="$TOKEN" ;\
 #     fi
 
-# Make apt-get be quiet
-ARG DEBIAN_FRONTEND=noninteractive
-ARG APT_OPTS="-y -qq -o=Dpkg::Use-Pty=0 --no-install-recommends"
-ARG APT_OPTS_UPDATE="-qq --no-install-recommends"
-
-ARG TARGETPLATFORM
-ARG USERPLATFORM
-
 # External targets
 
 # Main target for CI/CD
@@ -178,7 +172,6 @@ all:
     BUILD +deploy
     # BUILD +deploy-scan
 
-# Test target
 # These can also be called individually
 test:
     BUILD +test-app
@@ -188,19 +181,15 @@ test:
     BUILD +test-sobelow
     BUILD +test-dialyzer
 
-# Build for multiple platforms at once
-all-platforms:
-    BUILD --platform=linux/amd64 --platform=linux/arm64 +all
-
-
 # Internal targets
 
-# Get app deps
 build-deps-get:
     FROM base+build-os-deps \
         --PUBLIC_REGISTRY=$PUBLIC_REGISTRY \
         --BUILD_IMAGE_NAME=$BUILD_IMAGE_NAME --BUILD_IMAGE_TAG=$BUILD_IMAGE_TAG \
-        --OUTPUT_URL=$OUTPUT_URL
+        --PUBLIC_REGISTRY=$PUBLIC_REGISTRY \
+        --OUTPUT_URL=$OUTPUT_URL \
+        --APP_DIR=$APP_DIR --APP_USER=$APP_USER --APP_GROUP=$APP_GROUP
 
     WORKDIR $APP_DIR
 
@@ -304,7 +293,6 @@ postgres:
     ENV POSTGRES_PASSWORD=postgres
 
     EXPOSE 5432
-    # SAVE IMAGE app-db:latest
     SAVE IMAGE --cache-hint
 
 # tests:
