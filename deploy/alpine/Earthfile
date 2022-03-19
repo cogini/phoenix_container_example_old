@@ -38,6 +38,16 @@ ARG HOME=$APP_DIR
 # Set a specific LOCALE
 ARG LANG=C.UTF-8
 
+# By default, packages come from the APK index for the base Alpine image.
+# Package versions are consistent between builds, and we normally upgrade by
+# upgrading the Alpine version.
+ARG APK_UPDATE=":"
+ARG APK_UPGRADE=":"
+# If a vulnerability is fixed in packages but not yet released in an Alpine base image,
+# Then we can run update/upgrade as part of the build.
+# ARG APK_UPDATE="apk update"
+# ARG APK_UPGRADE="apk upgrade --update-cache -a"
+
 # Create build base image with OS dependencies
 build-os-deps:
     FROM ${PUBLIC_REGISTRY}${BUILD_IMAGE_NAME}:${BUILD_IMAGE_TAG}
