@@ -39,6 +39,7 @@ ARG APP_NAME=app
 
 # OS user that app runs under
 ARG APP_USER=app
+# ARG APP_USER=nonroot
 
 # OS group that app runs under
 ARG APP_GROUP="$APP_USER"
@@ -61,7 +62,7 @@ build-os-deps:
     FROM ${PUBLIC_REGISTRY}${BUILD_IMAGE_NAME}:${BUILD_IMAGE_TAG}
 
     # Configure apt caching for use with BuildKit
-    # The default Debian image has special config to avoid caches, but we want them now
+    # The default Debian image has special config to avoid caching, but we may want it.
     # RUN set -exu \
     #     && rm -f /etc/apt/apt.conf.d/docker-clean \
     #     && printf 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache \
@@ -126,7 +127,7 @@ build-os-deps:
         # apt-get clean &&
         # rm -rf /var/lib/apt/lists/*
 
-    # SAVE IMAGE --push ${OUTPUT_URL}:os-deps
+    SAVE IMAGE --cache-hint
 
 # Staging image for binaries which are copied into final deploy image
 deploy-install:
