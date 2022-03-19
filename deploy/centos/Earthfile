@@ -1,0 +1,183 @@
+# Build Elixir/Phoenix app
+
+# App versions
+ARG ELIXIR_VERSION=1.13.3
+# ARG OTP_VERSION=23.3.4
+ARG OTP_VERSION=24.3.2
+# ARG NODE_VERSION=16.14.2
+ARG NODE_VERSION=lts
+
+ARG AWS_CLI_VERSION=2.0.61
+
+ARG ALPINE_VERSION=3.15.0
+
+# ARG ELIXIR_DEBIAN_VERSION=buster-20210208
+ARG ELIXIR_DEBIAN_VERSION=bullseye-20210902-slim
+
+# ARG DEBIAN_VERSION=buster-slim
+ARG DEBIAN_VERSION=bullseye-slim
+
+ARG BUILD_IMAGE_NAME=hexpm/elixir
+ARG BUILD_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-${ELIXIR_DEBIAN_VERSION}
+
+ARG INSTALL_IMAGE_NAME=debian
+ARG INSTALL_IMAGE_TAG=bullseye-slim
+
+# Deploy base image
+ARG DEPLOY_IMAGE_NAME=debian
+# ARG DEPLOY_IMAGE_TAG=buster-slim
+ARG DEPLOY_IMAGE_TAG=bullseye-slim
+
+# Docker registry for base images, default is docker.io
+# If specified, should have a trailing slash
+ARG REGISTRY=""
+
+ARG PUBLIC_REGISTRY=""
+
+# App name, used to name directories
+ARG APP_NAME=app
+
+# OS user that app runs under
+ARG APP_USER=app
+# ARG APP_USER=nonroot
+
+# OS group that app runs under
+ARG APP_GROUP="$APP_USER"
+
+ARG APP_USER_ID=10000
+ARG APP_GROUP_ID=10001
+
+# Dir that app runs under
+ARG APP_DIR=/app
+
+ARG HOME=$APP_DIR
+
+# Set a specific LOCALE
+ARG LANG=C.UTF-8
+
+# Create build base image with OS dependencies
+build-os-deps:
+    FROM ${PUBLIC_REGISTRY}${BUILD_IMAGE_NAME}:${BUILD_IMAGE_TAG}
+
+    WORKDIR $APP_DIR
+    ENV HOME=$APP_DIR
+
+    COPY --dir ./bin ./
+    COPY .tool-versions ./
+
+    RUN set -ex \
+        yum install -y epel-release && \
+        yum install -y deltarpm && \
+        yum update -y && \
+        yum groupinstall -y 'Development Tools' && \
+        yum install -y \
+            wget \
+            curl \
+            unzip \
+            make \
+            cmake \
+            cmake3 \
+            git \
+            gpg \
+            automake \
+            autoconf \
+            libtool \
+            # gcc \
+            # gcc-c++ \
+            readline-devel \
+            ncurses-devel \
+            openssl-devel \
+            libyaml-devel \
+            libxslt-devel \
+            libffi-devel \
+            unixODBC-devel \
+            sqlite-devel \
+            wxGTK3-devel \
+            wxBase3 \
+            libxslt \
+            # java-1.8.0-openjdk-devel \
+            libiodbc \
+            unixODBC \
+            perl \
+            perl-Digest-SHA \
+            && \
+
+        # Install updated compiler
+        # https://www.softwarecollections.org/en/scls/rhscl/devtoolset-8/
+        yum install -y centos-release-scl && \
+        # yum-config-manager --enable rhel-server-rhscl-7-rpms && \
+        yum install -y devtoolset-8 && \
+
+        # Use cmake3
+        alternatives --install /usr/local/bin/cmake cmake /usr/bin/cmake 10 \
+            --slave /usr/local/bin/ctest ctest /usr/bin/ctest \
+            --slave /usr/local/bin/cpack cpack /usr/bin/cpack \
+            --slave /usr/local/bin/ccmake ccmake /usr/bin/ccmake \
+            --family cmake && \
+        alternatives --install /usr/local/bin/cmake cmake /usr/bin/cmake3 20 \
+            --slave /usr/local/bin/ctest ctest /usr/bin/ctest3 \
+            --slave /usr/local/bin/cpack cpack /usr/bin/cpack3 \
+            --slave /usr/local/bin/ccmake ccmake /usr/bin/ccmake3 \
+            --family cmake && \
+        localedef -i en_US -f UTF-8 en_US.UTF-8 && \
+        yum clean all
+
+    # Create OS user and group to run app under
+    RUN groupadd -g 10001 $APP_GROUP && \
+        useradd -u 10000 -g $APP_GROUP -d "$APP_DIR" $APP_USER && \
+        chown $APP_USER:$APP_GROUP $APP_DIR
+
+    ENV LANG=en_US.UTF-8
+
+    RUN set -ex \
+        # bin/build-install-asdf-deps-centos && \
+        source /opt/rh/devtoolset-8/enable && \
+        export AUTOCONF=/usr/bin/autoconf268 && \
+        export AUTOHEADER=/usr/bin/autoheader268 && \
+        bin/build-install-asdf-init && \
+        bin/build-install-asdf
+
+    ENV PATH=$HOME/.asdf/shims:$PATH
+
+    SAVE IMAGE --cache-hint
+
+# Staging image for binaries which are copied into final deploy image
+deploy-install:
+    FROM ${REGISTRY}${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG}
+
+    SAVE IMAGE --cache-hint
+
+deploy-base:
+    FROM ${REGISTRY}${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG}
+
+    ENV LANG=$LANG
+    ENV HOME=$APP_DIR
+
+    # Create OS user and group to run app under
+    RUN groupadd -g $APP_GROUP_ID $APP_GROUP && \
+        useradd -u $APP_USER_ID -g $APP_GROUP -d "$APP_DIR" $APP_USER && \
+        chown $APP_USER:$APP_GROUP $APP_DIR
+
+    RUN set -ex \
+        yum install -y epel-release && \
+        yum install -y deltarpm && \
+        yum update -y && \
+        yum install -y \
+            openssl  \
+            ca-certificates \
+            && \
+        localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
+
+    ENV LANG=en_US.UTF-8
+
+    # Install AWS CLI 2.x binaries
+    # COPY --from=installer /usr/local/aws-cli/ /usr/local/aws-cli/
+    # COPY --from=installer /aws-cli-bin/ /usr/local/bin/
+
+    # Create dirs writable by app user
+    RUN mkdir -p "/run/$APP_NAME" && \
+        chown -R "$APP_USER:$APP_GROUP" \
+            # Needed for RELEASE_TMP
+            "/run/$APP_NAME"
+
+    SAVE IMAGE --cache-hint
