@@ -187,7 +187,6 @@ build-deps-get:
     FROM base+build-os-deps \
         --PUBLIC_REGISTRY=$PUBLIC_REGISTRY \
         --BUILD_IMAGE_NAME=$BUILD_IMAGE_NAME --BUILD_IMAGE_TAG=$BUILD_IMAGE_TAG \
-        --PUBLIC_REGISTRY=$PUBLIC_REGISTRY \
         --OUTPUT_URL=$OUTPUT_URL \
         --APP_DIR=$APP_DIR --APP_USER=$APP_USER --APP_GROUP=$APP_GROUP
 
@@ -249,7 +248,7 @@ test-image:
     # SAVE IMAGE test-image:latest
     SAVE IMAGE --cache-hint
 
-# Generate Dizlyzer PLT file separately from app for better caching
+# Generate Dialyzer PLT file separately from app for better caching
 test-dialyzer-plt:
     FROM +build-deps-get
 
@@ -294,22 +293,6 @@ postgres:
 
     EXPOSE 5432
     SAVE IMAGE --cache-hint
-
-# tests:
-#     FROM earthly/dind:alpine
-#
-#     COPY docker-compose.test.yml ./docker-compose.yml
-#
-#     WITH DOCKER \
-#             --load test:latest=+test-image \
-#             --load app-db:latest=+postgres \
-#             --compose docker-compose.yml
-#         RUN docker-compose run test mix test && \
-#             docker-compose run test mix credo && \
-#             docker-compose run test mix deps.audit && \
-#             docker-compose run test mix sobelow && \
-#             docker-compose run test mix dialyzer
-#     END
 
 # Run app tests in test environment with database
 test-app:
