@@ -1,11 +1,12 @@
 # Create custom build image for CodeBuild
 # This saves the time spent setting up the instance on each build
 
-# ARG DOCKER_COMPOSE_VERSION=1.27.4
 ARG DOCKER_COMPOSE_VERSION=1.29.2
 ARG AWS_CLI_VERSION=2.0.61
-# There is a built in parameter EARTHLY_VERSION which is currently optional
-ARG EARTHLY_VERSION_NUMBER=v0.6.7
+
+# Version of earthly to install on target
+# TODO: maybe switch to EARTHLY_VERSION builtin arg
+ARG EARTHLY_VERSION_NUMBER=v0.6.10
 
 ARG BASE_IMAGE=ubuntu
 ARG BASE_IMAGE_TAG=focal
@@ -28,16 +29,23 @@ ARG DEBIAN_FRONTEND=noninteractive
 ARG APT_OPTS="-y -qq -o=Dpkg::Use-Pty=0 --no-install-recommends"
 ARG APT_OPTS_UPDATE="-qq"
 
+# Create non-root user
+ARG APP_USER=codebuild-user
+ARG APP_GROUP=$APP_USER
+ARG APP_USER_ID=10000
+ARG APP_GROUP_ID=10000
+
 ARG TARGETARCH
 
-all-platforms:
-    BUILD --platform=linux/amd64 --platform=linux/arm64 +deploy
-
-##########################################################################
-# Stage binary installer files
+all:
+    BUILD --platform=linux/arm64 --platform=linux/amd64 +deploy
 
 deploy:
     FROM ${PUBLIC_REGISTRY}${BASE_IMAGE}:${BASE_IMAGE_TAG}
+
+    # Create non-root user
+    RUN groupadd -g $APP_GROUP_ID "$APP_GROUP" && \
+        useradd -u $APP_USER_ID -g "$APP_GROUP" "$APP_USER"
 
     # Configure apt caching for use with BuildKit
     RUN set -exu && \
@@ -62,7 +70,7 @@ deploy:
             jq \
             git \
 
-            # Arm emulation
+            # Emulation support for cross builds
             binfmt-support \
             qemu-user-static \
 
@@ -110,28 +118,17 @@ deploy:
     # Install AWS CLI v2 from binary package
     # https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2-linux.html
 
-#   IF [ "$TARGETARCH" = "arm64" ]
-#     RUN curl https://awscli.amazonaws.com/awscli-exe-linux-aarch64-${AWS_CLI_VERSION}.zip -o "awscliv2.zip"
-#   ELSE
-#     RUN curl https://awscli.amazonaws.com/awscli-exe-linux-$(uname -m)-${AWS_CLI_VERSION}.zip -o "awscliv2.zip"
-#   END
-#   RUN set -ex && unzip -q awscliv2.zip && \
-#     # Specify --bin-dir so we can copy the entire bin directory into
-#     # /usr/local/bin of the final stage without accidentally copying over any
-#     # other executables that may be present in /usr/local/bin of the installer stage.
-#     ./aws/install --bin-dir /aws-cli-bin/
-
     RUN set -ex && \
         curl https://awscli.amazonaws.com/awscli-exe-linux-$(uname -m)-${AWS_CLI_VERSION}.zip -o "awscliv2.zip" && \
         unzip -q awscliv2.zip && \
         ./aws/install
 
-    # Add docker-compose
+    # Install docker-compose
     RUN set -exu && \
         curl -L "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose && \
         chmod +x /usr/local/bin/docker-compose
 
-    # Add earthly
+    # Install earthly
     RUN set -exu && \
         curl -L  "https://github.com/earthly/earthly/releases/download/${EARTHLY_VERSION_NUMBER}/earthly-linux-${TARGETARCH}" -o /usr/local/bin/earthly && \
         chmod +x /usr/local/bin/earthly
