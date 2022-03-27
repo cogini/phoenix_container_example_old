@@ -37,8 +37,8 @@ phases:
       # - cat /etc/docker/daemon.json
 
       - /usr/sbin/service docker start
-      # - ls -l /var/log/*
-      # - cat /var/log/docker.log
+      # - nohup /usr/local/bin/dockerd --host=unix:///var/run/docker.sock --host=tcp://0.0.0.0:2375 --storage-driver=overlay&
+      # - timeout 15 sh -c "until docker info; do echo .; sleep 1; done"
 
       # - export DOCKERHUB_AUTH="$(echo "${DOCKERHUB_USERNAME}:${DOCKERHUB_TOKEN}" | base64)"
       - mkdir -p /root/.docker
@@ -49,20 +49,21 @@ phases:
       # - jq --arg registry "$REGISTRY_NAME" '.credHelpers += {($registry):"ecr-login"}' ecs/docker-config.json
       # - cat /root/.docker/config.json
 
-      # Log into docker to avoid rate limits
+      # Log into Docker Hub
       - echo "$DOCKERHUB_TOKEN" | docker login --username "$DOCKERHUB_USERNAME" --password-stdin
 
+
       # https://docs.aws.amazon.com/codebuild/latest/APIReference/API_ProjectEnvironment.html
-      # - nohup /usr/local/bin/dockerd --host=unix:///var/run/docker.sock --host=tcp://0.0.0.0:2375 --storage-driver=overlay&
-      # - timeout 15 sh -c "until docker info; do echo .; sleep 1; done"
       # https://github.com/awslabs/amazon-ecr-credential-helper
-#      - PYTHON=python2 amazon-linux-extras enable docker
+      # - PYTHON=python2 amazon-linux-extras enable docker
       # - yum clean metadata
-#      - yum -y install amazon-ecr-credential-helper
+      # - yum -y install amazon-ecr-credential-helper
+
+      # Download earthly
       # - wget https://github.com/earthly/earthly/releases/latest/download/earthly-linux-amd64 -O /usr/local/bin/earthly && chmod +x /usr/local/bin/earthly
-      # - wget https://github.com/earthly/earthly/releases/latest/download/earthly-linux-arm64 -O /usr/local/bin/earthly && chmod +x /usr/local/bin/earthly
-#      - curl -sL https://github.com/earthly/earthly/releases/latest/download/earthly-linux-arm64 -o /usr/local/bin/earthly && chmod +x /usr/local/bin/earthly && /usr/local/bin/earthly bootstrap
-      # - curl -sL https://github.com/earthly/earthly/releases/latest/download/earthly-linux-arm64 -o /usr/local/bin/earthly && chmod +x /usr/local/bin/earthly && /usr/local/bin/earthly bootstrap --no-buildkit
+      # - curl -sL https://github.com/earthly/earthly/releases/latest/download/earthly-linux-arm64 -o /usr/local/bin/earthly && chmod +x /usr/local/bin/earthly && /usr/local/bin/earthly bootstrap
+
+      # Configure earthly
       - earthly config global.cache_size_mb 20000
       - earthly config global.disable_analytics true
       - earthly config global.disable_log_sharing true
@@ -97,22 +98,11 @@ phases:
       # - grype -vv .
 
       # Build and run tests
-      # - earthly -V --build-arg REGISTRY --build-arg REPO_URL --build-arg IMAGE_TAG +test
-      # - earthly -P -V --build-arg REGISTRY --build-arg REPO_URL --build-arg IMAGE_TAG --ci --push +all
-      # - earthly -P -V --build-arg REGISTRY --build-arg REPO_URL --build-arg IMAGE_TAG --ci --remote-cache=$REPO_URL:cache --push +all
-      # - earthly -P -V --build-arg REGISTRY --build-arg REPO_URL --build-arg IMAGE_TAG --push +all
-      # - earthly -P -V +all
-      # - earthly -P -V --build-arg REGISTRY --build-arg REPO_URL --use-inline-cache --save-inline-cache --push +all
-      # - earthly -P -V --build-arg REGISTRY --build-arg REPO_URL --push +all
-      # - earthly -P -V --build-arg REGISTRY --build-arg REPO_URL --no-cache --push +all
-      # - earthly -P -V --build-arg REGISTRY --build-arg REPO_URL --platform=linux/arm64 --no-cache --push +all
-      # - earthly -P -V --build-arg REGISTRY --no-cache +all
-      # - earthly -P -V --build-arg REGISTRY +all
-      # - earthly -P -V --build-arg REGISTRY --build-arg REPO_URL --push +deploy
       # - earthly -P -V --build-arg REGISTRY --build-arg REPO_URL --remote-cache=${REPO_URL}:cache --ci --push +deploy
+      # AWS ECR doesn't support caching, so use Docker Hub
       - earthly -P -V --build-arg REGISTRY --build-arg REPO_URL --remote-cache="cogini/foo-app:cache" --strict --push +all
 
-      # Tag image separately from the build, as the varying IMAGE_TAG screws with caching.
+      # Tag image separately from the build, as the varying IMAGE_TAG screws up caching
       # - docker tag foo-app:latest ${REPO_URL}:${IMAGE_TAG}
       - docker tag ${REPO_URL}:latest ${REPO_URL}:${IMAGE_TAG}
       - docker push ${REPO_URL}:${IMAGE_TAG}
