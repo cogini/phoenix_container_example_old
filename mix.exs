@@ -103,7 +103,7 @@ defmodule PhoenixContainerExample.MixProject do
       {:swoosh, "~> 1.3"},
       {:telemetry, "~> 0.4.3", override: true},
       {:telemetry_metrics, "~> 0.6"},
-      {:telemetry_poller, "~> 1.0"},
+      {:telemetry_poller, "~> 1.0"}
     ]
   end
 
