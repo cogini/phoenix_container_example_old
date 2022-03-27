@@ -245,7 +245,6 @@ test-image:
     # isolation https://github.com/elixir-lang/elixir/issues/9407
     # RUN mix cmd mix compile --warnings-as-errors
 
-    # SAVE IMAGE test-image:latest
     SAVE IMAGE --cache-hint
 
 # Generate Dialyzer PLT file separately from app for better caching
@@ -428,6 +427,7 @@ deploy-release:
     # SAVE ARTIFACT priv/static /static
     SAVE IMAGE --cache-hint
 
+# Final deploy image
 deploy:
     FROM base+deploy-base \
         --LANG=$LANG \
@@ -471,11 +471,15 @@ deploy:
 
     # "bin" is the directory under the unpacked release, and "prod" is the name of the release
     # ENTRYPOINT ["bin/prod"]
-    # CMD ["start"]
 
+    # Run under init to avoid zombie processes
     # https://github.com/krallin/tini
     # ENTRYPOINT ["/sbin/tini", "--", "bin/prod"]
 
-    CMD ["bin/start-docker"]
+    # Run app in foreground
+    # CMD ["start"]
+
+    # Wrapper script which runs migrations before starting
+    ENTRYPOINT ["bin/start-docker"]
 
     SAVE IMAGE --push ${OUTPUT_URL}:${OUTPUT_IMAGE_TAG}
