@@ -44,6 +44,9 @@ ARG APP_USER=app
 # OS group that app runs under
 ARG APP_GROUP="$APP_USER"
 
+ARG APP_USER_ID=10000
+ARG APP_GROUP_ID=$APP_USER_ID
+
 # Dir that app runs under
 ARG APP_DIR=/app
 
@@ -119,7 +122,7 @@ build-os-deps:
 
         # Microsoft ODBC Driver for SQL Server
         # curl -sL https://packages.microsoft.com/keys/microsoft.asc -o /etc/apt/trusted.gpg.d/microsoft.asc && \
-        # curl -s https://packages.microsoft.com/config/debian/10/prod.list -o /etc/apt/sources.list.d/mssql-release.list && \
+        # curl -s https://packages.microsoft.com/config/debian/11/prod.list -o /etc/apt/sources.list.d/mssql-release.list && \
         # export ACCEPT_EULA=Y && \
         # apt-get -qq update $APT_OPTS_UPDATE && apt-get -y install $APT_OPTS msodbcsql17 && \
         # rm -rf /var/lib/dpkg &&
@@ -261,14 +264,14 @@ deploy-base:
     # COPY --from=installer /aws-cli-bin/ /usr/local/bin/
 
     # Create OS user and group to run app under
-    RUN groupadd -g 1000 "$APP_GROUP" && \
-        useradd -u 1000 -g "$APP_GROUP" "$APP_USER" && \
+    RUN groupadd -g $APP_GROUP_ID "$APP_GROUP" && \
+        useradd -u $APP_USER_ID -g "$APP_GROUP" -d "$APP_DIR" "$APP_USER" && \
         rm /var/log/lastlog && \
         rm /var/log/faillog
 
     # Create dirs writable by app user
     RUN mkdir -p "/run/$APP_NAME" && \
-        chown -R "$APP_USER:$APP_GROUP" \
+        chown -R "${APP_USER}:${APP_GROUP}" \
             # Needed for RELEASE_TMP
             "/run/$APP_NAME"
 
