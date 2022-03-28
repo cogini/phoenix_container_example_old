@@ -257,7 +257,6 @@ test-dialyzer-plt:
 
     RUN mix dialyzer --plt
 
-    # SAVE IMAGE --push ${OUTPUT_URL}:dialyzer-plt
     SAVE IMAGE --cache-hint
 
 # Run Dialyzer on app files
@@ -470,16 +469,16 @@ deploy:
     EXPOSE $PORT
 
     # "bin" is the directory under the unpacked release, and "prod" is the name of the release
-    # ENTRYPOINT ["bin/prod"]
+    ENTRYPOINT ["bin/prod"]
 
     # Run under init to avoid zombie processes
     # https://github.com/krallin/tini
     # ENTRYPOINT ["/sbin/tini", "--", "bin/prod"]
 
     # Run app in foreground
-    # CMD ["start"]
+    CMD ["start"]
 
     # Wrapper script which runs migrations before starting
-    ENTRYPOINT ["bin/start-docker"]
+    # ENTRYPOINT ["bin/start-docker"]
 
     SAVE IMAGE --push ${OUTPUT_URL}:${OUTPUT_IMAGE_TAG}
