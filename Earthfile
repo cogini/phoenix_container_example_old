@@ -183,6 +183,7 @@ test:
 
 # Internal targets
 
+# Get app deps
 build-deps-get:
     FROM base+build-os-deps \
         --PUBLIC_REGISTRY=$PUBLIC_REGISTRY \
