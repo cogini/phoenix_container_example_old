@@ -10,6 +10,7 @@ defmodule PhoenixContainerExample.MixProject do
       version: @version,
       elixir: "~> 1.12",
       elixirc_paths: elixirc_paths(Mix.env()),
+      # elixirc_options: [warnings_as_errors: Mix.env() != :dev],
       compilers: [:gettext] ++ Mix.compilers(),
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
@@ -22,7 +23,6 @@ defmodule PhoenixContainerExample.MixProject do
         # flags: ["-Wunmatched_returns", :error_handling, :race_conditions, :underspecs],
         # ignore_warnings: "dialyzer.ignore-warnings"
       ],
-      # elixirc_options: [warnings_as_errors: Mix.env() != :dev],
       test_coverage: [tool: ExCoveralls],
       preferred_cli_env: [
         coveralls: :test,
