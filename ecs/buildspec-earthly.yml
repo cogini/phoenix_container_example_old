@@ -64,13 +64,14 @@ phases:
       - df -k
 
       # Configure earthly
-      - earthly config global.cache_size_mb 20000
+      - earthly config global.cache_size_mb 35000
       - earthly config global.cache_size_pct 70
       - earthly config global.disable_analytics true
       - earthly config global.disable_log_sharing true
       # - cat ~/.earthly/config.yml
       - earthly bootstrap
 
+      - docker system df
       - docker df -v
       - df -k
 
