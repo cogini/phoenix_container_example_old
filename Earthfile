@@ -1,12 +1,11 @@
 # Build Elixir/Phoenix app
+VERSION --parallel-load --shell-out-anywhere 0.6
 
 ARG ELIXIR_VERSION=1.13.3
 # ARG OTP_VERSION=23.3.4
 ARG OTP_VERSION=24.3.1
 # ARG NODE_VERSION=14.4
 ARG NODE_VERSION=16.14.1
-
-ARG AWS_CLI_VERSION=2.0.61
 
 # ARG ALPINE_VERSION=3.14.3
 ARG ALPINE_VERSION=3.15.0
@@ -423,6 +422,7 @@ deploy-release:
     # SAVE ARTIFACT "_build/${MIX_ENV}/rel/${RELEASE}" /release
     # SAVE ARTIFACT priv/static /static AS LOCAL build/static
     # SAVE ARTIFACT priv/static /static
+
     SAVE IMAGE --cache-hint
 
 # Final deploy image
@@ -480,4 +480,7 @@ deploy:
     # Wrapper script which runs migrations before starting
     # ENTRYPOINT ["bin/start-docker"]
 
-    SAVE IMAGE --push ${OUTPUT_URL}:${OUTPUT_IMAGE_TAG}
+    COPY git-commit.txt ./
+
+    # SAVE IMAGE --push ${OUTPUT_URL}:${OUTPUT_IMAGE_TAG}
+    SAVE IMAGE --push ${OUTPUT_URL}:$(cat git-commit.txt)

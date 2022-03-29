@@ -86,6 +86,7 @@ phases:
       # - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
       - COMMIT_HASH=$CODEBUILD_RESOLVED_SOURCE_VERSION
       - IMAGE_TAG=${COMMIT_HASH:=latest}
+      - echo "$COMMIT_HASH" > git-commit.txt
 
       # Ensure that scripts are executable
       - chmod u+x rel/overlays/bin/*
