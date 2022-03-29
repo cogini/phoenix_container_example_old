@@ -483,5 +483,5 @@ deploy:
 
     COPY git-commit.txt ./
 
-    # SAVE IMAGE --push ${OUTPUT_URL}:${OUTPUT_IMAGE_TAG}
-    SAVE IMAGE --push ${OUTPUT_URL}:$(cat git-commit.txt)
+    SAVE IMAGE --push ${OUTPUT_URL}:${OUTPUT_IMAGE_TAG}
+    # SAVE IMAGE --push ${OUTPUT_URL}:$(cat git-commit.txt)
