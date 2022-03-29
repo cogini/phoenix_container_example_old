@@ -59,7 +59,7 @@ phases:
       # - curl -sL https://github.com/earthly/earthly/releases/latest/download/earthly-linux-arm64 -o /usr/local/bin/earthly && chmod +x /usr/local/bin/earthly && /usr/local/bin/earthly bootstrap
 
       # Configure earthly
-      # - earthly config global.cache_size_mb 20000
+      - earthly config global.cache_size_mb 25000
       - earthly config global.cache_size_pct 90
       - earthly config global.disable_analytics true
       - earthly config global.disable_log_sharing true
