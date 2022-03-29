@@ -59,19 +59,19 @@ phases:
       # - curl -sL https://github.com/earthly/earthly/releases/latest/download/earthly-linux-arm64 -o /usr/local/bin/earthly && chmod +x /usr/local/bin/earthly && /usr/local/bin/earthly bootstrap
 
       - docker info
-      - docker system df
+      - docker system df -v
       - docker df -v
       - df -k
 
       # Configure earthly
-      - earthly config global.cache_size_mb 35000
+      - earthly config global.cache_size_mb 40000
       - earthly config global.cache_size_pct 70
       - earthly config global.disable_analytics true
       - earthly config global.disable_log_sharing true
       # - cat ~/.earthly/config.yml
       - earthly bootstrap
 
-      - docker system df
+      - docker system df -v
       - docker df -v
       - df -k
 
