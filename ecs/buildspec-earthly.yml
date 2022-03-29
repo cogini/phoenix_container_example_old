@@ -19,9 +19,6 @@ env:
     COMPOSE_DOCKER_CLI_BUILD: 1
     # TASKDEF=ecs/taskdef.json
     TASKDEF: ecs/taskdef-otel.json
-    # Disable color in earthly
-    # NO_COLOR: 1
-    # EARTHLY_BUILDKIT_CACHE_SIZE_MB: 4000
   parameter-store:
     DOCKERHUB_USERNAME: /cogini/foo/dev/creds/dockerhub_username
     DOCKERHUB_TOKEN: /cogini/foo/dev/creds/dockerhub_token
@@ -64,7 +61,7 @@ phases:
 
       # Configure earthly
       # - earthly config global.cache_size_mb 20000
-      - earthly config cache_size_pct 90
+      - earthly config global.cache_size_pct 90
       - earthly config global.disable_analytics true
       - earthly config global.disable_log_sharing true
       # - cat ~/.earthly/config.yml
