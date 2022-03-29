@@ -1,0 +1,177 @@
+# Create custom build image for CodeBuild
+# This saves the time spent setting up the instance on each build
+
+# ARG DOCKER_COMPOSE_VERSION=1.29.2
+# docker-compose v1.x does not have arm64 version
+ARG DOCKER_COMPOSE_VERSION=v2.1.0
+ARG AWS_CLI_VERSION=2.0.61
+
+# Version of earthly to install on target
+ARG EARTHLY_VERSION_NUMBER=v0.6.12
+# ARG EARTHLY_VERSION_NUMBER=$EARTHLY_VERSION
+
+ARG BASE_IMAGE=ubuntu
+ARG BASE_IMAGE_TAG=focal
+
+# Docker registry for base images, default is docker.io
+# If specified, should have a trailing slash
+# REGISTRY=123.dkr.ecr.ap-northeast-1.amazonaws.com/
+ARG REGISTRY=""
+
+ARG PUBLIC_REGISTRY=$REGISTRY
+
+# Output image
+# ARG EARTHLY_GIT_HASH
+ARG OUTPUT_IMAGE_NAME=foo-app-ecs-build
+ARG OUTPUT_IMAGE_TAG=latest
+ARG OUTPUT_URL="${REGISTRY}${OUTPUT_IMAGE_NAME}"
+
+# Make apt-get be quiet
+ARG DEBIAN_FRONTEND=noninteractive
+ARG APT_OPTS="-y -qq -o=Dpkg::Use-Pty=0 --no-install-recommends"
+ARG APT_OPTS_UPDATE="-qq"
+
+# Create non-root user
+ARG APP_USER=codebuild-user
+ARG APP_GROUP=$APP_USER
+ARG APP_USER_ID=10000
+ARG APP_GROUP_ID=10000
+
+ARG TARGETARCH
+
+all:
+    BUILD --platform=linux/arm64 --platform=linux/amd64 +deploy
+
+deploy:
+    FROM ${PUBLIC_REGISTRY}${BASE_IMAGE}:${BASE_IMAGE_TAG}
+
+    # Create non-root user
+    RUN groupadd -g $APP_GROUP_ID "$APP_GROUP" && \
+        useradd -u $APP_USER_ID -g "$APP_GROUP" "$APP_USER"
+
+    # Configure apt caching for use with BuildKit
+    # RUN set -exu && \
+    #     rm -f /etc/apt/apt.conf.d/docker-clean && \
+    #     echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache && \
+    #     echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression
+
+    # Install Docker
+    # https://docs.docker.com/engine/install/ubuntu/
+
+    RUN set -exu && \
+        apt-get update $APT_OPTS_UPDATE && \
+
+        # Avoid warnings
+        apt-get install $APT_OPTS dialog apt-utils && \
+        apt-get install $APT_OPTS \
+            # Enable installation of packages over https
+            apt-transport-https \
+            ca-certificates \
+            curl \
+            unzip \
+            gnupg-agent \
+            gnupg \
+            # software-properties-common \
+            lsb-release \
+            jq \
+            git \
+
+            # Emulation support for cross builds
+            binfmt-support \
+            qemu-user-static \
+
+            # Minimal python
+            python3-dev \
+            python3-minimal \
+            python3-pip \
+            python3-setuptools \
+            && \
+
+        # Add Docker repo
+        # && curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -qq - \
+        curl -sL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/trusted.gpg.d/docker.asc && \
+        echo "deb https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list && \
+
+        # Add Trivy security scanner repo
+        # https://github.com/aquasecurity/trivy
+        curl -sL https://aquasecurity.github.io/trivy-repo/deb/public.key -o /etc/apt/trusted.gpg.d/trivy.asc && \
+        echo "deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | tee -a /etc/apt/sources.list.d/trivy.list && \
+
+        apt-get update $APT_OPTS_UPDATE && \
+        apt-get install $APT_OPTS \
+
+            # Docker
+            docker-ce \
+            docker-ce-cli \
+            containerd.io \
+
+            # Use ecr-credential-helper to access ECR repos
+            # https://github.com/awslabs/amazon-ecr-credential-helper
+            # This package is not in Ubuntu 18.04, it requires a newer release
+            amazon-ecr-credential-helper \
+
+            # Trivy
+            trivy \
+            && \
+
+            apt-get clean && \
+            apt-get autoremove -y && \
+            apt-get purge -y --auto-remove && \
+
+            # info on installed packages
+            # rm -rf /var/lib/dpkg && \
+            # rm -rf /var/cache/debconf && \
+            # Logs for installed packages
+            rm -rf /var/log/apt/* && \
+            rm -rf /var/log/dpkg.log && \
+            # apt-get update files
+            rm -rf /var/lib/apt/lists/*
+
+    RUN set -ex && \
+        mkdir -p /root/.docker && \
+        echo '{"credsStore":"ecr-login"}' | tee /root/.docker/config.json
+
+    # Install AWS CLI v2 from binary package
+    # https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2-linux.html
+
+    RUN set -ex && \
+        curl -sSfL "https://awscli.amazonaws.com/awscli-exe-linux-$(uname -m)-${AWS_CLI_VERSION}.zip" -o "awscliv2.zip" && \
+        unzip -q awscliv2.zip && \
+        ./aws/install && \
+        rm -rf ./aws && \
+        rm awscliv2.zip
+
+    # Install earthly
+    RUN set -exu && \
+        curl -sSfL "https://github.com/earthly/earthly/releases/download/${EARTHLY_VERSION_NUMBER}/earthly-linux-${TARGETARCH}" -o /usr/local/bin/earthly && \
+        chmod +x /usr/local/bin/earthly && \
+        /usr/local/bin/earthly --version
+
+    # Install docker-compose
+    # RUN set -exu && \
+    #     curl -sSfL "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-$(uname -m)" -o /usr/local/bin/docker-compose && \
+    #     chmod +x /usr/local/bin/docker-compose && \
+    #     /usr/local/bin/docker-compose --version
+
+    # This doesn't work, because docker is not running
+    # RUN set -ex && /usr/sbin/service docker start && /usr/local/bin/earthly bootstrap
+
+    # Grype
+    # https://github.com/anchore/grype
+    RUN set -exu && \
+        curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin
+
+    SAVE IMAGE --push ${OUTPUT_URL}:${OUTPUT_IMAGE_TAG}
+
+# https://github.com/aws/aws-codebuild-docker-images/blob/master/ubuntu/standard/5.0/Dockerfile
+
+    # From default build image, Amazon Linux 2
+    # # Install amazon-ecr-credential-helper to authenticate
+    # RUN PYTHON=python2 amazon-linux-extras enable docker && \
+    #     yum -y install amazon-ecr-credential-helper && \
+    #     mkdir -p /root/.docker && \
+    #     echo '{"credsStore":"ecr-login"}' | tee /root/.docker/config.json
+
+    # RUN curl -sL https://github.com/earthly/earthly/releases/latest/download/earthly-linux-arm64 -o /usr/local/bin/earthly && \
+    #     chmod +x /usr/local/bin/earthly && \
+    #     /usr/local/bin/earthly bootstrap
