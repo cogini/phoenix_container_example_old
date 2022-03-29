@@ -60,7 +60,7 @@ phases:
 
       # Configure earthly
       - earthly config global.cache_size_mb 25000
-      - earthly config global.cache_size_pct 90
+      - earthly config global.cache_size_pct 80
       - earthly config global.disable_analytics true
       - earthly config global.disable_log_sharing true
       # - cat ~/.earthly/config.yml
@@ -68,6 +68,7 @@ phases:
 
       - earthly --version
       - docker --version
+      - docker df -v
       - uname -s
 
   pre_build:
