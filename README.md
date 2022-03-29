@@ -550,3 +550,5 @@ Allow db configuration to be overridden by env vars:
 createuser --createdb --encrypted --pwprompt postgres
 docker-compose run test mix ecto.setup
 ```
+
+earthly -V -P --build-arg REGISTRY --build-arg REPO_URL --remote-cache="cogini/foo-app:cache" --strict --no-output --push +all
