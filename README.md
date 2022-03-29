@@ -425,8 +425,7 @@ The registry needs to have a fast/close network connection, or it can be quite s
 
 ## AWS CodeBuild
 
-[deploy/Dockerfile.codebuild](deploy/Dockerfile.codebuild) is a custom build
-image for AWS CodeBuild.
+We use a custom build image for CodeDeploy with tools installed, speeding up the build.
 
 It includes:
 
@@ -435,19 +434,19 @@ It includes:
 * AWS CLI v2.0
 * `amazon-ecr-credential-helper`
 
-  ```shell
-  aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $REGISTRY
+```shell
+aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $REGISTRY
 
-  docker-compose build codebuild
-  docker-compose push codebuild
-  ```
+docker-compose build codebuild
+docker-compose push codebuild
+```
 
 Same thing, built with Earthly:
 
-  ```shell
-  aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $REGISTRY
-  earthly -V --build-arg REGISTRY --push ./ecs+deploy
-  ```
+```shell
+aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $REGISTRY
+earthly -V --build-arg REGISTRY --strict --push ./deploy/codebuild+deploy
+```
 
 ```shell
 aws ssm put-parameter --name /cogini/foo/dev/creds/dockerhub_username --value "$DOCKERHUB_USERNAME" --type String --region $AWS_REGION
@@ -465,10 +464,10 @@ generating JSON output files.
 [ecs/buildspec.yml](ecs/buildspec.yml):
 
   ```shell
-    # Generate imagedefinitions.json file for standard ECS deploy action
-    - printf '[{"name":"%s","imageUri":"%s"}]' "$CONTAINER_NAME" "$REPO_URL:$IMAGE_TAG" | tee imagedefinitions.json
-    # Generate imageDetail.json file for CodeDeploy ECS blue/green deploy action
-    - printf '{"ImageURI":"%s"}' "$REPO_URL:$IMAGE_TAG" | tee imageDetail.json
+  # Generate imagedefinitions.json file for standard ECS deploy action
+  - printf '[{"name":"%s","imageUri":"%s"}]' "$CONTAINER_NAME" "$REPO_URL:$IMAGE_TAG" | tee imagedefinitions.json
+  # Generate imageDetail.json file for CodeDeploy ECS blue/green deploy action
+  - printf '{"ImageURI":"%s"}' "$REPO_URL:$IMAGE_TAG" | tee imageDetail.json
   ```
 
 See https://docs.aws.amazon.com/codepipeline/latest/userguide/file-reference.html
@@ -477,9 +476,9 @@ See https://docs.aws.amazon.com/codepipeline/latest/userguide/file-reference.htm
 
 To build with Earthy, run:
 
-  ```shell
-    earthly -V -P +all
-  ```
+```shell
+earthly -V -P +all
+```
 
 ## Links
 
