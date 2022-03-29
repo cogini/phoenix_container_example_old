@@ -48,7 +48,6 @@ phases:
       # Log into Docker Hub
       - echo "$DOCKERHUB_TOKEN" | docker login --username "$DOCKERHUB_USERNAME" --password-stdin
 
-
       # https://docs.aws.amazon.com/codebuild/latest/APIReference/API_ProjectEnvironment.html
       # https://github.com/awslabs/amazon-ecr-credential-helper
       # - PYTHON=python2 amazon-linux-extras enable docker
@@ -83,7 +82,6 @@ phases:
       # - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
       - COMMIT_HASH=$CODEBUILD_RESOLVED_SOURCE_VERSION
       - IMAGE_TAG=${COMMIT_HASH:=latest}
-      - echo "$COMMIT_HASH" > git-commit.txt
 
       # Ensure that scripts are executable
       - chmod u+x rel/overlays/bin/*
@@ -96,14 +94,15 @@ phases:
       # - grype -vv .
 
       # Build and run tests
+      # AWS ECR doesn't support caching yet, so use Docker Hub for --remote-cache
       # - earthly -P -V --build-arg REGISTRY --build-arg REPO_URL --remote-cache=${REPO_URL}:cache --ci --push +deploy
-      # AWS ECR doesn't support caching, so use Docker Hub
-      - earthly -P -V --build-arg REGISTRY --build-arg REPO_URL --remote-cache="cogini/foo-app:cache" --strict --push +all
+      - echo "$COMMIT_HASH" > git-commit.txt
+      - earthly -P -V --build-arg REGISTRY --build-arg REPO_URL --remote-cache="cogini/foo-app:cache" --ci --push +all
 
       # Tag image separately from the build, as the varying IMAGE_TAG screws up caching
       # - docker tag foo-app:latest ${REPO_URL}:${IMAGE_TAG}
-      - docker tag ${REPO_URL}:latest ${REPO_URL}:${IMAGE_TAG}
-      - docker push ${REPO_URL}:${IMAGE_TAG}
+      # - docker tag ${REPO_URL}:latest ${REPO_URL}:${IMAGE_TAG}
+      # - docker push ${REPO_URL}:${IMAGE_TAG}
 
       # Write image definition files
       # https://docs.aws.amazon.com/codepipeline/latest/userguide/file-reference.html
