@@ -69,7 +69,9 @@ phases:
       - earthly --version
       - docker --version
       - docker df -v
+      - df -k
       - uname -s
+      - uname -m
 
   pre_build:
     commands:
