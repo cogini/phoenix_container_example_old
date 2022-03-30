@@ -107,21 +107,21 @@ phases:
       # AWS ECR doesn't support caching yet, so use Docker Hub for --remote-cache
       # - earthly -P -V --build-arg REGISTRY --build-arg REPO_URL --remote-cache=${REPO_URL}:cache --ci --push +deploy
       # - git rev-parse HEAD > git-commit.txt
-      - echo "$COMMIT_HASH" > git-commit.txt
-      # - earthly -P -V --build-arg REGISTRY --build-arg REPO_URL --remote-cache="cogini/foo-app:cache" --ci --push +all
-      - earthly -P -V --build-arg REGISTRY --build-arg REPO_URL --remote-cache="cogini/foo-app:cache" --strict --push +all
+      # - echo "$COMMIT_HASH" > git-commit.txt
+      - earthly -P -V --build-arg REGISTRY --remote-cache="cogini/foo-app:cache" --ci --push +all
+      # - earthly -P -V --build-arg REGISTRY --build-arg REPO_URL --remote-cache="cogini/foo-app:cache" --strict --push +all
 
       # Tag image separately from the build, as the varying IMAGE_TAG screws up caching
       # - docker tag foo-app:latest ${REPO_URL}:${IMAGE_TAG}
-      - docker tag ${REPO_URL}:latest ${REPO_URL}:${IMAGE_TAG}
-      - docker push ${REPO_URL}:${IMAGE_TAG}
+      # - docker tag ${REPO_URL}:latest ${REPO_URL}:${IMAGE_TAG}
+      # - docker push ${REPO_URL}:${IMAGE_TAG}
 
       # Write image definition files
       # https://docs.aws.amazon.com/codepipeline/latest/userguide/file-reference.html
       # Generate imagedefinitions.json file for standard ECS deploy action
-      - printf '[{"name":"%s","imageUri":"%s"}]' "$CONTAINER_NAME" "$REPO_URL:$IMAGE_TAG" | tee imagedefinitions.json
+      - printf '[{"name":"%s","imageUri":"%s"}]' "$CONTAINER_NAME" "${REPO_URL}:${IMAGE_TAG}" | tee imagedefinitions.json
       # Generate imageDetail.json file for CodeDeploy ECS blue/green deploy action
-      - printf '{"ImageURI":"%s"}' "$REPO_URL:$IMAGE_TAG" | tee imageDetail.json
+      - printf '{"ImageURI":"%s"}' "${REPO_URL}:${IMAGE_TAG}" | tee imageDetail.json
 
       # Generate files based on env vars passed from Terraform
       # https://docs.aws.amazon.com/codedeploy/latest/userguide/reference-appspec-file-structure-resources.html
