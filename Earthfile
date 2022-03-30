@@ -1,7 +1,6 @@
 # Build Elixir/Phoenix app
 # VERSION --parallel-load --shell-out-anywhere 0.6
-# VERSION --shell-out-anywhere 0.6
-VERSION 0.6
+VERSION --shell-out-anywhere --use-copy-include-patterns --referenced-save-only 0.6
 
 ARG ELIXIR_VERSION=1.13.3
 # ARG OTP_VERSION=23.3.4
