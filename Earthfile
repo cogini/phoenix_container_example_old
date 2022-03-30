@@ -481,8 +481,10 @@ deploy:
 
     # SAVE IMAGE --push ${OUTPUT_URL}:${OUTPUT_IMAGE_TAG}
 
-    # COPY git-commit.txt ./
-    # SAVE IMAGE --push ${OUTPUT_URL}:$(cat git-commit.txt)
+    # ARG EARTHLY_GIT_HASH
+    # ARG COMMIT_HASH=$EARTHLY_GIT_HASH
 
-    ARG EARTHLY_GIT_HASH
-    SAVE IMAGE --push ${OUTPUT_URL}:$EARTHLY_GIT_HASH
+    COPY git-commit.txt ./
+    ARG COMMIT_HASH=$(cat git-commit.txt)
+
+    SAVE IMAGE --push ${OUTPUT_URL}:$COMMIT_HASH
