@@ -485,4 +485,4 @@ deploy:
     # SAVE IMAGE --push ${OUTPUT_URL}:$(cat git-commit.txt)
 
     ARG EARTHLY_GIT_HASH
-    SAVE IMAGE --push ${OUTPUT_URL}:${EARTHLY_GIT_HASH}
+    SAVE IMAGE --push ${OUTPUT_URL}:$EARTHLY_GIT_HASH
