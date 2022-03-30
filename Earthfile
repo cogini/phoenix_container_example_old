@@ -364,7 +364,6 @@ deploy-assets-webpack:
 
     WORKDIR $APP_DIR
 
-    # COPY +deps/deps deps
 
     WORKDIR /app/assets
 
@@ -416,7 +415,6 @@ deploy-release:
     # FROM +deploy-digest
     FROM +deploy-deps-compile
 
-    RUN env
 
     COPY +deploy-assets-esbuild/priv priv
 
@@ -428,8 +426,9 @@ deploy-release:
 
     RUN mix do compile, release "$RELEASE"
 
-    SAVE ARTIFACT "_build/${MIX_ENV}/rel/${RELEASE}" /release AS LOCAL "build/release/${RELEASE}"
-    # SAVE ARTIFACT "_build/${MIX_ENV}/rel/${RELEASE}" /release
+    # SAVE ARTIFACT "_build/${MIX_ENV}/rel/${RELEASE}" /release AS LOCAL "build/release/${RELEASE}"
+    SAVE ARTIFACT "_build/${MIX_ENV}/rel/${RELEASE}" /release
+
     # SAVE ARTIFACT priv/static /static AS LOCAL build/static
     # SAVE ARTIFACT priv/static /static
 
