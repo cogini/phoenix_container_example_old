@@ -1,7 +1,7 @@
 # Build Elixir/Phoenix app
 # VERSION --parallel-load --shell-out-anywhere 0.6
 # VERSION --shell-out-anywhere 0.6
-# VERSION 0.6
+VERSION 0.6
 
 ARG ELIXIR_VERSION=1.13.3
 # ARG OTP_VERSION=23.3.4
@@ -174,11 +174,11 @@ all:
 # These can also be called individually
 test:
     BUILD +test-app
-    BUILD +test-credo
-    BUILD +test-format
-    BUILD +test-deps-audit
-    BUILD +test-sobelow
-    BUILD +test-dialyzer
+    # BUILD +test-credo
+    # BUILD +test-format
+    # BUILD +test-deps-audit
+    # BUILD +test-sobelow
+    # BUILD +test-dialyzer
 
 # Internal targets
 
