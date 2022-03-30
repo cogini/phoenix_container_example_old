@@ -304,7 +304,7 @@ test-app:
         RUN \
             docker-compose run test mix ecto.setup && \
             docker-compose run test mix test && \
-            docker-compose run test mix --cover
+            docker-compose run test mix test --cover
     END
     SAVE ARTIFACT /reports /reports AS LOCAL reports
 
@@ -312,9 +312,9 @@ test-static:
     FROM ${PUBLIC_REGISTRY}${DIND_IMAGE_NAME}:${DIND_IMAGE_TAG}
     WITH DOCKER --load test:latest=+test-image
         RUN \
-            docker run test mix format --check-formatted \
-            docker run test mix credo ${CREDO_OPTS} \
-            docker run test mix deps.audit \
+            docker run test mix format --check-formatted && \
+            docker run test mix credo ${CREDO_OPTS} && \
+            docker run test mix deps.audit && \
             docker run test mix sobelow ${SOBELOW_OPTS}
     END
 
