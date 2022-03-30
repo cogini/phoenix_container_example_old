@@ -115,17 +115,17 @@ deploy:
             trivy \
             && \
 
-            apt-get clean && \
-            apt-get autoremove -y && \
-            apt-get purge -y --auto-remove && \
-            # info on installed packages
-            # rm -rf /var/lib/dpkg && \
-            # rm -rf /var/cache/debconf && \
-            # Logs for installed packages
-            rm -rf /var/log/apt/* && \
-            rm -rf /var/log/dpkg.log && \
-            # apt-get update files
-            rm -rf /var/lib/apt/lists/*
+        apt-get clean && \
+        apt-get autoremove -y && \
+        apt-get purge -y --auto-remove && \
+        # info on installed packages
+        # rm -rf /var/lib/dpkg && \
+        # rm -rf /var/cache/debconf && \
+        # Logs for installed packages
+        rm -rf /var/log/apt/* && \
+        rm -rf /var/log/dpkg.log && \
+        # apt-get update files
+        rm -rf /var/lib/apt/lists/*
 
     RUN set -ex && \
         mkdir -p /root/.docker && \
