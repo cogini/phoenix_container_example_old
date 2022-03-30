@@ -1,6 +1,7 @@
 # Build Elixir/Phoenix app
 # VERSION --parallel-load --shell-out-anywhere 0.6
-VERSION --shell-out-anywhere 0.6
+# VERSION --shell-out-anywhere 0.6
+VERSION 0.6
 
 ARG ELIXIR_VERSION=1.13.3
 # ARG OTP_VERSION=23.3.4
@@ -481,7 +482,10 @@ deploy:
     # Wrapper script which runs migrations before starting
     # ENTRYPOINT ["bin/start-docker"]
 
-    COPY git-commit.txt ./
+    # SAVE IMAGE --push ${OUTPUT_URL}:${OUTPUT_IMAGE_TAG}
 
-    SAVE IMAGE --push ${OUTPUT_URL}:${OUTPUT_IMAGE_TAG}
+    # COPY git-commit.txt ./
     # SAVE IMAGE --push ${OUTPUT_URL}:$(cat git-commit.txt)
+
+    ARG EARTHLY_GIT_HASH
+    SAVE IMAGE --push ${OUTPUT_URL}:${EARTHLY_GIT_HASH}
