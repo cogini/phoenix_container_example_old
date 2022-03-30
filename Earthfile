@@ -98,12 +98,11 @@ ELSE
     IMPORT ./deploy/debian AS base
 END
 
-# Docker-in-Docker host image, used for testing
+# Docker-in-Docker host image, used to run tests
 ARG DIND_IMAGE_NAME=earthly/dind
 ARG DIND_IMAGE_TAG=alpine
 
 # Output image
-# ARG EARTHLY_GIT_HASH
 ARG OUTPUT_IMAGE_NAME=foo-app
 ARG IMAGE_TAG=latest
 ARG OUTPUT_IMAGE_TAG="$IMAGE_TAG"
