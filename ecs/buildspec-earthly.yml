@@ -111,6 +111,10 @@ phases:
       # - earthly -P -V --build-arg REGISTRY --remote-cache="cogini/foo-app:cache" --ci --push +all
       - earthly -P -V --build-arg REGISTRY --remote-cache="cogini/foo-app:cache" --strict --push +all
 
+      - docker system df -v
+      - docker df -v
+      - df -k
+
       # Tag image separately from the build, as the varying IMAGE_TAG screws up caching
       # - docker tag foo-app:latest ${REPO_URL}:${IMAGE_TAG}
       # - docker tag ${REPO_URL}:latest ${REPO_URL}:${IMAGE_TAG}
