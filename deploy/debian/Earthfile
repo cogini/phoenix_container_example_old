@@ -9,8 +9,6 @@ ARG NODE_VERSION=16.14.1
 
 ARG AWS_CLI_VERSION=2.0.61
 
-ARG ALPINE_VERSION=3.15.0
-
 # ARG ELIXIR_DEBIAN_VERSION=buster-20210208
 ARG ELIXIR_DEBIAN_VERSION=bullseye-20210902-slim
 
@@ -38,8 +36,8 @@ ARG PUBLIC_REGISTRY=""
 ARG APP_NAME=app
 
 # OS user that app runs under
-ARG APP_USER=app
-# ARG APP_USER=nonroot
+# ARG APP_USER=app
+ARG APP_USER=nonroot
 
 # OS group that app runs under
 ARG APP_GROUP="$APP_USER"
@@ -134,7 +132,7 @@ build-os-deps:
 
 # Staging image for binaries which are copied into final deploy image
 deploy-install:
-    FROM ${REGISTRY}${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG}
+    FROM ${REGISTRY}${INSTALL_IMAGE_NAME}:${INSTALL_IMAGE_TAG}
 
     # Configure apt caching for use with BuildKit
     # RUN set -exu && \
@@ -155,18 +153,41 @@ deploy-install:
             # gnupg-agent \
             # software-properties-common \
             # gnupg \
-            unzip && \
-            rm -rf /var/lib/dpkg \
-            # rm -rf /var/lib/apt/lists/* \
+            unzip \
+            locales \
+            # Needed by beam
+            libtinfo6 \
+            && \
+            locale-gen && \
+            apt-get clean && \
+            apt-get autoremove -y && \
+            apt-get purge -y --auto-remove && \
+
+            # info on installed packages
+            # rm -rf /var/lib/dpkg && \
+            # rm -rf /var/cache/debconf && \
+            # Logs for installed packages
+            rm -rf /var/log/apt/* && \
+            rm -rf /var/log/dpkg.log && \
+            # apt-get update files
+            rm -rf /var/lib/apt/lists/*
+
+    # If LANG=C.UTF-8 is not enough, build full featured locale
+    # RUN localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
+    #
+    # ENV LANG en_US.utf8
 
     # Install AWS CLI v2 from binary package
     # https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html
-    RUN curl https://awscli.amazonaws.com/awscli-exe-linux-$(uname -m)-${AWS_CLI_VERSION}.zip -o "awscliv2.zip" && \
-        unzip awscliv2.zip && \
-        # Specify --bin-dir so we can copy the entire bin directory into
-        # /usr/local/bin of the final stage without accidentally copying over any
-        # other executables that may be present in /usr/local/bin of the installer stage.
-        ./aws/install --bin-dir /aws-cli-bin/
+    # https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2-linux.html
+    # RUN set -ex && \
+    #     curl -sSfL "https://awscli.amazonaws.com/awscli-exe-linux-$(uname -m)-${AWS_CLI_VERSION}.zip" -o "awscliv2.zip" && \
+    #     unzip -q awscliv2.zip && \
+    #     ./aws/install && \
+    #     rm -rf ./aws && \
+    #     rm awscliv2.zip
+
+    SAVE ARTIFACT /usr/lib/locale/C.UTF-8
 
     SAVE IMAGE --cache-hint
 
@@ -176,49 +197,34 @@ deploy-base:
     ENV LANG=$LANG
     ENV HOME=$APP_DIR
 
+    COPY +deploy-install/C.UTF-8 /usr/lib/locale/C.UTF-8
+
+    # Create OS user and group to run app under
+    RUN groupadd -g $APP_GROUP_ID "$APP_GROUP" && \
+        useradd -u $APP_USER_ID -g "$APP_GROUP" -d "$APP_DIR" "$APP_USER" && \
+        rm /var/log/lastlog && \
+        rm /var/log/faillog
+
+    # Create dirs writable by app user
+    RUN mkdir -p "/run/$APP_NAME" && \
+        chown -R "${APP_USER}:${APP_GROUP}" \
+            # Needed for RELEASE_TMP
+            "/run/$APP_NAME"
+
     # Configure apt caching for use with BuildKit
     # RUN set -exu && \
     #     rm -f /etc/apt/apt.conf.d/docker-clean && \
     #     echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache && \
     #     echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression
 
-    RUN apt-get update $APT_OPTS_UPDATE
-    RUN apt-get -y install $APT_OPTS locales
-    RUN locale-gen
-    # RUN localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
-
-    # If LANG=C.UTF-8 is not enough, build full featured locale
-    # RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
-    #     --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
-    #     set -exu \
-    #     && apt-get update $APT_OPTS_UPDATE \
-    #     && apt-get -y install $APT_OPTS \
-    #       locales
-    #     && localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
-    #
-    # ENV LANG en_US.utf8
-
     # Create dirs needed by postgresql-client but stripped from slim
     # RUN seq 1 8 | xargs -I{} mkdir -p /usr/share/man/man{}
 
     RUN set -exu && \
-        # apt-get update $APT_OPTS_UPDATE && \
+        apt-get update $APT_OPTS_UPDATE && \
 
-        # Install deps
         # Avoid warnings
-        # apt-get -y install $APT_OPTS dialog apt-utils && \
-        # apt-get -y install $APT_OPTS \
-        #    # apt-transport-https \
-        #    # ca-certificates \
-        #    # curl \
-        #    # gnupg \
-        #    # gnupg-agent \
-        #    # software-properties-common \
-        #    # lsb-release \
-        #    && \
-
-        # Runtime deps
-        apt-get -y install $APT_OPTS \
+        apt-get install $APT_OPTS \
             ca-certificates \
 
             # Install openssl, allowing the app to listen on HTTPS.
@@ -227,11 +233,15 @@ deploy-base:
             # tini \
             # bind-utils \
 
+            # Needed by beam
+            libtinfo6 \
+
             # Default Postgres
             # libpq-dev \
             # postgresql-client \
 
             # Latest PostgreSQL
+            # curl && \
             # curl -sL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /etc/apt/trusted.gpg.d/postgresql-ACCC4CF8.asc && \
             # echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -sc)-pgdg main" | tee /etc/apt/sources.list.d/pgdg.list && \
             # echo "Package: *\nPin: release o=apt.postgresql.org\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/pgdg.pref && \
@@ -246,6 +256,7 @@ deploy-base:
             # export ACCEPT_EULA=Y && \
             # apt-get -qq update && apt-get -y install $APT_OPTS msodbcsql17 && \
             && \
+        # apt-get remove curl \
         apt-get clean && \
         apt-get autoremove -y && \
         apt-get purge -y --auto-remove && \
@@ -258,22 +269,6 @@ deploy-base:
         rm -rf /var/log/dpkg.log && \
         # apt-get update files
         rm -rf /var/lib/apt/lists/*
-
-    # Install AWS CLI 2.x binaries
-    # COPY --from=installer /usr/local/aws-cli/ /usr/local/aws-cli/
-    # COPY --from=installer /aws-cli-bin/ /usr/local/bin/
-
-    # Create OS user and group to run app under
-    RUN groupadd -g $APP_GROUP_ID "$APP_GROUP" && \
-        useradd -u $APP_USER_ID -g "$APP_GROUP" -d "$APP_DIR" "$APP_USER" && \
-        rm /var/log/lastlog && \
-        rm /var/log/faillog
-
-    # Create dirs writable by app user
-    RUN mkdir -p "/run/$APP_NAME" && \
-        chown -R "${APP_USER}:${APP_GROUP}" \
-            # Needed for RELEASE_TMP
-            "/run/$APP_NAME"
 
     SAVE IMAGE --cache-hint
 

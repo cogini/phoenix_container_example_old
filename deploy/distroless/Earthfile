@@ -6,11 +6,9 @@ ARG ELIXIR_VERSION=1.13.3
 # ARG OTP_VERSION=23.3.4
 ARG OTP_VERSION=24.2
 ARG NODE_VERSION=16.14.1
+# ARG NODE_VERSION=lts
 
 ARG AWS_CLI_VERSION=2.0.61
-
-# ARG ALPINE_VERSION=3.14.3
-ARG ALPINE_VERSION=3.15.0
 
 # ARG ELIXIR_DEBIAN_VERSION=buster-20210208
 ARG ELIXIR_DEBIAN_VERSION=bullseye-20210902-slim
@@ -26,10 +24,10 @@ ARG INSTALL_IMAGE_TAG=bullseye-slim
 
 # Deploy base image
 # https://github.com/GoogleContainerTools/distroless/blob/main/base/README.md
-# ARG DEPLOY_IMAGE_NAME=gcr.io/distroless/base-debian11
-# ARG DEPLOY_IMAGE_TAG=latest
 ARG DEPLOY_IMAGE_NAME=gcr.io/distroless/base-debian11
 # ARG DEPLOY_IMAGE_TAG=debug-nonroot
+# ARG DEPLOY_IMAGE_TAG=latest
+# debug includes busybox
 ARG DEPLOY_IMAGE_TAG=debug
 
 # Docker registry for base images, default is docker.io
@@ -40,13 +38,6 @@ ARG PUBLIC_REGISTRY=""
 
 # App name, used to name directories
 ARG APP_NAME=app
-
-# OS user that app runs under
-# ARG APP_USER=app
-ARG APP_USER=nonroot
-
-# OS group that app runs under
-ARG APP_GROUP="$APP_USER"
 
 # Dir that app runs under
 ARG APP_DIR=/app
@@ -76,7 +67,7 @@ build-os-deps:
     FROM ${PUBLIC_REGISTRY}${BUILD_IMAGE_NAME}:${BUILD_IMAGE_TAG}
 
     # Configure apt caching for use with BuildKit
-    # The default Debian image has special config to avoid caches, but we want them now
+    # The default Debian image has special config to avoid caching, but we may want it.
     # RUN set -exu \
     #     && rm -f /etc/apt/apt.conf.d/docker-clean \
     #     && printf 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache \
@@ -133,11 +124,12 @@ build-os-deps:
 
         # Microsoft ODBC Driver for SQL Server
         # curl -sL https://packages.microsoft.com/keys/microsoft.asc -o /etc/apt/trusted.gpg.d/microsoft.asc && \
-        # curl -s https://packages.microsoft.com/config/debian/10/prod.list -o /etc/apt/sources.list.d/mssql-release.list && \
+        # curl -s https://packages.microsoft.com/config/debian/11/prod.list -o /etc/apt/sources.list.d/mssql-release.list && \
         # export ACCEPT_EULA=Y && \
         # apt-get -qq update $APT_OPTS_UPDATE && apt-get -y install $APT_OPTS msodbcsql17 && \
         # rm -rf /var/lib/dpkg &&
 
+        # apt-get clean &&
         # rm -rf /var/lib/apt/lists/*
 
     SAVE IMAGE --cache-hint
@@ -172,19 +164,27 @@ deploy-install:
             libtinfo6 \
             && \
             locale-gen && \
-            rm -rf /var/lib/dpkg && \
+            apt-get clean && \
+            apt-get autoremove -y && \
+            apt-get purge -y --auto-remove && \
+
+            # info on installed packages
+            # rm -rf /var/lib/dpkg && \
+            # rm -rf /var/cache/debconf && \
+            # Logs for installed packages
+            rm -rf /var/log/apt/* && \
+            rm -rf /var/log/dpkg.log && \
+            # apt-get update files
             rm -rf /var/lib/apt/lists/*
 
     # Install AWS CLI v2 from binary package
     # https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html
-    # RUN curl https://awscli.amazonaws.com/awscli-exe-linux-$(uname -m)-${AWS_CLI_VERSION}.zip -o "awscliv2.zip" && \
+    # RUN set -ex && \
+    #     curl -sSfL "https://awscli.amazonaws.com/awscli-exe-linux-$(uname -m)-${AWS_CLI_VERSION}.zip" -o "awscliv2.zip" && \
     #     unzip -q awscliv2.zip && \
-    #     ./aws/install
-    # SAVE ARTIFACT /usr/local/aws-cli /aws-cli
-
-    RUN mkdir -p /busybox && \
-        cp /bin/busybox /busybox/sh
-    SAVE ARTIFACT /busybox /busybox
+    #     ./aws/install && \
+    #     rm -rf ./aws && \
+    #     rm awscliv2.zip
 
     SAVE ARTIFACT /usr/lib/locale/C.UTF-8
 
@@ -198,14 +198,14 @@ deploy-install:
     SAVE IMAGE --cache-hint
 
 deploy-base:
-    FROM ${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG}
+    FROM ${REGISTRY}${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG}
 
     ENV LANG=$LANG
     ENV HOME=$APP_DIR
 
+    COPY +deploy-install/C.UTF-8 /usr/lib/locale/C.UTF-8
     COPY +deploy-install/busybox/sh /bin/
     COPY +deploy-install/libs/libtinfo* /lib/${LINUX_ARCH}-linux-gnu/
-    COPY +deploy-install/C.UTF-8 /usr/lib/locale/C.UTF-8
 
     # RUN ["/busybox/sh", "-c", "/busybox/ln", "-s", "/busybox/busybox", "/bin/sh"]
 
