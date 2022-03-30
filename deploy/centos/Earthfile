@@ -45,7 +45,7 @@ ARG APP_USER=app
 ARG APP_GROUP="$APP_USER"
 
 ARG APP_USER_ID=10000
-ARG APP_GROUP_ID=10001
+ARG APP_GROUP_ID=$APP_USER_ID
 
 # Dir that app runs under
 ARG APP_DIR=/app
@@ -198,9 +198,9 @@ deploy-base:
     ENV HOME=$APP_DIR
 
     # Create OS user and group to run app under
-    RUN groupadd -g $APP_GROUP_ID $APP_GROUP && \
-        useradd -u $APP_USER_ID -g $APP_GROUP -d "$APP_DIR" $APP_USER && \
-        chown $APP_USER:$APP_GROUP $APP_DIR
+    RUN groupadd -g $APP_GROUP_ID "$APP_GROUP" && \
+        useradd -u $APP_USER_ID -g "$APP_GROUP" -d "$APP_DIR" "$APP_USER" && \
+        chown "${APP_USER}:${APP_GROUP}" "$APP_DIR"
 
     RUN set -ex \
         yum install -y epel-release && \
@@ -220,7 +220,7 @@ deploy-base:
 
     # Create dirs writable by app user
     RUN mkdir -p "/run/$APP_NAME" && \
-        chown -R "$APP_USER:$APP_GROUP" \
+        chown -R "${APP_USER}:${APP_GROUP}" \
             # Needed for RELEASE_TMP
             "/run/$APP_NAME"
 
