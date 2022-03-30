@@ -109,7 +109,7 @@ phases:
       # - git rev-parse HEAD > git-commit.txt
       # - echo "$COMMIT_HASH" > git-commit.txt
       # - earthly -P -V --build-arg REGISTRY --remote-cache="cogini/foo-app:cache" --ci --push +all
-      - earthly -P -V --build-arg REGISTRY --build-arg REPO_URL --remote-cache="cogini/foo-app:cache" --strict --push +all
+      - earthly -P -V --build-arg REGISTRY --remote-cache="cogini/foo-app:cache" --strict --push +all
 
       # Tag image separately from the build, as the varying IMAGE_TAG screws up caching
       # - docker tag foo-app:latest ${REPO_URL}:${IMAGE_TAG}
