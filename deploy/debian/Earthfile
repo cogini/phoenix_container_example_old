@@ -223,7 +223,6 @@ deploy-base:
     RUN set -exu && \
         apt-get update $APT_OPTS_UPDATE && \
 
-        # Avoid warnings
         apt-get install $APT_OPTS \
             ca-certificates \
 
