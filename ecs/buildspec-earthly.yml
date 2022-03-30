@@ -64,7 +64,7 @@ phases:
       - df -k
 
       # Configure earthly
-      - earthly config global.cache_size_mb 25000
+      - earthly config global.cache_size_mb 30000
       # - earthly config global.cache_size_pct 40
       - earthly config global.disable_analytics true
       - earthly config global.disable_log_sharing true
