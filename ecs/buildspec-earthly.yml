@@ -65,7 +65,7 @@ phases:
 
       # Configure earthly
       - earthly config global.cache_size_mb 25000
-      # - earthly config global.cache_size_pct 70
+      - earthly config global.cache_size_pct 50
       - earthly config global.disable_analytics true
       - earthly config global.disable_log_sharing true
       # - cat ~/.earthly/config.yml
