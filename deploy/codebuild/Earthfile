@@ -7,7 +7,8 @@ ARG DOCKER_COMPOSE_VERSION=v2.1.0
 ARG AWS_CLI_VERSION=2.0.61
 
 # Version of earthly to install on target
-ARG EARTHLY_VERSION_NUMBER=v0.6.12
+ARG EARTHLY_VERSION_NUMBER=v0.6.10
+# ARG EARTHLY_VERSION
 # ARG EARTHLY_VERSION_NUMBER=$EARTHLY_VERSION
 
 ARG BASE_IMAGE=ubuntu
@@ -35,7 +36,7 @@ ARG APT_OPTS_UPDATE="-qq"
 ARG APP_USER=codebuild-user
 ARG APP_GROUP=$APP_USER
 ARG APP_USER_ID=10000
-ARG APP_GROUP_ID=10000
+ARG APP_GROUP_ID=$APP_USER_ID
 
 ARG TARGETARCH
 
@@ -133,7 +134,6 @@ deploy:
 
     # Install AWS CLI v2 from binary package
     # https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2-linux.html
-
     RUN set -ex && \
         curl -sSfL "https://awscli.amazonaws.com/awscli-exe-linux-$(uname -m)-${AWS_CLI_VERSION}.zip" -o "awscliv2.zip" && \
         unzip -q awscliv2.zip && \
