@@ -173,10 +173,10 @@ all:
 # These can also be called individually
 test:
     BUILD +test-app
-    # BUILD +test-credo
-    # BUILD +test-format
-    # BUILD +test-deps-audit
-    # BUILD +test-sobelow
+    BUILD +test-credo
+    BUILD +test-format
+    BUILD +test-deps-audit
+    BUILD +test-sobelow
     # BUILD +test-dialyzer
 
 # Internal targets
