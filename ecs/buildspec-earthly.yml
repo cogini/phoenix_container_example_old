@@ -19,6 +19,7 @@ env:
     COMPOSE_DOCKER_CLI_BUILD: 1
     # TASKDEF=ecs/taskdef.json
     TASKDEF: ecs/taskdef-otel.json
+    NO_COLOR: 1
   parameter-store:
     DOCKERHUB_USERNAME: /cogini/foo/dev/creds/dockerhub_username
     DOCKERHUB_TOKEN: /cogini/foo/dev/creds/dockerhub_token
