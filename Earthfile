@@ -178,7 +178,7 @@ test:
     # BUILD +test-format
     # BUILD +test-deps-audit
     # BUILD +test-sobelow
-    # BUILD +test-dialyzer
+    BUILD +test-dialyzer
 
 # Internal targets
 
