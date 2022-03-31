@@ -186,6 +186,10 @@ deploy-install:
     #     rm -rf ./aws && \
     #     rm awscliv2.zip
 
+    RUN mkdir -p /busybox && \
+        cp /bin/busybox /busybox/sh
+    SAVE ARTIFACT /busybox /busybox
+
     SAVE ARTIFACT /usr/lib/locale/C.UTF-8
 
     SAVE ARTIFACT /lib/${LINUX_ARCH}-linux-gnu/libtinfo* /libs/
