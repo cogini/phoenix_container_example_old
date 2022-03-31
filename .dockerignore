@@ -17,6 +17,8 @@
 .earthignore
 
 assets/node_modules
+priv/static/assets
+
 # test
 deps
 _build
