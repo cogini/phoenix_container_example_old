@@ -309,7 +309,7 @@ test-app:
             docker-compose run test mix test && \
             docker-compose run test mix test --cover
     END
-    SAVE ARTIFACT /reports /reports AS LOCAL reports
+    SAVE ARTIFACT /reports /junit-reports AS LOCAL junit-reports
 
 test-static:
     FROM ${PUBLIC_REGISTRY}${DIND_IMAGE_NAME}:${DIND_IMAGE_TAG}
