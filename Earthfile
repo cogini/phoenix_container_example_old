@@ -57,7 +57,10 @@ ELSE IF [ "$BASE_OS" = "distroless" ]
     ARG INSTALL_IMAGE_TAG=$DEBIAN_VERSION
 
     ARG DEPLOY_IMAGE_NAME=gcr.io/distroless/base-debian11
+    # ARG DEPLOY_IMAGE_TAG=debug-nonroot
+    # ARG DEPLOY_IMAGE_TAG=latest
     ARG DEPLOY_IMAGE_TAG=debug
+    # debug includes busybox
 
     IMPORT ./deploy/distroless AS base
 ELSE IF [ "$BASE_OS" = "busybox" ]
