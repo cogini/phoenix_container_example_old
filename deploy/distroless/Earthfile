@@ -27,8 +27,8 @@ ARG INSTALL_IMAGE_TAG=bullseye-slim
 # https://github.com/GoogleContainerTools/distroless/blob/main/base/README.md
 ARG DEPLOY_IMAGE_NAME=gcr.io/distroless/base-debian11
 # ARG DEPLOY_IMAGE_TAG=debug-nonroot
-ARG DEPLOY_IMAGE_TAG=latest
-# ARG DEPLOY_IMAGE_TAG=debug
+# ARG DEPLOY_IMAGE_TAG=latest
+ARG DEPLOY_IMAGE_TAG=debug
 # debug includes busybox
 
 # Docker registry for base images, default is docker.io
