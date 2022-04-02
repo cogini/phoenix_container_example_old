@@ -1,5 +1,6 @@
 # Deploy using distroless image
 # https://github.com/GoogleContainerTools/distroless
+VERSION --shell-out-anywhere --use-copy-include-patterns --referenced-save-only 0.6
 
 # App versions
 ARG ELIXIR_VERSION=1.13.3
@@ -26,23 +27,15 @@ ARG INSTALL_IMAGE_TAG=bullseye-slim
 # https://github.com/GoogleContainerTools/distroless/blob/main/base/README.md
 ARG DEPLOY_IMAGE_NAME=gcr.io/distroless/base-debian11
 # ARG DEPLOY_IMAGE_TAG=debug-nonroot
-# ARG DEPLOY_IMAGE_TAG=latest
+ARG DEPLOY_IMAGE_TAG=latest
+# ARG DEPLOY_IMAGE_TAG=debug
 # debug includes busybox
-ARG DEPLOY_IMAGE_TAG=debug
 
 # Docker registry for base images, default is docker.io
 # If specified, should have a trailing slash
 ARG REGISTRY=""
 
 ARG PUBLIC_REGISTRY=""
-
-# App name, used to name directories
-ARG APP_NAME=app
-
-# Dir that app runs under
-ARG APP_DIR=/app
-
-ARG HOME=$APP_DIR
 
 # Set a specific LOCALE
 ARG LANG=C.UTF-8
@@ -56,11 +49,12 @@ ARG APT_OPTS_UPDATE="-qq --no-install-recommends"
 ARG TARGETARCH
 # TODO: see if we can get this from `uname -m`
 FROM busybox
-IF [ "$TARGETARCH" = "arm64" ]
-    ARG LINUX_ARCH=aarch64
-ELSE IF [ "$TARGETARCH" = "amd64" ]
-    ARG LINUX_ARCH=x86_64
-END
+ARG LINUX_ARCH=$(uname -m)
+# IF [ "$TARGETARCH" = "arm64" ]
+#     ARG LINUX_ARCH=aarch64
+# ELSE IF [ "$TARGETARCH" = "amd64" ]
+#     ARG LINUX_ARCH=x86_64
+# END
 
 # Create build base image with OS dependencies
 build-os-deps:
@@ -204,14 +198,15 @@ deploy-install:
 deploy-base:
     FROM ${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG}
 
-    ENV HOME=$APP_DIR
-
     # SHLVL=1
     # SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
     # PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/busybox
 
     # This is necessary for RUN commands to work
     COPY +deploy-install/busybox/sh /bin/
+    # RUN /bin/sh --install -s /bin
+    # RUN set -ex && mkdir -p /bin /sbin /usr/bin /usr/sbin && /bin/sh --install -s
+    # RUN set -ex && mkdir -p /bin /sbin /usr/bin /usr/sbin && /busybox/busybox --install -s
 
     # This doesn't work because Earthly insists on stat'ing /bin/sh before
     # running commands, even when we are specifying a shell
