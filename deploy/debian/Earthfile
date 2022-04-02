@@ -42,7 +42,7 @@ ARG APP_USER=nonroot
 # OS group that app runs under
 ARG APP_GROUP="$APP_USER"
 
-ARG APP_USER_ID=10000
+ARG APP_USER_ID=65532
 ARG APP_GROUP_ID=$APP_USER_ID
 
 # Dir that app runs under
