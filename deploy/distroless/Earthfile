@@ -185,6 +185,7 @@ deploy-install:
     #     ./aws/install && \
     #     rm -rf ./aws && \
     #     rm awscliv2.zip
+    # SAVE ARTIFACT /usr/local/aws-cli /aws-cli
 
     RUN mkdir -p /busybox && \
         cp /bin/busybox /busybox/sh
@@ -192,8 +193,7 @@ deploy-install:
 
     SAVE ARTIFACT /usr/lib/locale/C.UTF-8
 
-    SAVE ARTIFACT /lib/${LINUX_ARCH}-linux-gnu/libtinfo* /libs/
-    # TODO: symlinks are copied as files
+    SAVE ARTIFACT /lib/${LINUX_ARCH}-linux-gnu/libtinfo.so.6.2 /libs/
     # drwxr-xr-x         0:0     375 kB  │   ├── aarch64-linux
     # drwxr-xr-x         0:0     375 kB  │   │   └── gnu
     # -rw-r--r--         0:0     188 kB  │   │       ├── libtinfo.so.6
@@ -202,16 +202,29 @@ deploy-install:
     SAVE IMAGE --cache-hint
 
 deploy-base:
-    FROM ${REGISTRY}${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG}
+    FROM ${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG}
 
-    ENV LANG=$LANG
     ENV HOME=$APP_DIR
 
-    COPY +deploy-install/C.UTF-8 /usr/lib/locale/C.UTF-8
-    COPY +deploy-install/busybox/sh /bin/
-    COPY +deploy-install/libs/libtinfo* /lib/${LINUX_ARCH}-linux-gnu/
+    # SHLVL=1
+    # SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+    # PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/busybox
 
-    # RUN ["/busybox/sh", "-c", "/busybox/ln", "-s", "/busybox/busybox", "/bin/sh"]
+    # This is necessary for RUN commands to work
+    COPY +deploy-install/busybox/sh /bin/
+
+    # This doesn't work because Earthly insists on stat'ing /bin/sh before
+    # running commands, even when we are specifying a shell
+    # RUN ["/busybox/sh", "-c", "\"ln -s /busybox/busybox /bin/sh\""]
+    # base+deploy-base *failed* | --> RUN /busybox/sh -c "ln -s /busybox/busybox /bin/sh"
+    # base+deploy-base *failed* | container_linux.go:380: starting container process caused: exec: "/bin/sh": stat /bin/sh: no such file or directory
+
+    COPY +deploy-install/C.UTF-8 /usr/lib/locale/C.UTF-8
+
+    ENV LANG=$LANG
+
+    COPY +deploy-install/libs/libtinfo.so.6.2 /lib/${LINUX_ARCH}-linux-gnu/
+    RUN ln -s /lib/${LINUX_ARCH}-linux-gnu/libtinfo.so.6.2 /lib/${LINUX_ARCH}-linux-gnu/libtinfo.so.6
 
     # COPY +deploy-install/aws-cli /usr/local/aws-cli
 
