@@ -551,4 +551,8 @@ createuser --createdb --encrypted --pwprompt postgres
 docker-compose run test mix ecto.setup
 ```
 
+```shell
 earthly -V -P --build-arg REGISTRY --build-arg REPO_URL --remote-cache="cogini/foo-app:cache" --strict --no-output --push +all
+
+docker buildx build -t distroless-deploy-base -f deploy/distroless/Dockerfile --progress plain --load .
+```
