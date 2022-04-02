@@ -33,9 +33,9 @@ ARG REGISTRY=""
 
 ARG PUBLIC_REGISTRY=$REGISTRY
 
-ARG BASE_OS=debian
+# ARG BASE_OS=debian
 # ARG BASE_OS=alpine
-# ARG BASE_OS=distroless
+ARG BASE_OS=distroless
 # ARG BASE_OS=centos
 # ARG BASE_OS=busybox
 
