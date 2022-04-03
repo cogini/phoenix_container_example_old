@@ -189,7 +189,7 @@ test:
     # BUILD +test-format
     # BUILD +test-deps-audit
     # BUILD +test-sobelow
-    BUILD +test-dialyzer
+    # BUILD +test-dialyzer
 
 # Internal targets
 
@@ -306,6 +306,7 @@ test-app:
     COPY docker-compose.test.yml ./docker-compose.yml
 
     RUN mkdir -p /junit-reports
+
     WITH DOCKER \
             # Image names need to match docker-compose.test.yml
             --pull ${PUBLIC_REGISTRY}${POSTGRES_IMAGE_NAME}:${POSTGRES_IMAGE_TAG} \
@@ -317,6 +318,7 @@ test-app:
             docker-compose run test mix test && \
             docker-compose run test mix test --cover
     END
+
     SAVE ARTIFACT /junit-reports /junit-reports AS LOCAL junit-reports
 
 test-static:
