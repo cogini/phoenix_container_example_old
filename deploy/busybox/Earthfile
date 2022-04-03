@@ -17,24 +17,22 @@ ARG ELIXIR_DEBIAN_VERSION=bullseye-20210902-slim
 # ARG DEBIAN_VERSION=buster-slim
 ARG DEBIAN_VERSION=bullseye-slim
 
-ARG BUILD_IMAGE_NAME=hexpm/elixir
-ARG BUILD_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-${ELIXIR_DEBIAN_VERSION}
-
-ARG INSTALL_IMAGE_NAME=debian
-ARG INSTALL_IMAGE_TAG=bullseye-slim
-
-# Deploy base image
-ARG DEPLOY_IMAGE_NAME=busybox
-ARG DEPLOY_IMAGE_TAG=glibc
-
 # Docker registry for base images, default is docker.io
 # If specified, should have a trailing slash
 ARG REGISTRY=""
+ARG PUBLIC_REGISTRY=$REGISTRY
 
-ARG PUBLIC_REGISTRY=""
+ARG BUILD_IMAGE_NAME=${PUBLIC_REGISTRY}hexpm/elixir
+ARG BUILD_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-${ELIXIR_DEBIAN_VERSION}
+
+ARG INSTALL_IMAGE_NAME=${PUBLIC_REGISTRY}debian
+ARG INSTALL_IMAGE_TAG=bullseye-slim
+
+# Deploy base image
+ARG DEPLOY_IMAGE_NAME=${PUBLIC_REGISTRY}busybox
+ARG DEPLOY_IMAGE_TAG=glibc
 
 # Output image
-# ARG EARTHLY_GIT_HASH
 ARG OUTPUT_IMAGE_NAME=foo-app
 ARG IMAGE_TAG=latest
 ARG OUTPUT_IMAGE_TAG="$IMAGE_TAG"
@@ -45,10 +43,14 @@ ARG OUTPUT_URL=$REPO_URL
 ARG APP_NAME=app
 
 # OS user that app runs under
-ARG APP_USER=app
+# ARG APP_USER=app
+ARG APP_USER=nonroot
 
 # OS group that app runs under
 ARG APP_GROUP="$APP_USER"
+
+ARG APP_USER_ID=65532
+ARG APP_GROUP_ID=$APP_USER_ID
 
 # Dir that app runs under
 ARG APP_DIR=/app
@@ -65,10 +67,10 @@ ARG APT_OPTS_UPDATE="-qq --no-install-recommends"
 
 # Create build base image with OS dependencies
 build-os-deps:
-    FROM ${PUBLIC_REGISTRY}${BUILD_IMAGE_NAME}:${BUILD_IMAGE_TAG}
+    FROM ${BUILD_IMAGE_NAME}:${BUILD_IMAGE_TAG}
 
     # Configure apt caching for use with BuildKit
-    # The default Debian image has special config to avoid caches, but we want them now
+    # The default Debian image has special config to avoid caching, but we may want it.
     # RUN set -exu \
     #     && rm -f /etc/apt/apt.conf.d/docker-clean \
     #     && printf 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache \
@@ -125,18 +127,19 @@ build-os-deps:
 
         # Microsoft ODBC Driver for SQL Server
         # curl -sL https://packages.microsoft.com/keys/microsoft.asc -o /etc/apt/trusted.gpg.d/microsoft.asc && \
-        # curl -s https://packages.microsoft.com/config/debian/10/prod.list -o /etc/apt/sources.list.d/mssql-release.list && \
+        # curl -s https://packages.microsoft.com/config/debian/11/prod.list -o /etc/apt/sources.list.d/mssql-release.list && \
         # export ACCEPT_EULA=Y && \
         # apt-get -qq update $APT_OPTS_UPDATE && apt-get -y install $APT_OPTS msodbcsql17 && \
         # rm -rf /var/lib/dpkg &&
 
+        # apt-get clean &&
         # rm -rf /var/lib/apt/lists/*
 
     SAVE IMAGE --cache-hint
 
 # Staging image for binaries which are copied into final deploy image
 deploy-install:
-    FROM ${REGISTRY}${INSTALL_IMAGE_NAME}:${INSTALL_IMAGE_TAG}
+    FROM ${INSTALL_IMAGE_NAME}:${INSTALL_IMAGE_TAG}
 
     # Configure apt caching for use with BuildKit
     # RUN set -exu && \
@@ -164,26 +167,30 @@ deploy-install:
 
     # Install AWS CLI v2 from binary package
     # https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html
-    # RUN curl https://awscli.amazonaws.com/awscli-exe-linux-$(uname -m)-${AWS_CLI_VERSION}.zip -o "awscliv2.zip" && \
+    # https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2-linux.html
+    # RUN set -ex && \
+    #     curl -sSfL "https://awscli.amazonaws.com/awscli-exe-linux-$(uname -m)-${AWS_CLI_VERSION}.zip" -o "awscliv2.zip" && \
     #     unzip -q awscliv2.zip && \
-    #     ./aws/install
-    # SAVE ARTIFACT /usr/local/aws-cli /aws-cli
+    #     ./aws/install && \
+    #     rm -rf ./aws && \
+    #     rm awscliv2.zip
 
     SAVE IMAGE --cache-hint
 
 deploy-base:
     FROM ${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG}
 
-    ENV LANG=$LANG
     ENV HOME=$APP_DIR
+    ENV LANG=$LANG
 
-    # Create user and group for app to run under with specific uid
-    RUN addgroup -g 10001 -S "$APP_GROUP" && \
-        adduser -u 10000 -S "$APP_USER" -G "$APP_GROUP" -h "$HOME"
+    # Create OS user and group to run app under
+    RUN groupadd -g "$APP_GROUP_ID" "$APP_GROUP" && \
+        useradd -u "$APP_USER_ID" -g "$APP_GROUP" -d "$APP_DIR" "$APP_USER"
+        # chown "${APP_USER}:${APP_GROUP}" "$APP_DIR"
 
     # Create dirs writable by app user
     RUN mkdir -p "/run/$APP_NAME" && \
-        chown -R "$APP_USER:$APP_GROUP" \
+        chown -R "${APP_USER}:${APP_GROUP}" \
             # Needed for RELEASE_TMP
             "/run/$APP_NAME"
 

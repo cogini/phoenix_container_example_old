@@ -26,34 +26,35 @@ ARG CREDO_OPTS=""
 # ARG SOBELOW_OPTS="--exit"
 ARG SOBELOW_OPTS=""
 
-# Docker registry for base images, default is docker.io
+# Docker registries for base images.
+# If blank, will use docker.io
 # If specified, should have a trailing slash
-# ARG REGISTRY=123.dkr.ecr.ap-northeast-1.amazonaws.com/
+# REGISTRY is a private registry, e.g. 123.dkr.ecr.ap-northeast-1.amazonaws.com/
+# PUBLIC_REGISTRY is for public base images, e.g. debian or alpine
+# Public images may be mirrored into the private registry, e.g. with skopeo
 ARG REGISTRY=""
-
 ARG PUBLIC_REGISTRY=$REGISTRY
 
-# ARG BASE_OS=debian
+ARG BASE_OS=debian
 # ARG BASE_OS=alpine
-ARG BASE_OS=distroless
+# ARG BASE_OS=distroless
 # ARG BASE_OS=centos
 # ARG BASE_OS=busybox
 
-# FROM ${PUBLIC_REGISTRY}busybox
-FROM busybox
+FROM ${PUBLIC_REGISTRY}busybox
 IF [ "$BASE_OS" = "alpine" ]
-    ARG BUILD_IMAGE_NAME=hexpm/elixir
+    ARG BUILD_IMAGE_NAME=${PUBLIC_REGISTRY}hexpm/elixir
     ARG BUILD_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-alpine-${ALPINE_VERSION}
 
-    ARG DEPLOY_IMAGE_NAME=alpine
+    ARG DEPLOY_IMAGE_NAME=${PUBLIC_REGISTRY}alpine
     ARG DEPLOY_IMAGE_TAG=$ALPINE_VERSION
 
     IMPORT ./deploy/alpine AS base
 ELSE IF [ "$BASE_OS" = "distroless" ]
-    ARG BUILD_IMAGE_NAME=hexpm/elixir
+    ARG BUILD_IMAGE_NAME=${PUBLIC_REGISTRY}hexpm/elixir
     ARG BUILD_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-${ELIXIR_DEBIAN_VERSION}
 
-    ARG INSTALL_IMAGE_NAME=debian
+    ARG INSTALL_IMAGE_NAME=${PUBLIC_REGISTRY}debian
     ARG INSTALL_IMAGE_TAG=$DEBIAN_VERSION
 
     ARG DEPLOY_IMAGE_NAME=gcr.io/distroless/base-debian11
@@ -64,44 +65,44 @@ ELSE IF [ "$BASE_OS" = "distroless" ]
 
     IMPORT ./deploy/distroless AS base
 ELSE IF [ "$BASE_OS" = "busybox" ]
-    ARG BUILD_IMAGE_NAME=hexpm/elixir
+    ARG BUILD_IMAGE_NAME=${PUBLIC_REGISTRY}hexpm/elixir
     ARG BUILD_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-${ELIXIR_DEBIAN_VERSION}
 
-    ARG INSTALL_IMAGE_NAME=debian
+    ARG INSTALL_IMAGE_NAME=${PUBLIC_REGISTRY}debian
     ARG INSTALL_IMAGE_TAG=$DEBIAN_VERSION
 
-    ARG DEPLOY_IMAGE_NAME=busybox
+    ARG DEPLOY_IMAGE_NAME=${PUBLIC_REGISTRY}busybox
     ARG DEPLOY_IMAGE_TAG=glibc
 
     IMPORT ./deploy/busybox AS base
 ELSE IF [ "$BASE_OS" = "centos" ]
-    ARG BUILD_IMAGE_NAME=centos
+    ARG BUILD_IMAGE_NAME=${PUBLIC_REGISTRY}centos
     ARG BUILD_IMAGE_TAG=7
 
-    ARG INSTALL_IMAGE_NAME=centos
+    ARG INSTALL_IMAGE_NAME=${PUBLIC_REGISTRY}centos
     ARG INSTALL_IMAGE_TAG=7
 
-    ARG DEPLOY_IMAGE_NAME=centos
+    ARG DEPLOY_IMAGE_NAME=${PUBLIC_REGISTRY}centos
     ARG DEPLOY_IMAGE_TAG=7
 
     COPY --dir ./bin ./
     COPY .tool-versions ./
 
     IMPORT ./deploy/centos AS base
-ELSE
+ELSE IF [ "$BASE_OS" = "debian" ]
     # Build image
-    ARG BUILD_IMAGE_NAME=hexpm/elixir
+    ARG BUILD_IMAGE_NAME=${PUBLIC_REGISTRY}hexpm/elixir
     ARG BUILD_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-${ELIXIR_DEBIAN_VERSION}
 
     # Deploy base image
-    ARG DEPLOY_IMAGE_NAME=debian
+    ARG DEPLOY_IMAGE_NAME=${PUBLIC_REGISTRY}debian
     ARG DEPLOY_IMAGE_TAG=$DEBIAN_VERSION
 
     IMPORT ./deploy/debian AS base
 END
 
 # Docker-in-Docker host image, used to run tests
-ARG DIND_IMAGE_NAME=earthly/dind
+ARG DIND_IMAGE_NAME=${PUBLIC_REGISTRY}earthly/dind
 ARG DIND_IMAGE_TAG=alpine
 
 # Output image
@@ -188,7 +189,7 @@ test:
 # Get app deps
 build-deps-get:
     FROM base+build-os-deps \
-        --PUBLIC_REGISTRY=$PUBLIC_REGISTRY \
+        --REGISTRY=$REGISTRY --PUBLIC_REGISTRY=$PUBLIC_REGISTRY \
         --BUILD_IMAGE_NAME=$BUILD_IMAGE_NAME --BUILD_IMAGE_TAG=$BUILD_IMAGE_TAG \
         --OUTPUT_URL=$OUTPUT_URL \
         --APP_DIR=$APP_DIR --APP_USER=$APP_USER --APP_GROUP=$APP_GROUP
@@ -283,7 +284,7 @@ test-image-dialyzer:
 
 # Create database for tests
 postgres:
-    FROM "${PUBLIC_REGISTRY}${POSTGRES_IMAGE_NAME}:${POSTGRES_IMAGE_TAG}"
+    FROM ${PUBLIC_REGISTRY}${POSTGRES_IMAGE_NAME}:${POSTGRES_IMAGE_TAG}
 
     ENV POSTGRES_USER=postgres
     ENV POSTGRES_PASSWORD=postgres
@@ -312,7 +313,7 @@ test-app:
     SAVE ARTIFACT /reports /junit-reports AS LOCAL junit-reports
 
 test-static:
-    FROM ${PUBLIC_REGISTRY}${DIND_IMAGE_NAME}:${DIND_IMAGE_TAG}
+    FROM ${DIND_IMAGE_NAME}:${DIND_IMAGE_TAG}
     WITH DOCKER --load test:latest=+test-image
         RUN \
             docker run test mix format --check-formatted && \
@@ -322,31 +323,31 @@ test-static:
     END
 
 test-credo:
-    FROM ${PUBLIC_REGISTRY}${DIND_IMAGE_NAME}:${DIND_IMAGE_TAG}
+    FROM ${DIND_IMAGE_NAME}:${DIND_IMAGE_TAG}
     WITH DOCKER --load test:latest=+test-image
         RUN docker run test mix credo ${CREDO_OPTS}
     END
 
 test-format:
-    FROM ${PUBLIC_REGISTRY}${DIND_IMAGE_NAME}:${DIND_IMAGE_TAG}
+    FROM ${DIND_IMAGE_NAME}:${DIND_IMAGE_TAG}
     WITH DOCKER --load test:latest=+test-image
         RUN docker run test mix format --check-formatted
     END
 
 test-deps-audit:
-    FROM ${PUBLIC_REGISTRY}${DIND_IMAGE_NAME}:${DIND_IMAGE_TAG}
+    FROM ${DIND_IMAGE_NAME}:${DIND_IMAGE_TAG}
     WITH DOCKER --load test:latest=+test-image
         RUN docker run test mix deps.audit
     END
 
 test-sobelow:
-    FROM ${PUBLIC_REGISTRY}${DIND_IMAGE_NAME}:${DIND_IMAGE_TAG}
+    FROM ${DIND_IMAGE_NAME}:${DIND_IMAGE_TAG}
     WITH DOCKER --load test:latest=+test-image
         RUN docker run test mix sobelow ${SOBELOW_OPTS}
     END
 
 test-dialyzer:
-    FROM ${PUBLIC_REGISTRY}${DIND_IMAGE_NAME}:${DIND_IMAGE_TAG}
+    FROM ${DIND_IMAGE_NAME}:${DIND_IMAGE_TAG}
     WITH DOCKER --load test-dialyzer:latest=+test-image-dialyzer
         RUN docker run test-dialyzer mix dialyzer --halt-exit-status
     END
@@ -418,7 +419,6 @@ deploy-release:
     # FROM +deploy-digest
     FROM +deploy-deps-compile
 
-
     COPY +deploy-assets-esbuild/priv priv
 
     # Non-umbrella
@@ -442,7 +442,7 @@ deploy:
     FROM base+deploy-base \
         --LANG=$LANG \
         --APP_USER=$APP_USER --APP_GROUP=$APP_GROUP --APP_NAME=$APP_NAME --APP_DIR=$APP_DIR \
-        --OUTPUT_URL=$OUTPUT_URL --REGISTRY=$REGISTRY \
+        --OUTPUT_URL=$OUTPUT_URL --REGISTRY=$REGISTRY --PUBLIC_REGISTRY=$PUBLIC_REGISTRY \
         --DEPLOY_IMAGE_NAME=$DEPLOY_IMAGE_NAME --DEPLOY_IMAGE_TAG=$DEPLOY_IMAGE_TAG
 
     # Set environment vars used by the app
@@ -454,8 +454,13 @@ deploy:
     ENV PORT=$APP_PORT
     ENV PHX_SERVER=true
 
-    ENV RELEASE_TMP="/run/$APP_NAME"
     ENV RELEASE=${RELEASE}
+    ENV RELEASE_TMP="/run/${APP_NAME}"
+
+    # Create dirs writable by app user
+    RUN mkdir -p "/run/${APP_NAME}" && \
+        chown -R "${APP_USER}:${APP_GROUP}" \
+            "/run/${APP_NAME}"
 
     # USER $APP_USER
 
@@ -501,3 +506,16 @@ deploy:
     ARG COMMIT_HASH=$(cat git-commit.txt)
 
     SAVE IMAGE --push ${OUTPUT_URL}:$COMMIT_HASH
+
+deploy-scan:
+    FROM base+deploy-scan
+
+    RUN \
+        # Succeed for issues of severity = HIGH
+        trivy filesystem --exit-code 0 --severity HIGH --no-progress / && \
+        # Fail for issues of severity = CRITICAL
+        trivy filesystem --exit-code 1 --severity CRITICAL --no-progress /
+        # Fail for any issues
+        # trivy filesystem -d --exit-code 1 --no-progress /
+
+    RUN grype -vv --fail-on medium dir:/
