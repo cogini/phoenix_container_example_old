@@ -27,7 +27,7 @@ services:
     depends_on:
       - postgres
     volumes:
-      - /reports:/reports
+      - /junit-reports:/junit-reports
 volumes:
   db:
     driver: local

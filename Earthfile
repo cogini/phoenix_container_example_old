@@ -305,7 +305,7 @@ test-app:
 
     COPY docker-compose.test.yml ./docker-compose.yml
 
-    RUN mkdir -p /reports
+    RUN mkdir -p /junit-reports
     WITH DOCKER \
             # Image names need to match docker-compose.test.yml
             --pull ${PUBLIC_REGISTRY}${POSTGRES_IMAGE_NAME}:${POSTGRES_IMAGE_TAG} \
@@ -317,7 +317,7 @@ test-app:
             docker-compose run test mix test && \
             docker-compose run test mix test --cover
     END
-    SAVE ARTIFACT /reports /junit-reports AS LOCAL junit-reports
+    SAVE ARTIFACT /junit-reports /junit-reports AS LOCAL junit-reports
 
 test-static:
     FROM ${DIND_IMAGE_NAME}:${DIND_IMAGE_TAG}
