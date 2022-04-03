@@ -108,6 +108,8 @@ phases:
       # - git rev-parse HEAD > git-commit.txt
       - echo "$COMMIT_HASH" > git-commit.txt
 
+      - mkdir -p junit-reports
+
       # Build and run tests
       # AWS ECR doesn't support caching yet, so use Docker Hub for --remote-cache
       # - earthly -P -V --build-arg REGISTRY --build-arg REPO_URL --remote-cache=${REPO_URL}:cache --ci --push +deploy
@@ -117,6 +119,8 @@ phases:
       - docker system df -v
       - docker df -v
       - df -k
+
+      - ls -l junit-reports
 
       # Tag image separately from the build, as the varying IMAGE_TAG screws up caching
       # - docker tag foo-app:latest ${REPO_URL}:${IMAGE_TAG}
