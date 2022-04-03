@@ -26,6 +26,13 @@ ARG CREDO_OPTS=""
 # ARG SOBELOW_OPTS="--exit"
 ARG SOBELOW_OPTS=""
 
+# Fail for issues of severity = HIGH
+# ARG TRIVY_OPTS="--exit-code 1 --severity HIGH"
+# Fail for issues of severity = CRITICAL
+ARG TRIVY_OPTS="--exit-code 1 --severity CRITICAL"
+# Fail for any issues
+# ARG TRIVY_OPTS="-d --exit-code 1"
+
 # Docker registries for base images.
 # If blank, will use docker.io
 # If specified, should have a trailing slash
@@ -512,11 +519,16 @@ deploy-scan:
     FROM base+deploy-scan
 
     RUN \
+        mkdir -p /sarif-reports && \
         # Succeed for issues of severity = HIGH
-        trivy filesystem --exit-code 0 --severity HIGH --no-progress / && \
+        # trivy filesystem $TRIVY_OPTS --format sarif -o /sarif-reports/trivy.high.sarif --exit-code 0 --severity HIGH --no-progress / && \
+        trivy filesystem $TRIVY_OPTS --exit-code 0 --severity HIGH --no-progress / && \
         # Fail for issues of severity = CRITICAL
-        trivy filesystem --exit-code 1 --severity CRITICAL --no-progress /
+        # trivy filesystem $TRIVY_OPTS --format sarif -o /sarif-reports/trivy.sarif --exit-code 1 --severity CRITICAL --no-progress /
         # Fail for any issues
         # trivy filesystem -d --exit-code 1 --no-progress /
+        trivy filesystem --format sarif -o /sarif-reports/trivy.sarif --no-progress $TRIVY_OPTS --no-progress /
 
-    # RUN grype -vv --fail-on medium dir:/
+        # grype -vv --fail-on medium dir:/
+
+    SAVE ARTIFACT /sarif-reports /sarif-reports AS LOCAL sarif-reports
