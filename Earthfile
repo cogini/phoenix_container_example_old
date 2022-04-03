@@ -42,9 +42,9 @@ ARG TRIVY_OPTS="--exit-code 1 --severity CRITICAL"
 ARG REGISTRY=""
 ARG PUBLIC_REGISTRY=$REGISTRY
 
-ARG BASE_OS=debian
+# ARG BASE_OS=debian
 # ARG BASE_OS=alpine
-# ARG BASE_OS=distroless
+ARG BASE_OS=distroless
 # ARG BASE_OS=centos
 # ARG BASE_OS=busybox
 
@@ -287,7 +287,7 @@ test-image-dialyzer:
     # Umbrella
     # COPY --dir apps ./
 
-    SAVE IMAGE --cache-hint
+    # SAVE IMAGE --cache-hint
 
 # Create database for tests
 postgres:
@@ -297,7 +297,8 @@ postgres:
     ENV POSTGRES_PASSWORD=postgres
 
     EXPOSE 5432
-    SAVE IMAGE --cache-hint
+
+    # SAVE IMAGE --cache-hint
 
 # Run app tests in test environment with database
 test-app:
@@ -309,7 +310,8 @@ test-app:
 
     WITH DOCKER \
             # Image names need to match docker-compose.test.yml
-            --pull ${PUBLIC_REGISTRY}${POSTGRES_IMAGE_NAME}:${POSTGRES_IMAGE_TAG} \
+            # --pull ${PUBLIC_REGISTRY}${POSTGRES_IMAGE_NAME}:${POSTGRES_IMAGE_TAG} \
+            --pull ${POSTGRES_IMAGE_NAME}:${POSTGRES_IMAGE_TAG} \
             # --load app-db:latest=+postgres \
             --load test:latest=+test-image \
             --compose docker-compose.yml
@@ -421,7 +423,7 @@ deploy-digest:
     # because a change to application code causes a complete recompile.
     # With the stages separated most of the compilation is cached.
 
-    SAVE IMAGE --cache-hint
+    # SAVE IMAGE --cache-hint
 
 # Create Erlang release
 deploy-release:
