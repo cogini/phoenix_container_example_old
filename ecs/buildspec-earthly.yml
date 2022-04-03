@@ -168,7 +168,7 @@ artifacts:
 #     # - '/root/.cache/trivy/**/*'
 #     # - '/root/.cache/grype/**/*'
 reports:
-  junit-reports:
+  mix-test-reports:
     files:
       # - "_build/test/lib/phoenix_container_example/reports/*.xml"
       - "junit-reports/*.xml"
