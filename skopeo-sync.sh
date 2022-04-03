@@ -2,14 +2,17 @@
 
 # Sync images
 
-skopeo sync --all --src yaml --dest docker skopeo-sync-busybox.yml 770916339360.dkr.ecr.ap-northeast-1.amazonaws.com
-skopeo sync --all --src yaml --dest docker skopeo-sync-alpine.yml 770916339360.dkr.ecr.ap-northeast-1.amazonaws.com
-skopeo sync --all --src yaml --dest docker skopeo-sync-debian.yml 770916339360.dkr.ecr.ap-northeast-1.amazonaws.com
-skopeo sync --all --src yaml --dest docker skopeo-sync-centos.yml 770916339360.dkr.ecr.ap-northeast-1.amazonaws.com
-skopeo sync --all --src yaml --dest docker skopeo-sync-earthly.yml 770916339360.dkr.ecr.ap-northeast-1.amazonaws.com/earthly
-skopeo sync --all --src yaml --dest docker skopeo-sync-ubuntu.yml 770916339360.dkr.ecr.ap-northeast-1.amazonaws.com
-skopeo sync --all --src yaml --dest docker skopeo-sync-postgres.yml 770916339360.dkr.ecr.ap-northeast-1.amazonaws.com
-skopeo sync --all --src yaml --dest docker skopeo-sync-node.yml 770916339360.dkr.ecr.ap-northeast-1.amazonaws.com
-skopeo sync --all --src yaml --dest docker skopeo-sync-mysql.yml 770916339360.dkr.ecr.ap-northeast-1.amazonaws.com
-skopeo sync --all --src yaml --dest docker skopeo-sync-mssql.yml 770916339360.dkr.ecr.ap-northeast-1.amazonaws.com/mssql
-skopeo sync --all --src yaml --dest docker skopeo-sync-hexpm.yml 770916339360.dkr.ecr.ap-northeast-1.amazonaws.com/hexpm
+aws ecr get-login-password | skopeo login -u AWS --password-stdin "$REGISTRY_NOSLASH"
+
+# aws ecr create-repository --repository-name busybox
+skopeo sync --all --src yaml --dest docker skopeo-sync-busybox.yml "$REGISTRY_NOSLASH"
+skopeo sync --all --src yaml --dest docker skopeo-sync-alpine.yml "$REGISTRY_NOSLASH"
+skopeo sync --all --src yaml --dest docker skopeo-sync-debian.yml "$REGISTRY_NOSLASH"
+skopeo sync --all --src yaml --dest docker skopeo-sync-centos.yml "$REGISTRY_NOSLASH"
+skopeo sync --all --src yaml --dest docker skopeo-sync-earthly.yml "${REGISTRY_NOSLASH}/earthly"
+skopeo sync --all --src yaml --dest docker skopeo-sync-ubuntu.yml "$REGISTRY_NOSLASH"
+skopeo sync --all --src yaml --dest docker skopeo-sync-postgres.yml "$REGISTRY_NOSLASH"
+skopeo sync --all --src yaml --dest docker skopeo-sync-node.yml "$REGISTRY_NOSLASH"
+skopeo sync --all --src yaml --dest docker skopeo-sync-mysql.yml "$REGISTRY_NOSLASH"
+skopeo sync --all --src yaml --dest docker skopeo-sync-mssql.yml "$REGISTRY_NOSLASH"
+skopeo sync --all --src yaml --dest docker skopeo-sync-hexpm.yml "${REGISTRY_NOSLASH}/hexpm"
