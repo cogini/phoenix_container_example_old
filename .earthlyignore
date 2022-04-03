@@ -31,6 +31,7 @@ container
 
 artifacts
 reports
+junit-reports
 
 skopeo-*
 
