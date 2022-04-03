@@ -143,27 +143,36 @@ deploy-install:
             # apt-transport-https \
             ca-certificates \
             curl \
-            # gnupg-agent \
+            gnupg-agent \
             # software-properties-common \
-            # gnupg \
+            gnupg \
             unzip \
+            lsb-release \
             locales \
-            # Needed by beam
+            # Needed by Erlang VM
             libtinfo6 \
             && \
-            locale-gen && \
-            apt-get clean && \
-            apt-get autoremove -y && \
-            apt-get purge -y --auto-remove && \
 
-            # info on installed packages
-            # rm -rf /var/lib/dpkg && \
-            # rm -rf /var/cache/debconf && \
-            # Logs for installed packages
-            rm -rf /var/log/apt/* && \
-            rm -rf /var/log/dpkg.log && \
-            # apt-get update files
-            rm -rf /var/lib/apt/lists/*
+        curl -sL https://aquasecurity.github.io/trivy-repo/deb/public.key -o /etc/apt/trusted.gpg.d/trivy.asc && \
+        printf "deb https://aquasecurity.github.io/trivy-repo/deb %s main" "$(lsb_release -sc)" | tee -a /etc/apt/sources.list.d/trivy.list && \
+        apt-get update $APT_OPTS_UPDATE && \
+        apt-get -y install $APT_OPTS trivy && \
+
+        # curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin && \
+
+        locale-gen && \
+        apt-get clean && \
+        apt-get autoremove -y && \
+        apt-get purge -y --auto-remove && \
+
+        # info on installed packages
+        # rm -rf /var/lib/dpkg && \
+        # rm -rf /var/cache/debconf && \
+        # Logs for installed packages
+        rm -rf /var/log/apt/* && \
+        rm -rf /var/log/dpkg.log && \
+        # apt-get update files
+        rm -rf /var/lib/apt/lists/*
 
     # If LANG=C.UTF-8 is not enough, build full featured locale
     # RUN localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
@@ -181,6 +190,10 @@ deploy-install:
     #     rm awscliv2.zip
 
     SAVE ARTIFACT /usr/lib/locale/C.UTF-8
+
+    SAVE ARTIFACT /usr/local/bin/trivy /trivy/bin/trivy
+    SAVE ARTIFACT /usr/local/share/trivy/templates /trivy/share/templates
+    # SAVE ARTIFACT /usr/local/bin/grype
 
     SAVE IMAGE --cache-hint
 
@@ -207,7 +220,7 @@ deploy-base:
     #     echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression
 
     # Create dirs needed by postgresql-client but stripped from slim
-    RUN seq 1 8 | xargs -I{} mkdir -p /usr/share/man/man{}
+    # RUN seq 1 8 | xargs -I{} mkdir -p /usr/share/man/man{}
 
     RUN set -exu && \
         apt-get update $APT_OPTS_UPDATE && \
@@ -265,24 +278,8 @@ deploy-base:
 deploy-scan:
     FROM +deploy-base
 
-    RUN set -exu && \
-        apt-get update $APT_OPTS_UPDATE && \
-        apt-get install $APT_OPTS \
-            apt-transport-https \
-            ca-certificates \
-            curl \
-            gnupg \
-            gnupg-agent \
-            # software-properties-common \
-            lsb-release && \
-
-        curl -sL https://aquasecurity.github.io/trivy-repo/deb/public.key -o /etc/apt/trusted.gpg.d/trivy.asc && \
-        printf "deb https://aquasecurity.github.io/trivy-repo/deb %s main" "$(lsb_release -sc)" | tee -a /etc/apt/sources.list.d/trivy.list && \
-        apt-get update $APT_OPTS_UPDATE && \
-        apt-get -y install $APT_OPTS \
-            trivy \
-        && \
-
-        curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin
+    COPY +deploy-install/trivy/bin/trivy /usr/local/bin/trivy
+    COPY +deploy-install/trivy/share/templates /usr/local/share/trivy/templates
+    # COPY +deploy-install/grype /usr/local/bin/grype
 
     SAVE IMAGE --cache-hint

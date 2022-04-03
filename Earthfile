@@ -518,4 +518,4 @@ deploy-scan:
         # Fail for any issues
         # trivy filesystem -d --exit-code 1 --no-progress /
 
-    RUN grype -vv --fail-on medium dir:/
+    # RUN grype -vv --fail-on medium dir:/
