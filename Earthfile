@@ -507,6 +507,7 @@ deploy:
 
     SAVE IMAGE --push ${OUTPUT_URL}:$COMMIT_HASH
 
+# Scan deploy image for security vulnerabilities
 deploy-scan:
     FROM base+deploy-scan
 
