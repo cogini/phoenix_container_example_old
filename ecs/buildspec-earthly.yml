@@ -107,8 +107,9 @@ phases:
       # Build and run tests
       # - earthly -P -V --build-arg REGISTRY --build-arg REPO_URL --remote-cache=${REPO_URL}:cache --ci --push +deploy
       # AWS ECR doesn't support caching yet, so use Docker Hub for --remote-cache
-      - earthly -P -V --build-arg REGISTRY --remote-cache="cogini/foo-app:cache" --ci --push +all
+      # - earthly -P -V --build-arg REGISTRY --remote-cache="cogini/foo-app:cache" --ci --push +all
       # - earthly -P -V --build-arg REGISTRY --remote-cache="cogini/foo-app:cache" --strict --push +all
+      - earthly -P -V --build-arg REGISTRY --strict --push +all
 
       - docker system df -v
       - docker df -v
