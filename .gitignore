@@ -54,4 +54,8 @@ npm-debug.log
 /artifacts/
 /reports/
 
+# Editor temp files
+*.swp
+
+# macOS junk
 .DS_Store
