@@ -367,6 +367,8 @@ test-dialyzer:
 deploy-deps-compile:
     FROM +build-deps-get
 
+    ENV MIX_ENV=prod
+
     WORKDIR $APP_DIR
 
     RUN mix deps.compile
@@ -513,6 +515,7 @@ deploy:
     # ARG EARTHLY_GIT_HASH
     # ARG COMMIT_HASH=$EARTHLY_GIT_HASH
 
+    # git rev-parse HEAD > git-commit.txt
     COPY git-commit.txt ./
     ARG COMMIT_HASH=$(cat git-commit.txt)
 
