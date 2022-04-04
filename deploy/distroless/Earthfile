@@ -184,7 +184,10 @@ deploy-install:
 
     SAVE ARTIFACT /lib/${LINUX_ARCH}-linux-gnu/libtinfo.so.6 /libs/
     SAVE ARTIFACT /lib/${LINUX_ARCH}-linux-gnu/libgcc_s.so.1 /libs/
-    SAVE ARTIFACT /usr/lib/${LINUX_ARCH}-linux-gnu/libstdc++.so.6 /libs/libstdcpp.so.6
+    # SAVE ARTIFACT /usr/lib/${LINUX_ARCH}-linux-gnu/libstdc++.so.6 /libs/libstdcpp.so.6
+    SAVE ARTIFACT /usr/lib/${LINUX_ARCH}-linux-gnu/libstdc++.so.6.0.28 /libs/libstdcpp.so.6.0.28
+
+    RUN ls -l /usr/lib/${LINUX_ARCH}-linux-gnu/libstdc*
 
     # ldd _build/${MIX_ENV}/rel/${RELEASE}/erts-12.3/bin/beam.smp
     #   linux-vdso.so.1 (0x00007ffd5c302000)
@@ -228,7 +231,12 @@ deploy-base:
     # RUN ln -s /lib/${LINUX_ARCH}-linux-gnu/libtinfo.so.6.2 /lib/${LINUX_ARCH}-linux-gnu/libtinfo.so.6
 
     COPY +deploy-install/libs/libgcc_s.so.1 /lib/${LINUX_ARCH}-linux-gnu/
-    COPY +deploy-install/libs/libstdcpp.so.6 /usr/lib/${LINUX_ARCH}-linux-gnu/libstdc++.so.6
+    # COPY +deploy-install/libs/libstdcpp.so.6 /usr/lib/${LINUX_ARCH}-linux-gnu/libstdc++.so.6
+    COPY +deploy-install/libs/libstdcpp.so.6.0.28 /lib/${LINUX_ARCH}-linux-gnu/libstdc++.so.6.0.28
+    RUN ln -s /lib/${LINUX_ARCH}-linux-gnu/libstdc++.so.6.0.28 /usr/lib/${LINUX_ARCH}-linux-gnu/libstdc++.so.6
+
+    # RUN ls -l /usr/lib/${LINUX_ARCH}-linux-gnu/*
+    # RUN ls -l /lib/${LINUX_ARCH}-linux-gnu/*
 
     # COPY +deploy-install/aws-cli /usr/local/aws-cli
 
