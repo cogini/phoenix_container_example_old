@@ -81,18 +81,11 @@ build-os-deps:
 deploy-base:
     FROM ${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG}
 
-    ENV HOME=$APP_DIR
     ENV LANG=$LANG
 
     # Create OS user and group to run app under
     RUN addgroup -g "$APP_GROUP_ID" -S "$APP_GROUP" && \
         adduser -u "$APP_USER_ID" -S "$APP_USER" -G "$APP_GROUP" -h "$HOME"
-
-    # Create dirs writable by app user
-    RUN mkdir -p "/run/$APP_NAME" && \
-        chown -R "${APP_USER}:${APP_GROUP}" \
-            # Needed for RELEASE_TMP
-            "/run/$APP_NAME"
 
     # Install Alpine runtime libraries
     # See https://wiki.alpinelinux.org/wiki/Local_APK_cache for details
