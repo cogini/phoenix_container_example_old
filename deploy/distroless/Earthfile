@@ -228,7 +228,7 @@ deploy-base:
     # RUN ln -s /lib/${LINUX_ARCH}-linux-gnu/libtinfo.so.6.2 /lib/${LINUX_ARCH}-linux-gnu/libtinfo.so.6
 
     COPY +deploy-install/libs/libgcc_s.so.1 /lib/${LINUX_ARCH}-linux-gnu/
-    COPY +deploy-install/libs/libstdcpp.so.6 /usr/lib/${LINUX_ARCH}-linux-gnu/
+    COPY +deploy-install/libs/libstdcpp.so.6 /usr/lib/${LINUX_ARCH}-linux-gnu/libstdc++.so.6
 
     # COPY +deploy-install/aws-cli /usr/local/aws-cli
 
