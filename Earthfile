@@ -442,6 +442,10 @@ deploy-release:
 
     RUN mix do compile, release "$RELEASE"
 
+    # Find shared libraries needed at runtime
+    # RUN find "_build/${MIX_ENV}/rel/${RELEASE}" -name beam.smp
+    # RUN ldd _build/${MIX_ENV}/rel/${RELEASE}/erts-12.3/bin/beam.smp
+
     # SAVE ARTIFACT "_build/${MIX_ENV}/rel/${RELEASE}" /release AS LOCAL "build/release/${RELEASE}"
     SAVE ARTIFACT "_build/${MIX_ENV}/rel/${RELEASE}" /release
 
