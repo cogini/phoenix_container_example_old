@@ -516,7 +516,7 @@ deploy:
     COPY git-commit.txt ./
     ARG COMMIT_HASH=$(cat git-commit.txt)
 
-    SAVE IMAGE --push ${OUTPUT_URL}:$COMMIT_HASH
+    SAVE IMAGE --push ${OUTPUT_URL}:${COMMIT_HASH}
 
 # Scan deploy image for security vulnerabilities
 deploy-scan:
