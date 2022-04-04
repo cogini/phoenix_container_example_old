@@ -33,8 +33,8 @@ ARG INSTALL_IMAGE_TAG=bullseye-slim
 ARG DEPLOY_IMAGE_NAME=gcr.io/distroless/base-debian11
 # ARG DEPLOY_IMAGE_TAG=debug-nonroot
 # ARG DEPLOY_IMAGE_TAG=latest
-ARG DEPLOY_IMAGE_TAG=debug
 # debug includes busybox
+ARG DEPLOY_IMAGE_TAG=debug
 
 # Set a specific LOCALE
 ARG LANG=C.UTF-8
@@ -49,11 +49,6 @@ ARG TARGETARCH
 # TODO: see if we can get this from `uname -m`
 FROM ${PUBLIC_REGISTRY}busybox
 ARG LINUX_ARCH=$(uname -m)
-# IF [ "$TARGETARCH" = "arm64" ]
-#     ARG LINUX_ARCH=aarch64
-# ELSE IF [ "$TARGETARCH" = "amd64" ]
-#     ARG LINUX_ARCH=x86_64
-# END
 
 # Create build base image with OS dependencies
 build-os-deps:
