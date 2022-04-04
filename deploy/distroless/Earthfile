@@ -182,12 +182,8 @@ deploy-install:
 
     SAVE ARTIFACT /usr/lib/locale/C.UTF-8
 
-    SAVE ARTIFACT /lib/${LINUX_ARCH}-linux-gnu/libtinfo.so.6.2 /libs/
-    # drwxr-xr-x         0:0     375 kB  │   ├── aarch64-linux
-    # drwxr-xr-x         0:0     375 kB  │   │   └── gnu
-    # -rw-r--r--         0:0     188 kB  │   │       ├── libtinfo.so.6
-    # -rw-r--r--         0:0     188 kB  │   │       └── libtinfo.so.6.2
-    SAVE ARTIFACT /lib/${LINUX_ARCH}-linux-gnu/libstdc++.so.6 /libs/
+    SAVE ARTIFACT /lib/${LINUX_ARCH}-linux-gnu/libtinfo.so.6.2 /libs/libtinfo.so.6.2
+    SAVE ARTIFACT /usr/lib/${LINUX_ARCH}-linux-gnu/libstdc++.so.6 /libs/libstdcpp.so.6
 
     # ldd _build/${MIX_ENV}/rel/${RELEASE}/erts-12.3/bin/beam.smp
     #   linux-vdso.so.1 (0x00007ffd5c302000)
@@ -230,7 +226,7 @@ deploy-base:
     COPY +deploy-install/libs/libtinfo.so.6.2 /lib/${LINUX_ARCH}-linux-gnu/
     RUN ln -s /lib/${LINUX_ARCH}-linux-gnu/libtinfo.so.6.2 /lib/${LINUX_ARCH}-linux-gnu/libtinfo.so.6
 
-    COPY +deploy-install/libs/libstdc++.so.6 /lib/${LINUX_ARCH}-linux-gnu/
+    COPY +deploy-install/libs/libstdcpp.so.6 /usr/lib/${LINUX_ARCH}-linux-gnu/libstdc++.so.6
 
     # COPY +deploy-install/aws-cli /usr/local/aws-cli
 
