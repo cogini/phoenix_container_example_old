@@ -207,7 +207,9 @@ deploy-base:
 
     # Create OS user and group to run app under
     RUN groupadd -g "$APP_GROUP_ID" "$APP_GROUP" && \
-        useradd -u "$APP_USER_ID" -g "$APP_GROUP" "$APP_USER"
+        useradd -u "$APP_USER_ID" -g "$APP_GROUP" "$APP_USER" && \
+        rm /var/log/lastlog && \
+        rm /var/log/faillog
 
     COPY +deploy-install/C.UTF-8 /usr/lib/locale/C.UTF-8
 
