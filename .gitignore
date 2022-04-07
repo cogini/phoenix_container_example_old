@@ -53,6 +53,8 @@ npm-debug.log
 
 /artifacts/
 /reports/
+/junit-reports/
+/sarif-reports/
 
 # Editor temp files
 *.swp
