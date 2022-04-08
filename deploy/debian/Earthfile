@@ -160,7 +160,9 @@ deploy-install:
 
         # curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin && \
 
+        # Generate locales specified in /etc/locale.gen
         locale-gen && \
+
         apt-get clean && \
         apt-get autoremove -y && \
         apt-get purge -y --auto-remove && \
@@ -168,6 +170,7 @@ deploy-install:
         # info on installed packages
         # rm -rf /var/lib/dpkg && \
         # rm -rf /var/cache/debconf && \
+        # rm -rf /var/cache/apt/archives/*
         # Logs for installed packages
         rm -rf /var/log/apt/* && \
         rm -rf /var/log/dpkg.log && \
