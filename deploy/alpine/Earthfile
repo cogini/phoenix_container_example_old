@@ -23,22 +23,21 @@ ARG DEPLOY_IMAGE_TAG=$ALPINE_VERSION
 # App name, used to name directories
 ARG APP_NAME=app
 
-# OS user that app runs under
-# ARG APP_USER=app
+# Additional packages to install
+ARG BUILD_EXTRA=""
+ARG INSTALL_EXTRA=""
+ARG DEPLOY_EXTRA=""
+
+# OS user for app to run under
+# Distroless user
+# nonroot:x:65532:65532:nonroot:/home/nonroot:/sbin/nologin
 ARG APP_USER=nonroot
-
 # OS group that app runs under
-ARG APP_GROUP="$APP_USER"
-
+ARG APP_GROUP=$APP_USER
+# OS numeric user and group id
 ARG APP_USER_ID=65532
 ARG APP_GROUP_ID=$APP_USER_ID
 
-# Dir that app runs under
-ARG APP_DIR=/app
-
-ARG HOME=$APP_DIR
-
-# Set a specific LOCALE
 ARG LANG=C.UTF-8
 
 # By default, packages come from the APK index for the base Alpine image.
@@ -58,6 +57,7 @@ build-os-deps:
     # See https://wiki.alpinelinux.org/wiki/Local_APK_cache for details
     # on the local cache and need for the symlink
     RUN --mount=type=cache,target=/var/cache/apk \
+        set -ex && \
         $APK_UPDATE && $APK_UPGRADE && \
         # Install build tools
         # apk add --no-progress alpine-sdk && \
@@ -81,16 +81,20 @@ build-os-deps:
 deploy-base:
     FROM ${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG}
 
-    ENV LANG=$LANG
-
     # Create OS user and group to run app under
-    RUN addgroup -g "$APP_GROUP_ID" -S "$APP_GROUP" && \
-        adduser -u "$APP_USER_ID" -S "$APP_USER" -G "$APP_GROUP" -h "$HOME"
+    # https://wiki.alpinelinux.org/wiki/Setting_up_a_new_user#adduser
+    RUN set -ex && \
+        addgroup -g "$APP_GROUP_ID" -S "$APP_GROUP" && \
+        adduser -u "$APP_USER_ID" -S "$APP_USER" -G "$APP_GROUP"
+        # adduser -u "$APP_USER_ID" -S "$APP_USER" -G "$APP_GROUP" -h "$HOME"
+
+    ENV LANG=$LANG
 
     # Install Alpine runtime libraries
     # See https://wiki.alpinelinux.org/wiki/Local_APK_cache for details
     # on the local cache and need for the symlink
     RUN --mount=type=cache,target=/var/cache/apk \
+        set -ex && \
         ln -s /var/cache/apk /etc/apk/cache && \
         # Upgrading ensures that we get the latest packages, but makes the build nondeterministic
         $APK_UPDATE && $APK_UPGRADE && \
@@ -101,10 +105,9 @@ deploy-base:
         # https://github.com/sourcegraph/godockerize/commit/5cf4e6d81720f2551e6a7b2b18c63d1460bbbe4e
         # apk add bind-tools && \
 
-        # Install openssl, allowing the app to listen on HTTPS.
+        # Install openssl, allowing app to listen on HTTPS.
         # May not be needed if HTTPS is handled outside the application, e.g. in load balancer.
         apk add openssl ncurses-libs
-
 
     SAVE IMAGE --cache-hint
 
@@ -114,10 +117,12 @@ deploy-scan:
 
     USER root
 
-    RUN apk add curl && \
+    RUN --mount=type=cache,target=/var/cache/apk \
+        set -ex && \
+        apk add curl && \
         curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
 
-    RUN \
+    RUN set -ex && \
         # Succeed for issues of severity = HIGH
         trivy filesystem --exit-code 0 --severity HIGH --no-progress / && \
         # Fail for issues of severity = CRITICAL
