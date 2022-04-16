@@ -16,28 +16,6 @@ ARG ELIXIR_DEBIAN_VERSION=bullseye-20210902-slim
 # ARG DEBIAN_VERSION=buster-slim
 ARG DEBIAN_VERSION=bullseye-slim
 
-ARG POSTGRES_IMAGE_NAME=postgres
-ARG POSTGRES_IMAGE_TAG=14.1-alpine
-
-ARG MYSQL_IMAGE_NAME=mysql
-ARG MYSQL_IMAGE_TAG=5.7.10
-
-ARG DATADOG_IMAGE_NAME=gcr.io/datadoghq/agent
-ARG DATADOG_IMAGE_TAG=latest
-
-# ARG CREDO_OPTS="--ignore refactor,duplicated --mute-exit-status"
-ARG CREDO_OPTS=""
-
-# ARG SOBELOW_OPTS="--exit"
-ARG SOBELOW_OPTS=""
-
-# Fail for issues of severity = HIGH
-# ARG TRIVY_OPTS="--exit-code 1 --severity HIGH"
-# Fail for issues of severity = CRITICAL
-ARG TRIVY_OPTS="--exit-code 1 --severity CRITICAL"
-# Fail for any issues
-# ARG TRIVY_OPTS="-d --exit-code 1"
-
 # Docker registries for base images. If blank, will use docker.io.
 # If specified, should have a trailing slash.
 # REGISTRY is a private registry, e.g. 123.dkr.ecr.ap-northeast-1.amazonaws.com/
@@ -45,6 +23,15 @@ ARG TRIVY_OPTS="--exit-code 1 --severity CRITICAL"
 # Public images may be mirrored into the private registry, e.g. with skopeo
 ARG REGISTRY=""
 ARG PUBLIC_REGISTRY=$REGISTRY
+
+ARG POSTGRES_IMAGE_NAME=${PUBLIC_REGISTRY}postgres
+ARG POSTGRES_IMAGE_TAG=14.1-alpine
+
+ARG MYSQL_IMAGE_NAME=${PUBLIC_REGISTRY}mysql
+ARG MYSQL_IMAGE_TAG=5.7.10
+
+ARG DATADOG_IMAGE_NAME=gcr.io/datadoghq/agent
+ARG DATADOG_IMAGE_TAG=latest
 
 ARG BASE_OS=debian
 # ARG BASE_OS=alpine
@@ -137,18 +124,32 @@ ARG RELEASE=prod
 #   ]
 # end
 
+# App listen port
+ARG APP_PORT=4000
+
+# ARG CREDO_OPTS="--ignore refactor,duplicated --mute-exit-status"
+ARG CREDO_OPTS=""
+
+# ARG SOBELOW_OPTS="--exit"
+ARG SOBELOW_OPTS=""
+
+# Fail for issues of severity = HIGH
+# ARG TRIVY_OPTS="--exit-code 1 --severity HIGH"
+# Fail for issues of severity = CRITICAL
+ARG TRIVY_OPTS="--exit-code 1 --severity CRITICAL"
+# Fail for any issues
+# ARG TRIVY_OPTS="-d --exit-code 1"
+
 # App name, used to name directories
 ARG APP_NAME=app
 
 # OS user that app runs under
-# ARG APP_USER=app
 ARG APP_USER=nonroot
 # OS group that app runs under
 ARG APP_GROUP=$APP_USER
 
 # Dir that app runs under
 ARG APP_DIR=/app
-ARG HOME=$APP_DIR
 
 # Build cache dirs
 ARG MIX_HOME=/opt/mix
@@ -156,9 +157,6 @@ ARG HEX_HOME=/opt/hex
 ARG XDG_CACHE_HOME=/opt/cache
 
 ARG LANG=C.UTF-8
-
-# App listen port
-ARG APP_PORT=4000
 
 # ARG http_proxy
 # ARG https_proxy=$http_proxy
@@ -184,10 +182,6 @@ all:
 test:
     BUILD +test-app
     BUILD +test-static
-    # BUILD +test-credo
-    # BUILD +test-format
-    # BUILD +test-deps-audit
-    # BUILD +test-sobelow
     # BUILD +test-dialyzer
 
 # Internal targets
@@ -288,7 +282,7 @@ test-image-dialyzer:
 
 # Create database for tests
 postgres:
-    FROM ${PUBLIC_REGISTRY}${POSTGRES_IMAGE_NAME}:${POSTGRES_IMAGE_TAG}
+    FROM ${POSTGRES_IMAGE_NAME}:${POSTGRES_IMAGE_TAG}
 
     ENV POSTGRES_USER=postgres
     ENV POSTGRES_PASSWORD=postgres
@@ -307,7 +301,6 @@ test-app:
 
     WITH DOCKER \
             # Image names need to match docker-compose.test.yml
-            # --pull ${PUBLIC_REGISTRY}${POSTGRES_IMAGE_NAME}:${POSTGRES_IMAGE_TAG} \
             --pull ${POSTGRES_IMAGE_NAME}:${POSTGRES_IMAGE_TAG} \
             # --pull ${MYSQL_IMAGE_NAME}:${MYSQL_IMAGE_TAG} \
             # --load app-db:latest=+postgres \
