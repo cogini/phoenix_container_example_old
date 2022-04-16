@@ -15,31 +15,29 @@ ARG ELIXIR_DEBIAN_VERSION=bullseye-20210902-slim
 # ARG DEBIAN_VERSION=buster-slim
 ARG DEBIAN_VERSION=bullseye-slim
 
-# Docker registry for base images, default is docker.io
-# If specified, should have a trailing slash
+# Docker registries for base images. If blank, will use docker.io.
+# If specified, should have a trailing slash.
+# REGISTRY is a private registry, e.g. 123.dkr.ecr.ap-northeast-1.amazonaws.com/
+# PUBLIC_REGISTRY is for public base images, e.g. debian or alpine
+# Public images may be mirrored into the private registry, e.g. with skopeo
 ARG REGISTRY=""
 ARG PUBLIC_REGISTRY=$REGISTRY
 
 ARG BUILD_IMAGE_NAME=${PUBLIC_REGISTRY}hexpm/elixir
 ARG BUILD_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-${ELIXIR_DEBIAN_VERSION}
 
-ARG INSTALL_IMAGE_NAME=${PUBLIC_REGISTRY}debian
-ARG INSTALL_IMAGE_TAG=bullseye-slim
-
-# Deploy base image
 ARG DEPLOY_IMAGE_NAME=${PUBLIC_REGISTRY}debian
-# ARG DEPLOY_IMAGE_TAG=buster-slim
-ARG DEPLOY_IMAGE_TAG=bullseye-slim
+ARG DEPLOY_IMAGE_TAG=$DEBIAN_VERSION
 
-# App name, used to name directories
-ARG APP_NAME=app
+ARG INSTALL_IMAGE_NAME=$DEPLOY_IMAGE_NAME
+ARG INSTALL_IMAGE_TAG=$DEPLOY_IMAGE_TAG
 
 # OS user for app to run under
 # Distroless user
 # nonroot:x:65532:65532:nonroot:/home/nonroot:/sbin/nologin
 ARG APP_USER=nonroot
 # OS group that app runs under
-ARG APP_GROUP="$APP_USER"
+ARG APP_GROUP=$APP_USER
 # OS numeric user and group id
 ARG APP_USER_ID=65532
 ARG APP_GROUP_ID=$APP_USER_ID
@@ -47,27 +45,32 @@ ARG APP_GROUP_ID=$APP_USER_ID
 ARG LANG=C.UTF-8
 
 # Make apt-get be quiet
-ARG DEBIAN_FRONTEND=noninteractive
-ARG APT_OPTS="-y -qq -o=Dpkg::Use-Pty=0 --no-install-recommends"
-ARG APT_OPTS_UPDATE="-qq --no-install-recommends"
+# ARG DEBIAN_FRONTEND=noninteractive
+# ARG APT_OPTS="-y -qq -o=Dpkg::Use-Pty=0 --no-install-recommends"
+# ARG APT_OPTS_UPDATE="-qq"
 
 # Create build base image with OS dependencies
 build-os-deps:
     FROM ${BUILD_IMAGE_NAME}:${BUILD_IMAGE_TAG}
 
     # Configure apt caching for use with BuildKit
-    # The default Debian image has special config to avoid caching, but we may want it.
-    # RUN set -exu \
-    #     && rm -f /etc/apt/apt.conf.d/docker-clean \
-    #     && printf 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache \
-    #     && printf 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression
-
+    # The default Debian Docker image has special config to clear caches.
+    # If we are using --mount=type=cache, then we want it.
     RUN set -exu && \
-        apt-get update $APT_OPTS_UPDATE && \
-        # Avoid warnings
+        rm -f /etc/apt/apt.conf.d/docker-clean && \
+        echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache && \
+        echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression
+
+    RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
+        --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
+        --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
+        set -exu && \
+        apt-get update -qq && \
+        # Avoid warnings on older versions of Debian/Ubuntu
         # apt-get -y install $APT_OPTS dialog apt-utils && \
         # Enable installation of packages over https
-        apt-get -y install $APT_OPTS \
+        DEBIAN_FRONTEND=noninteractive \
+        apt-get -y install -y -qq --no-install-recommends \
             apt-transport-https \
             ca-certificates \
             curl \
@@ -77,48 +80,46 @@ build-os-deps:
             build-essential \
             git \
             lsb-release \
+
             && \
-
-            # node needs python2
-            # python-dev \
-            # python-minimal \
-            # python-pip \
-            # python-setuptools && \
-
-            # Installed via pip
-            # python-virtualenv \
-
-            # python3-dev \
-            # python3-minimal \
-            # python3-pip \
-            # python3-setuptools \
 
         # Install node using n
         curl -L https://raw.githubusercontent.com/tj/n/master/bin/n -o /usr/local/bin/n && \
         chmod +x /usr/local/bin/n && \
         # Install lts version
-        # && n lts \
+        # n lts && \
         # Install specific version
         n "$NODE_VERSION" && \
         rm /usr/local/bin/n
 
-        # Latest postgres
+        # Install latest Postgres
         # curl -sL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /etc/apt/trusted.gpg.d/postgresql-ACCC4CF8.asc && \
         # echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -sc)-pgdg main" | tee /etc/apt/sources.list.d/pgdg.list && \
         # echo "Package: *\nPin: release o=apt.postgresql.org\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/pgdg.pref && \
-        # apt-get update $APT_OPTS_UPDATE && \
+        # apt-get update -qq && \
         # apt-get -y install $APT_OPTS \
         #     libpq-dev \
         #     postgresql-client &&
 
-        # Microsoft ODBC Driver for SQL Server
+        # Install Microsoft ODBC Driver for SQL Server
         # curl -sL https://packages.microsoft.com/keys/microsoft.asc -o /etc/apt/trusted.gpg.d/microsoft.asc && \
         # curl -s https://packages.microsoft.com/config/debian/11/prod.list -o /etc/apt/sources.list.d/mssql-release.list && \
         # export ACCEPT_EULA=Y && \
-        # apt-get -qq update $APT_OPTS_UPDATE && apt-get -y install $APT_OPTS msodbcsql17 && \
+        # apt-get -qq update -qq && apt-get -y install $APT_OPTS msodbcsql17 && \
         # rm -rf /var/lib/dpkg &&
 
         # apt-get clean &&
+        # apt-get remove curl \
+        # apt-get clean && \
+        # apt-get autoremove -y && \
+        # apt-get purge -y --auto-remove && \
+        # info on installed packages
+        # rm -rf /var/lib/dpkg && \
+        # rm -rf /var/cache/debconf && \
+        # Logs for installed packages
+        rm -rf /var/log/apt/* && \
+        rm -rf /var/log/dpkg.log
+        # apt-get update files
         # rm -rf /var/lib/apt/lists/*
 
     SAVE IMAGE --cache-hint
@@ -128,18 +129,19 @@ deploy-install:
     FROM ${INSTALL_IMAGE_NAME}:${INSTALL_IMAGE_TAG}
 
     # Configure apt caching for use with BuildKit
-    # RUN set -exu && \
-    #     rm -f /etc/apt/apt.conf.d/docker-clean && \
-    #     echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache && \
-    #     echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression
-
     RUN set -exu && \
-        apt-get update $APT_OPTS_UPDATE && \
+        rm -f /etc/apt/apt.conf.d/docker-clean && \
+        echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache && \
+        echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression
+
+    RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
+        --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
+        --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
+        set -exu && \
+        apt-get update -qq && \
         # Avoid warnings
         # apt-get -y install $APT_OPTS dialog apt-utils \
-
-        # Enable installation of packages over https
-        apt-get -y install $APT_OPTS \
+        apt-get -y install -y -qq --no-install-recommends \
             # apt-transport-https \
             ca-certificates \
             curl \
@@ -155,24 +157,24 @@ deploy-install:
 
         curl -sL https://aquasecurity.github.io/trivy-repo/deb/public.key -o /etc/apt/trusted.gpg.d/trivy.asc && \
         printf "deb https://aquasecurity.github.io/trivy-repo/deb %s main" "$(lsb_release -sc)" | tee -a /etc/apt/sources.list.d/trivy.list && \
-        apt-get update $APT_OPTS_UPDATE && \
+        apt-get update -qq && \
         apt-get -y install $APT_OPTS trivy && \
 
         # curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin && \
 
         locale-gen && \
-        apt-get clean && \
-        apt-get autoremove -y && \
-        apt-get purge -y --auto-remove && \
 
+        # apt-get clean && \
+        # apt-get autoremove -y && \
+        # apt-get purge -y --auto-remove && \
         # info on installed packages
         # rm -rf /var/lib/dpkg && \
         # rm -rf /var/cache/debconf && \
         # Logs for installed packages
         rm -rf /var/log/apt/* && \
-        rm -rf /var/log/dpkg.log && \
+        rm -rf /var/log/dpkg.log
         # apt-get update files
-        rm -rf /var/lib/apt/lists/*
+        # rm -rf /var/lib/apt/lists/*
 
     # If LANG=C.UTF-8 is not enough, build full featured locale
     # RUN localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
@@ -216,17 +218,18 @@ deploy-base:
     ENV LANG=$LANG
 
     # Configure apt caching for use with BuildKit
-    # RUN set -exu && \
-    #     rm -f /etc/apt/apt.conf.d/docker-clean && \
-    #     echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache && \
-    #     echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression
+    RUN set -exu && \
+        rm -f /etc/apt/apt.conf.d/docker-clean && \
+        echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache && \
+        echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression
 
     # Create dirs needed by postgresql-client but stripped from slim
     # RUN seq 1 8 | xargs -I{} mkdir -p /usr/share/man/man{}
 
     RUN set -exu && \
-        apt-get update $APT_OPTS_UPDATE && \
-        apt-get install $APT_OPTS \
+        apt-get update -qq && \
+        DEBIAN_FRONTEND=noninteractive \
+        apt-get -y install -y -qq --no-install-recommends \
             ca-certificates \
 
             # Install openssl, allowing the app to listen on HTTPS.
@@ -237,7 +240,7 @@ deploy-base:
             # tini \
             # bind-utils \
 
-            # Needed by Erlang runtime
+            # Needed by Erlang VM
             libtinfo6 \
 
             # Default Postgres
@@ -261,18 +264,18 @@ deploy-base:
             # apt-get -qq update && apt-get -y install $APT_OPTS msodbcsql17 && \
             && \
         # apt-get remove curl \
-        apt-get clean && \
-        apt-get autoremove -y && \
-        apt-get purge -y --auto-remove && \
+        # apt-get clean && \
+        # apt-get autoremove -y && \
+        # apt-get purge -y --auto-remove && \
 
         # info on installed packages
         # rm -rf /var/lib/dpkg && \
         # rm -rf /var/cache/debconf && \
         # Logs for installed packages
         rm -rf /var/log/apt/* && \
-        rm -rf /var/log/dpkg.log && \
+        rm -rf /var/log/dpkg.log
         # apt-get update files
-        rm -rf /var/lib/apt/lists/*
+        # rm -rf /var/lib/apt/lists/*
 
     SAVE IMAGE --cache-hint
 
