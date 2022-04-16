@@ -1,4 +1,4 @@
-# Build Elixir/Phoenix app
+VERSION --shell-out-anywhere --use-copy-include-patterns --referenced-save-only 0.6
 
 # App versions
 ARG ELIXIR_VERSION=1.13.3
@@ -145,6 +145,7 @@ deploy-install:
         apt-get update -qq && \
         # Avoid warnings
         # apt-get -y install $APT_OPTS dialog apt-utils \
+        DEBIAN_FRONTEND=noninteractive \
         apt-get -y install -y -qq --no-install-recommends \
             # apt-transport-https \
             ca-certificates \
@@ -162,7 +163,7 @@ deploy-install:
         curl -sL https://aquasecurity.github.io/trivy-repo/deb/public.key -o /etc/apt/trusted.gpg.d/trivy.asc && \
         printf "deb https://aquasecurity.github.io/trivy-repo/deb %s main" "$(lsb_release -sc)" | tee -a /etc/apt/sources.list.d/trivy.list && \
         apt-get update -qq && \
-        apt-get -y install $APT_OPTS trivy && \
+        apt-get -y install -y -qq --no-install-recommends trivy && \
 
         # curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin && \
 
@@ -268,11 +269,11 @@ deploy-base:
             # apt-get -qq update && apt-get -y install $APT_OPTS msodbcsql17 && \
 
             $DEPLOY_EXTRA && \
+
         # apt-get remove curl \
         # apt-get clean && \
         # apt-get autoremove -y && \
         # apt-get purge -y --auto-remove && \
-
         # info on installed packages
         # rm -rf /var/lib/dpkg && \
         # rm -rf /var/cache/debconf && \
