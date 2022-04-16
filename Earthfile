@@ -1,5 +1,4 @@
 # Build Elixir/Phoenix app
-# VERSION --parallel-load --shell-out-anywhere 0.6
 VERSION --shell-out-anywhere --use-copy-include-patterns --referenced-save-only 0.6
 
 ARG ELIXIR_VERSION=1.13.3
@@ -20,6 +19,12 @@ ARG DEBIAN_VERSION=bullseye-slim
 ARG POSTGRES_IMAGE_NAME=postgres
 ARG POSTGRES_IMAGE_TAG=14.1-alpine
 
+ARG MYSQL_IMAGE_NAME=mysql
+ARG MYSQL_IMAGE_TAG=5.7.10
+
+ARG DATADOG_IMAGE_NAME=gcr.io/datadoghq/agent
+ARG DATADOG_IMAGE_TAG=latest
+
 # ARG CREDO_OPTS="--ignore refactor,duplicated --mute-exit-status"
 ARG CREDO_OPTS=""
 
@@ -33,17 +38,16 @@ ARG TRIVY_OPTS="--exit-code 1 --severity CRITICAL"
 # Fail for any issues
 # ARG TRIVY_OPTS="-d --exit-code 1"
 
-# Docker registries for base images.
-# If blank, will use docker.io
-# If specified, should have a trailing slash
+# Docker registries for base images. If blank, will use docker.io.
+# If specified, should have a trailing slash.
 # REGISTRY is a private registry, e.g. 123.dkr.ecr.ap-northeast-1.amazonaws.com/
 # PUBLIC_REGISTRY is for public base images, e.g. debian or alpine
 # Public images may be mirrored into the private registry, e.g. with skopeo
 ARG REGISTRY=""
 ARG PUBLIC_REGISTRY=$REGISTRY
 
-ARG BASE_OS=debian
-# ARG BASE_OS=alpine
+# ARG BASE_OS=debian
+ARG BASE_OS=alpine
 # ARG BASE_OS=distroless
 # ARG BASE_OS=centos
 # ARG BASE_OS=busybox
@@ -57,6 +61,16 @@ IF [ "$BASE_OS" = "alpine" ]
     ARG DEPLOY_IMAGE_TAG=$ALPINE_VERSION
 
     IMPORT ./deploy/alpine AS base
+ELSE IF [ "$BASE_OS" = "debian" ]
+    # Build image
+    ARG BUILD_IMAGE_NAME=${PUBLIC_REGISTRY}hexpm/elixir
+    ARG BUILD_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-${ELIXIR_DEBIAN_VERSION}
+
+    # Deploy base image
+    ARG DEPLOY_IMAGE_NAME=${PUBLIC_REGISTRY}debian
+    ARG DEPLOY_IMAGE_TAG=$DEBIAN_VERSION
+
+    IMPORT ./deploy/debian AS base
 ELSE IF [ "$BASE_OS" = "distroless" ]
     ARG BUILD_IMAGE_NAME=${PUBLIC_REGISTRY}hexpm/elixir
     ARG BUILD_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-${ELIXIR_DEBIAN_VERSION}
@@ -96,16 +110,6 @@ ELSE IF [ "$BASE_OS" = "centos" ]
     COPY .tool-versions ./
 
     IMPORT ./deploy/centos AS base
-ELSE IF [ "$BASE_OS" = "debian" ]
-    # Build image
-    ARG BUILD_IMAGE_NAME=${PUBLIC_REGISTRY}hexpm/elixir
-    ARG BUILD_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-${ELIXIR_DEBIAN_VERSION}
-
-    # Deploy base image
-    ARG DEPLOY_IMAGE_NAME=${PUBLIC_REGISTRY}debian
-    ARG DEPLOY_IMAGE_TAG=$DEBIAN_VERSION
-
-    IMPORT ./deploy/debian AS base
 END
 
 # Docker-in-Docker host image, used to run tests
@@ -140,7 +144,7 @@ ARG APP_NAME=app
 # ARG APP_USER=app
 ARG APP_USER=nonroot
 # OS group that app runs under
-ARG APP_GROUP="$APP_USER"
+ARG APP_GROUP=$APP_USER
 
 # Dir that app runs under
 ARG APP_DIR=/app
@@ -151,7 +155,6 @@ ARG MIX_HOME=/opt/mix
 ARG HEX_HOME=/opt/hex
 ARG XDG_CACHE_HOME=/opt/cache
 
-# Set a specific LOCALE
 ARG LANG=C.UTF-8
 
 # App listen port
@@ -160,11 +163,7 @@ ARG APP_PORT=4000
 # ARG http_proxy
 # ARG https_proxy=$http_proxy
 
-ARG RUNTIME_PKGS="ca-certificates shared-mime-info tzdata"
-# Left blank, allowing additional packages to be injected
-ARG DEV_PKGS=""
-
-# The inner buildkit requires Docker hub creds to prevent rate-limiting issues.
+# The inner buildkit requires Docker hub login to prevent rate-limiting.
 # ARG DOCKERHUB_USER_SECRET
 # ARG DOCKERHUB_TOKEN_SECRET
 # RUN --secret USERNAME=$DOCKERHUB_USER_SECRET \
@@ -193,12 +192,11 @@ test:
 
 # Internal targets
 
-# Get app deps
+# Get app dependencies
 build-deps-get:
     FROM base+build-os-deps \
         --REGISTRY=$REGISTRY --PUBLIC_REGISTRY=$PUBLIC_REGISTRY \
         --BUILD_IMAGE_NAME=$BUILD_IMAGE_NAME --BUILD_IMAGE_TAG=$BUILD_IMAGE_TAG \
-        --OUTPUT_URL=$OUTPUT_URL \
         --APP_DIR=$APP_DIR --APP_USER=$APP_USER --APP_GROUP=$APP_GROUP
 
     WORKDIR $APP_DIR
@@ -212,7 +210,6 @@ build-deps-get:
 
     RUN mix esbuild.install
 
-    # SAVE ARTIFACT deps /deps
     SAVE IMAGE --cache-hint
 
 # Compile deps separately from application, allowing it to be cached
@@ -312,7 +309,9 @@ test-app:
             # Image names need to match docker-compose.test.yml
             # --pull ${PUBLIC_REGISTRY}${POSTGRES_IMAGE_NAME}:${POSTGRES_IMAGE_TAG} \
             --pull ${POSTGRES_IMAGE_NAME}:${POSTGRES_IMAGE_TAG} \
+            # --pull ${MYSQL_IMAGE_NAME}:${MYSQL_IMAGE_TAG} \
             # --load app-db:latest=+postgres \
+            # --load postgres:latest=+postgres \
             --load test:latest=+test-image \
             --compose docker-compose.yml
         RUN \
@@ -331,30 +330,6 @@ test-static:
             docker run test mix credo ${CREDO_OPTS} && \
             docker run test mix deps.audit && \
             docker run test mix sobelow ${SOBELOW_OPTS}
-    END
-
-test-credo:
-    FROM ${DIND_IMAGE_NAME}:${DIND_IMAGE_TAG}
-    WITH DOCKER --load test:latest=+test-image
-        RUN docker run test mix credo ${CREDO_OPTS}
-    END
-
-test-format:
-    FROM ${DIND_IMAGE_NAME}:${DIND_IMAGE_TAG}
-    WITH DOCKER --load test:latest=+test-image
-        RUN docker run test mix format --check-formatted
-    END
-
-test-deps-audit:
-    FROM ${DIND_IMAGE_NAME}:${DIND_IMAGE_TAG}
-    WITH DOCKER --load test:latest=+test-image
-        RUN docker run test mix deps.audit
-    END
-
-test-sobelow:
-    FROM ${DIND_IMAGE_NAME}:${DIND_IMAGE_TAG}
-    WITH DOCKER --load test:latest=+test-image
-        RUN docker run test mix sobelow ${SOBELOW_OPTS}
     END
 
 test-dialyzer:
