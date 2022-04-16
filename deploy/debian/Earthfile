@@ -94,7 +94,7 @@ build-os-deps:
         # n lts && \
         # Install specific version
         n "$NODE_VERSION" && \
-        rm /usr/local/bin/n
+        rm /usr/local/bin/n && \
 
         # Install latest Postgres
         # curl -sL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /etc/apt/trusted.gpg.d/postgresql-ACCC4CF8.asc && \
