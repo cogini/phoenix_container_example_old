@@ -32,6 +32,11 @@ ARG DEPLOY_IMAGE_TAG=$DEBIAN_VERSION
 ARG INSTALL_IMAGE_NAME=$DEPLOY_IMAGE_NAME
 ARG INSTALL_IMAGE_TAG=$DEPLOY_IMAGE_TAG
 
+# Additional packages to install
+ARG BUILD_EXTRA=""
+ARG INSTALL_EXTRA=""
+ARG DEPLOY_EXTRA=""
+
 # OS user for app to run under
 # Distroless user
 # nonroot:x:65532:65532:nonroot:/home/nonroot:/sbin/nologin
@@ -80,8 +85,7 @@ build-os-deps:
             build-essential \
             git \
             lsb-release \
-
-            && \
+            $BUILD_EXTRA && \
 
         # Install node using n
         curl -L https://raw.githubusercontent.com/tj/n/master/bin/n -o /usr/local/bin/n && \
@@ -153,7 +157,7 @@ deploy-install:
             locales \
             # Needed by Erlang VM
             libtinfo6 \
-            && \
+            $INSTALL_EXTRA && \
 
         curl -sL https://aquasecurity.github.io/trivy-repo/deb/public.key -o /etc/apt/trusted.gpg.d/trivy.asc && \
         printf "deb https://aquasecurity.github.io/trivy-repo/deb %s main" "$(lsb_release -sc)" | tee -a /etc/apt/sources.list.d/trivy.list && \
@@ -232,7 +236,7 @@ deploy-base:
         apt-get -y install -y -qq --no-install-recommends \
             ca-certificates \
 
-            # Install openssl, allowing the app to listen on HTTPS.
+            # Install openssl, allowing app to listen on HTTPS.
             # May not be needed if handled outside the application (e.g. in load balancer).
             openssl \
 
@@ -262,7 +266,8 @@ deploy-base:
             # curl -s https://packages.microsoft.com/config/debian/11/prod.list -o /etc/apt/sources.list.d/mssql-release.list && \
             # export ACCEPT_EULA=Y && \
             # apt-get -qq update && apt-get -y install $APT_OPTS msodbcsql17 && \
-            && \
+
+            $DEPLOY_EXTRA && \
         # apt-get remove curl \
         # apt-get clean && \
         # apt-get autoremove -y && \
