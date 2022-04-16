@@ -80,8 +80,6 @@ ARG https_proxy
 
 ARG LANG
 
-# Install tools and libraries to build binary libraries
-# Not necessary for a minimal Phoenix app, but likely needed
 ARG DEBIAN_FRONTEND
 ARG APT_OPTS
 ARG APT_OPTS_UPDATE
@@ -95,6 +93,8 @@ RUN set -exu \
     && printf 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache \
     && printf 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression
 
+# Install tools and libraries to build binary libraries
+# Not necessary for a minimal Phoenix app, but likely needed
 RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
     --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
@@ -102,8 +102,8 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     && apt-get update $APT_OPTS_UPDATE \
     # Avoid warnings
     # && apt-get -y install $APT_OPTS dialog apt-utils \
-    # Enable installation of packages over https
     && apt-get -y install $APT_OPTS \
+        # Enable installation of packages over https
         apt-transport-https \
         ca-certificates \
         curl \
@@ -537,6 +537,7 @@ RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
     # && curl -s https://packages.microsoft.com/config/debian/10/prod.list -o /etc/apt/sources.list.d/mssql-release.list \
     # && export ACCEPT_EULA=Y \
     # && apt-get -qq update && apt-get -y install $APT_OPTS msodbcsql17 \
+
     # && rm -rf /var/lib/dpkg
     # && rm -rf /var/lib/apt/lists/*
 
