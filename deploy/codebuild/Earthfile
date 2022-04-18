@@ -7,19 +7,18 @@ ARG DOCKER_COMPOSE_VERSION=v2.1.0
 ARG AWS_CLI_VERSION=2.0.61
 
 # Version of earthly to install on target
-ARG EARTHLY_VERSION_NUMBER=v0.6.12
+ARG EARTHLY_VERSION_NUMBER=v0.6.14
 # ARG EARTHLY_VERSION
 # ARG EARTHLY_VERSION_NUMBER=$EARTHLY_VERSION
-
-ARG BASE_IMAGE=ubuntu
-ARG BASE_IMAGE_TAG=focal
 
 # Docker registry for base images, default is docker.io
 # If specified, should have a trailing slash
 # REGISTRY=123.dkr.ecr.ap-northeast-1.amazonaws.com/
 ARG REGISTRY=""
-
 ARG PUBLIC_REGISTRY=$REGISTRY
+
+ARG BASE_IMAGE=${PUBLIC_REGISTRY}ubuntu
+ARG BASE_IMAGE_TAG=focal
 
 # Output image
 # ARG EARTHLY_GIT_HASH
@@ -28,9 +27,9 @@ ARG OUTPUT_IMAGE_TAG=latest
 ARG OUTPUT_URL="${REGISTRY}${OUTPUT_IMAGE_NAME}"
 
 # Make apt-get be quiet
-ARG DEBIAN_FRONTEND=noninteractive
-ARG APT_OPTS="-y -qq -o=Dpkg::Use-Pty=0 --no-install-recommends"
-ARG APT_OPTS_UPDATE="-qq"
+# ARG DEBIAN_FRONTEND=noninteractive
+# ARG APT_OPTS="-y -qq -o=Dpkg::Use-Pty=0 --no-install-recommends"
+# ARG APT_OPTS_UPDATE="-qq"
 
 # Create non-root user
 ARG APP_USER=codebuild-user
@@ -44,7 +43,7 @@ all:
     BUILD --platform=linux/arm64 --platform=linux/amd64 +deploy
 
 deploy:
-    FROM ${PUBLIC_REGISTRY}${BASE_IMAGE}:${BASE_IMAGE_TAG}
+    FROM ${BASE_IMAGE}:${BASE_IMAGE_TAG}
 
     # Create non-root user
     RUN groupadd -g $APP_GROUP_ID "$APP_GROUP" && \
@@ -60,12 +59,11 @@ deploy:
     # https://docs.docker.com/engine/install/ubuntu/
 
     RUN set -exu && \
-        apt-get update $APT_OPTS_UPDATE && \
-
-        # Avoid warnings
-        apt-get install $APT_OPTS dialog apt-utils && \
-        apt-get install $APT_OPTS \
-            # Enable installation of packages over https
+        apt-get update -qq && \
+        # Avoid warnings on older versions of Ubuntu
+        # apt-get install -y -qq --no-install-recommends dialog apt-utils && \
+        DEBIAN_FRONTEND=noninteractive \
+        apt-get install -y -qq --no-install-recommends \
             apt-transport-https \
             ca-certificates \
             curl \
@@ -98,8 +96,11 @@ deploy:
         curl -sL https://aquasecurity.github.io/trivy-repo/deb/public.key -o /etc/apt/trusted.gpg.d/trivy.asc && \
         echo "deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | tee -a /etc/apt/sources.list.d/trivy.list && \
 
-        apt-get update $APT_OPTS_UPDATE && \
-        apt-get install $APT_OPTS \
+        apt-get update -qq && \
+        # Avoid warnings on older versions of Ubuntu
+        # apt-get install -y -qq --no-install-recommends dialog apt-utils && \
+        DEBIAN_FRONTEND=noninteractive \
+        apt-get install -y -qq --no-install-recommends \
 
             # Docker
             docker-ce \
