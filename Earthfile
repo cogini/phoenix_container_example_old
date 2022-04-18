@@ -1,5 +1,5 @@
 # Build Elixir/Phoenix app
-VERSION --shell-out-anywhere --use-copy-include-patterns --referenced-save-only 0.6
+VERSION --use-cache-command --shell-out-anywhere --use-copy-include-patterns --referenced-save-only 0.6
 
 ARG ELIXIR_VERSION=1.13.3
 # ARG OTP_VERSION=23.3.4
@@ -301,10 +301,9 @@ test-app:
 
     WITH DOCKER \
             # Image names need to match docker-compose.test.yml
-            --pull ${POSTGRES_IMAGE_NAME}:${POSTGRES_IMAGE_TAG} \
+            # --pull ${POSTGRES_IMAGE_NAME}:${POSTGRES_IMAGE_TAG} \
             # --pull ${MYSQL_IMAGE_NAME}:${MYSQL_IMAGE_TAG} \
-            # --load app-db:latest=+postgres \
-            # --load postgres:latest=+postgres \
+            --load app-db:latest=+postgres \
             --load test:latest=+test-image \
             --compose docker-compose.yml
         RUN \
