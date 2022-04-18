@@ -204,7 +204,7 @@ build-deps-get:
 
     RUN mix esbuild.install
 
-    SAVE IMAGE --cache-hint
+    # SAVE IMAGE --cache-hint
 
 # Base image used for running tests
 test-image:
@@ -238,7 +238,7 @@ test-image:
     # isolation https://github.com/elixir-lang/elixir/issues/9407
     # RUN mix cmd mix compile --warnings-as-errors
 
-    SAVE IMAGE --push ${OUTPUT_URL}:test
+    # SAVE IMAGE --push ${OUTPUT_URL}:test
     # SAVE IMAGE --cache-hint
 
 # Run Dialyzer on app files
@@ -266,7 +266,7 @@ test-image-dialyzer:
     COPY --if-exists --dir apps ./
 
     # SAVE IMAGE --cache-hint
-    SAVE IMAGE --push ${OUTPUT_URL}:dialyzer
+    # SAVE IMAGE --push ${OUTPUT_URL}:dialyzer
 
 # Create database for tests
 postgres:
@@ -366,7 +366,7 @@ deploy-release:
 
     # SAVE ARTIFACT priv/static /static AS LOCAL build/static
 
-    SAVE IMAGE --cache-hint
+    # SAVE IMAGE --cache-hint
 
 # Final deploy image
 deploy:
