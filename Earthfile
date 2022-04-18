@@ -210,7 +210,6 @@ build-deps-get:
 
 # Base image used for running tests
 test-image:
-    # FROM +test-deps-compile
     FROM +build-deps-get
 
     ENV LANG=$LANG
@@ -229,7 +228,7 @@ test-image:
     COPY --if-exists coveralls.json .formatter.exs .credo.exs dialyzer-ignore ./
 
     # Non-umbrella
-    COPY --dir lib priv test bin ./
+    COPY --if-exists --dir lib priv test bin ./
 
     RUN mix compile --warnings-as-errors
 
