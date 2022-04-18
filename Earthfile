@@ -13,8 +13,9 @@ ARG ALPINE_VERSION=3.15.0
 # ARG ELIXIR_DEBIAN_VERSION=buster-20210208
 ARG ELIXIR_DEBIAN_VERSION=bullseye-20210902-slim
 
-# ARG DEBIAN_VERSION=bullseye-slim
-ARG DEBIAN_VERSION=$ELIXIR_DEBIAN_VERSION
+# https://docker.debian.net/
+ARG DEBIAN_VERSION=bullseye-slim
+# ARG DEBIAN_VERSION=$ELIXIR_DEBIAN_VERSION
 
 # Docker registries for base images. If blank, will use docker.io.
 # If specified, should have a trailing slash.
