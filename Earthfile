@@ -14,6 +14,7 @@ ARG ALPINE_VERSION=3.15.0
 ARG ELIXIR_DEBIAN_VERSION=bullseye-20210902-slim
 
 # https://docker.debian.net/
+# https://hub.docker.com/_/debian
 ARG DEBIAN_VERSION=bullseye-slim
 # ARG DEBIAN_VERSION=$ELIXIR_DEBIAN_VERSION
 
