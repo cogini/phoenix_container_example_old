@@ -85,6 +85,7 @@ build-os-deps:
             build-essential \
             git \
             lsb-release \
+            jq \
             $BUILD_EXTRA && \
 
         # Install node using n
