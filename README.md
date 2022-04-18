@@ -217,7 +217,7 @@ docker.io:
 
 ```shell
 aws ecr create-repository --repository-name centos
-aws ecr get-login-password | skopeo login -u AWS --password-stdin $REGISTRY
+aws ecr get-login-password | skopeo login -u AWS --password-stdin $REGISTRY_NOSLASH
 skopeo sync --all --src yaml --dest docker skopeo-sync.yml $REGISTRY
 ```
 
