@@ -206,18 +206,6 @@ build-deps-get:
 
     SAVE IMAGE --cache-hint
 
-# Compile deps separately from application, allowing it to be cached
-# test-deps-compile:
-#     FROM +build-deps-get
-#
-#     ENV MIX_ENV=test
-#
-#     WORKDIR $APP_DIR
-#
-#     RUN mix deps.compile
-#
-#     SAVE IMAGE --cache-hint
-
 # Base image used for running tests
 test-image:
     # FROM +test-deps-compile
@@ -252,18 +240,6 @@ test-image:
 
     SAVE IMAGE --push ${OUTPUT_URL}:test
     # SAVE IMAGE --cache-hint
-
-# Generate Dialyzer PLT file separately from app for better caching
-# test-dialyzer-plt:
-#     FROM +build-deps-get
-#
-#     ENV MIX_ENV=dev
-#
-#     WORKDIR $APP_DIR
-#
-#     RUN mix dialyzer --plt
-#
-#     SAVE IMAGE --cache-hint
 
 # Run Dialyzer on app files
 test-image-dialyzer:
@@ -342,18 +318,6 @@ test-dialyzer:
         RUN docker run test-dialyzer mix dialyzer --halt-exit-status
     END
 
-# Compile deps separately from application for better caching
-# deploy-deps-compile:
-#     FROM +build-deps-get
-#
-#     ENV MIX_ENV=prod
-#
-#     WORKDIR $APP_DIR
-#
-#     RUN mix deps.compile
-#
-#     SAVE IMAGE --cache-hint
-
 # Build JS and CS assets with Webpack
 # deploy-assets-webpack:
 #     FROM +deploy-deps-compile
@@ -362,8 +326,7 @@ test-dialyzer:
 #
 #     # WORKDIR /app/assets
 #
-#     COPY assets/package.json ./
-#     COPY assets/package-lock.json ./
+#     COPY assets/package.json assets/package-lock.json ./
 #
 #     RUN --mount=type=cache,target=/root/.npm \
 #         npm --prefer-offline --no-audit --progress=false --loglevel=error ci
@@ -375,43 +338,10 @@ test-dialyzer:
 #     SAVE ARTIFACT ../priv /priv
 #     # SAVE IMAGE --cache-hint
 
-# Build JS and CS with esbuild
-# deploy-assets-esbuild:
-#     FROM +deploy-deps-compile
-#
-#     WORKDIR $APP_DIR
-#
-#     COPY --dir assets priv ./
-#
-#     RUN mix assets.deploy
-#
-#     SAVE ARTIFACT priv /priv
-#     SAVE IMAGE --cache-hint
-
-# deploy-digest:
-#     FROM +deploy-assets-esbuild
-#     # FROM +deploy-deps-compile
-#
-#     # COPY +deploy-assets-esbuild/priv priv
-#
-#     # https://hexdocs.pm/phoenix/Mix.Tasks.Phx.Digest.html
-#     RUN mix phx.digest
-#
-#     # This does a partial compile.
-#     # Doing "mix do compile, phx.digest, release" in a single stage is worse,
-#     # because a change to application code causes a complete recompile.
-#     # With the stages separated most of the compilation is cached.
-#
-#     # SAVE IMAGE --cache-hint
-
-# Create Erlang release
 deploy-release:
-    # FROM +deploy-deps-compile
     FROM +build-deps-get
 
     ENV MIX_ENV=prod
-
-    # COPY +deploy-assets-esbuild/priv priv
 
     # Compile deps separately from application for better caching
     RUN mix deps.compile
