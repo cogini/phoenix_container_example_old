@@ -207,29 +207,34 @@ build-deps-get:
     SAVE IMAGE --cache-hint
 
 # Compile deps separately from application, allowing it to be cached
-test-deps-compile:
-    FROM +build-deps-get
-
-    ENV MIX_ENV=test
-
-    WORKDIR $APP_DIR
-
-    RUN mix deps.compile
-
-    SAVE IMAGE --cache-hint
+# test-deps-compile:
+#     FROM +build-deps-get
+#
+#     ENV MIX_ENV=test
+#
+#     WORKDIR $APP_DIR
+#
+#     RUN mix deps.compile
+#
+#     SAVE IMAGE --cache-hint
 
 # Base image used for running tests
 test-image:
-    FROM +test-deps-compile
+    # FROM +test-deps-compile
+    FROM +build-deps-get
 
     ENV LANG=$LANG
     ENV HOME=$APP_DIR
+    ENV MIX_ENV=test
 
     ENV MIX_HOME=$MIX_HOME
     ENV HEX_HOME=$HEX_HOME
     ENV XDG_CACHE_HOME=$XDG_CACHE_HOME
 
     WORKDIR $APP_DIR
+
+    # Compile deps separately from app, improving caching
+    RUN mix deps.compile
 
     COPY --if-exists coveralls.json .formatter.exs .credo.exs dialyzer-ignore ./
 
@@ -245,26 +250,30 @@ test-image:
     # isolation https://github.com/elixir-lang/elixir/issues/9407
     # RUN mix cmd mix compile --warnings-as-errors
 
-    SAVE IMAGE --cache-hint
+    SAVE IMAGE --push ${OUTPUT_URL}:test
+    # SAVE IMAGE --cache-hint
 
 # Generate Dialyzer PLT file separately from app for better caching
-test-dialyzer-plt:
-    FROM +build-deps-get
-
-    ENV MIX_ENV=dev
-
-    WORKDIR $APP_DIR
-
-    RUN mix dialyzer --plt
-
-    SAVE IMAGE --cache-hint
+# test-dialyzer-plt:
+#     FROM +build-deps-get
+#
+#     ENV MIX_ENV=dev
+#
+#     WORKDIR $APP_DIR
+#
+#     RUN mix dialyzer --plt
+#
+#     SAVE IMAGE --cache-hint
 
 # Run Dialyzer on app files
 test-image-dialyzer:
-    FROM +test-dialyzer-plt
+    # FROM +test-dialyzer-plt
+    FROM +build-deps-get
 
     ENV LANG=$LANG
     ENV HOME=$APP_DIR
+
+    ENV MIX_ENV=dev
 
     ENV MIX_HOME=$MIX_HOME
     ENV HEX_HOME=$HEX_HOME
@@ -272,13 +281,16 @@ test-image-dialyzer:
 
     WORKDIR $APP_DIR
 
+    RUN mix dialyzer --plt
+
     # Non-umbrella
-    COPY --dir lib priv test bin ./
+    COPY --if-exists --dir lib priv test bin ./
 
     # Umbrella
-    # COPY --dir apps ./
+    COPY --if-exists --dir apps ./
 
     # SAVE IMAGE --cache-hint
+    SAVE IMAGE --push ${OUTPUT_URL}:dialyzer
 
 # Create database for tests
 postgres:
@@ -331,93 +343,98 @@ test-dialyzer:
     END
 
 # Compile deps separately from application for better caching
-deploy-deps-compile:
+# deploy-deps-compile:
+#     FROM +build-deps-get
+#
+#     ENV MIX_ENV=prod
+#
+#     WORKDIR $APP_DIR
+#
+#     RUN mix deps.compile
+#
+#     SAVE IMAGE --cache-hint
+
+# Build JS and CS assets with Webpack
+# deploy-assets-webpack:
+#     FROM +deploy-deps-compile
+#
+#     WORKDIR $APP_DIR
+#
+#     # WORKDIR /app/assets
+#
+#     COPY assets/package.json ./
+#     COPY assets/package-lock.json ./
+#
+#     RUN --mount=type=cache,target=/root/.npm \
+#         npm --prefer-offline --no-audit --progress=false --loglevel=error ci
+#
+#     COPY assets ./
+#
+#     RUN npm run deploy
+#
+#     SAVE ARTIFACT ../priv /priv
+#     # SAVE IMAGE --cache-hint
+
+# Build JS and CS with esbuild
+# deploy-assets-esbuild:
+#     FROM +deploy-deps-compile
+#
+#     WORKDIR $APP_DIR
+#
+#     COPY --dir assets priv ./
+#
+#     RUN mix assets.deploy
+#
+#     SAVE ARTIFACT priv /priv
+#     SAVE IMAGE --cache-hint
+
+# deploy-digest:
+#     FROM +deploy-assets-esbuild
+#     # FROM +deploy-deps-compile
+#
+#     # COPY +deploy-assets-esbuild/priv priv
+#
+#     # https://hexdocs.pm/phoenix/Mix.Tasks.Phx.Digest.html
+#     RUN mix phx.digest
+#
+#     # This does a partial compile.
+#     # Doing "mix do compile, phx.digest, release" in a single stage is worse,
+#     # because a change to application code causes a complete recompile.
+#     # With the stages separated most of the compilation is cached.
+#
+#     # SAVE IMAGE --cache-hint
+
+# Create Erlang release
+deploy-release:
+    # FROM +deploy-deps-compile
     FROM +build-deps-get
 
     ENV MIX_ENV=prod
 
-    WORKDIR $APP_DIR
-
-    RUN mix deps.compile
-
-    SAVE IMAGE --cache-hint
-
-# Build JS and CS assets with Webpack
-deploy-assets-webpack:
-    FROM +deploy-deps-compile
-
-    WORKDIR $APP_DIR
-
-
-    WORKDIR /app/assets
-
-    COPY assets/package.json ./
-    COPY assets/package-lock.json ./
-
-    RUN --mount=type=cache,target=/root/.npm \
-        npm --prefer-offline --no-audit --progress=false --loglevel=error ci
-
-    COPY assets ./
-
-    RUN npm run deploy
-
-    SAVE ARTIFACT ../priv /priv
-    SAVE IMAGE --cache-hint
-
-# Build JS and CS with esbuild
-deploy-assets-esbuild:
-    FROM +deploy-deps-compile
-
-    WORKDIR $APP_DIR
-
-    COPY --dir assets priv ./
-
-    RUN mix assets.deploy
-
-    SAVE ARTIFACT priv /priv
-    SAVE IMAGE --cache-hint
-
-# Create digested version of assets
-deploy-digest:
-    FROM +deploy-assets-esbuild
-    # FROM +deploy-deps-compile
-
     # COPY +deploy-assets-esbuild/priv priv
 
-    # https://hexdocs.pm/phoenix/Mix.Tasks.Phx.Digest.html
-    RUN mix phx.digest
+    # Compile deps separately from application for better caching
+    RUN mix deps.compile
 
-    # This does a partial compile.
-    # Doing "mix do compile, phx.digest, release" in a single stage is worse,
-    # because a change to application code causes a complete recompile.
-    # With the stages separated most of the compilation is cached.
-
-    # SAVE IMAGE --cache-hint
-
-# Create Erlang release
-deploy-release:
-    # FROM +deploy-digest
-    FROM +deploy-deps-compile
-
-    COPY +deploy-assets-esbuild/priv priv
+    # Build JS and CS with esbuild
+    COPY --dir assets priv ./
+    RUN mix assets.deploy
 
     # Non-umbrella
-    COPY --dir lib rel ./
+    COPY --if-exists --dir lib ./
 
     # Umbrella
-    # COPY --dir apps ./
+    COPY --if-exists --dir apps ./
 
-    RUN mix do compile, release "$RELEASE"
+    RUN mix compile
 
-    # Find shared libraries needed at runtime
-    # RUN find "_build/${MIX_ENV}/rel/${RELEASE}" -name beam.smp
-    # RUN ldd _build/${MIX_ENV}/rel/${RELEASE}/erts-12.3/bin/beam.smp
+    # Build release
+    COPY --dir rel ./
+    RUN mix release "$RELEASE"
 
-    # SAVE ARTIFACT "_build/${MIX_ENV}/rel/${RELEASE}" /release AS LOCAL "build/release/${RELEASE}"
     SAVE ARTIFACT "_build/${MIX_ENV}/rel/${RELEASE}" /release
 
     # SAVE ARTIFACT priv/static /static AS LOCAL build/static
-    # SAVE ARTIFACT priv/static /static
 
     SAVE IMAGE --cache-hint
 
