@@ -5,18 +5,22 @@ ARG ELIXIR_VERSION=1.13.3
 # ARG OTP_VERSION=23.3.4
 ARG OTP_VERSION=24.2
 ARG NODE_VERSION=16.14.1
+# ARG NODE_VERSION=lts
 
 ARG ALPINE_VERSION=3.15.0
 
-# Docker registry for base images, default is docker.io
-# If specified, should have a trailing slash
+
+# Docker registries for base images. If blank, will use docker.io.
+# If specified, should have a trailing slash.
+# REGISTRY is a private registry, e.g. 123.dkr.ecr.ap-northeast-1.amazonaws.com/
+# PUBLIC_REGISTRY is for public base images, e.g. debian or alpine
+# Public images may be mirrored into the private registry, e.g. with skopeo
 ARG REGISTRY=""
 ARG PUBLIC_REGISTRY=$REGISTRY
 
 ARG BUILD_IMAGE_NAME=${PUBLIC_REGISTRY}hexpm/elixir
 ARG BUILD_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-alpine-${ALPINE_VERSION}
 
-# Deploy base image
 ARG DEPLOY_IMAGE_NAME=${PUBLIC_REGISTRY}alpine
 ARG DEPLOY_IMAGE_TAG=$ALPINE_VERSION
 
@@ -30,7 +34,8 @@ ARG DEPLOY_EXTRA=""
 
 # OS user for app to run under
 # Distroless user
-# nonroot:x:65532:65532:nonroot:/home/nonroot:/sbin/nologin
+# nonroot:x:65532:65532:nonroot:/home/nonroot:/usr/sbin/nologin
+# nobody:x:65534:65534:nobody:/nonexistent:/usr/sbin/nologin
 ARG APP_USER=nonroot
 # OS group that app runs under
 ARG APP_GROUP=$APP_USER
