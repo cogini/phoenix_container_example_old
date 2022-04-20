@@ -40,16 +40,20 @@ ARG DEPLOY_IMAGE_TAG=debug
 ARG INSTALL_IMAGE_NAME=${PUBLIC_REGISTRY}debian
 ARG INSTALL_IMAGE_TAG=bullseye-slim
 
+# Additional packages to install
+ARG BUILD_EXTRA=""
+ARG INSTALL_EXTRA=""
+ARG DEPLOY_EXTRA=""
+
 ARG LANG=C.UTF-8
 
 # Make apt-get be quiet
 # ARG DEBIAN_FRONTEND=noninteractive
-# ARG APT_OPTS="-y -qq -o=Dpkg::Use-Pty=0 --no-install-recommends"
-# ARG APT_OPTS_UPDATE="-qq"
+# ARG APT_OPTS="-y -qq --no-install-recommends"
 
 # Set arch in Linux naming convention
 ARG TARGETARCH
-# TODO: see if we can get this from `uname -m`
+
 FROM ${PUBLIC_REGISTRY}busybox
 ARG LINUX_ARCH=$(uname -m)
 
@@ -60,6 +64,7 @@ build-os-deps:
     # Configure apt caching for use with BuildKit
     # The default Debian Docker image has special config to clear caches.
     # If we are using --mount=type=cache, then we want it.
+    # https://github.com/debuerreotype/debuerreotype/blob/master/scripts/debuerreotype-minimizing-config
     RUN set -exu && \
         rm -f /etc/apt/apt.conf.d/docker-clean && \
         echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache && \
@@ -70,9 +75,6 @@ build-os-deps:
         --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
         set -exu && \
         apt-get update -qq && \
-        # Avoid warnings on older versions of Debian/Ubuntu
-        # apt-get -y install $APT_OPTS dialog apt-utils && \
-        # Enable installation of packages over https
         DEBIAN_FRONTEND=noninteractive \
         apt-get -y install -y -qq --no-install-recommends \
             apt-transport-https \
@@ -84,6 +86,7 @@ build-os-deps:
             build-essential \
             git \
             lsb-release \
+            jq \
             $BUILD_EXTRA && \
 
         # Install node using n
@@ -93,7 +96,7 @@ build-os-deps:
         # n lts && \
         # Install specific version
         n "$NODE_VERSION" && \
-        rm /usr/local/bin/n
+        rm /usr/local/bin/n && \
 
         # Install latest Postgres
         # curl -sL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /etc/apt/trusted.gpg.d/postgresql-ACCC4CF8.asc && \
@@ -109,21 +112,37 @@ build-os-deps:
         # curl -s https://packages.microsoft.com/config/debian/11/prod.list -o /etc/apt/sources.list.d/mssql-release.list && \
         # export ACCEPT_EULA=Y && \
         # apt-get -qq update -qq && apt-get -y install $APT_OPTS msodbcsql17 && \
-        # rm -rf /var/lib/dpkg &&
 
-        # apt-get clean &&
-        # apt-get remove curl \
+
+        # Remove everything related to a package including the configuration files.
+        # Remove packages automatically installed because a package required
+        # them but, with the other packages removed, are no longer needed.
+        # Use this to remove packages installed temporarily.
+        # apt-get purge -y --auto-remove curl && \
+
+        # https://www.networkworld.com/article/3453032/cleaning-up-with-apt-get.html
+        # https://manpages.ubuntu.com/manpages/jammy/man8/apt-get.8.html
+
+        # Delete local repository of retrieved package files in /var/cache/apt/archives
+        # This is handled automatically by /etc/apt/apt.conf.d/docker-clean
+        # Use this if not running --mount=type=cache.
         # apt-get clean && \
-        # apt-get autoremove -y && \
-        # apt-get purge -y --auto-remove && \
-        # info on installed packages
+
+        # Delete info on installed packages
+        # This saves some space, but it can be useful to have them as a record
+        # of what was installed, e.g. for auditing images.
         # rm -rf /var/lib/dpkg && \
+
+        # Delete debconf data files to save some space
         # rm -rf /var/cache/debconf && \
-        # Logs for installed packages
-        rm -rf /var/log/apt/* && \
-        rm -rf /var/log/dpkg.log
-        # apt-get update files
+
+        # Delete index of available files from apt-get update
+        # Use this if not running --mount=type=cache.
         # rm -rf /var/lib/apt/lists/*
+
+        # Delete logs of installed packages
+        truncate -s 0 /var/log/apt/* && \
+        truncate -s 0 /var/log/dpkg.log
 
     SAVE IMAGE --cache-hint
 
@@ -132,6 +151,8 @@ deploy-install:
     FROM ${INSTALL_IMAGE_NAME}:${INSTALL_IMAGE_TAG}
 
     # Configure apt caching for use with BuildKit
+    # The default Debian Docker image has special config to clear caches.
+    # If we are using --mount=type=cache, then we want it.
     RUN set -exu && \
         rm -f /etc/apt/apt.conf.d/docker-clean && \
         echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache && \
@@ -142,8 +163,6 @@ deploy-install:
         --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
         set -exu && \
         apt-get update -qq && \
-        # Avoid warnings
-        # apt-get -y install $APT_OPTS dialog apt-utils \
         DEBIAN_FRONTEND=noninteractive \
         apt-get -y install -y -qq --no-install-recommends \
             # apt-transport-https \
@@ -155,23 +174,43 @@ deploy-install:
             unzip \
             busybox-static \
             locales \
+
             # Needed by Erlang VM
             libtinfo6 \
             $INSTALL_EXTRA && \
 
+        # Generate locales specified in /etc/locale.gen
         locale-gen && \
 
+        # Remove everything related to a package including the configuration files.
+        # Remove packages automatically installed because a package required
+        # them but, with the other packages removed, are no longer needed.
+        # Use this to remove packages installed temporarily.
+        # apt-get purge -y --auto-remove curl && \
+
+        # https://www.networkworld.com/article/3453032/cleaning-up-with-apt-get.html
+        # https://manpages.ubuntu.com/manpages/jammy/man8/apt-get.8.html
+
+        # Delete local repository of retrieved package files in /var/cache/apt/archives
+        # This is handled automatically by /etc/apt/apt.conf.d/docker-clean
+        # Use this if not running --mount=type=cache.
         # apt-get clean && \
-        # apt-get autoremove -y && \
-        # apt-get purge -y --auto-remove && \
-        # info on installed packages
+
+        # Delete info on installed packages
+        # This saves some space, but it can be useful to have them as a record
+        # of what was installed, e.g. for auditing images.
         # rm -rf /var/lib/dpkg && \
+
+        # Delete debconf data files to save some space
         # rm -rf /var/cache/debconf && \
-        # Logs for installed packages
-        rm -rf /var/log/apt/* && \
-        rm -rf /var/log/dpkg.log
-        # apt-get update files
+
+        # Delete index of available files from apt-get update
+        # Use this if not running --mount=type=cache.
         # rm -rf /var/lib/apt/lists/*
+
+        # Delete logs of installed packages
+        truncate -s 0 /var/log/apt/* && \
+        truncate -s 0 /var/log/dpkg.log
 
     # Install AWS CLI v2 from binary package
     # https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html
@@ -193,20 +232,6 @@ deploy-install:
     SAVE ARTIFACT /lib/${LINUX_ARCH}-linux-gnu/libgcc_s.so.1 /libs/
     # SAVE ARTIFACT /usr/lib/${LINUX_ARCH}-linux-gnu/libstdc++.so.6 /libs/libstdcpp.so.6
     SAVE ARTIFACT /usr/lib/${LINUX_ARCH}-linux-gnu/libstdc++.so.6.0.28 /libs/libstdcpp.so.6.0.28
-
-    RUN ls -l /usr/lib/${LINUX_ARCH}-linux-gnu/libstdc*
-
-    # ldd _build/${MIX_ENV}/rel/${RELEASE}/erts-12.3/bin/beam.smp
-    #   linux-vdso.so.1 (0x00007ffd5c302000)
-    #   libdl.so.2 => /lib/x86_64-linux-gnu/libdl.so.2 (0x00007f8cbf3f2000)
-    #   libtinfo.so.6 => /lib/x86_64-linux-gnu/libtinfo.so.6 (0x00007f8cbf3c3000)
-    #   libpthread.so.0 => /lib/x86_64-linux-gnu/libpthread.so.0 (0x00007f8cbf3a1000)
-    #   librt.so.1 => /lib/x86_64-linux-gnu/librt.so.1 (0x00007f8cbf396000)
-    #   libstdc++.so.6 => /usr/lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007f8cbf1c9000)
-    #   libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007f8cbf085000)
-    #   libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007f8cbf069000)
-    #   libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f8cbeea4000)
-    #   /lib64/ld-linux-x86-64.so.2 (0x00007f8cbf88a000)
 
     SAVE IMAGE --cache-hint
 
