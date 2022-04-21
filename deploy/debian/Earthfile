@@ -33,13 +33,7 @@ ARG DEPLOY_IMAGE_TAG=$DEBIAN_VERSION
 ARG INSTALL_IMAGE_NAME=$DEPLOY_IMAGE_NAME
 ARG INSTALL_IMAGE_TAG=$DEPLOY_IMAGE_TAG
 
-# Additional packages to install
-ARG BUILD_EXTRA=""
-ARG INSTALL_EXTRA=""
-ARG DEPLOY_EXTRA=""
-
 # OS user for app to run under
-# Distroless user
 # nonroot:x:65532:65532:nonroot:/home/nonroot:/usr/sbin/nologin
 # nobody:x:65534:65534:nobody:/nonexistent:/usr/sbin/nologin
 ARG APP_USER=nonroot
@@ -76,16 +70,17 @@ build-os-deps:
         DEBIAN_FRONTEND=noninteractive \
         apt-get -y install -y -qq --no-install-recommends \
             apt-transport-https \
+            build-essential \
             ca-certificates \
             curl \
+            git \
             gnupg \
             gnupg-agent \
-            # software-properties-common \
-            build-essential \
-            git \
-            lsb-release \
             jq \
-            $BUILD_EXTRA && \
+            lsb-release \
+            openssl \
+
+            && \
 
         # Install node using n
         curl -L https://raw.githubusercontent.com/tj/n/master/bin/n -o /usr/local/bin/n && \
@@ -110,7 +105,6 @@ build-os-deps:
         # curl -s https://packages.microsoft.com/config/debian/11/prod.list -o /etc/apt/sources.list.d/mssql-release.list && \
         # export ACCEPT_EULA=Y && \
         # apt-get -qq update -qq && apt-get -y install $APT_OPTS msodbcsql17 && \
-
 
         # Remove everything related to a package including the configuration files.
         # Remove packages automatically installed because a package required
@@ -175,7 +169,7 @@ deploy-install:
 
             # Needed by Erlang VM
             libtinfo6 \
-            $INSTALL_EXTRA && \
+            && \
 
         curl -sL https://aquasecurity.github.io/trivy-repo/deb/public.key -o /etc/apt/trusted.gpg.d/trivy.asc && \
         printf "deb https://aquasecurity.github.io/trivy-repo/deb %s main" "$(lsb_release -sc)" | tee -a /etc/apt/sources.list.d/trivy.list && \
@@ -249,15 +243,17 @@ deploy-base:
 
     # Create OS user and group to run app under
     RUN if ! grep -q "$APP_USER" /etc/passwd; \
-            then groupadd -g "$APP_GROUP_ID" "$APP_GROUP" && \
-            useradd -u "$APP_USER_ID" -g "$APP_GROUP" -s /usr/sbin/nologin "$APP_USER" && \
-            rm /var/log/lastlog && rm /var/log/faillog; fi
+        then groupadd -g "$APP_GROUP_ID" "$APP_GROUP" && \
+        useradd -l -u "$APP_USER_ID" -g "$APP_GROUP" -s /usr/sbin/nologin "$APP_USER" && \
+        rm /var/log/lastlog && rm /var/log/faillog; fi
 
     COPY +deploy-install/C.UTF-8 /usr/lib/locale/C.UTF-8
 
     ENV LANG=$LANG
 
     # Configure apt caching for use with BuildKit
+    # The default Debian Docker image has special config to clear caches.
+    # If we are using --mount=type=cache, then we want it.
     RUN set -exu && \
         rm -f /etc/apt/apt.conf.d/docker-clean && \
         echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache && \
@@ -288,12 +284,12 @@ deploy-base:
             # postgresql-client \
 
             # Latest PostgreSQL
-            # curl && \
             # curl -sL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /etc/apt/trusted.gpg.d/postgresql-ACCC4CF8.asc && \
             # echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -sc)-pgdg main" | tee /etc/apt/sources.list.d/pgdg.list && \
             # echo "Package: *\nPin: release o=apt.postgresql.org\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/pgdg.pref && \
             # apt-get update -qq && \
-            # apt-get -y install $APT_OPTS \
+            # DEBIAN_FRONTEND=noninteractive \
+            # apt-get -y install -y -qq --no-install-recommends \
             #     libpq-dev \
             #     postgresql-client \
 
@@ -301,9 +297,11 @@ deploy-base:
             # curl -sL https://packages.microsoft.com/keys/microsoft.asc -o /etc/apt/trusted.gpg.d/microsoft.asc && \
             # curl -s https://packages.microsoft.com/config/debian/11/prod.list -o /etc/apt/sources.list.d/mssql-release.list && \
             # export ACCEPT_EULA=Y && \
-            # apt-get -qq update && apt-get -y install $APT_OPTS msodbcsql17 && \
+            # apt-get update -qq && \
+            # DEBIAN_FRONTEND=noninteractive \
+            # apt-get -y install -y -qq --no-install-recommends msodbcsql17 && \
 
-            $DEPLOY_EXTRA && \
+            && \
 
         # Remove everything related to a package including the configuration files.
         # Remove packages automatically installed because a package required
