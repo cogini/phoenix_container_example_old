@@ -294,11 +294,9 @@ test-app:
             # --pull ${MYSQL_IMAGE_NAME}:${MYSQL_IMAGE_TAG} \
             --load app-db:latest=+postgres \
             --load test:latest=+test-image \
-            --compose docker-compose.yml
-        RUN \
-            docker-compose run test mix ecto.setup && \
-            docker-compose run test mix test && \
-            docker-compose run test mix test --cover
+            --compose docker-compose.yml \
+            --service postgres
+        RUN docker-compose run test /bin/sh -c "mix ecto.setup && mix test && mix test --cover"
     END
 
     SAVE ARTIFACT /junit-reports /junit-reports AS LOCAL junit-reports
@@ -306,11 +304,7 @@ test-app:
 test-static:
     FROM ${DIND_IMAGE_NAME}:${DIND_IMAGE_TAG}
     WITH DOCKER --load test:latest=+test-image
-        RUN \
-            docker run test mix format --check-formatted && \
-            docker run test mix credo ${CREDO_OPTS} && \
-            docker run test mix deps.audit && \
-            docker run test mix sobelow ${SOBELOW_OPTS}
+        RUN docker run test /bin/sh -c "mix format --check-formatted && mix credo ${CREDO_OPTS} && mix deps.audit && mix sobelow ${SOBELOW_OPTS}"
     END
 
 test-dialyzer:
