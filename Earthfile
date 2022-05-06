@@ -15,22 +15,21 @@ ARG ELIXIR_DEBIAN_VERSION=bullseye-20210902-slim
 
 # https://docker.debian.net/
 # https://hub.docker.com/_/debian
+# ARG DEBIAN_VERSION=buster-slim
 ARG DEBIAN_VERSION=bullseye-slim
-# ARG DEBIAN_VERSION=$ELIXIR_DEBIAN_VERSION
 
-# Docker registries for base images. If blank, will use docker.io.
-# If specified, should have a trailing slash.
-# REGISTRY is a private registry, e.g. 123.dkr.ecr.ap-northeast-1.amazonaws.com/
-# PUBLIC_REGISTRY is for public base images, e.g. debian or alpine
-# Public images may be mirrored into the private registry, e.g. with skopeo
+# Docker registry for internal images, e.g. 123.dkr.ecr.ap-northeast-1.amazonaws.com/
+# If blank, docker.io will be used. If specified, should have a trailing slash.
 ARG REGISTRY=""
+# Registry for public base images, e.g. debian or alpine.
+# Public images may be mirrored into the private registry, with e.g. Skopeo
 ARG PUBLIC_REGISTRY=$REGISTRY
 
 ARG POSTGRES_IMAGE_NAME=${PUBLIC_REGISTRY}postgres
 ARG POSTGRES_IMAGE_TAG=14.1-alpine
 
 ARG MYSQL_IMAGE_NAME=${PUBLIC_REGISTRY}mysql
-ARG MYSQL_IMAGE_TAG=5.7.10
+ARG MYSQL_IMAGE_TAG=5.7.37
 
 ARG DATADOG_IMAGE_NAME=gcr.io/datadoghq/agent
 ARG DATADOG_IMAGE_TAG=latest
@@ -145,20 +144,20 @@ ARG TRIVY_OPTS="--exit-code 1 --severity CRITICAL"
 # App name, used to name directories
 ARG APP_NAME=app
 
-# OS user that app runs under
+# Dir where app is installed
+ARG APP_DIR=/app
+
+# OS user for app to run under
 ARG APP_USER=nonroot
 # OS group that app runs under
 ARG APP_GROUP=$APP_USER
 
-# Dir that app runs under
-ARG APP_DIR=/app
+ARG LANG=C.UTF-8
 
 # Build cache dirs
 ARG MIX_HOME=/opt/mix
 ARG HEX_HOME=/opt/hex
 ARG XDG_CACHE_HOME=/opt/cache
-
-ARG LANG=C.UTF-8
 
 # ARG http_proxy
 # ARG https_proxy=$http_proxy
@@ -230,11 +229,10 @@ test-image:
     # Non-umbrella
     COPY --if-exists --dir lib priv test bin ./
 
-    RUN mix compile --warnings-as-errors
-
     # Umbrella
-    # COPY --dir apps priv ./
+    COPY --if-exists --dir apps priv ./
 
+    RUN mix compile --warnings-as-errors
     # For umbrella, using `mix cmd` ensures each app is compiled in
     # isolation https://github.com/elixir-lang/elixir/issues/9407
     # RUN mix cmd mix compile --warnings-as-errors
@@ -338,11 +336,12 @@ deploy-release:
 
     ENV MIX_ENV=prod
 
+    WORKDIR $APP_DIR
     # Compile deps separately from application for better caching
     RUN mix deps.compile
 
     # Build JS and CS with esbuild
-    COPY --dir assets priv ./
+    COPY --if-exists --dir assets priv ./
     RUN mix assets.deploy
 
     # Non-umbrella
