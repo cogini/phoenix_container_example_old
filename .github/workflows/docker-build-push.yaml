@@ -8,10 +8,12 @@ on: [push]
 #     branches: [main]
 #     types: [labeled,synchronize,reopened,unlabeled]
 jobs:
-  docker-build:
-    name: foo-app
-    # runs-on: ubuntu-20.04
+  build:
     runs-on: ubuntu-latest
+    # runs-on: ubuntu-20.04
+    permissions:
+      id-token: write
+      contents: read
     env:
       REGISTRY: 770916339360.dkr.ecr.ap-northeast-1.amazonaws.com/
     steps:
