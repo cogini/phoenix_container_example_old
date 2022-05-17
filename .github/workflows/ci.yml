@@ -1,13 +1,12 @@
 ---
 name: CI
-
 on: [push]
 # on:
 #   push:
 #     branches: [main]
 #   pull_request:
 #     branches: [main]
-
+#     types: [labeled,synchronize,reopened,unlabeled]
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -16,10 +15,18 @@ jobs:
       # DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
       FORCE_COLOR: 1
     steps:
+    - name: Dump Event
+      run: cat "$GITHUB_EVENT_PATH"
+
       # https://github.com/marketplace/actions/setup-earthly
       - uses: earthly/actions-setup@v1
         with:
           version: "latest" # or pin to an specific version, e.g. "v0.6.10"
+      # - name: Download earthly
+      #   run: "sudo /bin/sh -c 'wget https://github.com/earthly/earthly/releases/download/v0.6.14/earthly-linux-amd64 -O /usr/local/bin/earthly && chmod +x /usr/local/bin/earthly'"
+      - name: Earthly version
+        run: earthly --version
+
       - name: Checkout
         uses: actions/checkout@v2
 
@@ -46,12 +53,10 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+
       # - name: Docker Login
       #   run: echo "$DOCKERHUB_TOKEN" | docker login --username "$DOCKERHUB_USERNAME" --password-stdin
-      # - name: Download latest earthly
-      #   run: "sudo /bin/sh -c 'wget https://github.com/earthly/earthly/releases/download/v0.6.14/earthly-linux-amd64 -O /usr/local/bin/earthly && chmod +x /usr/local/bin/earthly'"
-      - name: Earthly version
-        run: earthly --version
+
       - name: Run build
         # run: earthly --ci --push +build
         run: earthly -P -V +all
