@@ -34,11 +34,11 @@ jobs:
 
     - name: Set output for variables
       id: vars
-      env:
-        REGISTRY: 770916339360.dkr.ecr.ap-northeast-1.amazonaws.com/
+      # env:
+      #   REGISTRY: 770916339360.dkr.ecr.ap-northeast-1.amazonaws.com/
       run: |
         echo "SHA_SHORT=$(echo $GITHUB_SHA | cut -c 1-7)" >> $GITHUB_ENV
-        echo "##[set-output name=registry;]${ECR_REGISTRY}"
+        echo "##[set-output name=registry;]${REGISTRY}"
 
     # - name: Login to ECR
     #   id: login-ecr
