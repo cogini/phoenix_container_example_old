@@ -16,6 +16,7 @@ jobs:
       contents: read
     env:
       REGISTRY: 770916339360.dkr.ecr.ap-northeast-1.amazonaws.com/
+      REGISTRY_NAME: 770916339360.dkr.ecr.ap-northeast-1.amazonaws.com
     steps:
     - name: Dump Event
       run: cat "$GITHUB_EVENT_PATH"
@@ -38,7 +39,7 @@ jobs:
       #   REGISTRY: 770916339360.dkr.ecr.ap-northeast-1.amazonaws.com/
       run: |
         echo "SHA_SHORT=$(echo $GITHUB_SHA | cut -c 1-7)" >> $GITHUB_ENV
-        echo "##[set-output name=registry;]${REGISTRY}"
+        echo "##[set-output name=registry;]${REGISTRY_NAME}"
 
     # - name: Login to ECR
     #   id: login-ecr
