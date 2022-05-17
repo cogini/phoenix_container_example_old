@@ -40,6 +40,7 @@ jobs:
       run: |
         echo "SHA_SHORT=$(echo $GITHUB_SHA | cut -c 1-7)" >> $GITHUB_ENV
         echo "##[set-output name=registry;]${REGISTRY_NAME}"
+        echo "##[set-output name=github_sha;]${GITHUB_SHA}"
 
     # - name: Login to ECR
     #   id: login-ecr
@@ -69,4 +70,4 @@ jobs:
         cache-to: type=inline,mode=max
         tags: |
           ${{ steps.vars.outputs.registry }}/foo-app:latest
-          ${{ steps.vars.outputs.registry }}/foo-app:${{ env.GITHUB_SHA }}
+          ${{ steps.vars.outputs.registry }}/foo-app:${{ steps.vars.outputs.github_sha }}
