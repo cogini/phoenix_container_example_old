@@ -1,6 +1,6 @@
 ---
-name: Build and push docker image
-on: [push]
+name: Build and push container image
+on: push
 # on:
 #   push:
 #     branches: [main]
@@ -9,6 +9,7 @@ on: [push]
 #     types: [labeled,synchronize,reopened,unlabeled]
 jobs:
   build:
+    name: Build
     runs-on: ubuntu-latest
     # runs-on: ubuntu-20.04
     permissions:
@@ -18,56 +19,56 @@ jobs:
       REGISTRY: 770916339360.dkr.ecr.ap-northeast-1.amazonaws.com/
       REGISTRY_NAME: 770916339360.dkr.ecr.ap-northeast-1.amazonaws.com
     steps:
-    - name: Dump Event
-      run: cat "$GITHUB_EVENT_PATH"
+      - name: Dump Event
+        run: cat "$GITHUB_EVENT_PATH"
 
-    - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v1
-      with:
-        role-to-assume: arn:aws:iam::770916339360:role/foo-dev-codebuild-github-action-role
-        aws-region: ap-northeast-1
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: arn:aws:iam::770916339360:role/foo-dev-codebuild-github-action-role
+          aws-region: ap-northeast-1
 
-    - name: Display Identity
-      run: aws sts get-caller-identity
+      - name: Display Identity
+        run: aws sts get-caller-identity
 
-    - name: Checkout
-      uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v2
 
-    - name: Set output for variables
-      id: vars
-      # env:
-      #   REGISTRY: 770916339360.dkr.ecr.ap-northeast-1.amazonaws.com/
-      run: |
-        echo "SHA_SHORT=$(echo $GITHUB_SHA | cut -c 1-7)" >> $GITHUB_ENV
-        echo "##[set-output name=registry;]${REGISTRY_NAME}"
-        echo "##[set-output name=github_sha;]${GITHUB_SHA}"
+      - name: Set output for variables
+        id: vars
+        # env:
+        #   REGISTRY: 770916339360.dkr.ecr.ap-northeast-1.amazonaws.com/
+        run: |
+          echo "GITHUB_SHA_SHORT=$(echo $GITHUB_SHA | cut -c 1-7)" >> $GITHUB_ENV
+          echo "::set-output name=registry::${REGISTRY_NAME}"
+          echo "::set-output name=github_sha::${GITHUB_SHA}"
 
-    # - name: Login to ECR
-    #   id: login-ecr
-    #   uses: docker/login-action@v1
-    #   with:
-    #     registry: ${{ steps.vars.outputs.registry }}
-    #     username: ${{ secrets.AWS_ACCESS_KEY_ID }}
-    #     password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      # - name: Login to ECR
+      #   id: login-ecr
+      #   uses: docker/login-action@v1
+      #   with:
+      #     registry: ${{ env.REGISTRY_NAME }}
+      #     username: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      #     password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
-    # https://github.com/marketplace/actions/docker-login
-    - name: Login to Docker Hub
-      uses: docker/login-action@v1
-      with:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_TOKEN }}
+      # https://github.com/marketplace/actions/docker-login
+      - name: Login to Docker Hub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-    - name: Docker build and push
-      id: docker
-      uses: docker/build-push-action@v2
-      with:
-        context: .
-        # file: ./Dockerfile
-        file: ./deploy/Dockerfile.debian
-        # push: true
-        push: false
-        cache-from: type=registry,ref=${{ steps.vars.outputs.registry }}/real-server:latest
-        cache-to: type=inline,mode=max
-        tags: |
-          ${{ steps.vars.outputs.registry }}/foo-app:latest
-          ${{ steps.vars.outputs.registry }}/foo-app:${{ steps.vars.outputs.github_sha }}
+      - name: Docker build and push
+        id: docker
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          # file: ./Dockerfile
+          file: ./deploy/Dockerfile.debian
+          # push: true
+          push: false
+          cache-from: type=registry,ref=${{ env.REGISTRY_NAME }}/real-server:latest
+          cache-to: type=inline,mode=max
+          tags: |
+            ${{ env.REGISTRY_NAME }}/foo-app:latest
+            ${{ env.REGISTRY_NAME }}/foo-app:${{ steps.vars.outputs.github_sha }}
