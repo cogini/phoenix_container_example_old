@@ -210,7 +210,6 @@ COPY --from=deps /app/deps /app/deps/
 
 WORKDIR /app/assets
 
-
 COPY assets/package.json assets/package-lock.json ./
 
 # Cache npm cache directory as type=cache
