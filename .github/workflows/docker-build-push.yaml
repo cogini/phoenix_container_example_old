@@ -9,7 +9,6 @@ on: push
 #     types: [labeled,synchronize,reopened,unlabeled]
 jobs:
   build:
-    name: Build
     runs-on: ubuntu-latest
     # runs-on: ubuntu-20.04
     permissions:
