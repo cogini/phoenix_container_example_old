@@ -22,19 +22,19 @@ jobs:
       - name: Dump Event
         run: cat "$GITHUB_EVENT_PATH"
 
-      - name: Configure AWS Credentials
+      - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
           role-to-assume: arn:aws:iam::770916339360:role/foo-dev-codebuild-github-action-role
           aws-region: ap-northeast-1
 
-      - name: Display Identity
+      - name: Display AWS identity
         run: aws sts get-caller-identity
 
-      - name: Checkout
+      - name: Checkout source
         uses: actions/checkout@v2
 
-      - name: Set output for variables
+      - name: Set variables
         id: vars
         # env:
         #   REGISTRY: 770916339360.dkr.ecr.ap-northeast-1.amazonaws.com/
@@ -58,15 +58,15 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Docker build and push
+      - name: Build Docker image and push
         id: docker
         uses: docker/build-push-action@v2
         with:
           context: .
           # file: ./Dockerfile
           file: ./deploy/Dockerfile.debian
-          # push: true
-          push: false
+          push: true
+          # push: false
           cache-from: type=registry,ref=${{ env.REGISTRY_NAME }}/real-server:latest
           cache-to: type=inline,mode=max
           tags: |
