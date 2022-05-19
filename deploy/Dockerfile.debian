@@ -218,7 +218,6 @@ FROM ${BUILD_IMAGE_NAME}:${BUILD_IMAGE_TAG} AS build-os-deps
         truncate -s 0 /var/log/apt/* && \
         truncate -s 0 /var/log/dpkg.log
 
-
 FROM build-os-deps AS build-deps-get
     ARG http_proxy
     ARG https_proxy
@@ -245,17 +244,18 @@ FROM build-os-deps AS build-deps-get
 FROM build-deps-get AS test-image
     ARG LANG
     ARG APP_DIR
+
     ARG MIX_HOME
-    ARG HEX_HOMEE
+    ARG HEX_HOME
     ARG XDG_CACHE_HOME
 
-    ENV LANG=$LANG
-    ENV HOME=$APP_DIR
-    ENV MIX_ENV=test
+    ENV LANG=$LANG \
+        HOME=$APP_DIR \
+        MIX_ENV=test
 
-    ENV MIX_HOME=$MIX_HOME
-    ENV HEX_HOME=$HEX_HOME
-    ENV XDG_CACHE_HOME=$XDG_CACHE_HOME
+    ENV MIX_HOME=$MIX_HOME \
+        HEX_HOME=$HEX_HOME \
+        XDG_CACHE_HOME=$XDG_CACHE_HOME
 
     WORKDIR $APP_DIR
 
@@ -302,8 +302,8 @@ FROM build-os-deps AS assets
     #   && node node_modules/webpack/bin/webpack.js --mode production
 
     # Install AWS cli binaries
-    # COPY --from=installer /usr/local/aws-cli/ /usr/local/aws-cli/
-    # COPY --from=installer /aws-cli-bin/ /usr/local/bin/
+    # COPY --from=deploy-install /usr/local/aws-cli/ /usr/local/aws-cli/
+    # COPY --from=deploy-install /aws-cli-bin/ /usr/local/bin/
 
 # Create Phoenix digest
 FROM deps AS digest
@@ -454,9 +454,6 @@ FROM ${INSTALL_IMAGE_NAME}:${INSTALL_IMAGE_TAG} AS deploy-install
 
 FROM ${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG} AS deploy-base
     ARG LANG
-    ENV LANG=$LANG
-
-    ARG APP_DIR
     ARG APP_USER
     ARG APP_GROUP
     ARG APP_USER_ID
@@ -595,7 +592,6 @@ FROM build-os-deps AS dev
         # other packages removed, are no longer needed.
         # apt-get purge -y --auto-remove curl && \
 
-
         # Delete local repository of retrieved package files in /var/cache/apt/archives
         # This is handled automatically by /etc/apt/apt.conf.d/docker-clean
         # Use this if not running --mount=type=cache.
@@ -639,12 +635,14 @@ FROM build-os-deps AS dev
 FROM deploy-base AS deploy
     ARG LANG
     ARG APP_DIR
-
+    ARG APP_NAME
     ARG APP_USER
-    ARG APP_PORT
+    ARG APP_GROUP
 
-    ARG MIX_ENV
+    ARG MIX_ENV=prod
     ARG RELEASE
+
+    ARG APP_PORT
 
     # Set environment vars used by the app
     # SECRET_KEY_BASE and DATABASE_URL env vars should be set when running the application
@@ -677,7 +675,7 @@ FROM deploy-base AS deploy
     # When using a startup script, unpack release under "/app/current" dir
     # WORKDIR $APP_DIR/current
 
-    COPY --from=deploy-release --chown="$APP_USER:$APP_GROUP" "/app/_build/$MIX_ENV/rel/${RELEASE}" ./
+    COPY --from=deploy-release --chown="$APP_USER:$APP_GROUP" "/app/_build/${MIX_ENV}/rel/${RELEASE}" ./
 
     EXPOSE $PORT
 
