@@ -6,6 +6,7 @@ ARG ELIXIR_VERSION=1.13.3
 ARG OTP_VERSION=24.3.1
 # ARG NODE_VERSION=14.4
 ARG NODE_VERSION=16.14.1
+# ARG NODE_VERSION=lts
 
 # ARG ALPINE_VERSION=3.14.3
 ARG ALPINE_VERSION=3.15.0
@@ -148,9 +149,14 @@ ARG APP_NAME=app
 ARG APP_DIR=/app
 
 # OS user for app to run under
+# nonroot:x:65532:65532:nonroot:/home/nonroot:/usr/sbin/nologin
+# nobody:x:65534:65534:nobody:/nonexistent:/usr/sbin/nologin
 ARG APP_USER=nonroot
 # OS group that app runs under
 ARG APP_GROUP=$APP_USER
+# OS numeric user and group id
+ARG APP_USER_ID=65532
+ARG APP_GROUP_ID=$APP_USER_ID
 
 ARG LANG=C.UTF-8
 
@@ -337,6 +343,7 @@ deploy-release:
     ENV MIX_ENV=prod
 
     WORKDIR $APP_DIR
+
     # Compile deps separately from application for better caching
     RUN mix deps.compile
 

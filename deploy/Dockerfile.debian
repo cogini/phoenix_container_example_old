@@ -10,34 +10,63 @@
 # https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/experimental.md
 
 ARG ELIXIR_VERSION=1.13.3
-ARG OTP_VERSION=24.2
+# ARG OTP_VERSION=23.3.4
+ARG OTP_VERSION=24.3.1
+# ARG NODE_VERSION=14.4
 ARG NODE_VERSION=16.14.1
-
-# ARG ELIXIR_DEBIAN_VERSION=buster-20210208
-ARG ELIXIR_DEBIAN_VERSION=bullseye-20210902-slim
-# ARG DEBIAN_VERSION=buster-slim
-ARG DEBIAN_VERSION=bullseye-slim
+# ARG NODE_VERSION=lts
 
 ARG AWS_CLI_VERSION=2.0.61
 
-# Build image
-# ARG BUILD_IMAGE_NAME=elixir
-# ARG BUILD_IMAGE_TAG=${ELIXIR_VERSION}
-ARG BUILD_IMAGE_NAME=hexpm/elixir
+# ARG ELIXIR_DEBIAN_VERSION=buster-20210208
+ARG ELIXIR_DEBIAN_VERSION=bullseye-20210902-slim
+
+# https://docker.debian.net/
+# https://hub.docker.com/_/debian
+# ARG DEBIAN_VERSION=buster-slim
+ARG DEBIAN_VERSION=bullseye-slim
+
+# Docker registry for internal images, e.g. 123.dkr.ecr.ap-northeast-1.amazonaws.com/
+# If blank, docker.io will be used. If specified, should have a trailing slash.
+ARG REGISTRY=""
+# Registry for public base images, e.g. debian or alpine.
+# Public images may be mirrored into the private registry, with e.g. Skopeo
+ARG PUBLIC_REGISTRY=$REGISTRY
+
+ARG BUILD_IMAGE_NAME=${PUBLIC_REGISTRY}hexpm/elixir
 ARG BUILD_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-${ELIXIR_DEBIAN_VERSION}
 
-# Deploy base image
-ARG DEPLOY_IMAGE_NAME=debian
+ARG DEPLOY_IMAGE_NAME=${PUBLIC_REGISTRY}debian
 ARG DEPLOY_IMAGE_TAG=$DEBIAN_VERSION
 
-# Make apt-get be quiet
-ARG DEBIAN_FRONTEND=noninteractive
-ARG APT_OPTS="-y -qq -o=Dpkg::Use-Pty=0 --no-install-recommends"
-ARG APT_OPTS_UPDATE="-qq --no-install-recommends"
+ARG INSTALL_IMAGE_NAME=$DEPLOY_IMAGE_NAME
+ARG INSTALL_IMAGE_TAG=$DEPLOY_IMAGE_TAG
 
-# Docker registry for base images, default is docker.io
-# If specified, should have a trailing slash
-ARG REGISTRY=""
+# App name, used to name directories
+ARG APP_NAME=app
+
+# Dir where app is installed
+ARG APP_DIR=/app
+
+# OS user for app to run under
+# nonroot:x:65532:65532:nonroot:/home/nonroot:/usr/sbin/nologin
+# nobody:x:65534:65534:nobody:/nonexistent:/usr/sbin/nologin
+ARG APP_USER=nonroot
+# OS group that app runs under
+ARG APP_GROUP=$APP_USER
+# OS numeric user and group id
+ARG APP_USER_ID=65532
+ARG APP_GROUP_ID=$APP_USER_ID
+
+ARG LANG=C.UTF-8
+
+# ARG http_proxy
+# ARG https_proxy=$http_proxy
+
+# Build cache dirs
+ARG MIX_HOME=/opt/mix
+ARG HEX_HOME=/opt/hex
+ARG XDG_CACHE_HOME=/opt/cache
 
 # Elixir release env to build
 ARG MIX_ENV=prod
@@ -53,628 +82,627 @@ ARG RELEASE=prod
 #   ]
 # end
 
-# App name, used to name directories
-ARG APP_NAME=app
+# App listen port
+ARG APP_PORT=4000
 
-# OS user that app runs under
-ARG APP_USER=app
+# Create build base image with OS dependencies
 
-# OS group that app runs under
-ARG APP_GROUP="$APP_USER"
+FROM ${BUILD_IMAGE_NAME}:${BUILD_IMAGE_TAG} AS build-os-deps
+    # ARG http_proxy
+    # ARG https_proxy
 
-# Dir that app runs under
-ARG APP_DIR=/app
+    ARG NODE_VERSION
 
-ARG LANG=C.UTF-8
+    ARG APP_USER
+    ARG APP_GROUP
+    ARG APP_USER_ID
+    ARG APP_GROUP_ID
 
-ARG http_proxy
-ARG https_proxy=$http_proxy
+    # Create OS user and group to run app under
+    RUN if ! grep -q "$APP_USER" /etc/passwd; \
+        then groupadd -g "$APP_GROUP_ID" "$APP_GROUP" && \
+        useradd -l -u "$APP_USER_ID" -g "$APP_GROUP" -s /usr/sbin/nologin "$APP_USER" && \
+        rm /var/log/lastlog && rm /var/log/faillog; fi
 
-##########################################################################
-# Fetch OS build dependencies
+    # Configure apt caching for use with BuildKit.
+    # The default Debian Docker image has special config to clear caches.
+    # If we are using --mount=type=cache, then we want it to preserve cached files.
+    RUN set -exu && \
+        rm -f /etc/apt/apt.conf.d/docker-clean && \
+        echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache && \
+        echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression
 
-FROM ${REGISTRY}${BUILD_IMAGE_NAME}:${BUILD_IMAGE_TAG} AS os-deps
+    # Install tools and libraries to build binary libraries
+    # Not necessary for a minimal Phoenix app, but likely needed
+    RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
+        --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
+        --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
+        set -exu && \
+        apt-get update -qq && \
+        DEBIAN_FRONTEND=noninteractive \
+        apt-get -y install -y -qq --no-install-recommends \
+            # Enable installation of packages over https
+            apt-transport-https \
+            # Enable app to make outbound SSL calls.
+            ca-certificates \
+            build-essential \
+            curl \
+            git \
+            gnupg \
+            gnupg-agent \
+            jq \
+            # software-properties-common \
+            lsb-release \
+            # Support ssl in container, as opposed to load balancer
+            openssl \
 
-ARG http_proxy
-ARG https_proxy
+            # Install default nodejs
+            # nodejs \
 
-ARG LANG
+            # Install default Postgres
+            # libpq-dev \
+            # postgresql-client \
+            && \
 
-ARG DEBIAN_FRONTEND
-ARG APT_OPTS
-ARG APT_OPTS_UPDATE
+        # Install node using n
+        curl -L https://raw.githubusercontent.com/tj/n/master/bin/n -o /usr/local/bin/n && \
+        chmod +x /usr/local/bin/n && \
+        # Install lts version
+        # n lts && \
+        # Install specific version
+        n "$NODE_VERSION" && \
+        rm /usr/local/bin/n && \
 
-ARG NODE_VERSION
+        # Install latest Postgres
+        # curl -sL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /etc/apt/trusted.gpg.d/postgresql-ACCC4CF8.asc && \
+        # echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -sc)-pgdg main" | tee /etc/apt/sources.list.d/pgdg.list && \
+        # echo "Package: *\nPin: release o=apt.postgresql.org\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/pgdg.pref && \
+        # apt-get update -qq && \
+        # apt-get -y install -y -qq --no-install-recommends libpq-dev postgresql-client &&
 
-# Configure apt caching for use with BuildKit
-# The default Debian image has special config to avoid caches, but we want them now
-RUN set -exu \
-    && rm -f /etc/apt/apt.conf.d/docker-clean \
-    && printf 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache \
-    && printf 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression
+        # Install Microsoft ODBC Driver for SQL Server
+        # curl -sL https://packages.microsoft.com/keys/microsoft.asc -o /etc/apt/trusted.gpg.d/microsoft.asc && \
+        # curl -s https://packages.microsoft.com/config/debian/11/prod.list -o /etc/apt/sources.list.d/mssql-release.list && \
+        # export ACCEPT_EULA=Y && \
+        # apt-get -qq update -qq && \
+        # apt-get -y install -y -qq --no-install-recommends msodbcsql17 && \
 
-# Install tools and libraries to build binary libraries
-# Not necessary for a minimal Phoenix app, but likely needed
-RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
-    --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
-    set -exu \
-    && apt-get update $APT_OPTS_UPDATE \
-    # Avoid warnings
-    # && apt-get -y install $APT_OPTS dialog apt-utils \
-    && apt-get -y install $APT_OPTS \
-        # Enable installation of packages over https
-        apt-transport-https \
-        ca-certificates \
-        curl \
-        gnupg \
-        gnupg-agent \
-        # software-properties-common \
-        build-essential \
-        git \
-        lsb-release \
+        # Install specific version of mysql from MySQL repo
+        # mysql-5.7 is not available for Debian Bullseye (11), only Buster (10)
+        # The key id comes from this page: https://dev.mysql.com/doc/refman/5.7/en/checking-gpg-signature.html
+        # apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 3A79BD29
+        #   gpg: key 3A79BD29: public key "MySQL Release Engineering <mysql-build@oss.oracle.com>" imported
+        # export APT_KEY='859BE8D7C586F538430B19C2467B942D3A79BD29' && \
+        # export GPGHOME="$(mktemp -d)" && \
+        # gpg --batch --keyserver keyserver.ubuntu.com --recv-keys "$APT_KEY" && \
+        # mkdir -p /etc/apt/keyrings && \
+        # gpg --batch --export "$APT_KEY" > /etc/apt/keyrings/mysql.gpg && \
+        # gpgconf --kill all && \
+        # rm -rf "$GPGHOME" && \
+        # rm -rf "${HOME}/.gnupg" && \
+        # echo "deb [ signed-by=/etc/apt/keyrings/mysql.gpg ] http://repo.mysql.com/apt/debian/ $(lsb_release -sc) mysql-5.7" | tee /etc/apt/sources.list.d/mysql.list && \
+        # echo "Package: *\nPin: release o=repo.mysql.com\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/mysql.pref && \
+        # apt-get update -qq && \
+        # DEBIAN_FRONTEND=noninteractive \
+        # apt-get -y install -y -qq --no-install-recommends libmysqlclient-dev mysql-client && \
 
-        # node needs python2
-        python-dev \
-        python-minimal \
-        python-pip \
-        python-setuptools \
-        # Installed via pip
-        # python-virtualenv \
+        # https://www.networkworld.com/article/3453032/cleaning-up-with-apt-get.html
+        # https://manpages.ubuntu.com/manpages/jammy/man8/apt-get.8.html
 
-        # python3-dev \
-        # python3-minimal \
-        # python3-pip \
-        # python3-setuptools \
+        # Remove packages installed temporarily. Removes everything related to
+        # packages, including the configuration files, and packages
+        # automatically installed because a package required them but, with the
+        # other packages removed, are no longer needed.
+        # apt-get purge -y --auto-remove curl && \
 
-    # Install using n
-    && curl -L https://raw.githubusercontent.com/tj/n/master/bin/n -o /usr/local/bin/n \
-    && chmod +x /usr/local/bin/n \
-    # Install lts version
-    # && n lts \
-    # Install specific version
-    && n "$NODE_VERSION" \
-    && rm /usr/local/bin/n
+        # https://www.networkworld.com/article/3453032/cleaning-up-with-apt-get.html
+        # https://manpages.ubuntu.com/manpages/jammy/man8/apt-get.8.html
 
-    # Latest postgres
-    # && curl -sL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /etc/apt/trusted.gpg.d/postgresql-ACCC4CF8.asc \
-    # && echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -sc)-pgdg main" | tee /etc/apt/sources.list.d/pgdg.list \
-    # && echo "Package: *\nPin: release o=apt.postgresql.org\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/pgdg.pref \
-    # && apt-get update $APT_OPTS_UPDATE \
-    # && apt-get -y install $APT_OPTS \
-    #     libpq-dev \
-    #     postgresql-client
+        # Delete local repository of retrieved package files in /var/cache/apt/archives
+        # This is handled automatically by /etc/apt/apt.conf.d/docker-clean
+        # Use this if not running --mount=type=cache.
+        # apt-get clean && \
 
-    # Microsoft ODBC Driver for SQL Server
-    # && curl -sL https://packages.microsoft.com/keys/microsoft.asc -o /etc/apt/trusted.gpg.d/microsoft.asc \
-    # && curl -s https://packages.microsoft.com/config/debian/10/prod.list -o /etc/apt/sources.list.d/mssql-release.list \
-    # && export ACCEPT_EULA=Y \
-    # && apt-get -qq update $APT_OPTS_UPDATE && apt-get -y install $APT_OPTS msodbcsql17 \
-    # && rm -rf /var/lib/dpkg
+        # Delete info on installed packages. This saves some space, but it can
+        # be useful to have them as a record of what was installed, e.g. for auditing.
+        # rm -rf /var/lib/dpkg && \
 
-    # && rm -rf /var/lib/apt/lists/*
+        # Delete debconf data files to save some space
+        # rm -rf /var/cache/debconf && \
 
-##########################################################################
-# Fetch app library dependencies
+        # Delete index of available files from apt-get update
+        # Use this if not running --mount=type=cache.
+        # rm -rf /var/lib/apt/lists/*
 
-FROM os-deps AS deps
+        # Clear logs of installed packages
+        truncate -s 0 /var/log/apt/* && \
+        truncate -s 0 /var/log/dpkg.log
 
-ARG http_proxy
-ARG https_proxy
-ARG LANG
-ARG MIX_ENV
 
-WORKDIR /app
+FROM build-os-deps AS build-deps-get
+    ARG http_proxy
+    ARG https_proxy
+    ARG LANG
+    ARG MIX_ENV
+    ARG APP_DIR
 
-# Get Elixir app deps
-COPY config ./config
-COPY mix.exs .
-COPY mix.lock .
+    WORKDIR $APP_DIR
 
-RUN --mount=type=cache,target=~/.hex/packages/hexpm,sharing=locked \
-    --mount=type=cache,target=~/.cache/rebar3,sharing=locked \
-    mix do local.rebar --force, local.hex --force, deps.get
-    # mix do local.rebar --force, local.hex --force, deps.get --only $MIX_ENV
+    # Get Elixir app deps
+    COPY config ./config
+    COPY mix.exs .
+    COPY mix.lock .
 
-##########################################################################
-# Environment to run tests
+    # Install build tools and get app deps
+    RUN --mount=type=cache,target=~/.hex/packages/hexpm,sharing=locked \
+        --mount=type=cache,target=~/.cache/rebar3,sharing=locked \
+        mix do local.rebar --force, local.hex --force, deps.get
+        # mix do local.rebar --force, local.hex --force, deps.get --only $MIX_ENV
 
-FROM deps AS test
+    RUN mix esbuild.install
 
-ARG LANG
-ARG MIX_ENV
+# Base image used for running tests
+FROM build-deps-get AS test-image
+    ARG LANG
+    ARG APP_DIR
+    ARG MIX_HOME
+    ARG HEX_HOMEE
+    ARG XDG_CACHE_HOME
 
-WORKDIR /app
+    ENV LANG=$LANG
+    ENV HOME=$APP_DIR
+    ENV MIX_ENV=test
 
-# Instead of copying sources, could use bind mount, e.g.
-# RUN --mount=target=.
-# see https://adoptingerlang.org/docs/production/docker/#efficient-caching
-COPY lib ./lib
-COPY priv ./priv
-COPY test ./test
-COPY bin ./bin
+    ENV MIX_HOME=$MIX_HOME
+    ENV HEX_HOME=$HEX_HOME
+    ENV XDG_CACHE_HOME=$XDG_CACHE_HOME
 
-RUN --mount=type=cache,target=~/.hex/packages/hexpm,sharing=locked \
-    --mount=type=cache,target=~/.cache/rebar3,sharing=locked \
-    mix compile
+    WORKDIR $APP_DIR
 
-##########################################################################
+    # Compile deps separately from app, improving caching
+    RUN --mount=type=cache,target=~/.hex/packages/hexpm,sharing=locked \
+        --mount=type=cache,target=~/.cache/rebar3,sharing=locked \
+        mix deps.compile
+
+    # COPY --if-exists coveralls.json .formatter.exs .credo.exs dialyzer-ignore ./
+
+    # Instead of copying sources, could use bind mount, e.g.
+    # RUN --mount=target=.
+    # see https://adoptingerlang.org/docs/production/docker/#efficient-caching
+    COPY lib ./lib
+    COPY priv ./priv
+    COPY test ./test
+    COPY bin ./bin
+
+    RUN --mount=type=cache,target=~/.hex/packages/hexpm,sharing=locked \
+        --mount=type=cache,target=~/.cache/rebar3,sharing=locked \
+        mix compile --warnings-as-errors
+
 # Build Phoenix assets
+FROM build-os-deps AS assets
+    ARG LANG
 
-FROM os-deps AS assets
+    # Get assets from phoenix
+    COPY --from=deps /app/deps /app/deps/
 
-ARG LANG
+    WORKDIR /app/assets
 
-# Get assets from phoenix
-COPY --from=deps /app/deps /app/deps/
+    COPY assets/package.json assets/package-lock.json ./
 
-WORKDIR /app/assets
+    # Cache npm cache directory as type=cache
+    RUN --mount=type=cache,target=~/.npm,sharing=locked \
+        npm --prefer-offline --no-audit --progress=false --loglevel=error ci
 
-COPY assets/package.json assets/package-lock.json ./
+    COPY assets ./
 
-# Cache npm cache directory as type=cache
-RUN --mount=type=cache,target=~/.npm,sharing=locked \
-    npm --prefer-offline --no-audit --progress=false --loglevel=error ci
+    RUN npm run deploy
 
-COPY assets ./
+    # Generate assets the old way
+    # RUN npm install \
+    #   && node node_modules/webpack/bin/webpack.js --mode production
 
-RUN npm run deploy
+    # Install AWS cli binaries
+    # COPY --from=installer /usr/local/aws-cli/ /usr/local/aws-cli/
+    # COPY --from=installer /aws-cli-bin/ /usr/local/bin/
 
-# Generate assets the old way
-# RUN npm install \
-#   && node node_modules/webpack/bin/webpack.js --mode production
-
-# Install AWS cli binaries
-# COPY --from=installer /usr/local/aws-cli/ /usr/local/aws-cli/
-# COPY --from=installer /aws-cli-bin/ /usr/local/bin/
-
-##########################################################################
 # Create Phoenix digest
-
 FROM deps AS digest
+    ARG LANG
+    ARG MIX_ENV
 
-ARG LANG
-ARG MIX_ENV
+    COPY --from=assets /app/priv ./priv
 
-COPY --from=assets /app/priv ./priv
+    # https://hexdocs.pm/phoenix/Mix.Tasks.Phx.Digest.html
+    RUN --mount=type=cache,target=~/.hex/packages/hexpm,sharing=locked \
+        --mount=type=cache,target=~/.cache/rebar3,sharing=locked \
+        mix phx.digest
 
-# https://hexdocs.pm/phoenix/Mix.Tasks.Phx.Digest.html
-RUN --mount=type=cache,target=~/.hex/packages/hexpm,sharing=locked \
-    --mount=type=cache,target=~/.cache/rebar3,sharing=locked \
-    mix phx.digest
+    # This does a partial compile.
+    # Doing "mix do compile, phx.digest, release" in a single stage is worse,
+    # because a single line of code changed causes a complete recompile.
+    # With the stages separated most of the compilation is cached.
 
-# This does a partial compile.
-# Doing "mix do compile, phx.digest, release" in a single stage is worse,
-# because a single line of code changed causes a complete recompile.
-# With the stages separated most of the compilation is cached.
-
-##########################################################################
 # Create release
-
 FROM digest AS release
+    ARG MIX_ENV
+    ARG LANG
+    ARG RELEASE
 
-ARG MIX_ENV
-ARG LANG
-ARG RELEASE
+    COPY lib ./lib
+    COPY rel ./rel
 
-COPY lib ./lib
-COPY rel ./rel
+    RUN --mount=type=cache,target=~/.hex/packages/hexpm,sharing=locked \
+        --mount=type=cache,target=~/.cache/rebar3,sharing=locked \
+        mix do compile, release "$RELEASE"
 
-RUN --mount=type=cache,target=~/.hex/packages/hexpm,sharing=locked \
-    --mount=type=cache,target=~/.cache/rebar3,sharing=locked \
-    mix do compile, release "$RELEASE"
+FROM build-deps-get AS deploy-release
+    ARG APP_DIR
 
-##########################################################################
-# Stage binary installer files
+    ENV MIX_ENV=prod
+    ARG RELEASE
 
-FROM ${REGISTRY}${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG} AS installer
+    WORKDIR $APP_DIR
 
-ARG DEBIAN_FRONTEND
-ARG APT_OPTS
-ARG APT_OPTS_UPDATE
-ARG AWS_CLI_VERSION
+    # Compile deps separately from application for better caching
+    RUN mix deps.compile
 
-# Install AWS CLI v2 from binary package
-# https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2-linux.html
+    # Build JS and CS with esbuild
+    COPY assets ./assets
+    COPY priv ./priv
 
-# Configure apt caching for use with BuildKit
-RUN set -exu \
-    && rm -f /etc/apt/apt.conf.d/docker-clean \
-    && echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache \
-    && echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression
+    RUN mix assets.deploy
 
-RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
-    --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
-    set -exu \
-    && apt-get update $APT_OPTS_UPDATE \
-    # Avoid warnings
-    # && apt-get -y install $APT_OPTS dialog apt-utils \
-    # Enable installation of packages over https
-    && apt-get -y install $APT_OPTS \
-        # apt-transport-https \
-        ca-certificates \
-        curl \
-        # gnupg-agent \
-        # software-properties-common \
-        # gnupg \
-        unzip \
-  && rm -rf /var/lib/dpkg \
-  # && rm -rf /var/lib/apt/lists/* \
+    # Non-umbrella
+    COPY lib ./lib
 
-  # Install AWS CLI
-  && curl https://awscli.amazonaws.com/awscli-exe-linux-x86_64-${AWS_CLI_VERSION}.zip -o awscli-exe-linux-x86_64.zip \
-  && unzip awscli-exe-linux-x86_64.zip \
-  # Specify --bin-dir so we can copy the entire bin directory into
-  # /usr/local/bin of the final stage without accidentally copying over any
-  # other executables that may be present in /usr/local/bin of the installer stage.
-  && ./aws/install --bin-dir /aws-cli-bin/
+    # Umbrella
+    # COPY apps ./apps
 
-##########################################################################
-# Create base image with runtime dependencies
+    RUN mix compile
 
-FROM ${REGISTRY}${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG} AS runtime
+    # Build release
+    COPY rel ./rel
+    RUN mix release "$RELEASE"
 
-ARG DEBIAN_FRONTEND
-ARG APT_OPTS
-ARG APT_OPTS_UPDATE
 
-ARG LANG
-ARG APP_NAME
-ARG APP_USER
-ARG APP_GROUP
-ARG APP_DIR
+# Staging image for binaries which are copied into final deploy image
+FROM ${INSTALL_IMAGE_NAME}:${INSTALL_IMAGE_TAG} AS deploy-install
+    # ARG AWS_CLI_VERSION
 
-ARG MIX_ENV
-ARG RELEASE
+    # Configure apt caching for use with BuildKit.
+    # The default Debian Docker image has special config to clear caches.
+    # If we are using --mount=type=cache, then we want it to preserve cached files.
+    RUN set -exu && \
+        rm -f /etc/apt/apt.conf.d/docker-clean && \
+        echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache && \
+        echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression
 
-# Set environment vars used by the app
-# SECRET_KEY_BASE and DATABASE_URL env vars should be set when running the application
-# maybe set COOKIE and other things
-ENV LANG=$LANG \
-    HOME=$APP_DIR \
-    RELEASE_TMP="/run/$APP_NAME" \
-    RELEASE=${RELEASE} \
-    PORT=4000
+    RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
+        --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
+        --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
+        set -exu && \
+        apt-get update -qq && \
+        DEBIAN_FRONTEND=noninteractive \
+        apt-get -y install -y -qq --no-install-recommends \
+            # apt-transport-https \
+            ca-certificates \
+            curl \
+            gnupg-agent \
+            # software-properties-common \
+            gnupg \
+            unzip \
+            lsb-release \
+            locales \
 
-# Configure apt caching for use with BuildKit
-RUN set -exu \
-    && rm -f /etc/apt/apt.conf.d/docker-clean \
-    && echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache \
-    && echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression
+            # Needed by Erlang VM
+            libtinfo6 \
+            && \
 
-# If LANG=C.UTF-8 is not enough, build full featured locale
-# RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
-#     --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
-#     set -exu \
-#     && apt-get update $APT_OPTS_UPDATE \
-#     && apt-get -y install $APT_OPTS \
-#       locales
-#     && localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
-#
-# ENV LANG en_US.utf8
+        curl -sL https://aquasecurity.github.io/trivy-repo/deb/public.key -o /etc/apt/trusted.gpg.d/trivy.asc && \
+        printf "deb https://aquasecurity.github.io/trivy-repo/deb %s main" "$(lsb_release -sc)" | tee -a /etc/apt/sources.list.d/trivy.list && \
+        apt-get update -qq && \
+        apt-get -y install -y -qq --no-install-recommends trivy && \
 
-# Install openssl, allowing the app to listen on HTTPS.
-# May not be needed if handled outside the application (e.g. in Kubernetes ingress).
+        # curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin && \
 
-# Create dirs needed by postgresql-client but stripped from slim
-# RUN seq 1 8 | xargs -I{} mkdir -p /usr/share/man/man{}
+        # Generate locales specified in /etc/locale.gen
+        locale-gen && \
 
-RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
-    --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
-    set -exu \
-    && apt-get update $APT_OPTS_UPDATE \
-    # Avoid warnings
-    # && apt-get -y install $APT_OPTS dialog apt-utils \
-    # Enable installation of packages over https
-    && apt-get -y install $APT_OPTS \
-        apt-transport-https \
-        ca-certificates \
-        curl \
-        gnupg \
-        gnupg-agent \
-        # software-properties-common \
-        lsb-release \
-    # App deps
-    && apt-get -y install $APT_OPTS \
-        # Runtime deps
-        openssl
-        # tini \
-        # bind-utils \
+        # Remove packages installed temporarily. Removes everything related to
+        # packages, including the configuration files, and packages
+        # automatically installed because a package required them but, with the
+        # other packages removed, are no longer needed.
+        # apt-get purge -y --auto-remove curl && \
 
-        # Default Postgres
-        # libpq-dev \
-        # postgresql-client \
+        # https://www.networkworld.com/article/3453032/cleaning-up-with-apt-get.html
+        # https://manpages.ubuntu.com/manpages/jammy/man8/apt-get.8.html
 
-    # Latest PostgreSQL
-    # && curl -sL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /etc/apt/trusted.gpg.d/postgresql-ACCC4CF8.asc \
-    # && echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -sc)-pgdg main" | tee /etc/apt/sources.list.d/pgdg.list \
-    # && echo "Package: *\nPin: release o=apt.postgresql.org\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/pgdg.pref \
-    # && apt-get update $APT_OPTS_UPDATE \
-    # && apt-get -y install $APT_OPTS \
-    #     libpq-dev \
-    #     postgresql-client \
+        # Delete local repository of retrieved package files in /var/cache/apt/archives
+        # This is handled automatically by /etc/apt/apt.conf.d/docker-clean
+        # Use this if not running --mount=type=cache.
+        # apt-get clean && \
 
-    # Microsoft ODBC Driver for SQL Server
-    # && curl -sL https://packages.microsoft.com/keys/microsoft.asc -o /etc/apt/trusted.gpg.d/microsoft.asc \
-    # && curl -s https://packages.microsoft.com/config/debian/10/prod.list -o /etc/apt/sources.list.d/mssql-release.list \
-    # && export ACCEPT_EULA=Y \
-    # && apt-get -qq update && apt-get -y install $APT_OPTS msodbcsql17 \
-    # && rm -rf /var/lib/dpkg
-    # && rm -rf /var/lib/apt/lists/*
+        # Delete info on installed packages. This saves some space, but it can
+        # be useful to have them as a record of what was installed, e.g. for auditing.
+        # rm -rf /var/lib/dpkg && \
 
-# Install AWS CLI 2.x binaries
-# COPY --from=installer /usr/local/aws-cli/ /usr/local/aws-cli/
-# COPY --from=installer /aws-cli-bin/ /usr/local/bin/
+        # Delete debconf data files to save some space
+        # rm -rf /var/cache/debconf && \
 
-# Create OS user and group to run app under
-RUN groupadd -g 1000 "$APP_GROUP" \
-    && useradd -u 1000 -g "$APP_GROUP" "$APP_USER" \
-    && rm /var/log/lastlog \
-    && rm /var/log/faillog
+        # Delete index of available files from apt-get update
+        # Use this if not running --mount=type=cache.
+        # rm -rf /var/lib/apt/lists/*
 
-# Create dirs writable by app user
-RUN mkdir -p \
-        "/run/$APP_NAME" \
-    && chown -R "$APP_USER:$APP_GROUP" \
-        "/run/$APP_NAME"
+        # Clear logs of installed packages
+        truncate -s 0 /var/log/apt/* && \
+        truncate -s 0 /var/log/dpkg.log
 
-##########################################################################
+    # If LANG=C.UTF-8 is not enough, build full featured locale
+    # RUN localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
+    # ENV LANG en_US.utf8
+
+    # Install AWS CLI v2 from binary package
+    # https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html
+    # https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2-linux.html
+    # RUN set -ex && \
+    #     curl -sSfL "https://awscli.amazonaws.com/awscli-exe-linux-$(uname -m)-${AWS_CLI_VERSION}.zip" -o "awscliv2.zip" && \
+    #     unzip -q awscliv2.zip && \
+    #     ./aws/install && \
+    #     rm -rf ./aws && \
+    #     rm awscliv2.zip
+
+
+FROM ${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG} AS deploy-base
+    ARG LANG
+    ARG APP_DIR
+    ARG APP_NAME
+
+    ARG APP_USER
+    ARG APP_GROUP
+    ARG APP_USER_ID
+    ARG APP_GROUP_ID
+
+    ARG MIX_ENV
+    ARG RELEASE
+
+    # Create OS user and group to run app under
+    RUN if ! grep -q "$APP_USER" /etc/passwd; \
+        then groupadd -g "$APP_GROUP_ID" "$APP_GROUP" && \
+        useradd -l -u "$APP_USER_ID" -g "$APP_GROUP" -s /usr/sbin/nologin "$APP_USER" && \
+        rm /var/log/lastlog && rm /var/log/faillog; fi
+
+    ENV LANG=$LANG
+
+    # Configure apt caching for use with BuildKit.
+    # The default Debian Docker image has special config to clear caches.
+    # If we are using --mount=type=cache, then we want it to preserve cached files.
+    RUN set -exu && \
+        rm -f /etc/apt/apt.conf.d/docker-clean && \
+        echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache && \
+        echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression
+
+    # If LANG=C.UTF-8 is not enough, build full featured locale
+    # RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
+    #     --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
+    #     set -exu && \
+    #       apt-get update -qq && \
+    #       DEBIAN_FRONTEND=noninteractive \
+    #       apt-get -y install -y -qq --no-install-recommends locales && \
+    #       localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8 \
+    #
+    # ENV LANG en_US.utf8
+
+    # Create dirs needed by postgresql-client but stripped from Debian slim
+    # RUN seq 1 8 | xargs -I{} mkdir -p /usr/share/man/man{}
+
+    RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
+        --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
+        --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
+        set -exu && \
+        apt-get update -qq && \
+        DEBIAN_FRONTEND=noninteractive \
+        apt-get -y install -y -qq --no-install-recommends \
+            # Enable installation of packages over https
+            # apt-transport-https \
+            # Enable the app to make outbound SSL calls.
+            ca-certificates \
+
+            # Allow app to listen on HTTPS. May not be needed if handled
+            # outside the application, e.g. in load balancer.
+            openssl \
+
+            # tini is a minimal init which will reap zombie processes
+            # https://github.com/krallin/tini
+            # tini \
+            # bind-utils \
+
+            # Needed by Erlang VM
+            libtinfo6 \
+
+            && \
+
+        # Remove packages installed temporarily. Removes everything related to
+        # packages, including the configuration files, and packages
+        # automatically installed because a package required them but, with the
+        # other packages removed, are no longer needed.
+        # apt-get purge -y --auto-remove curl && \
+
+        # https://www.networkworld.com/article/3453032/cleaning-up-with-apt-get.html
+        # https://manpages.ubuntu.com/manpages/jammy/man8/apt-get.8.html
+
+        # Delete local repository of retrieved package files in /var/cache/apt/archives
+        # This is handled automatically by /etc/apt/apt.conf.d/docker-clean
+        # Use this if not running --mount=type=cache.
+        # apt-get clean && \
+
+        # Delete info on installed packages. This saves some space, but it can
+        # be useful to have them as a record of what was installed, e.g. for auditing.
+        # rm -rf /var/lib/dpkg && \
+
+        # Delete debconf data files to save some space
+        # rm -rf /var/cache/debconf && \
+
+        # Delete index of available files from apt-get update
+        # Use this if not running --mount=type=cache.
+        # rm -rf /var/lib/apt/lists/*
+
+        # Clear logs of installed packages
+        truncate -s 0 /var/log/apt/* && \
+        truncate -s 0 /var/log/dpkg.log
+
+# Scan deploy image for security vulnerabilities
+FROM deploy-base AS deploy-scan
+    COPY +deploy-install/trivy/bin/trivy /usr/local/bin/trivy
+    COPY +deploy-install/trivy/share/templates /usr/local/share/trivy/templates
+    # COPY +deploy-install/grype /usr/local/bin/grype
+
+
 # Dev image which mounts code from local filesystem
-
 # FROM ${REGISTRY}${ELIXIR_IMAGE_NAME}:${ELIXIR_IMAGE_TAG} AS dev
-FROM os-deps AS dev
+FROM build-os-deps AS dev
+    # ARG http_proxy
+    # ARG https_proxy=$http_proxy
 
-ARG DEBIAN_FRONTEND
-ARG APT_OPTS
-ARG APT_OPTS_UPDATE
+    ARG LANG
+    ARG MIX_ENV
 
-ARG http_proxy
-ARG https_proxy=$http_proxy
+    ARG APP_NAME
+    ARG APP_USER
+    ARG APP_GROUP
+    ARG APP_DIR
+    ARG APP_PORT
 
-ARG LANG
-ARG MIX_ENV
+    # Set environment vars used by the app
+    ENV LANG=$LANG \
+        HOME=$APP_DIR \
+        PORT=$APP_PORT
 
-ARG APP_NAME
-ARG APP_USER
-ARG APP_GROUP
-ARG APP_DIR
+    RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
+        --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
+        --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
+        set -exu && \
+        apt-get update -qq && \
+        DEBIAN_FRONTEND=noninteractive \
+        apt-get -y install -y -qq --no-install-recommends \
+            inotify-tools \
+            ssh \
+            sudo \
+            && \
+        # Remove packages installed temporarily. Removes everything related to
+        # packages, including the configuration files, and packages
+        # automatically installed because a package required them but, with the
+        # other packages removed, are no longer needed.
+        # apt-get purge -y --auto-remove curl && \
 
-# Set environment vars used by the app
-ENV LANG=$LANG \
-    HOME=$APP_DIR \
-    PORT=4000
+        # https://www.networkworld.com/article/3453032/cleaning-up-with-apt-get.html
+        # https://manpages.ubuntu.com/manpages/jammy/man8/apt-get.8.html
 
-# Configure apt caching for use with BuildKit
-RUN set -exu \
-    && rm -f /etc/apt/apt.conf.d/docker-clean \
-    && echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache \
-    && echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression
+        # Delete local repository of retrieved package files in /var/cache/apt/archives
+        # This is handled automatically by /etc/apt/apt.conf.d/docker-clean
+        # Use this if not running --mount=type=cache.
+        # apt-get clean && \
 
-# If LANG=C.UTF-8 is not enough, use full featured locale
-# RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
-#     --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
-#     set -exu \
-#     && apt-get update $APT_OPTS_UPDATE \
-#     && apt-get -y install $APT_OPTS \
-#       locales
-#     && localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
-#
-# ENV LANG en_US.utf8
+        # Delete info on installed packages. This saves some space, but it can
+        # be useful to have them as a record of what was installed, e.g. for auditing.
+        # rm -rf /var/lib/dpkg && \
 
-# Install openssl, allowing the app to listen on HTTPS.
-# May not be needed if handled outside the application (e.g. in Kubernetes ingress).
+        # Delete debconf data files to save some space
+        # rm -rf /var/cache/debconf && \
 
-# Create dirs needed by postgres-client but stripped from slim
-# RUN seq 1 8 | xargs -I{} mkdir -p /usr/share/man/man{}
+        # Delete index of available files from apt-get update
+        # Use this if not running --mount=type=cache.
+        # rm -rf /var/lib/apt/lists/*
 
-RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
-    --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
-    set -exu -o pipefail \
-    && apt-get update $APT_OPTS_UPDATE \
-    # Avoid warnings
-    # && apt-get -y install $APT_OPTS dialog apt-utils \
-    # Enable installation of packages over https
-    && apt-get -y install $APT_OPTS \
-        apt-transport-https \
-        ca-certificates \
-        curl \
-        gnupg \
-        gnupg-agent \
-        # software-properties-common \
-        lsb-release \
-    # App deps
-    && apt-get -y install $APT_OPTS \
-        # Runtime deps
-        openssl \
-
-        # Default postgres
-        # libpq-dev \
-        # postgresql-client \
-
-        # Dev tools
-        ca-certificates \
-        curl \
-        git \
-        gzip \
-        inotify-tools \
-        ssh \
-        sudo \
-        tar \
-
-    # Install newer version of nodejs
-        # nodejs npm \
-    # && npm install -g n \
-    # # Install lts version
-    # # && n lts \
-    # # Install specific version
-    # && n "$NODE_VERSION" \
-    # && apt-get purge -y nodejs npm \
-
-    # Install using n
-    # && curl -L https://raw.githubusercontent.com/tj/n/master/bin/n -o /usr/local/bin/n \
-    # && chmod +x /usr/local/bin/n \
-    # # Install lts version
-    # # && n lts \
-    # # Install specific version
-    # && n "$NODE_VERSION" \
-    # && rm /usr/local/bin/n \
-
-    # Latest postgres
-    && curl -sL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /etc/apt/trusted.gpg.d/postgresql-ACCC4CF8.asc \
-    && printf "deb http://apt.postgresql.org/pub/repos/apt/ %s-pgdg main" "$(lsb_release -sc)" | tee /etc/apt/sources.list.d/pgdg.list \
-    && printf "Package: *\nPin: release o=apt.postgresql.org\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/pgdg.pref \
-    && apt-get update $APT_OPTS_UPDATE \
-    && apt-get -y install $APT_OPTS \
-        libpq-dev \
-        postgresql-client
-
-    # Microsoft ODBC Driver for SQL Server
-    # && curl -sL https://packages.microsoft.com/keys/microsoft.asc -o /etc/apt/trusted.gpg.d/microsoft.asc \
-    # && curl -s https://packages.microsoft.com/config/debian/10/prod.list -o /etc/apt/sources.list.d/mssql-release.list \
-    # && export ACCEPT_EULA=Y \
-    # && apt-get -qq update && apt-get -y install $APT_OPTS msodbcsql17 \
-
-    # && rm -rf /var/lib/dpkg
-    # && rm -rf /var/lib/apt/lists/*
-
-# Create user and group to run under with specific uid
-RUN groupadd -g 10001 "$APP_GROUP" \
-    && useradd -u 10000 -g "$APP_GROUP" "$APP_USER" \
-    && rm /var/log/lastlog \
-    && rm /var/log/faillog
+        # Clear logs of installed packages
+        truncate -s 0 /var/log/apt/* && \
+        truncate -s 0 /var/log/dpkg.log
 
     # Create app dirs
-RUN mkdir -p "/run/$APP_NAME" \
-    # Make dirs writable by app
-    && chown -R "$APP_USER:$APP_GROUP" \
-        # Needed for RELEASE_TMP
-        "/run/$APP_NAME"
+    RUN mkdir -p "/run/$APP_NAME" \
+        # Make dirs writable by app
+        && chown -R "$APP_USER:$APP_GROUP" \
+            # Needed for RELEASE_TMP
+            "/run/$APP_NAME"
 
-USER $APP_USER
+    USER $APP_USER
 
-WORKDIR $APP_DIR
+    WORKDIR $APP_DIR
 
-RUN --mount=type=cache,target=~/.hex/packages/hexpm,sharing=locked \
-    --mount=type=cache,target=~/.cache/rebar3,sharing=locked \
-    mix do local.rebar --force, local.hex --force
+    RUN --mount=type=cache,target=~/.hex/packages/hexpm,sharing=locked \
+        --mount=type=cache,target=~/.cache/rebar3,sharing=locked \
+        mix do local.rebar --force, local.hex --force
 
-EXPOSE $PORT
+    EXPOSE $PORT
 
-CMD [ "sleep", "infinity" ]
+    CMD [ "sleep", "infinity" ]
 
-##########################################################################
+
 # Create final app image which gets deployed
+FROM deploy-base AS deploy
+    ARG LANG
+    ARG APP_DIR
 
-FROM runtime AS deploy
+    ARG APP_USER
 
-ARG LANG
+    ARG MIX_ENV
+    ARG RELEASE
 
-ARG APP_USER
-ARG APP_GROUP
-ARG APP_DIR
+    # Set environment vars used by the app
+    # SECRET_KEY_BASE and DATABASE_URL env vars should be set when running the application
+    # maybe set COOKIE and other things
+    ENV LANG=$LANG \
+        HOME=$APP_DIR \
+        RELEASE_TMP="/run/$APP_NAME" \
+        RELEASE=${RELEASE} \
+        PORT=4000
 
-ARG MIX_ENV
-ARG RELEASE
+    # Setting WORKDIR after USER makes directory be owned by the user.
+    # Setting it before makes it owned by root, which is more secure.
+    # The app needs to be able to write to a tmp directory on startup, which by
+    # default is under the release. This can be changed by setting RELEASE_TMP to
+    # /tmp or, more securely, /run/foo
+    WORKDIR $APP_DIR
 
-# Set environment vars used by the app
-# SECRET_KEY_BASE and DATABASE_URL env vars should be set when running the application
-# maybe set COOKIE and other things
-ENV LANG=$LANG \
-    HOME=$APP_DIR \
-    RELEASE_TMP="/run/$APP_NAME" \
-    RELEASE=${RELEASE} \
-    PORT=4000
+    # When using a startup script, copy to /app/bin
+    # COPY bin ./bin
 
-# Setting WORKDIR after USER makes directory be owned by the user.
-# Setting it before makes it owned by root, which is more secure.
-# The app needs to be able to write to a tmp directory on startup, which by
-# default is under the release. This can be changed by setting RELEASE_TMP to
-# /tmp or, more securely, /run/foo
-WORKDIR $APP_DIR
+    USER $APP_USER
 
-# When using a startup script, copy to /app/bin
-# COPY bin ./bin
+    # Chown files while copying. Running "RUN chown -R app:app /app"
+    # adds an extra layer which is about 10Mb, a huge difference when the
+    # image for a new phoenix app is around 20Mb.
 
-USER $APP_USER
+    # TODO: For more security, change specific files to have group read/execute
+    # permissions while leaving them owned by root
 
-# Chown files while copying. Running "RUN chown -R app:app /app"
-# adds an extra layer which is about 10Mb, a huge difference when the
-# image for a new phoenix app is around 20Mb.
+    # When using a startup script, unpack release under "/app/current" dir
+    # WORKDIR $APP_DIR/current
 
-# TODO: For more security, change specific files to have group read/execute
-# permissions while leaving them owned by root
+    COPY --from=deploy-release --chown="$APP_USER:$APP_GROUP" "/app/_build/$MIX_ENV/rel/${RELEASE}" ./
 
-# When using a startup script, unpack release under "/app/current" dir
-# WORKDIR $APP_DIR/current
+    EXPOSE $PORT
 
-COPY --from=release --chown="$APP_USER:$APP_GROUP" "/app/_build/$MIX_ENV/rel/${RELEASE}" ./
+    # "bin" is the directory under the unpacked release, and "prod" is the name of the release
+    ENTRYPOINT ["bin/prod"]
+    # ENTRYPOINT ["/sbin/tini", "--", "bin/prod"]
 
-EXPOSE $PORT
+    # Run app in foreground
+    CMD ["start"]
 
-# "bin" is the directory under the unpacked release, and "prod" is the name of the release
-ENTRYPOINT ["bin/prod"]
-# ENTRYPOINT ["/sbin/tini", "--", "bin/prod"]
+    # Run via startup script
+    # CMD ["/app/bin/start-docker"]
 
-# Run app in foreground
-CMD ["start"]
-
-# Run via startup script
-# CMD ["/app/bin/start-docker"]
-
-##########################################################################
-# Scan for security vulnerabilities
-
-FROM deploy as vuln
-
-ARG APT_OPTS
-ARG APT_OPTS_UPDATE
-
-# USER root
-
-RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
-    --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
-    apt-get -y install $APT_OPTS \
-        apt-transport-https \
-        ca-certificates \
-        curl \
-        gnupg \
-        gnupg-agent \
-        # software-properties-common \
-        lsb-release \
-    && curl -sL https://aquasecurity.github.io/trivy-repo/deb/public.key -o /etc/apt/trusted.gpg.d/trivy.asc \
-    && printf "deb https://aquasecurity.github.io/trivy-repo/deb %s main" "$(lsb_release -sc)" | tee -a /etc/apt/sources.list.d/trivy.list \
-    && apt-get update $APT_OPTS_UPDATE \
-    && apt-get -y install $APT_OPTS \
-        trivy
-
-RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
-    --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
-    --mount=type=cache,target=/root/.cache/trivy,sharing=locked \
-    # Succeed for issues of severity = HIGH
-    trivy filesystem --exit-code 0 --severity HIGH --no-progress / \
-    # Fail build if there are any issues of severity = CRITICAL
-    && trivy filesystem --exit-code 1 --severity CRITICAL --no-progress /
-    # Fail build if there are any issues
-    # && trivy filesystem -d --exit-code 1 --no-progress /
-
-    # && curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin \
-    # && grype -vv --fail-on medium dir:/ \
 
 ##########################################################################
 # Copy build artifacts to host
 
 FROM scratch as artifacts
 
-ARG MIX_ENV
-ARG RELEASE
+    ARG MIX_ENV
+    ARG RELEASE
 
-COPY --from=release /app/_build/$MIX_ENV/rel/${RELEASE} /release
-COPY --from=release /app/priv/static /static
+    COPY --from=release /app/_build/$MIX_ENV/rel/${RELEASE} /release
+    COPY --from=release /app/priv/static /static
 
 ##########################################################################
 # Default target

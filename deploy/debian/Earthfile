@@ -13,6 +13,8 @@ ARG AWS_CLI_VERSION=2.0.61
 # ARG ELIXIR_DEBIAN_VERSION=buster-20210208
 ARG ELIXIR_DEBIAN_VERSION=bullseye-20210902-slim
 
+# https://docker.debian.net/
+# https://hub.docker.com/_/debian
 # ARG DEBIAN_VERSION=buster-slim
 ARG DEBIAN_VERSION=bullseye-slim
 
@@ -32,7 +34,6 @@ ARG DEPLOY_IMAGE_TAG=$DEBIAN_VERSION
 ARG INSTALL_IMAGE_NAME=$DEPLOY_IMAGE_NAME
 ARG INSTALL_IMAGE_TAG=$DEPLOY_IMAGE_TAG
 
-# ARG AWS_CLI_VERSION=2.0.61
 
 # OS user for app to run under
 # nonroot:x:65532:65532:nonroot:/home/nonroot:/usr/sbin/nologin
@@ -50,15 +51,22 @@ ARG LANG=C.UTF-8
 build-os-deps:
     FROM ${BUILD_IMAGE_NAME}:${BUILD_IMAGE_TAG}
 
+    # Create OS user and group to run app under
+    RUN if ! grep -q "$APP_USER" /etc/passwd; \
+        then groupadd -g "$APP_GROUP_ID" "$APP_GROUP" && \
+        useradd -l -u "$APP_USER_ID" -g "$APP_GROUP" -s /usr/sbin/nologin "$APP_USER" && \
+        rm /var/log/lastlog && rm /var/log/faillog; fi
+
     # Configure apt caching for use with BuildKit.
-    # The default Debian image has special apt config to clear caches, but if
-    # we are using --mount=type=cache, then we want it.
-    # https://github.com/debuerreotype/debuerreotype/blob/master/scripts/debuerreotype-minimizing-config
+    # The default Debian Docker image has special config to clear caches.
+    # If we are using --mount=type=cache, then we want it to preserve cached files.
     RUN set -exu && \
         rm -f /etc/apt/apt.conf.d/docker-clean && \
         echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache && \
         echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression
 
+    # Install tools and libraries to build binary libraries
+    # Not necessary for a minimal Phoenix app, but likely needed
     RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
         --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
@@ -66,15 +74,17 @@ build-os-deps:
         apt-get update -qq && \
         DEBIAN_FRONTEND=noninteractive \
         apt-get -y install -y -qq --no-install-recommends \
+            # Enable installation of packages over https
+            apt-transport-https \
             # Enable app to make outbound SSL calls.
             ca-certificates \
-            apt-transport-https \
             build-essential \
             curl \
             git \
             gnupg \
             gnupg-agent \
             jq \
+            # software-properties-common \
             lsb-release \
             # Support ssl in container, as opposed to load balancer
             openssl \
@@ -182,8 +192,8 @@ deploy-install:
         apt-get update -qq && \
         DEBIAN_FRONTEND=noninteractive \
         apt-get -y install -y -qq --no-install-recommends \
-            ca-certificates \
             # apt-transport-https \
+            ca-certificates \
             curl \
             gnupg-agent \
             # software-properties-common \
@@ -290,6 +300,9 @@ deploy-base:
         apt-get update -qq && \
         DEBIAN_FRONTEND=noninteractive \
         apt-get -y install -y -qq --no-install-recommends \
+            # Enable installation of packages over https
+            # apt-transport-https \
+            # Enable the app to make outbound SSL calls.
             ca-certificates \
 
             # Allow app to listen on HTTPS. May not be needed if handled
@@ -305,7 +318,6 @@ deploy-base:
             libtinfo6 \
 
             && \
-
 
         # Remove packages installed temporarily. Removes everything related to
         # packages, including the configuration files, and packages
