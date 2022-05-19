@@ -462,7 +462,7 @@ FROM ${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG} AS deploy-base
     ARG APP_USER_ID
     ARG APP_GROUP_ID
 
-    ARG MIX_ENV
+    ARG MIX_ENV=prod
     ARG RELEASE
 
     # Create OS user and group to run app under
