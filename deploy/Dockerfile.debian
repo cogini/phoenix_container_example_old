@@ -64,9 +64,9 @@ ARG LANG=C.UTF-8
 # ARG https_proxy=$http_proxy
 
 # Build cache dirs
-ARG MIX_HOME=/opt/mix
-ARG HEX_HOME=/opt/hex
-ARG XDG_CACHE_HOME=/opt/cache
+# ARG MIX_HOME=/opt/mix
+# ARG HEX_HOME=/opt/hex
+# ARG XDG_CACHE_HOME=/opt/cache
 
 # Elixir release env to build
 ARG MIX_ENV=prod
@@ -104,7 +104,7 @@ FROM ${BUILD_IMAGE_NAME}:${BUILD_IMAGE_TAG} AS build-os-deps
         rm /var/log/lastlog && rm /var/log/faillog; fi
 
     # Configure apt caching for use with BuildKit.
-    # The default Debian image has special apt config to clear caches, but if
+    # The default Debian Docker image has special apt config to clear caches, but if
     # we are using --mount=type=cache, then we want it.
     # https://github.com/debuerreotype/debuerreotype/blob/master/scripts/debuerreotype-minimizing-config
     RUN set -exu && \
@@ -137,7 +137,7 @@ FROM ${BUILD_IMAGE_NAME}:${BUILD_IMAGE_TAG} AS build-os-deps
             openssl \
 
             # Install default nodejs
-            # nodejs \
+            nodejs \
 
             # Install default Postgres
             # libpq-dev \
@@ -145,15 +145,15 @@ FROM ${BUILD_IMAGE_NAME}:${BUILD_IMAGE_TAG} AS build-os-deps
             && \
 
         # Install node using n
-        curl -L https://raw.githubusercontent.com/tj/n/master/bin/n -o /usr/local/bin/n && \
-        chmod +x /usr/local/bin/n && \
-        # Install lts version
-        # n lts && \
-        # Install specific version
-        n "$NODE_VERSION" && \
-        rm /usr/local/bin/n && \
+        # curl -L https://raw.githubusercontent.com/tj/n/master/bin/n -o /usr/local/bin/n && \
+        # chmod +x /usr/local/bin/n && \
+        # # Install lts version
+        # # n lts && \
+        # # Install specific version
+        # n "$NODE_VERSION" && \
+        # rm /usr/local/bin/n && \
 
-        # Install latest Postgres
+        # Install latest Postgres from postgres.org repo
         # curl -sL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /etc/apt/trusted.gpg.d/postgresql-ACCC4CF8.asc && \
         # echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -sc)-pgdg main" | tee /etc/apt/sources.list.d/pgdg.list && \
         # echo "Package: *\nPin: release o=apt.postgresql.org\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/pgdg.pref && \
@@ -167,11 +167,11 @@ FROM ${BUILD_IMAGE_NAME}:${BUILD_IMAGE_TAG} AS build-os-deps
         # apt-get -qq update -qq && \
         # apt-get -y install -y -qq --no-install-recommends msodbcsql17 && \
 
-        # Install mysql from MySQL repo
+        # Install specific version of mysql from MySQL repo
         # mysql-5.7 is not available for Debian Bullseye (11), only Buster (10)
         # The key id comes from this page: https://dev.mysql.com/doc/refman/5.7/en/checking-gpg-signature.html
-        # apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 3A79BD29
-        #   gpg: key 3A79BD29: public key "MySQL Release Engineering <mysql-build@oss.oracle.com>" imported
+        # # apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 3A79BD29
+        # #   gpg: key 3A79BD29: public key "MySQL Release Engineering <mysql-build@oss.oracle.com>" imported
         # export APT_KEY='859BE8D7C586F538430B19C2467B942D3A79BD29' && \
         # export GPGHOME="$(mktemp -d)" && \
         # gpg --batch --keyserver keyserver.ubuntu.com --recv-keys "$APT_KEY" && \
@@ -218,6 +218,7 @@ FROM ${BUILD_IMAGE_NAME}:${BUILD_IMAGE_TAG} AS build-os-deps
         truncate -s 0 /var/log/apt/* && \
         truncate -s 0 /var/log/dpkg.log
 
+# Get Elixir deps
 FROM build-os-deps AS build-deps-get
     ARG http_proxy
     ARG https_proxy
@@ -233,14 +234,16 @@ FROM build-os-deps AS build-deps-get
     COPY mix.lock .
 
     # Install build tools and get app deps
-    RUN --mount=type=cache,target=~/.hex/packages/hexpm,sharing=locked \
-        --mount=type=cache,target=~/.cache/rebar3,sharing=locked \
-        mix do local.rebar --force, local.hex --force, deps.get
-        # mix do local.rebar --force, local.hex --force, deps.get --only $MIX_ENV
+    # RUN --mount=type=cache,id=hex,target=/opt/hex,sharing=locked \
+    #     # --mount=type=cache,id=rebar,target=~/.cache/rebar3,sharing=locked \
+    RUN mix do local.rebar --force, local.hex --force
+    RUN mix deps.get
 
+    # RUN --mount=type=cache,id=hex,target=/opt/hex,sharing=locked \
+    #    # --mount=type=cache,target=~/.cache/rebar3,sharing=locked \
     RUN mix esbuild.install
 
-# Base image used for running tests
+# Create base image for tests
 FROM build-deps-get AS test-image
     ARG LANG
     ARG APP_DIR
@@ -253,103 +256,86 @@ FROM build-deps-get AS test-image
         HOME=$APP_DIR \
         MIX_ENV=test
 
-    ENV MIX_HOME=$MIX_HOME \
-        HEX_HOME=$HEX_HOME \
-        XDG_CACHE_HOME=$XDG_CACHE_HOME
+    # ENV MIX_HOME=$MIX_HOME \
+    #     HEX_HOME=$HEX_HOME \
+    #     XDG_CACHE_HOME=$XDG_CACHE_HOME
 
     WORKDIR $APP_DIR
 
-    # Compile deps separately from app, improving caching
-    RUN --mount=type=cache,target=~/.hex/packages/hexpm,sharing=locked \
-        --mount=type=cache,target=~/.cache/rebar3,sharing=locked \
-        mix deps.compile
+    # Compile deps separately from app, improving Docker caching
+    # RUN --mount=type=cache,id=hex,target=/opt/hex,sharing=locked \
+    #     # --mount=type=cache,id=rebar,target=~/.cache/rebar3,sharing=locked \
+    RUN mix do local.rebar --force, local.hex --force
+    RUN mix deps.compile
 
     # COPY --if-exists coveralls.json .formatter.exs .credo.exs dialyzer-ignore ./
+    COPY .formatter.exs ./
 
-    # Instead of copying sources, could use bind mount, e.g.
-    # RUN --mount=target=.
-    # see https://adoptingerlang.org/docs/production/docker/#efficient-caching
+    # Non-umbrella
     COPY lib ./lib
     COPY priv ./priv
     COPY test ./test
     COPY bin ./bin
 
-    RUN --mount=type=cache,target=~/.hex/packages/hexpm,sharing=locked \
-        --mount=type=cache,target=~/.cache/rebar3,sharing=locked \
-        mix compile --warnings-as-errors
+    # Umbrella
+    # COPY apps ./apps
+    # COPY priv ./priv
 
-# Build Phoenix assets
-FROM build-os-deps AS assets
-    ARG LANG
+    # RUN --mount=type=cache,id=hex,target=/opt/hex,sharing=locked \
+    #    # --mount=type=cache,id=rebar,target=~/.cache/rebar3,sharing=locked \
+    RUN mix compile --warnings-as-errors
 
-    # Get assets from phoenix
-    COPY --from=deps /app/deps /app/deps/
+    # For umbrella, using `mix cmd` ensures each app is compiled in
+    # isolation https://github.com/elixir-lang/elixir/issues/9407
+    # RUN --mount=type=cache,target=~/.hex/packages/hexpm,sharing=locked \
+    #     --mount=type=cache,target=~/.cache/rebar3,sharing=locked \
+    #     mix cmd mix compile --warnings-as-errors
 
-    WORKDIR /app/assets
+# Create final Elixir release
+FROM build-deps-get AS deploy-release
+    ARG APP_DIR
+    ARG RELEASE
 
-    COPY assets/package.json assets/package-lock.json ./
+    ENV MIX_ENV=prod
 
-    # Cache npm cache directory as type=cache
-    RUN --mount=type=cache,target=~/.npm,sharing=locked \
-        npm --prefer-offline --no-audit --progress=false --loglevel=error ci
+    WORKDIR $APP_DIR
 
-    COPY assets ./
-
-    RUN npm run deploy
-
-    # Generate assets the old way
-    # RUN npm install \
-    #   && node node_modules/webpack/bin/webpack.js --mode production
-
-    # Install AWS cli binaries
-    # COPY --from=deploy-install /usr/local/aws-cli/ /usr/local/aws-cli/
-    # COPY --from=deploy-install /aws-cli-bin/ /usr/local/bin/
-
-# Create Phoenix digest
-FROM deps AS digest
-    ARG LANG
-    ARG MIX_ENV
-
-    COPY --from=assets /app/priv ./priv
-
-    # https://hexdocs.pm/phoenix/Mix.Tasks.Phx.Digest.html
-    RUN --mount=type=cache,target=~/.hex/packages/hexpm,sharing=locked \
-        --mount=type=cache,target=~/.cache/rebar3,sharing=locked \
-        mix phx.digest
-
-    # This does a partial compile.
     # Doing "mix do compile, phx.digest, release" in a single stage is worse,
     # because a single line of code changed causes a complete recompile.
     # With the stages separated most of the compilation is cached.
 
-# Create release
-FROM digest AS release
-    ARG MIX_ENV
-    ARG LANG
-    ARG RELEASE
-
-    COPY lib ./lib
-    COPY rel ./rel
-
-    RUN --mount=type=cache,target=~/.hex/packages/hexpm,sharing=locked \
-        --mount=type=cache,target=~/.cache/rebar3,sharing=locked \
-        mix do compile, release "$RELEASE"
-
-FROM build-deps-get AS deploy-release
-    ARG APP_DIR
-
-    ENV MIX_ENV=prod
-    ARG RELEASE
-
-    WORKDIR $APP_DIR
-
     # Compile deps separately from application for better caching
+    # RUN --mount=type=cache,id=hex,target=/opt/hex,sharing=locked \
+    #    # --mount=type=cache,id=rebar,target=~/.cache/rebar3,sharing=locked \
     RUN mix deps.compile
+
+    # Compile assets the old way
+    # WORKDIR /app/assets
+    #
+    # COPY assets/package.json assets/package-lock.json ./
+    #
+    # # Cache npm cache directory as type=cache
+    # RUN --mount=type=cache,target=~/.npm,sharing=locked \
+    #     npm --prefer-offline --no-audit --progress=false --loglevel=error ci
+    #
+    # COPY assets ./
+    #
+    # RUN --mount=type=cache,target=~/.npm,sharing=locked \
+    #     npm run deploy
+    #
+    # Generate assets the really old way
+    # RUN --mount=type=cache,target=~/.npm,sharing=locked \
+    #   npm install && \
+    #   node node_modules/webpack/bin/webpack.js --mode production
 
     # Build JS and CS with esbuild
     COPY assets ./assets
     COPY priv ./priv
 
+    # mix.exs: "assets.deploy": ["esbuild default --minify", "phx.digest"]
+    # https://hexdocs.pm/phoenix/Mix.Tasks.Phx.Digest.html
+    # RUN --mount=type=cache,id=hex,target=/opt/hex,sharing=locked \
+    #    # --mount=type=cache,id=rebar,target=~/.cache/rebar3,sharing=locked \
     RUN mix assets.deploy
 
     # Non-umbrella
@@ -358,14 +344,17 @@ FROM build-deps-get AS deploy-release
     # Umbrella
     # COPY apps ./apps
 
-    RUN mix compile
+    # RUN --mount=type=cache,id=hex,target=/opt/hex,sharing=locked \
+    #    # --mount=type=cache,id=rebar,target=~/.cache/rebar3,sharing=locked \
+    RUN mix compile --warnings-as-errors
 
     # Build release
     COPY rel ./rel
+    # RUN --mount=type=cache,id=hex,target=/opt/hex,sharing=locked \
+    #    # --mount=type=cache,id=rebar,target=~/.cache/rebar3,sharing=locked \
     RUN mix release "$RELEASE"
 
-
-# Staging image for binaries which are copied into final deploy image
+# Create staging image for binaries which are copied into final deploy image
 FROM ${INSTALL_IMAGE_NAME}:${INSTALL_IMAGE_TAG} AS deploy-install
     # ARG AWS_CLI_VERSION
 
@@ -452,6 +441,7 @@ FROM ${INSTALL_IMAGE_NAME}:${INSTALL_IMAGE_TAG} AS deploy-install
     #     rm awscliv2.zip
 
 
+# Create base image for deploy, with everything but the code release
 FROM ${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG} AS deploy-base
     ARG LANG
     ARG APP_USER
@@ -467,6 +457,10 @@ FROM ${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG} AS deploy-base
         then groupadd -g "$APP_GROUP_ID" "$APP_GROUP" && \
         useradd -l -u "$APP_USER_ID" -g "$APP_GROUP" -s /usr/sbin/nologin "$APP_USER" && \
         rm /var/log/lastlog && rm /var/log/faillog; fi
+
+    # COPY --from=deploy-install /usr/lib/locale/C.UTF-8 /usr/lib/locale/C.UTF-8
+
+    ENV LANG=$LANG
 
     # Configure apt caching for use with BuildKit.
     # The default Debian Docker image has special config to clear caches.
@@ -545,11 +539,12 @@ FROM ${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG} AS deploy-base
         truncate -s 0 /var/log/apt/* && \
         truncate -s 0 /var/log/dpkg.log
 
-# Scan deploy image for security vulnerabilities
+# Create deploy image with vulnerability scanners
+# TODO: this is Earthly
 FROM deploy-base AS deploy-scan
-    COPY +deploy-install/trivy/bin/trivy /usr/local/bin/trivy
-    COPY +deploy-install/trivy/share/templates /usr/local/share/trivy/templates
-    # COPY +deploy-install/grype /usr/local/bin/grype
+    COPY --from=deploy-install /usr/local/bin/trivy /usr/local/bin/trivy
+    COPY --from=deploy-install /usr/local/share/trivy/templates /usr/local/share/trivy/templates
+    # COPY --from=deploy-install /usr/local/bin/grype /usr/local/bin/grype
 
 # Dev image which mounts code from local filesystem
 # FROM ${REGISTRY}${ELIXIR_IMAGE_NAME}:${ELIXIR_IMAGE_TAG} AS dev
@@ -623,6 +618,10 @@ FROM build-os-deps AS dev
 
     WORKDIR $APP_DIR
 
+    # Instead of copying sources, could use bind mount, e.g.
+    # RUN --mount=target=.
+    # see https://adoptingerlang.org/docs/production/docker/#efficient-caching
+
     RUN --mount=type=cache,target=~/.hex/packages/hexpm,sharing=locked \
         --mount=type=cache,target=~/.cache/rebar3,sharing=locked \
         mix do local.rebar --force, local.hex --force
@@ -649,9 +648,17 @@ FROM deploy-base AS deploy
     # maybe set COOKIE and other things
     ENV LANG=$LANG \
         HOME=$APP_DIR \
-        RELEASE_TMP="/run/$APP_NAME" \
-        RELEASE=${RELEASE} \
-        PORT=$APP_PORT
+        PORT=$APP_PORT \
+        PHX_SERVER=true \
+        RELEASE=$RELEASE \
+        RELEASE_TMP="/run/${APP_NAME}"
+
+    # Create dirs writable by app user
+    RUN mkdir -p "/run/${APP_NAME}" && \
+        chown -R "${APP_USER}:${APP_GROUP}" \
+            "/run/${APP_NAME}"
+
+    # USER $APP_USER
 
     # Setting WORKDIR after USER makes directory be owned by the user.
     # Setting it before makes it owned by root, which is more secure.
@@ -666,8 +673,8 @@ FROM deploy-base AS deploy
     USER $APP_USER
 
     # Chown files while copying. Running "RUN chown -R app:app /app"
-    # adds an extra layer which is about 10Mb, a huge difference when the
-    # image for a new phoenix app is around 20Mb.
+    # adds an extra layer which is about 10Mb, a huge difference if the
+    # app image is around 20Mb.
 
     # TODO: For more security, change specific files to have group read/execute
     # permissions while leaving them owned by root
@@ -679,8 +686,12 @@ FROM deploy-base AS deploy
 
     EXPOSE $PORT
 
-    # "bin" is the directory under the unpacked release, and "prod" is the name of the release
+    # "bin" is the directory under the unpacked release, and "prod" is the name
+    # of the release
     ENTRYPOINT ["bin/prod"]
+
+    # Run under init to avoid zombie processes
+    # https://github.com/krallin/tini
     # ENTRYPOINT ["/sbin/tini", "--", "bin/prod"]
 
     # Run app in foreground
@@ -694,7 +705,7 @@ FROM scratch as artifacts
     ARG MIX_ENV
     ARG RELEASE
 
-    COPY --from=release /app/_build/$MIX_ENV/rel/${RELEASE} /release
+    COPY --from=release "/app/_build/$MIX_ENV/rel/${RELEASE}" /release
     COPY --from=release /app/priv/static /static
 
 # Default target

@@ -26,15 +26,6 @@ ARG REGISTRY=""
 # Public images may be mirrored into the private registry, with e.g. Skopeo
 ARG PUBLIC_REGISTRY=$REGISTRY
 
-ARG POSTGRES_IMAGE_NAME=${PUBLIC_REGISTRY}postgres
-ARG POSTGRES_IMAGE_TAG=14.1-alpine
-
-ARG MYSQL_IMAGE_NAME=${PUBLIC_REGISTRY}mysql
-ARG MYSQL_IMAGE_TAG=5.7.37
-
-ARG DATADOG_IMAGE_NAME=gcr.io/datadoghq/agent
-ARG DATADOG_IMAGE_TAG=latest
-
 ARG BASE_OS=debian
 # ARG BASE_OS=alpine
 # ARG BASE_OS=distroless
@@ -112,22 +103,14 @@ ARG OUTPUT_IMAGE_TAG="$IMAGE_TAG"
 ARG REPO_URL="${REGISTRY}${OUTPUT_IMAGE_NAME}"
 ARG OUTPUT_URL=$REPO_URL
 
-# Elixir release env to build
-ARG MIX_ENV=prod
+ARG POSTGRES_IMAGE_NAME=${PUBLIC_REGISTRY}postgres
+ARG POSTGRES_IMAGE_TAG=14.1-alpine
 
-# Name of Elixir release
-ARG RELEASE=prod
-# This should match mix.exs, e.g.
-# defp releases do
-#   [
-#     prod: [
-#       include_executables_for: [:unix],
-#     ],
-#   ]
-# end
+ARG MYSQL_IMAGE_NAME=${PUBLIC_REGISTRY}mysql
+ARG MYSQL_IMAGE_TAG=5.7.37
 
-# App listen port
-ARG APP_PORT=4000
+ARG DATADOG_IMAGE_NAME=gcr.io/datadoghq/agent
+ARG DATADOG_IMAGE_TAG=latest
 
 # ARG CREDO_OPTS="--ignore refactor,duplicated --mute-exit-status"
 ARG CREDO_OPTS=""
@@ -160,13 +143,30 @@ ARG APP_GROUP_ID=$APP_USER_ID
 
 ARG LANG=C.UTF-8
 
-# Build cache dirs
-ARG MIX_HOME=/opt/mix
-ARG HEX_HOME=/opt/hex
-ARG XDG_CACHE_HOME=/opt/cache
-
 # ARG http_proxy
 # ARG https_proxy=$http_proxy
+
+# Build cache dirs
+# ARG MIX_HOME=/opt/mix
+# ARG HEX_HOME=/opt/hex
+# ARG XDG_CACHE_HOME=/opt/cache
+
+# Elixir release env to build
+ARG MIX_ENV=prod
+
+# Name of Elixir release
+ARG RELEASE=prod
+# This should match mix.exs, e.g.
+# defp releases do
+#   [
+#     prod: [
+#       include_executables_for: [:unix],
+#     ],
+#   ]
+# end
+
+# App listen port
+ARG APP_PORT=4000
 
 # The inner buildkit requires Docker hub login to prevent rate-limiting.
 # ARG DOCKERHUB_USER_SECRET
@@ -207,8 +207,13 @@ build-deps-get:
     COPY mix.exs mix.lock ./
 
     # Install build tools and get app deps
-    RUN mix do local.rebar --force, local.hex --force, deps.get
+    # RUN --mount=type=cache,id=hex,target=/opt/hex,sharing=locked \
+    #     # --mount=type=cache,id=rebar,target=~/.cache/rebar3,sharing=locked \
+    RUN mix do local.rebar --force, local.hex --force
+    RUN mix deps.get
 
+    # RUN --mount=type=cache,id=hex,target=/opt/hex,sharing=locked \
+    #    # --mount=type=cache,target=~/.cache/rebar3,sharing=locked \
     RUN mix esbuild.install
 
     # SAVE IMAGE --cache-hint
@@ -221,13 +226,16 @@ test-image:
     ENV HOME=$APP_DIR
     ENV MIX_ENV=test
 
-    ENV MIX_HOME=$MIX_HOME
-    ENV HEX_HOME=$HEX_HOME
-    ENV XDG_CACHE_HOME=$XDG_CACHE_HOME
+    # ENV MIX_HOME=$MIX_HOME \
+    #     HEX_HOME=$HEX_HOME \
+    #     XDG_CACHE_HOME=$XDG_CACHE_HOME
 
     WORKDIR $APP_DIR
 
-    # Compile deps separately from app, improving caching
+    # Compile deps separately from app, improving Docker caching
+    # RUN --mount=type=cache,id=hex,target=/opt/hex,sharing=locked \
+    #     # --mount=type=cache,id=rebar,target=~/.cache/rebar3,sharing=locked \
+    RUN mix do local.rebar --force, local.hex --force
     RUN mix deps.compile
 
     COPY --if-exists coveralls.json .formatter.exs .credo.exs dialyzer-ignore ./
@@ -238,30 +246,36 @@ test-image:
     # Umbrella
     COPY --if-exists --dir apps priv ./
 
+    # RUN --mount=type=cache,id=hex,target=/opt/hex,sharing=locked \
+    #    # --mount=type=cache,id=rebar,target=~/.cache/rebar3,sharing=locked \
     RUN mix compile --warnings-as-errors
+
     # For umbrella, using `mix cmd` ensures each app is compiled in
     # isolation https://github.com/elixir-lang/elixir/issues/9407
-    # RUN mix cmd mix compile --warnings-as-errors
+    # RUN --mount=type=cache,target=~/.hex/packages/hexpm,sharing=locked \
+    #     --mount=type=cache,target=~/.cache/rebar3,sharing=locked \
+    #     mix cmd mix compile --warnings-as-errors
 
     # SAVE IMAGE --push ${OUTPUT_URL}:test
     # SAVE IMAGE --cache-hint
 
 # Run Dialyzer on app files
 test-image-dialyzer:
-    # FROM +test-dialyzer-plt
     FROM +build-deps-get
 
-    ENV LANG=$LANG
-    ENV HOME=$APP_DIR
+    # This needs to run in MIX_ENV=dev
+    ENV LANG=$LANG \
+        HOME=$APP_DIR \
+        MIX_ENV=dev
 
-    ENV MIX_ENV=dev
-
-    ENV MIX_HOME=$MIX_HOME
-    ENV HEX_HOME=$HEX_HOME
-    ENV XDG_CACHE_HOME=$XDG_CACHE_HOME
+    # ENV MIX_HOME=$MIX_HOME \
+    #     HEX_HOME=$HEX_HOME \
+    #     XDG_CACHE_HOME=$XDG_CACHE_HOME
 
     WORKDIR $APP_DIR
 
+    # RUN --mount=type=cache,id=hex,target=/opt/hex,sharing=locked \
+    #    # --mount=type=cache,id=rebar,target=~/.cache/rebar3,sharing=locked \
     RUN mix dialyzer --plt
 
     # Non-umbrella
@@ -344,11 +358,40 @@ deploy-release:
 
     WORKDIR $APP_DIR
 
+    # Doing "mix do compile, phx.digest, release" in a single stage is worse,
+    # because a single line of code changed causes a complete recompile.
+    # With the stages separated most of the compilation is cached.
+
     # Compile deps separately from application for better caching
+    # RUN --mount=type=cache,id=hex,target=/opt/hex,sharing=locked \
+    #    # --mount=type=cache,id=rebar,target=~/.cache/rebar3,sharing=locked \
     RUN mix deps.compile
+
+    # Compile assets the old way
+    # WORKDIR /app/assets
+    #
+    # COPY assets/package.json assets/package-lock.json ./
+    #
+    # # Cache npm cache directory as type=cache
+    # RUN --mount=type=cache,target=~/.npm,sharing=locked \
+    #     npm --prefer-offline --no-audit --progress=false --loglevel=error ci
+    #
+    # COPY assets ./
+    #
+    # RUN --mount=type=cache,target=~/.npm,sharing=locked \
+    #     npm run deploy
+    #
+    # Generate assets the really old way
+    # RUN --mount=type=cache,target=~/.npm,sharing=locked \
+    #   npm install && \
+    #   node node_modules/webpack/bin/webpack.js --mode production
 
     # Build JS and CS with esbuild
     COPY --if-exists --dir assets priv ./
+    # mix.exs: "assets.deploy": ["esbuild default --minify", "phx.digest"]
+    # https://hexdocs.pm/phoenix/Mix.Tasks.Phx.Digest.html
+    # RUN --mount=type=cache,id=hex,target=/opt/hex,sharing=locked \
+    #    # --mount=type=cache,id=rebar,target=~/.cache/rebar3,sharing=locked \
     RUN mix assets.deploy
 
     # Non-umbrella
@@ -357,10 +400,14 @@ deploy-release:
     # Umbrella
     COPY --if-exists --dir apps ./
 
-    RUN mix compile
+    # RUN --mount=type=cache,id=hex,target=/opt/hex,sharing=locked \
+    #    # --mount=type=cache,id=rebar,target=~/.cache/rebar3,sharing=locked \
+    RUN mix compile --warnings-as-errors
 
     # Build release
     COPY --dir rel ./
+    # RUN --mount=type=cache,id=hex,target=/opt/hex,sharing=locked \
+    #    # --mount=type=cache,id=rebar,target=~/.cache/rebar3,sharing=locked \
     RUN mix release "$RELEASE"
 
     SAVE ARTIFACT "_build/${MIX_ENV}/rel/${RELEASE}" /release
@@ -380,14 +427,12 @@ deploy:
     # Set environment vars used by the app
     # SECRET_KEY_BASE and DATABASE_URL env vars should be set when running the application
     # maybe set COOKIE and other things
-    ENV LANG=$LANG
-    ENV HOME=$APP_DIR
-
-    ENV PORT=$APP_PORT
-    ENV PHX_SERVER=true
-
-    ENV RELEASE=${RELEASE}
-    ENV RELEASE_TMP="/run/${APP_NAME}"
+    ENV LANG=$LANG \
+        HOME=$APP_DIR \
+        PORT=$APP_PORT \
+        PHX_SERVER=true \
+        RELEASE=$RELEASE \
+        RELEASE_TMP="/run/${APP_NAME}"
 
     # Create dirs writable by app user
     RUN mkdir -p "/run/${APP_NAME}" && \
@@ -403,20 +448,27 @@ deploy:
     # /tmp or, more securely, /run/foo
     WORKDIR $APP_DIR
 
+    # When using a startup script, copy to /app/bin
+    # COPY bin ./bin
+
     USER $APP_USER
 
     # Chown files while copying. Running "RUN chown -R app:app /app"
-    # adds an extra layer which is about 10Mb, a huge difference when the
+    # adds an extra layer which is about 10Mb, a huge difference if the
     # app image is around 20Mb.
 
     # TODO: For more security, change specific files to have group read/execute
     # permissions while leaving them owned by root
 
+    # When using a startup script, unpack release under "/app/current" dir
+    # WORKDIR $APP_DIR/current
+
     COPY +deploy-release/release ./
 
     EXPOSE $PORT
 
-    # "bin" is the directory under the unpacked release, and "prod" is the name of the release
+    # "bin" is the directory under the unpacked release, and "prod" is the name
+    # of the release
     ENTRYPOINT ["bin/prod"]
 
     # Run under init to avoid zombie processes
