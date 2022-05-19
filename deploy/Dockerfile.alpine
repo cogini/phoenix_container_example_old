@@ -15,15 +15,21 @@ ARG NODE_VERSION=16.14.1
 
 ARG ALPINE_VERSION=3.13.2
 
-# Build image
-# ARG BUILD_IMAGE_NAME=elixir
-# ARG BUILD_IMAGE_TAG=${ELIXIR_VERSION}
-ARG BUILD_IMAGE_NAME=hexpm/elixir
-ARG BUILD_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${ERLANG_VERSION}-alpine-${ALPINE_VERSION}
+# Docker registry for internal images, e.g. 123.dkr.ecr.ap-northeast-1.amazonaws.com/
+# If blank, docker.io will be used. If specified, should have a trailing slash.
+ARG REGISTRY=""
+# Registry for public base images, e.g. debian or alpine.
+# Public images may be mirrored into the private registry, with e.g. Skopeo
+ARG PUBLIC_REGISTRY=$REGISTRY
 
-# Deploy base image
-ARG DEPLOY_IMAGE_NAME=alpine
+ARG BUILD_IMAGE_NAME=${PUBLIC_REGISTRY}hexpm/elixir
+ARG BUILD_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-alpine-${ALPINE_VERSION}
+
+ARG DEPLOY_IMAGE_NAME=${PUBLIC_REGISTRY}alpine
 ARG DEPLOY_IMAGE_TAG=$ALPINE_VERSION
+
+ARG INSTALL_IMAGE_NAME=$DEPLOY_IMAGE_NAME
+ARG INSTALL_IMAGE_TAG=$DEPLOY_IMAGE_TAG
 
 # Run "apk upgrade" to update packages to a newer version than what is in the base image.
 # This ensures that we get the latest packages, but makes the build nondeterministic.
@@ -32,9 +38,31 @@ ARG DEPLOY_IMAGE_TAG=$ALPINE_VERSION
 # ARG APK_UPGRADE="apk upgrade --update-cache -a"
 ARG APK_UPGRADE=":"
 
-# Docker registry for base images, default is docker.io
-# If specified, should have a trailing slash
-ARG REGISTRY=""
+# App name, used to name directories
+ARG APP_NAME=app
+
+# Dir where app is installed
+ARG APP_DIR=/app
+
+# OS user for app to run under
+# nonroot:x:65532:65532:nonroot:/home/nonroot:/usr/sbin/nologin
+# nobody:x:65534:65534:nobody:/nonexistent:/usr/sbin/nologin
+ARG APP_USER=nonroot
+# OS group that app runs under
+ARG APP_GROUP=$APP_USER
+# OS numeric user and group id
+ARG APP_USER_ID=65532
+ARG APP_GROUP_ID=$APP_USER_ID
+
+ARG LANG=C.UTF-8
+
+# ARG http_proxy
+# ARG https_proxy=$http_proxy
+
+# Build cache dirs
+ARG MIX_HOME=/opt/mix
+ARG HEX_HOME=/opt/hex
+ARG XDG_CACHE_HOME=/opt/cache
 
 # Elixir release env to build
 ARG MIX_ENV=prod
@@ -50,264 +78,243 @@ ARG RELEASE=prod
 #   ]
 # end
 
-# App name, used to name directories
-ARG APP_NAME=app
+# App listen port
+ARG APP_PORT=4000
 
-# OS user that app runs under
-ARG APP_USER=app
+# Create build base image with OS dependencies
+FROM ${BUILD_IMAGE_NAME}:${BUILD_IMAGE_TAG} AS build-os-deps
+    # ARG http_proxy
+    # ARG https_proxy
 
-# OS group that app runs under
-ARG APP_GROUP="$APP_USER"
+    ARG APK_UPGRADE
+    ARG LANG
 
-# Dir that app runs under
-ARG APP_DIR=/app
+    # Install tools and libraries to build binary libraries
+    # Not necessary for a minimal Phoenix app, but likely needed
+    RUN --mount=type=cache,id=apk,target=/var/cache/apk,sharing=locked \
+        ln -s /var/cache/apk /etc/apk/cache && \
+        apk update && $APK_UPGRADE && \
+        # apk add alpine-sdk && \
+        apk add --no-progress git build-base && \
+        apk add curl && \
+        apk add nodejs npm && \
+        curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
 
-ARG LANG=C.UTF-8
+FROM build-os-deps AS build-deps-get
+    ARG http_proxy
+    ARG https_proxy
+    ARG LANG
+    ARG MIX_ENV
+    ARG APP_DIR
 
-ARG http_proxy
-ARG https_proxy=$http_proxy
+    WORKDIR $APP_DIR
 
-##########################################################################
-# Fetch OS build dependencies
+    # Get Elixir app deps
+    COPY config ./config
+    COPY mix.exs .
+    COPY mix.lock .
 
-FROM ${REGISTRY}${BUILD_IMAGE_NAME}:${BUILD_IMAGE_TAG} AS os-deps
+    # Install build tools and get app deps
+    RUN --mount=type=cache,target=~/.hex/packages/hexpm,sharing=locked \
+        --mount=type=cache,target=~/.cache/rebar3,sharing=locked \
+        mix do local.rebar --force, local.hex --force, deps.get
+        # mix do local.rebar --force, local.hex --force, deps.get --only $MIX_ENV
 
-ARG APK_UPGRADE
+    RUN mix esbuild.install
 
+# Base image used for running tests
+FROM build-deps-get AS test-image
+    ARG LANG
+    ARG APP_DIR
 
-ARG LANG
+    ARG MIX_HOME
+    ARG HEX_HOME
+    ARG XDG_CACHE_HOME
 
-# Install tools and libraries to build binary libraries
-# Not necessary for a minimal Phoenix app, but likely needed
-RUN --mount=type=cache,id=apk,target=/var/cache/apk,sharing=locked \
-    ln -s /var/cache/apk /etc/apk/cache \
-    && apk update && $APK_UPGRADE \
-    # && apk add alpine-sdk \
-    && apk add --no-progress git build-base \
-    && apk add curl \
-    && apk add nodejs npm \
-    && curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+    ENV LANG=$LANG \
+        HOME=$APP_DIR \
+        MIX_ENV=test
 
+    ENV MIX_HOME=$MIX_HOME \
+        HEX_HOME=$HEX_HOME \
+        XDG_CACHE_HOME=$XDG_CACHE_HOME
 
-##########################################################################
-# Fetch app library dependencies
+    WORKDIR $APP_DIR
 
-FROM os-deps AS deps
+    # Instead of copying sources, could use bind mount, e.g.
+    # RUN --mount=target=.
+    # see https://adoptingerlang.org/docs/production/docker/#efficient-caching
+    COPY lib ./lib
+    COPY priv ./priv
+    COPY test ./test
+    COPY bin ./bin
 
-ARG http_proxy
-ARG https_proxy
-ARG LANG
-ARG MIX_ENV
+    RUN --mount=type=cache,target=~/.hex/packages/hexpm,sharing=locked \
+        --mount=type=cache,target=~/.cache/rebar3,sharing=locked \
+        mix compile --warnings-as-errors
 
-WORKDIR /app
-
-# Get Elixir app deps
-COPY config ./config
-COPY mix.exs .
-COPY mix.lock .
-
-RUN --mount=type=cache,target=~/.hex/packages/hexpm,sharing=locked \
-    --mount=type=cache,target=~/.cache/rebar3,sharing=locked \
-    mix do local.rebar --force, local.hex --force, deps.get
-    # mix do local.rebar --force, local.hex --force, deps.get --only $MIX_ENV
-
-##########################################################################
-# Environment to run tests
-
-FROM deps AS test
-
-ARG LANG
-ARG MIX_ENV
-
-WORKDIR /app
-
-# Instead of copying sources, could use bind mount, e.g.
-# RUN --mount=target=.
-# see https://adoptingerlang.org/docs/production/docker/#efficient-caching
-COPY lib ./lib
-COPY priv ./priv
-COPY test ./test
-COPY bin ./bin
-
-RUN --mount=type=cache,target=~/.hex/packages/hexpm,sharing=locked \
-    --mount=type=cache,target=~/.cache/rebar3,sharing=locked \
-    mix compile
-
-##########################################################################
 # Build Phoenix assets
+FROM build-os-deps AS assets
+    ARG LANG
 
-FROM deps AS assets
+    # Get assets from phoenix
+    COPY --from=deps /app/deps /app/deps/
 
-ARG LANG
+    WORKDIR /app/assets
 
-# Get assets from phoenix
-COPY --from=deps /app/deps /app/deps/
+    COPY assets/package.json assets/package-lock.json ./
 
-WORKDIR /app/assets
+    # Cache npm cache directory as type=cache
+    RUN --mount=type=cache,target=~/.npm,sharing=locked \
+        npm --prefer-offline --no-audit --progress=false --loglevel=error ci
 
+    COPY assets ./
 
-COPY assets/package.json assets/package-lock.json ./
+    RUN npm run deploy
 
-# Cache npm cache directory as type=cache
-RUN --mount=type=cache,target=~/.npm,sharing=locked \
-    npm --prefer-offline --no-audit --progress=false --loglevel=error ci
-
-COPY assets ./
-
-RUN npm run deploy
-
-##########################################################################
 # Create Phoenix digest
-
 FROM deps AS digest
+    ARG LANG
+    ARG MIX_ENV
 
-ARG LANG
-ARG MIX_ENV
+    COPY --from=assets /app/priv ./priv
 
-COPY --from=assets /app/priv ./priv
+    # https://hexdocs.pm/phoenix/Mix.Tasks.Phx.Digest.html
+    RUN --mount=type=cache,target=~/.hex/packages/hexpm,sharing=locked \
+        --mount=type=cache,target=~/.cache/rebar3,sharing=locked \
+        mix phx.digest
 
-# https://hexdocs.pm/phoenix/Mix.Tasks.Phx.Digest.html
-RUN --mount=type=cache,target=~/.hex/packages/hexpm,sharing=locked \
-    --mount=type=cache,target=~/.cache/rebar3,sharing=locked \
-    mix phx.digest
+    # This does a partial compile.
+    # Doing "mix do compile, phx.digest, release" in a single stage is worse,
+    # because a single line of code changed causes a complete recompile.
+    # With the stages separated most of the compilation is cached.
 
-# This does a partial compile.
-# Doing "mix do compile, phx.digest, release" in a single stage is worse,
-# because a single line of code changed causes a complete recompile.
-# With the stages separated most of the compilation is cached.
-
-##########################################################################
 # Create release
-
 FROM digest AS release
+    ARG MIX_ENV
+    ARG LANG
+    ARG RELEASE
 
-ARG MIX_ENV
-ARG LANG
-ARG RELEASE
+    COPY lib ./lib
+    COPY rel ./rel
 
-COPY lib ./lib
-COPY rel ./rel
+    RUN --mount=type=cache,target=~/.hex/packages/hexpm,sharing=locked \
+        --mount=type=cache,target=~/.cache/rebar3,sharing=locked \
+        mix do compile, release "$RELEASE"
 
-RUN --mount=type=cache,target=~/.hex/packages/hexpm,sharing=locked \
-    --mount=type=cache,target=~/.cache/rebar3,sharing=locked \
-    mix do compile, release "$RELEASE"
+FROM ${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG} AS deploy-release
+    ARG APK_UPGRADE
 
+    ARG LANG
+    ARG APP_NAME
+    ARG APP_USER
+    ARG APP_GROUP
+    ARG APP_USER_ID
+    ARG APP_GROUP_ID
+    ARG APP_DIR
+    ARG APP_PORT
 
-##########################################################################
-# Create final image that is deployed
+    ARG MIX_ENV
+    ARG RELEASE
 
-FROM ${REGISTRY}${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG} AS deploy
+    # Set environment vars used by the app
+    # SECRET_KEY_BASE and DATABASE_URL env vars should be set when running the application
+    # maybe set COOKIE and other things
+    ENV LANG=$LANG \
+        HOME=$APP_DIR \
+        RELEASE_TMP="/run/$APP_NAME" \
+        RELEASE=${RELEASE} \
+        PORT=$APP_PORT
 
-ARG APK_UPGRADE
+    # Install Alpine libraries needed at runtime
+    # See https://wiki.alpinelinux.org/wiki/Local_APK_cache for details
+    # on the local cache and need for the symlink
+    RUN --mount=type=cache,id=apk,target=/var/cache/apk,sharing=locked \
+        ln -s /var/cache/apk /etc/apk/cache && \
+        # Upgrading ensures that we get the latest packages, but makes the build nondeterministic
+        apk update && $APK_UPGRADE && \
+        # https://github.com/krallin/tini
+        # apk add tini && \
+        # Make DNS resolution more reliable
+        # https://github.com/sourcegraph/godockerize/commit/5cf4e6d81720f2551e6a7b2b18c63d1460bbbe4e
+        # apk add bind-tools && \
+        # Install openssl, allowing the app to listen on HTTPS.
+        # May not be needed if HTTPS is handled outside the application, e.g. in load balancer.
+        apk add openssl ncurses-libs
 
-ARG LANG
-ARG APP_NAME
-ARG APP_USER
-ARG APP_GROUP
-ARG APP_DIR
-
-ARG MIX_ENV
-ARG RELEASE
-
-# Set environment vars used by the app
-# SECRET_KEY_BASE and DATABASE_URL env vars should be set when running the application
-# maybe set COOKIE and other things
-ENV LANG=$LANG \
-    HOME=$APP_DIR \
-    RELEASE_TMP="/run/$APP_NAME" \
-    RELEASE=${RELEASE} \
-    PORT=4000
-
-# Install Alpine libraries needed at runtime
-# See https://wiki.alpinelinux.org/wiki/Local_APK_cache for details
-# on the local cache and need for the symlink
-RUN --mount=type=cache,id=apk,target=/var/cache/apk,sharing=locked \
-    ln -s /var/cache/apk /etc/apk/cache \
-    # Upgrading ensures that we get the latest packages, but makes the build nondeterministic
-    && apk update && $APK_UPGRADE \
-    # https://github.com/krallin/tini
-    # && apk add tini \
-    # Make DNS resolution more reliable
-    # https://github.com/sourcegraph/godockerize/commit/5cf4e6d81720f2551e6a7b2b18c63d1460bbbe4e
-    # && apk add bind-tools \
-    # Install openssl, allowing the app to listen on HTTPS.
-    # May not be needed if HTTPS is handled outside the application, e.g. in load balancer.
-    && apk add openssl ncurses-libs
-
-# Create user and group to run under with specific uid
-RUN addgroup -g 10001 -S "$APP_GROUP" \
-    && adduser -u 10000 -S "$APP_USER" -G "$APP_GROUP" -h "$HOME"
+    # Create user and group to run under with specific uid
+    RUN addgroup -g $APP_GROUP_ID -S "$APP_GROUP" && \
+        adduser -u $APP_USER_ID -S "$APP_USER" -G "$APP_GROUP" -h "$HOME"
 
     # Create app dirs
-RUN mkdir -p "/run/$APP_NAME" \
-    # Make dirs writable by app
-    && chown -R "$APP_USER:$APP_GROUP" \
-        # Needed for RELEASE_TMP
-        "/run/$APP_NAME"
+    RUN mkdir -p "/run/$APP_NAME" && \
+        # Make dirs writable by app
+        chown -R "$APP_USER:$APP_GROUP" \
+            # Needed for RELEASE_TMP
+            "/run/$APP_NAME"
 
-# USER $APP_USER
+    # USER $APP_USER
 
-# Setting WORKDIR after USER makes directory be owned by the user.
-# Setting it before makes it owned by root, which is more secure.
-# The app needs to be able to write to a tmp directory on startup, which by
-# default is under the release. This can be changed by setting RELEASE_TMP to
-# /tmp or, more securely, /run/foo
-WORKDIR $APP_DIR
+    # Setting WORKDIR after USER makes directory be owned by the user.
+    # Setting it before makes it owned by root, which is more secure.
+    # The app needs to be able to write to a tmp directory on startup, which by
+    # default is under the release. This can be changed by setting RELEASE_TMP to
+    # /tmp or, more securely, /run/foo
+    WORKDIR $APP_DIR
 
-USER $APP_USER
+    # When using a startup script, copy to /app/bin
+    # COPY bin ./bin
 
-# Chown files while copying. Running "RUN chown -R app:app /app"
-# adds an extra layer which is about 10Mb, a huge difference when the
-# image for a new phoenix app is around 20Mb.
+    USER $APP_USER
 
-# TODO: For more security, change specific files to have group read/execute
-# permissions while leaving them owned by root
+    # Chown files while copying. Running "RUN chown -R app:app /app"
+    # adds an extra layer which is about 10Mb, a huge difference when the
+    # image for a new phoenix app is around 20Mb.
 
-COPY --from=release --chown="$APP_USER:$APP_GROUP" "/app/_build/$MIX_ENV/rel/${RELEASE}" ./
+    # TODO: For more security, change specific files to have group read/execute
+    # permissions while leaving them owned by root
 
-EXPOSE $PORT
+    # When using a startup script, unpack release under "/app/current" dir
+    # WORKDIR $APP_DIR/current
 
-# "bin" is the directory under the unpacked release, and "prod" is the name of the release
-ENTRYPOINT ["bin/prod"]
-# ENTRYPOINT ["/sbin/tini", "--", "bin/prod"]
+    COPY --from=deploy-release --chown="$APP_USER:$APP_GROUP" "/app/_build/${MIX_ENV}/rel/${RELEASE}" ./
 
-# Run app in foreground
-CMD ["start"]
+    EXPOSE $PORT
 
-##########################################################################
+    # "bin" is the directory under the unpacked release, and "prod" is the name of the release
+    ENTRYPOINT ["bin/prod"]
+    # ENTRYPOINT ["/sbin/tini", "--", "bin/prod"]
+
+    # Run app in foreground
+    CMD ["start"]
+
 # Scan for security vulnerabilities
+FROM deploy as deploy-scan
+    USER root
 
-FROM deploy as vuln
+    RUN --mount=type=cache,id=apk,target=/var/cache/apk,sharing=locked \
+        apk add curl && \
+        curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
 
-USER root
+    RUN --mount=type=cache,id=apk,target=/var/cache/apk,sharing=locked \
+        --mount=type=cache,target=/root/.cache/trivy,sharing=locked \
+        # Succeed for issues of severity = HIGH
+        trivy filesystem --exit-code 0 --severity HIGH --no-progress / && \
+        # Fail build if there are any issues of severity = CRITICAL
+        trivy filesystem --exit-code 1 --severity CRITICAL --no-progress /
+        # Fail build if there are any issues
+        # trivy filesystem -d --exit-code 1 --no-progress /
 
-RUN --mount=type=cache,id=apk,target=/var/cache/apk,sharing=locked \
-    apk add curl \
-    && curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+        # && curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin \
+        # && grype -vv --fail-on medium dir:/ \
 
-RUN --mount=type=cache,id=apk,target=/var/cache/apk,sharing=locked \
-    --mount=type=cache,target=/root/.cache/trivy,sharing=locked \
-    # Succeed for issues of severity = HIGH
-    trivy filesystem --exit-code 0 --severity HIGH --no-progress / \
-    # Fail build if there are any issues of severity = CRITICAL
-    && trivy filesystem --exit-code 1 --severity CRITICAL --no-progress /
-    # Fail build if there are any issues
-    # && trivy filesystem -d --exit-code 1 --no-progress /
-
-    # && curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin \
-    # && grype -vv --fail-on medium dir:/ \
-
-##########################################################################
 # Copy build artifacts to host
-
 FROM scratch as artifacts
+    ARG MIX_ENV
+    ARG RELEASE
 
-ARG MIX_ENV
-ARG RELEASE
+    COPY --from=release /app/_build/$MIX_ENV/rel/${RELEASE} /release
+    COPY --from=release /app/priv/static /static
 
-COPY --from=release /app/_build/$MIX_ENV/rel/${RELEASE} /release
-COPY --from=release /app/priv/static /static
-
-##########################################################################
 # Default target
 FROM deploy
