@@ -34,7 +34,6 @@ ARG DEPLOY_IMAGE_TAG=$DEBIAN_VERSION
 ARG INSTALL_IMAGE_NAME=$DEPLOY_IMAGE_NAME
 ARG INSTALL_IMAGE_TAG=$DEPLOY_IMAGE_TAG
 
-
 # OS user for app to run under
 # nonroot:x:65532:65532:nonroot:/home/nonroot:/usr/sbin/nologin
 # nobody:x:65534:65534:nobody:/nonexistent:/usr/sbin/nologin

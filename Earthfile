@@ -26,9 +26,9 @@ ARG REGISTRY=""
 # Public images may be mirrored into the private registry, with e.g. Skopeo
 ARG PUBLIC_REGISTRY=$REGISTRY
 
-ARG BASE_OS=debian
+# ARG BASE_OS=debian
 # ARG BASE_OS=alpine
-# ARG BASE_OS=distroless
+ARG BASE_OS=distroless
 # ARG BASE_OS=centos
 # ARG BASE_OS=busybox
 

@@ -1,4 +1,5 @@
-# Build Elixir/Phoenix app
+# Deploy using Debian
+VERSION --shell-out-anywhere --use-copy-include-patterns --referenced-save-only 0.6
 
 # App versions
 ARG ELIXIR_VERSION=1.13.3
@@ -10,12 +11,11 @@ ARG NODE_VERSION=16.14.1
 ARG ALPINE_VERSION=3.15.0
 
 
-# Docker registries for base images. If blank, will use docker.io.
-# If specified, should have a trailing slash.
-# REGISTRY is a private registry, e.g. 123.dkr.ecr.ap-northeast-1.amazonaws.com/
-# PUBLIC_REGISTRY is for public base images, e.g. debian or alpine
-# Public images may be mirrored into the private registry, e.g. with skopeo
+# Docker registry for internal images, e.g. 123.dkr.ecr.ap-northeast-1.amazonaws.com/
+# If blank, docker.io will be used. If specified, should have a trailing slash.
 ARG REGISTRY=""
+# Registry for public base images, e.g. debian or alpine.
+# Public images may be mirrored into the private registry, with e.g. Skopeo
 ARG PUBLIC_REGISTRY=$REGISTRY
 
 ARG BUILD_IMAGE_NAME=${PUBLIC_REGISTRY}hexpm/elixir
@@ -27,13 +27,7 @@ ARG DEPLOY_IMAGE_TAG=$ALPINE_VERSION
 # App name, used to name directories
 ARG APP_NAME=app
 
-# Additional packages to install
-ARG BUILD_EXTRA=""
-ARG INSTALL_EXTRA=""
-ARG DEPLOY_EXTRA=""
-
 # OS user for app to run under
-# Distroless user
 # nonroot:x:65532:65532:nonroot:/home/nonroot:/usr/sbin/nologin
 # nobody:x:65534:65534:nobody:/nonexistent:/usr/sbin/nologin
 ARG APP_USER=nonroot
