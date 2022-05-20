@@ -24,6 +24,9 @@ ARG BUILD_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-alpine-${ALPINE_VERS
 ARG DEPLOY_IMAGE_NAME=${PUBLIC_REGISTRY}alpine
 ARG DEPLOY_IMAGE_TAG=$ALPINE_VERSION
 
+ARG INSTALL_IMAGE_NAME=$DEPLOY_IMAGE_NAME
+ARG INSTALL_IMAGE_TAG=$DEPLOY_IMAGE_TAG
+
 # App name, used to name directories
 ARG APP_NAME=app
 
@@ -53,9 +56,11 @@ ARG APK_UPGRADE=":"
 build-os-deps:
     FROM ${BUILD_IMAGE_NAME}:${BUILD_IMAGE_TAG}
 
+    # Install tools and libraries to build binary libraries
+    # Not necessary for a minimal Phoenix app, but likely needed
     # See https://wiki.alpinelinux.org/wiki/Local_APK_cache for details
     # on the local cache and need for the symlink
-    RUN --mount=type=cache,target=/var/cache/apk \
+    RUN --mount=type=cache,id=apk,target=/var/cache/apk \
         set -ex && \
         $APK_UPDATE && $APK_UPGRADE && \
         # Install build tools
@@ -89,15 +94,14 @@ deploy-base:
 
     ENV LANG=$LANG
 
-    # Install Alpine runtime libraries
+    # Install Alpine libraries needed at runtime
     # See https://wiki.alpinelinux.org/wiki/Local_APK_cache for details
     # on the local cache and need for the symlink
-    RUN --mount=type=cache,target=/var/cache/apk \
+    RUN --mount=type=cache,id=apk,target=/var/cache/apk,sharing=locked \
         set -ex && \
         ln -s /var/cache/apk /etc/apk/cache && \
         # Upgrading ensures that we get the latest packages, but makes the build nondeterministic
         $APK_UPDATE && $APK_UPGRADE && \
-        apk add --no-progress $RUNTIME_PACKAGES && \
         # https://github.com/krallin/tini
         # apk add tini && \
         # Make DNS resolution more reliable
@@ -108,6 +112,16 @@ deploy-base:
         # May not be needed if HTTPS is handled outside the application, e.g. in load balancer.
         apk add openssl ncurses-libs
 
+    # Create user and group to run under with specific uid
+    RUN addgroup -g $APP_GROUP_ID -S "$APP_GROUP" && \
+        adduser -u $APP_USER_ID -S "$APP_USER" -G "$APP_GROUP" -h "$HOME"
+
+    # Create app dirs
+    RUN mkdir -p "/run/$APP_NAME" && \
+        # Make dirs writable by app
+        chown -R "$APP_USER:$APP_GROUP" \
+            # Needed for RELEASE_TMP
+            "/run/$APP_NAME"
     SAVE IMAGE --cache-hint
 
 # Scan deploy image for security vulnerabilities
@@ -116,12 +130,13 @@ deploy-scan:
 
     USER root
 
-    RUN --mount=type=cache,target=/var/cache/apk \
+    RUN --mount=type=cache,id=apk,target=/var/cache/apk,sharing=locked \
         set -ex && \
         apk add curl && \
         curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
 
-    RUN set -ex && \
+    RUN --mount=type=cache,id=apk,target=/var/cache/apk,sharing=locked \
+        set -ex && \
         # Succeed for issues of severity = HIGH
         trivy filesystem --exit-code 0 --severity HIGH --no-progress / && \
         # Fail for issues of severity = CRITICAL

@@ -358,6 +358,7 @@ deploy-release:
 
     WORKDIR $APP_DIR
 
+    # This does a partial compile.
     # Doing "mix do compile, phx.digest, release" in a single stage is worse,
     # because a single line of code changed causes a complete recompile.
     # With the stages separated most of the compilation is cached.
