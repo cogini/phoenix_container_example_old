@@ -90,18 +90,7 @@ FROM ${BUILD_IMAGE_NAME}:${BUILD_IMAGE_TAG} AS build-os-deps
     # ARG http_proxy
     # ARG https_proxy
 
-    ARG APP_USER
-    ARG APP_GROUP
-    ARG APP_USER_ID
-    ARG APP_GROUP_ID
-
     ARG NODE_VERSION
-
-    # Create OS user and group to run app under
-    RUN if ! grep -q "$APP_USER" /etc/passwd; \
-        then groupadd -g "$APP_GROUP_ID" "$APP_GROUP" && \
-        useradd -l -u "$APP_USER_ID" -g "$APP_GROUP" -s /usr/sbin/nologin "$APP_USER" && \
-        rm /var/log/lastlog && rm /var/log/faillog; fi
 
     # Configure apt caching for use with BuildKit.
     # The default Debian Docker image has special apt config to clear caches, but if
@@ -117,7 +106,7 @@ FROM ${BUILD_IMAGE_NAME}:${BUILD_IMAGE_TAG} AS build-os-deps
     RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
         --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
-        set -exu && \
+        set -ex && \
         apt-get update -qq && \
         DEBIAN_FRONTEND=noninteractive \
         apt-get -y install -y -qq --no-install-recommends \
@@ -220,8 +209,8 @@ FROM ${BUILD_IMAGE_NAME}:${BUILD_IMAGE_TAG} AS build-os-deps
 
 # Get Elixir deps
 FROM build-os-deps AS build-deps-get
-    ARG http_proxy
-    ARG https_proxy
+    # ARG http_proxy
+    # ARG https_proxy
     ARG LANG
     ARG MIX_ENV
     ARG APP_DIR
@@ -248,14 +237,13 @@ FROM build-deps-get AS test-image
     ARG LANG
     ARG APP_DIR
 
-    ARG MIX_HOME
-    ARG HEX_HOME
-    ARG XDG_CACHE_HOME
-
     ENV LANG=$LANG \
         HOME=$APP_DIR \
         MIX_ENV=test
 
+    # ARG MIX_HOME
+    # ARG HEX_HOME
+    # ARG XDG_CACHE_HOME
     # ENV MIX_HOME=$MIX_HOME \
     #     HEX_HOME=$HEX_HOME \
     #     XDG_CACHE_HOME=$XDG_CACHE_HOME
@@ -291,7 +279,7 @@ FROM build-deps-get AS test-image
     #     --mount=type=cache,target=~/.cache/rebar3,sharing=locked \
     #     mix cmd mix compile --warnings-as-errors
 
-# Create final Elixir release
+# Create Elixir release
 FROM build-deps-get AS deploy-release
     ARG APP_DIR
     ARG RELEASE
@@ -440,7 +428,6 @@ FROM ${INSTALL_IMAGE_NAME}:${INSTALL_IMAGE_TAG} AS deploy-install
     #     rm -rf ./aws && \
     #     rm awscliv2.zip
 
-
 # Create base image for deploy, with everything but the code release
 FROM ${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG} AS deploy-base
     ARG LANG
@@ -452,15 +439,22 @@ FROM ${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG} AS deploy-base
     ARG MIX_ENV=prod
     ARG RELEASE
 
+    # COPY --from=deploy-install /usr/lib/locale/C.UTF-8 /usr/lib/locale/C.UTF-8
+
+    ENV LANG=$LANG
+
     # Create OS user and group to run app under
     RUN if ! grep -q "$APP_USER" /etc/passwd; \
         then groupadd -g "$APP_GROUP_ID" "$APP_GROUP" && \
         useradd -l -u "$APP_USER_ID" -g "$APP_GROUP" -s /usr/sbin/nologin "$APP_USER" && \
         rm /var/log/lastlog && rm /var/log/faillog; fi
 
-    # COPY --from=deploy-install /usr/lib/locale/C.UTF-8 /usr/lib/locale/C.UTF-8
-
-    ENV LANG=$LANG
+    # Create app dirs
+    RUN mkdir -p "/run/${APP_NAME}" && \
+        # Make dirs writable by app
+        chown -R "${APP_USER}:${APP_GROUP}" \
+            # Needed for RELEASE_TMP
+            "/run/${APP_NAME}"
 
     # Configure apt caching for use with BuildKit.
     # The default Debian Docker image has special config to clear caches.
@@ -480,9 +474,6 @@ FROM ${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG} AS deploy-base
     #       localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8 \
     #
     # ENV LANG en_US.utf8
-
-    # Create dirs needed by postgresql-client but stripped from Debian slim
-    # RUN seq 1 8 | xargs -I{} mkdir -p /usr/share/man/man{}
 
     RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
@@ -546,20 +537,82 @@ FROM deploy-base AS deploy-scan
     COPY --from=deploy-install /usr/local/share/trivy/templates /usr/local/share/trivy/templates
     # COPY --from=deploy-install /usr/local/bin/grype /usr/local/bin/grype
 
+# Create final app image which gets deployed
+FROM deploy-base AS deploy
+    ARG APP_DIR
+    ARG APP_NAME
+    ARG APP_USER
+    ARG APP_GROUP
+
+    ARG MIX_ENV=prod
+    ARG RELEASE
+
+    ARG APP_PORT
+
+    # Set environment vars used by the app
+    # SECRET_KEY_BASE and DATABASE_URL env vars should be set when running the application
+    # maybe set COOKIE and other things
+    ENV HOME=$APP_DIR \
+        PORT=$APP_PORT \
+        PHX_SERVER=true \
+        RELEASE=$RELEASE \
+        RELEASE_TMP="/run/${APP_NAME}"
+
+    # USER $APP_USER
+
+    # Setting WORKDIR after USER makes directory be owned by the user.
+    # Setting it before makes it owned by root, which is more secure.
+    # The app needs to be able to write to a tmp directory on startup, which by
+    # default is under the release. This can be changed by setting RELEASE_TMP to
+    # /tmp or, more securely, /run/foo
+    WORKDIR $APP_DIR
+
+    # When using a startup script, copy to /app/bin
+    # COPY bin ./bin
+
+    USER $APP_USER
+
+    # Chown files while copying. Running "RUN chown -R app:app /app"
+    # adds an extra layer which is about 10Mb, a huge difference if the
+    # app image is around 20Mb.
+
+    # TODO: For more security, change specific files to have group read/execute
+    # permissions while leaving them owned by root
+
+    # When using a startup script, unpack release under "/app/current" dir
+    # WORKDIR $APP_DIR/current
+
+    COPY --from=deploy-release --chown="$APP_USER:$APP_GROUP" "/app/_build/${MIX_ENV}/rel/${RELEASE}" ./
+
+    EXPOSE $APP_PORT
+
+    # "bin" is the directory under the unpacked release, and "prod" is the name
+    # of the release
+    ENTRYPOINT ["bin/prod"]
+
+    # Run under init to avoid zombie processes
+    # https://github.com/krallin/tini
+    # ENTRYPOINT ["/sbin/tini", "--", "bin/prod"]
+
+    # Run app in foreground
+    CMD ["start"]
+
+    # Run via startup script
+    # CMD ["/app/bin/start-docker"]
+
 # Dev image which mounts code from local filesystem
 # FROM ${REGISTRY}${ELIXIR_IMAGE_NAME}:${ELIXIR_IMAGE_TAG} AS dev
 FROM build-os-deps AS dev
     # ARG http_proxy
     # ARG https_proxy=$http_proxy
-
     ARG LANG
-    ARG MIX_ENV
-
     ARG APP_NAME
+    ARG APP_DIR
     ARG APP_USER
     ARG APP_GROUP
-    ARG APP_DIR
+
     ARG APP_PORT
+    ARG MIX_ENV
 
     # Set environment vars used by the app
     ENV LANG=$LANG \
@@ -607,13 +660,6 @@ FROM build-os-deps AS dev
         truncate -s 0 /var/log/apt/* && \
         truncate -s 0 /var/log/dpkg.log
 
-    # Create app dirs
-    RUN mkdir -p "/run/$APP_NAME" && \
-        # Make dirs writable by app
-        chown -R "$APP_USER:$APP_GROUP" \
-            # Needed for RELEASE_TMP
-            "/run/$APP_NAME"
-
     USER $APP_USER
 
     WORKDIR $APP_DIR
@@ -626,87 +672,17 @@ FROM build-os-deps AS dev
         --mount=type=cache,target=~/.cache/rebar3,sharing=locked \
         mix do local.rebar --force, local.hex --force
 
-    EXPOSE $PORT
+    EXPOSE $APP_PORT
 
     CMD [ "sleep", "infinity" ]
-
-# Create final app image which gets deployed
-FROM deploy-base AS deploy
-    ARG LANG
-    ARG APP_DIR
-    ARG APP_NAME
-    ARG APP_USER
-    ARG APP_GROUP
-
-    ARG MIX_ENV=prod
-    ARG RELEASE
-
-    ARG APP_PORT
-
-    # Set environment vars used by the app
-    # SECRET_KEY_BASE and DATABASE_URL env vars should be set when running the application
-    # maybe set COOKIE and other things
-    ENV LANG=$LANG \
-        HOME=$APP_DIR \
-        PORT=$APP_PORT \
-        PHX_SERVER=true \
-        RELEASE=$RELEASE \
-        RELEASE_TMP="/run/${APP_NAME}"
-
-    # Create dirs writable by app user
-    RUN mkdir -p "/run/${APP_NAME}" && \
-        chown -R "${APP_USER}:${APP_GROUP}" \
-            "/run/${APP_NAME}"
-
-    # USER $APP_USER
-
-    # Setting WORKDIR after USER makes directory be owned by the user.
-    # Setting it before makes it owned by root, which is more secure.
-    # The app needs to be able to write to a tmp directory on startup, which by
-    # default is under the release. This can be changed by setting RELEASE_TMP to
-    # /tmp or, more securely, /run/foo
-    WORKDIR $APP_DIR
-
-    # When using a startup script, copy to /app/bin
-    # COPY bin ./bin
-
-    USER $APP_USER
-
-    # Chown files while copying. Running "RUN chown -R app:app /app"
-    # adds an extra layer which is about 10Mb, a huge difference if the
-    # app image is around 20Mb.
-
-    # TODO: For more security, change specific files to have group read/execute
-    # permissions while leaving them owned by root
-
-    # When using a startup script, unpack release under "/app/current" dir
-    # WORKDIR $APP_DIR/current
-
-    COPY --from=deploy-release --chown="$APP_USER:$APP_GROUP" "/app/_build/${MIX_ENV}/rel/${RELEASE}" ./
-
-    EXPOSE $PORT
-
-    # "bin" is the directory under the unpacked release, and "prod" is the name
-    # of the release
-    ENTRYPOINT ["bin/prod"]
-
-    # Run under init to avoid zombie processes
-    # https://github.com/krallin/tini
-    # ENTRYPOINT ["/sbin/tini", "--", "bin/prod"]
-
-    # Run app in foreground
-    CMD ["start"]
-
-    # Run via startup script
-    # CMD ["/app/bin/start-docker"]
 
 # Copy build artifacts to host
 FROM scratch as artifacts
     ARG MIX_ENV
     ARG RELEASE
 
-    COPY --from=release "/app/_build/$MIX_ENV/rel/${RELEASE}" /release
-    COPY --from=release /app/priv/static /static
+    COPY --from=deploy-release "/app/_build/${MIX_ENV}/rel/${RELEASE}" /release
+    COPY --from=deploy-release /app/priv/static /static
 
 # Default target
 FROM deploy

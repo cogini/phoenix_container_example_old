@@ -1,7 +1,6 @@
 # Deploy using Debian
 VERSION --shell-out-anywhere --use-copy-include-patterns --referenced-save-only 0.6
 
-# App versions
 ARG ELIXIR_VERSION=1.13.3
 # ARG OTP_VERSION=23.3.4
 ARG OTP_VERSION=24.2
@@ -9,7 +8,6 @@ ARG NODE_VERSION=16.14.1
 # ARG NODE_VERSION=lts
 
 ARG ALPINE_VERSION=3.15.0
-
 
 # Docker registry for internal images, e.g. 123.dkr.ecr.ap-northeast-1.amazonaws.com/
 # If blank, docker.io will be used. If specified, should have a trailing slash.
@@ -85,14 +83,19 @@ build-os-deps:
 deploy-base:
     FROM ${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG}
 
+    ENV LANG=$LANG
+
     # Create OS user and group to run app under
     # https://wiki.alpinelinux.org/wiki/Setting_up_a_new_user#adduser
-    RUN set -ex && \
-        addgroup -g "$APP_GROUP_ID" -S "$APP_GROUP" && \
-        adduser -u "$APP_USER_ID" -S "$APP_USER" -G "$APP_GROUP"
-        # adduser -u "$APP_USER_ID" -S "$APP_USER" -G "$APP_GROUP" -h "$HOME"
+    RUN addgroup -g $APP_GROUP_ID -S "$APP_GROUP" && \
+        adduser -u $APP_USER_ID -S "$APP_USER" -G "$APP_GROUP" -h "$HOME"
 
-    ENV LANG=$LANG
+    # Create app dirs
+    RUN mkdir -p "/run/${APP_NAME}" && \
+        # Make dirs writable by app
+        chown -R "${APP_USER}:${APP_GROUP}" \
+            # Needed for RELEASE_TMP
+            "/run/${APP_NAME}"
 
     # Install Alpine libraries needed at runtime
     # See https://wiki.alpinelinux.org/wiki/Local_APK_cache for details
@@ -112,16 +115,6 @@ deploy-base:
         # May not be needed if HTTPS is handled outside the application, e.g. in load balancer.
         apk add openssl ncurses-libs
 
-    # Create user and group to run under with specific uid
-    RUN addgroup -g $APP_GROUP_ID -S "$APP_GROUP" && \
-        adduser -u $APP_USER_ID -S "$APP_USER" -G "$APP_GROUP" -h "$HOME"
-
-    # Create app dirs
-    RUN mkdir -p "/run/$APP_NAME" && \
-        # Make dirs writable by app
-        chown -R "$APP_USER:$APP_GROUP" \
-            # Needed for RELEASE_TMP
-            "/run/$APP_NAME"
     SAVE IMAGE --cache-hint
 
 # Scan deploy image for security vulnerabilities
@@ -132,17 +125,20 @@ deploy-scan:
 
     RUN --mount=type=cache,id=apk,target=/var/cache/apk,sharing=locked \
         set -ex && \
+        $APK_UPDATE && $APK_UPGRADE && \
         apk add curl && \
         curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
 
     RUN --mount=type=cache,id=apk,target=/var/cache/apk,sharing=locked \
         set -ex && \
         # Succeed for issues of severity = HIGH
-        trivy filesystem --exit-code 0 --severity HIGH --no-progress / && \
+        # trivy filesystem $TRIVY_OPTS --format sarif -o /sarif-reports/trivy.high.sarif --exit-code 0 --severity HIGH --no-progress / && \
+        trivy filesystem $TRIVY_OPTS --exit-code 0 --severity HIGH --no-progress / && \
         # Fail for issues of severity = CRITICAL
-        trivy filesystem --exit-code 1 --severity CRITICAL --no-progress /
+        # trivy filesystem $TRIVY_OPTS --format sarif -o /sarif-reports/trivy.sarif --exit-code 1 --severity CRITICAL --no-progress /
         # Fail for any issues
         # trivy filesystem -d --exit-code 1 --no-progress /
+        trivy filesystem --format sarif -o /sarif-reports/trivy.sarif --no-progress $TRIVY_OPTS --no-progress /
 
         # curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin && \
         # grype -vv --fail-on medium dir:/ \

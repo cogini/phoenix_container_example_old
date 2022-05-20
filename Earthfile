@@ -3,7 +3,7 @@ VERSION --use-cache-command --shell-out-anywhere --use-copy-include-patterns --r
 
 ARG ELIXIR_VERSION=1.13.3
 # ARG OTP_VERSION=23.3.4
-ARG OTP_VERSION=24.3.1
+ARG OTP_VERSION=24.2
 # ARG NODE_VERSION=14.4
 ARG NODE_VERSION=16.14.1
 # ARG NODE_VERSION=lts
@@ -26,9 +26,9 @@ ARG REGISTRY=""
 # Public images may be mirrored into the private registry, with e.g. Skopeo
 ARG PUBLIC_REGISTRY=$REGISTRY
 
-# ARG BASE_OS=debian
+ARG BASE_OS=debian
 # ARG BASE_OS=alpine
-ARG BASE_OS=distroless
+# ARG BASE_OS=distroless
 # ARG BASE_OS=centos
 # ARG BASE_OS=busybox
 
