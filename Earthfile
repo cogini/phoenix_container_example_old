@@ -21,6 +21,8 @@ ARG ELIXIR_DEBIAN_VERSION=bullseye-20210902-slim
 # ARG DEBIAN_VERSION=buster-slim
 ARG DEBIAN_VERSION=bullseye-slim
 
+ARG BUSYBOX_VERSION=1.34.1
+
 # Docker registry for internal images, e.g. 123.dkr.ecr.ap-northeast-1.amazonaws.com/
 # If blank, docker.io will be used. If specified, should have a trailing slash.
 ARG REGISTRY=""
@@ -34,7 +36,7 @@ ARG BASE_OS=debian
 # ARG BASE_OS=centos
 # ARG BASE_OS=busybox
 
-FROM ${PUBLIC_REGISTRY}busybox
+FROM ${PUBLIC_REGISTRY}busybox:${BUSYBOX_VERSION}
 IF [ "$BASE_OS" = "alpine" ]
     ARG BUILD_IMAGE_NAME=${PUBLIC_REGISTRY}hexpm/elixir
     ARG BUILD_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-alpine-${ALPINE_VERSION}
@@ -75,7 +77,7 @@ ELSE IF [ "$BASE_OS" = "busybox" ]
     ARG INSTALL_IMAGE_TAG=$DEBIAN_VERSION
 
     ARG DEPLOY_IMAGE_NAME=${PUBLIC_REGISTRY}busybox
-    ARG DEPLOY_IMAGE_TAG=glibc
+    ARG DEPLOY_IMAGE_TAG=${BUSYBOX_VERSION}-glibc
 
     IMPORT ./deploy/busybox AS base
 ELSE IF [ "$BASE_OS" = "centos" ]

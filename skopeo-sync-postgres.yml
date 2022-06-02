@@ -5,3 +5,4 @@ docker.io:
       - '12'
       - '14'
       - '14.1-alpine'
+      - '14.3-alpine'
