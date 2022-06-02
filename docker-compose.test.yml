@@ -4,8 +4,8 @@ services:
   # https://geshan.com.np/blog/2021/12/docker-postgres/
   postgres:
     image: app-db:latest
-    # image: postgres:14.1-alpine
     # image: postgres:14
+    # image: postgres:14.1-alpine
     restart: always
     ports:
       - '5432:5432'
@@ -13,15 +13,19 @@ services:
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=app_test
     volumes:
-      - db:/var/lib/postgresql/data
-      - ./db/init.sql:/docker-entrypoint-initdb.d/create_tables.sql
-    # healthcheck:
-    #   test: ["CMD-SHELL", "pg_isready -U postgres -d app_test"]
-    #   start_period: 15s
-    #   interval: 5s
-    #   timeout: 5s
-    #   retries: 10
+      - postgres_data_path:/var/lib/postgresql/data
+      # - ./db/init.sql:/docker-entrypoint-initdb.d/create_tables.sql
+    healthcheck:
+      # test: ["CMD-SHELL", "pg_isready -U postgres -d app_test"]
+      # test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTRES_DB"]
+      test: ["CMD-SHELL", "pg_isready"]
+      start_period: 5s
+      interval: 2s
+      timeout: 5s
+      retries: 20
+
   test:
     image: test:latest
     environment:
@@ -29,13 +33,12 @@ services:
       - DATABASE_URL
       - DATABASE_HOST=postgres
       - DATABASE_DB
-    # depends_on:
-    #   postgres:
-    #     condition: service_healthy
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+      # - postgres
     volumes:
       - /junit-reports:/junit-reports
 volumes:
-  db:
+  postgres_data_path:
     driver: local
