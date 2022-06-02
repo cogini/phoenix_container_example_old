@@ -19,7 +19,6 @@ services:
       # - ./db/init.sql:/docker-entrypoint-initdb.d/create_tables.sql
     healthcheck:
       # test: ["CMD-SHELL", "pg_isready -U postgres -d app_test"]
-      # test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTRES_DB"]
       test: ["CMD-SHELL", "pg_isready"]
       start_period: 5s
       interval: 2s
