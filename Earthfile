@@ -21,14 +21,28 @@ ARG ELIXIR_DEBIAN_VERSION=bullseye-20210902-slim
 # ARG DEBIAN_VERSION=buster-slim
 ARG DEBIAN_VERSION=bullseye-slim
 
-ARG BUSYBOX_VERSION=1.34.1
-
 # Docker registry for internal images, e.g. 123.dkr.ecr.ap-northeast-1.amazonaws.com/
 # If blank, docker.io will be used. If specified, should have a trailing slash.
 ARG REGISTRY=""
 # Registry for public base images, e.g. debian or alpine.
 # Public images may be mirrored into the private registry, with e.g. Skopeo
 ARG PUBLIC_REGISTRY=$REGISTRY
+
+# Docker-in-Docker host image, used to run tests
+ARG DIND_IMAGE_NAME=${PUBLIC_REGISTRY}earthly/dind
+ARG DIND_IMAGE_TAG=alpine
+
+ARG BUSYBOX_VERSION=1.34.1
+
+ARG POSTGRES_IMAGE_NAME=${PUBLIC_REGISTRY}postgres
+ARG POSTGRES_IMAGE_TAG=14.3-alpine
+
+ARG MYSQL_IMAGE_NAME=${PUBLIC_REGISTRY}mysql
+# ARG MYSQL_IMAGE_TAG=latest
+ARG MYSQL_IMAGE_TAG=5.7.37
+
+ARG DATADOG_IMAGE_NAME=gcr.io/datadoghq/agent
+ARG DATADOG_IMAGE_TAG=latest
 
 ARG BASE_OS=debian
 # ARG BASE_OS=alpine
@@ -96,25 +110,12 @@ ELSE IF [ "$BASE_OS" = "centos" ]
     IMPORT ./deploy/centos AS base
 END
 
-# Docker-in-Docker host image, used to run tests
-ARG DIND_IMAGE_NAME=${PUBLIC_REGISTRY}earthly/dind
-ARG DIND_IMAGE_TAG=alpine
-
 # Output image
 ARG OUTPUT_IMAGE_NAME=foo-app
 ARG IMAGE_TAG=latest
 ARG OUTPUT_IMAGE_TAG="$IMAGE_TAG"
 ARG REPO_URL="${REGISTRY}${OUTPUT_IMAGE_NAME}"
 ARG OUTPUT_URL=$REPO_URL
-
-ARG POSTGRES_IMAGE_NAME=${PUBLIC_REGISTRY}postgres
-ARG POSTGRES_IMAGE_TAG=14.3-alpine
-
-ARG MYSQL_IMAGE_NAME=${PUBLIC_REGISTRY}mysql
-ARG MYSQL_IMAGE_TAG=5.7.37
-
-ARG DATADOG_IMAGE_NAME=gcr.io/datadoghq/agent
-ARG DATADOG_IMAGE_TAG=latest
 
 # ARG CREDO_OPTS="--ignore refactor,duplicated --mute-exit-status"
 ARG CREDO_OPTS=""
