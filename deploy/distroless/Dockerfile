@@ -1,7 +1,9 @@
-# Docker registry for base images, default is docker.io
-# If specified, should have a trailing slash
+# Docker registry for internal images, e.g. 123.dkr.ecr.ap-northeast-1.amazonaws.com/
+# If blank, docker.io will be used. If specified, should have a trailing slash.
 ARG REGISTRY=""
-ARG PUBLIC_REGISTRY=""
+# Registry for public base images, e.g. debian or alpine.
+# Public images may be mirrored into the private registry, with e.g. Skopeo
+ARG PUBLIC_REGISTRY=$REGISTRY
 
 ARG INSTALL_IMAGE_NAME=debian
 ARG INSTALL_IMAGE_TAG=bullseye-slim
