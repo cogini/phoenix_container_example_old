@@ -29,7 +29,6 @@ ARG PUBLIC_REGISTRY=$REGISTRY
 ARG BUILD_IMAGE_NAME=${PUBLIC_REGISTRY}hexpm/elixir
 ARG BUILD_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-${ELIXIR_DEBIAN_VERSION}
 
-
 # Deploy base image
 # https://github.com/GoogleContainerTools/distroless/blob/main/base/README.md
 ARG DEPLOY_IMAGE_NAME=gcr.io/distroless/base-debian11
@@ -94,7 +93,7 @@ build-os-deps:
             # openssl \
 
             # Install default nodejs
-            # nodejs \
+            nodejs \
 
             # Install default Postgres
             # libpq-dev \
@@ -102,13 +101,13 @@ build-os-deps:
             && \
 
         # Install node using n
-        curl -L https://raw.githubusercontent.com/tj/n/master/bin/n -o /usr/local/bin/n && \
-        chmod +x /usr/local/bin/n && \
-        # Install lts version
-        # n lts && \
-        # Install specific version
-        n "$NODE_VERSION" && \
-        rm /usr/local/bin/n && \
+        # curl -L https://raw.githubusercontent.com/tj/n/master/bin/n -o /usr/local/bin/n && \
+        # chmod +x /usr/local/bin/n && \
+        # # Install lts version
+        # # n lts && \
+        # # Install specific version
+        # n "$NODE_VERSION" && \
+        # rm /usr/local/bin/n && \
 
         # Install latest Postgres from postgres.org repo
         # curl -sL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /etc/apt/trusted.gpg.d/postgresql-ACCC4CF8.asc && \
