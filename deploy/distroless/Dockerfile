@@ -5,9 +5,6 @@ ARG REGISTRY=""
 # Public images may be mirrored into the private registry, with e.g. Skopeo
 ARG PUBLIC_REGISTRY=$REGISTRY
 
-ARG INSTALL_IMAGE_NAME=debian
-ARG INSTALL_IMAGE_TAG=bullseye-slim
-
 # Deploy base image
 # https://github.com/GoogleContainerTools/distroless/blob/main/base/README.md
 ARG DEPLOY_IMAGE_NAME=gcr.io/distroless/base-debian11
@@ -16,19 +13,15 @@ ARG DEPLOY_IMAGE_NAME=gcr.io/distroless/base-debian11
 # debug includes busybox
 ARG DEPLOY_IMAGE_TAG=debug
 
-ARG LANG=C.UTF-8
+ARG INSTALL_IMAGE_NAME=${PUBLIC_REGISTRY}debian
+ARG INSTALL_IMAGE_TAG=bullseye-slim
 
-ARG DEBIAN_FRONTEND=noninteractive
-ARG APT_OPTS="-y -qq -o=Dpkg::Use-Pty=0 --no-install-recommends"
-ARG APT_OPTS_UPDATE="-qq --no-install-recommends"
+ARG LANG=C.UTF-8
 
 ARG LINUX_ARCH=aarch64
 
 # Staging image for binaries which are copied into final deploy image
 FROM ${REGISTRY}${INSTALL_IMAGE_NAME}:${INSTALL_IMAGE_TAG} AS deploy-install
-    ARG APT_OPTS
-    ARG APT_OPTS_UPDATE
-
     # Configure apt caching for use with BuildKit
     # RUN set -exu && \
     #     rm -f /etc/apt/apt.conf.d/docker-clean && \
@@ -36,21 +29,23 @@ FROM ${REGISTRY}${INSTALL_IMAGE_NAME}:${INSTALL_IMAGE_TAG} AS deploy-install
     #     echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression
 
     RUN set -exu && \
-        apt-get update $APT_OPTS_UPDATE && \
+        apt-get update -qq && \
         # Avoid warnings
-        # apt-get -y install $APT_OPTS dialog apt-utils \
+        # apt-get -y install -y -qq --no-install-recommends dialog apt-utils \
         # Enable installation of packages over https
-        apt-get -y install $APT_OPTS \
+        apt-get -y install -y -qq --no-install-recommends \
             # apt-transport-https \
             ca-certificates \
             curl \
-            # gnupg-agent \
+            gnupg-agent \
             # software-properties-common \
-            # gnupg \
+            gnupg \
             unzip \
+            lsb-release \
             busybox-static \
             locales \
-            # For Erlang runtime
+
+            # Needed by Erlang VM
             libtinfo6 \
             && \
             locale-gen && \
