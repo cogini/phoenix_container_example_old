@@ -103,7 +103,7 @@ jobs:
 
       - name: Run tests
         env:
-          DATABASE_HOST=postgres
+          DATABASE_HOST: postgres
         run: |
           docker-compose up test
           docker-compose run test mix test
