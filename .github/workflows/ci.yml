@@ -35,6 +35,7 @@ jobs:
           echo "##[set-output name=run_num;]${GITHUB_RUN_NUMBER}"
 
       - name: Put back the git branch into git (Earthly uses it for tagging)
+        id: branch
         run: |
           branch=""
           if [ -n "$GITHUB_HEAD_REF" ]; then
@@ -43,6 +44,7 @@ jobs:
             branch="${GITHUB_REF##*/}"
           fi
           git checkout -b "$branch" || true
+          echo "##[set-output name=branch;]${branch}"
 
       - name: Set up QEMU for multi-platform builds
         id: qemu
@@ -94,7 +96,7 @@ jobs:
           cache-to: type=local,mode=max,dest=/tmp/.buildx-cache-new
           tags: |
             ${{ steps.vars.outputs.registry }}/${{ env.APP_NAME }}:latest
-            ${{ steps.vars.outputs.registry }}/${{ env.APP_NAME }}:${{ env.BRANCH }}-${{ env.SHA_SHORT }}
+            ${{ steps.vars.outputs.registry }}/${{ env.APP_NAME }}:${{ steps.branch.outputs.branch }}-${{ env.SHA_SHORT }}
             ${{ steps.vars.outputs.registry }}/${{ env.APP_NAME }}:${{ steps.vars.outputs.run_num }}
 
       - name: Docker build and push
@@ -108,7 +110,7 @@ jobs:
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,mode=max,dest=/tmp/.buildx-cache-new
           tags: |
-            ${{ steps.vars.outputs.registry }}/${{ github.event.repository.name }}:${{ env.BRANCH }}-${{ env.SHA_SHORT }}
+            ${{ steps.vars.outputs.registry }}/${{ github.event.repository.name }}:${{ steps.branch.outputs.branch }}-${{ env.SHA_SHORT }}
 
       - name: Move cache
         run: |
