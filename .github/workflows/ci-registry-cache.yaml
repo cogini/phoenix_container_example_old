@@ -22,10 +22,12 @@ jobs:
       - name: Dump Event
         run: cat "$GITHUB_EVENT_PATH"
 
+      # https://github.com/aws-actions/configure-aws-credentials
+      # https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
-          role-to-assume: arn:aws:iam::770916339360:role/foo-dev-codebuild-github-action-role
+          role-to-assume: arn:aws:iam::770916339360:role/foo-dev-ecr-github-action-role
           aws-region: ap-northeast-1
 
       - name: Display AWS identity
@@ -42,6 +44,8 @@ jobs:
           echo "GITHUB_SHA_SHORT=$(echo $GITHUB_SHA | cut -c 1-7)" >> $GITHUB_ENV
           echo "::set-output name=registry::${REGISTRY_NAME}"
           echo "::set-output name=github_sha::${GITHUB_SHA}"
+          echo "::set-output name=runid::${GITHUB_RUN_ID}"
+          echo "::set-output name=run_num::${GITHUB_RUN_NUMBER}"
 
       # https://github.com/marketplace/actions/docker-login
       - name: Login to ECR
