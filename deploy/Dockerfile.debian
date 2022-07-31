@@ -2,13 +2,12 @@
 #
 # Build app
 #
-# It takes advantage of caching and parallel build support in BuildKit.
-#
 # The "syntax" line must be the first thing in the file, as it enables the
 # new syntax for caching, etc. see
 # https://docs.docker.com/develop/develop-images/build_enhancements/
 # https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/experimental.md
 
+# App versions
 ARG ELIXIR_VERSION=1.13.3
 # ARG OTP_VERSION=23.3.4
 ARG OTP_VERSION=24.2
@@ -298,6 +297,7 @@ FROM build-deps-get AS deploy-release
 
     WORKDIR $APP_DIR
 
+    # This does a partial compile.
     # Doing "mix do compile, phx.digest, release" in a single stage is worse,
     # because a single line of code changed causes a complete recompile.
     # With the stages separated most of the compilation is cached.
