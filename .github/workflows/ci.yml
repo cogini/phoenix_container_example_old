@@ -111,7 +111,7 @@ jobs:
           tags: |
             ${{ env.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:latest
             ${{ env.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-            ${{ env.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:${{ env.GITHUB_RUN_ID }}
+            ${{ env.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.run_id }}
 
       - name: Build Docker image and push
         if: github.event_name == 'pull_request'
