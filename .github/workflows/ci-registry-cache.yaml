@@ -17,7 +17,7 @@ jobs:
     env:
       REGISTRY: 770916339360.dkr.ecr.ap-northeast-1.amazonaws.com/
       REGISTRY_NAME: 770916339360.dkr.ecr.ap-northeast-1.amazonaws.com
-      APP_NAME: foo-app
+      IMAGE_NAME: foo-app
     steps:
       - name: Dump Event
         run: cat "$GITHUB_EVENT_PATH"
@@ -43,7 +43,7 @@ jobs:
         run: |
           echo "GITHUB_SHA_SHORT=$(echo $GITHUB_SHA | cut -c 1-7)" >> $GITHUB_ENV
           echo "::set-output name=registry::${REGISTRY_NAME}"
-          echo "::set-output name=runid::${GITHUB_RUN_ID}"
+          echo "::set-output name=run_id::${GITHUB_RUN_ID}"
           echo "::set-output name=run_num::${GITHUB_RUN_NUMBER}"
 
       - name: Set up Docker Buildx
@@ -77,8 +77,9 @@ jobs:
           builder: ${{ steps.buildx.outputs.name }}
           file: ./deploy/Dockerfile.debian
           push: true
-          cache-from: type=registry,ref=${{ env.REGISTRY_NAME }}/${{ env.APP_NAME }}:latest
+          cache-from: type=registry,ref=${{ env.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:latest
           cache-to: type=inline,mode=max
           tags: |
-            ${{ env.REGISTRY_NAME }}/${{ env.APP_NAME }}:latest
-            ${{ env.REGISTRY_NAME }}/${{ env.APP_NAME }}:${{ github.sha }}
+            ${{ env.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:latest
+            ${{ env.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ${{ env.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:${{ env.GITHUB_RUN_ID }}
