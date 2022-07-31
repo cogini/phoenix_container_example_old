@@ -13,7 +13,6 @@
 version: 0.2
 env:
   variables:
-    # Enable new docker features
     DOCKER_BUILDKIT: 1
     DOCKER_CLI_EXPERIMENTAL: enabled
     COMPOSE_DOCKER_CLI_BUILD: 1
@@ -35,6 +34,7 @@ phases:
       # - cat /etc/docker/daemon.json
 
       - /usr/sbin/service docker start
+      # https://docs.aws.amazon.com/codebuild/latest/APIReference/API_ProjectEnvironment.html
       # - nohup /usr/local/bin/dockerd --host=unix:///var/run/docker.sock --host=tcp://0.0.0.0:2375 --storage-driver=overlay&
       # - timeout 15 sh -c "until docker info; do echo .; sleep 1; done"
 
@@ -86,6 +86,9 @@ phases:
       # Use old aws cli for login
       # - $(aws ecr get-login --region "$AWS_DEFAULT_REGION" --no-include-email)
       # Use amazon-ecr-credential-helper for login
+      # Use amazon-ecr-credential-helper for login, installed in custom build image
+      # - mkdir -p /root/.docker
+      # - echo '{"credsStore":"ecr-login"}' | tee /root/.docker/config.json
 
       # - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
       - COMMIT_HASH=$CODEBUILD_RESOLVED_SOURCE_VERSION
