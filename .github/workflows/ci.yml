@@ -34,7 +34,7 @@ jobs:
         run: aws sts get-caller-identity
 
       - name: Checkout source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Set variables
         id: vars
@@ -60,73 +60,81 @@ jobs:
 
       - name: Set up QEMU for multi-platform builds
         id: qemu
-        uses: docker/setup-qemu-action@v1
-        with:
-          image: tonistiigi/binfmt:latest
-          platforms: all
+        uses: docker/setup-qemu-action@v2
+        # with:
+        #   image: tonistiigi/binfmt:latest
+        #   platforms: all
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v2
+        # with:
+        #   install: true
 
       # https://github.com/marketplace/actions/docker-login
       - name: Login to ECR
         id: login-ecr
-        uses: docker/login-action@v1
+        uses: docker/login-action@v2
         with:
           registry: ${{ env.REGISTRY_NAME }}
       #     username: ${{ secrets.AWS_ACCESS_KEY_ID }}
       #     password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
-      - name: Login to Docker Hub
+      - name: Login to DockerHub
         id: login-docker-hub
-        uses: docker/login-action@v1
+        uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Set up Docker Buildx
-        id: buildx
-        uses: docker/setup-buildx-action@master
-        with:
-          install: true
-
-      - name: Cache Docker layers
-        uses: actions/cache@v2
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-buildx-
+      # - name: Cache Docker layers
+      #   uses: actions/cache@v2
+      #   with:
+      #     path: /tmp/.buildx-cache
+      #     key: ${{ runner.os }}-buildx-${{ github.sha }}
+      #     restore-keys: |
+      #       ${{ runner.os }}-buildx-
 
       - name: Build Docker image and push
         if: github.event_name != 'pull_request'
         id: docker
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v3
         with:
           context: .
           builder: ${{ steps.buildx.outputs.name }}
           file: ./deploy/Dockerfile.debian
           push: true
           # push: false
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,mode=max,dest=/tmp/.buildx-cache-new
+          # cache-from: type=local,src=/tmp/.buildx-cache
+          # cache-to: type=local,mode=max,dest=/tmp/.buildx-cache-new
+          cache-from: type=gha,scope=${{ github.workflow }}
+          cache-to: type=gha,scope=${{ github.workflow }}
           tags: |
             ${{ steps.vars.outputs.registry }}/${{ env.APP_NAME }}:latest
-            ${{ steps.vars.outputs.registry }}/${{ env.APP_NAME }}:${{ steps.branch.outputs.branch }}-${{ env.SHA_SHORT }}
+            ${{ steps.vars.outputs.registry }}/${{ env.APP_NAME }}:${{ github.sha }}
             ${{ steps.vars.outputs.registry }}/${{ env.APP_NAME }}:${{ steps.vars.outputs.run_num }}
+            ${{ steps.vars.outputs.registry }}/${{ env.APP_NAME }}:${{ steps.branch.outputs.branch }}-${{ env.GITHUB_SHA_SHORT }}
 
       - name: Build Docker image and push
         if: github.event_name == 'pull_request'
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v3
         with:
           context: .
           builder: ${{ steps.buildx.outputs.name }}
           file: ./deploy/Dockerfile.debian
           push: true
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,mode=max,dest=/tmp/.buildx-cache-new
+          # cache-from: type=local,src=/tmp/.buildx-cache
+          # cache-to: type=local,mode=max,dest=/tmp/.buildx-cache-new
+          cache-from: type=gha,scope=${{ github.workflow }}
+          cache-to: type=gha,scope=${{ github.workflow }}
           tags: |
-            ${{ steps.vars.outputs.registry }}/${{ github.event.repository.name }}:${{ steps.branch.outputs.branch }}-${{ env.SHA_SHORT }}
+            ${{ steps.vars.outputs.registry }}/${{ env.APP_NAME }}:${{ github.sha }}
+            ${{ steps.vars.outputs.registry }}/${{ github.event.repository.name }}:${{ steps.branch.outputs.branch }}-${{ env.GITHUB_SHA_SHORT }}
 
-      - name: Move cache
-        run: |
-          rm -rf /tmp/.buildx-cache
-          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
-
+      # Temp fix
+      # https://github.com/docker/build-push-action/issues/252
+      # https://github.com/moby/buildkit/issues/1896
+      # - name: Move cache
+      #   run: |
+      #     rm -rf /tmp/.buildx-cache
+      #     mv /tmp/.buildx-cache-new /tmp/.buildx-cache
