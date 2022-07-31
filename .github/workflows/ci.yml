@@ -22,16 +22,16 @@ jobs:
       - name: Dump Event
         run: cat "$GITHUB_EVENT_PATH"
 
-      # https://github.com/marketplace/actions/setup-earthly
-      - uses: earthly/actions-setup@v1
-        with:
-          version: "latest" # or pin to an specific version, e.g. "v0.6.10"
-
-      - name: Earthly version
-        run: earthly --version
-
       - name: Checkout source
         uses: actions/checkout@v2
+
+      - name: Set output variables
+        id: vars
+        run: |
+          echo "SHA_SHORT=$(echo $GITHUB_SHA | cut -c 1-7)" >> $GITHUB_ENV
+          echo "##[set-output name=runid;]${GITHUB_RUN_ID}"
+          echo "##[set-output name=registry;]${REGISTRY}"
+          echo "##[set-output name=run_num;]${GITHUB_RUN_NUMBER}"
 
       - name: Put back the git branch into git (Earthly uses it for tagging)
         run: |
@@ -58,12 +58,59 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # - name: Docker Login
-      #   run: echo "$DOCKERHUB_TOKEN" | docker login --username "$DOCKERHUB_USERNAME" --password-stdin
+      # - name: Login to ECR
+      #   id: login-ecr
+      #   uses: docker/login-action@v1
+      #   with:
+      #     registry: ${{ steps.vars.outputs.registry }}
+      #     username: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      #     password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
-      - name: Build with Earthly
-        # run: earthly --ci --push +build
-        run: earthly -P -V +all
-        # run: earthly -P -V +all-platforms
-        # run: earthly -P -V --platform=linux/arm64 +deploy
-        # run: earthly -P -V --platform=linux/arm64 +deploy-scan
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@master
+        with:
+          install: true
+
+      - name: Cache Docker layers
+        uses: actions/cache@v2
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+
+      - name: Docker build and push
+        if: github.event_name != 'pull_request'
+        id: docker
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          builder: ${{ steps.buildx.outputs.name }}
+          file: ./deploy/Dockerfile.debian
+          push: true
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,mode=max,dest=/tmp/.buildx-cache-new
+          tags: |
+            ${{ steps.vars.outputs.registry }}/foo-app:latest
+            ${{ steps.vars.outputs.registry }}/foo-app:${{ env.BRANCH }}-${{ env.SHA_SHORT }}
+            ${{ steps.vars.outputs.registry }}/foo-app:${{ steps.vars.outputs.run_num }}
+
+      - name: Docker build and push
+        if: github.event_name == 'pull_request'
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          builder: ${{ steps.buildx.outputs.name }}
+          file: ./deploy/Dockerfile.debian
+          push: true
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,mode=max,dest=/tmp/.buildx-cache-new
+          tags: |
+            ${{ steps.vars.outputs.registry }}/${{ github.event.repository.name }}:${{ env.BRANCH }}-${{ env.SHA_SHORT }}
+
+      - name: Move cache
+        run: |
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+
