@@ -1,26 +1,31 @@
 ---
 name: CI Arm
-
-on: [push]
-
+on: push
 jobs:
   build:
     runs-on: ubuntu-latest
+    # runs-on: ubuntu-20.04
     permissions:
       id-token: write
       contents: read
     steps:
-      # - name: Checkout
-      #   uses: actions/checkout@v2
+      - name: Dump Event
+        run: cat "$GITHUB_EVENT_PATH"
 
-      - name: Configure AWS Credentials
+      # https://github.com/aws-actions/configure-aws-credentials
+      # https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
+      - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
           role-to-assume: arn:aws:iam::770916339360:role/foo-dev-codebuild-github-action-role
           aws-region: ap-northeast-1
 
-      - name: Display Identity
+      - name: Display AWS identity
         run: aws sts get-caller-identity
+
+      # We don't need to check out source, just run codebuild
+      # - name: Checkout
+      #   uses: actions/checkout@v2
 
       - name: Run CodeBuild
         uses: aws-actions/aws-codebuild-run-build@v1
