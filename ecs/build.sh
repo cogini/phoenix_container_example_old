@@ -67,7 +67,7 @@ case "$CACHE_TYPE" in
     local)
         # Use local files for caching
         mkdir -p "$CACHE_DIR"
-        # buildx can't handle cache not existing,  only use --cache-from if present
+        # buildx can't handle cache not existing, only use --cache-from if present
         if [ -s "$CACHE_DIR/index.json" ]
         then
             CACHE_FROM="--cache-from=type=local,src=${CACHE_DIR}"
