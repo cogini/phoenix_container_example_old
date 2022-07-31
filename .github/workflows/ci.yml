@@ -103,8 +103,8 @@ jobs:
           context: .
           builder: ${{ steps.buildx.outputs.name }}
           file: ./deploy/Dockerfile.debian
-          # push: true
-          push: false
+          push: true
+          # push: false
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,mode=max,dest=/tmp/.buildx-cache-new
           tags: |
