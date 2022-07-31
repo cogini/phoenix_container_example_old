@@ -3,7 +3,6 @@ VERSION --use-cache-command --shell-out-anywhere --use-copy-include-patterns --r
 
 ARG ELIXIR_VERSION=1.13.4
 # ARG OTP_VERSION=23.3.4
-# ARG OTP_VERSION=24.2
 # ARG OTP_VERSION=24.3.4
 ARG OTP_VERSION=25.0-rc3
 # ARG NODE_VERSION=14.4
