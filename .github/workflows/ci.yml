@@ -73,7 +73,7 @@ jobs:
 
       - name: Build Docker image and push
         if: github.event_name != 'pull_request'
-        id: docker
+        id: docker-build
         uses: docker/build-push-action@v3
         with:
           context: .
@@ -113,7 +113,7 @@ jobs:
 
       - name: Build Docker image and push
         if: github.event_name != 'pull_request'
-        id: docker
+        id: docker-push
         uses: docker/build-push-action@v3
         with:
           context: .
