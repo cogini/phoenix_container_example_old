@@ -71,9 +71,8 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build Docker image and push
-        if: github.event_name != 'pull_request'
-        id: docker-build
+      - name: Build Docker test image
+        id: docker-build-test
         uses: docker/build-push-action@v3
         with:
           context: .
@@ -81,25 +80,11 @@ jobs:
           file: ./deploy/Dockerfile.debian
           # push: false
           load: true
+          target: test
           cache-from: type=gha,scope=${{ github.workflow }}
           cache-to: type=gha,scope=${{ github.workflow }}
           tags: |
-            ${{ env.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:latest
-            ${{ env.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-            ${{ env.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.run_id }}
-
-      - name: Build Docker image and push
-        if: github.event_name == 'pull_request'
-        uses: docker/build-push-action@v3
-        with:
-          context: .
-          builder: ${{ steps.buildx.outputs.name }}
-          file: ./deploy/Dockerfile.debian
-          load: true
-          cache-from: type=gha,scope=${{ github.workflow }}
-          cache-to: type=gha,scope=${{ github.workflow }}
-          tags: |
-            ${{ env.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ${{ env.IMAGE_NAME }}:test
 
       - name: Run tests
         env:
@@ -111,7 +96,7 @@ jobs:
           docker-compose run test mix deps.audit
           docker-compose run test mix sobelow
 
-      - name: Build Docker image and push
+      - name: Build Docker deploy image and push
         if: github.event_name != 'pull_request'
         id: docker-push
         uses: docker/build-push-action@v3
@@ -127,7 +112,7 @@ jobs:
             ${{ env.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
             ${{ env.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.run_id }}
 
-      - name: Build Docker image and push
+      - name: Build Docker deploy image and push
         if: github.event_name == 'pull_request'
         uses: docker/build-push-action@v3
         with:
