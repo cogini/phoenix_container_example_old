@@ -72,8 +72,8 @@ jobs:
           context: .
           builder: ${{ steps.buildx.outputs.name }}
           file: ./deploy/Dockerfile.debian
-          push: true
-          # push: false
+          # push: true
+          push: false
           cache-from: type=registry,ref=${{ env.REGISTRY_NAME }}/${{ env.APP_NAME }}:latest
           cache-to: type=inline,mode=max
           tags: |
