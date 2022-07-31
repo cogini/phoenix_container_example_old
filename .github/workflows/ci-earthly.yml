@@ -30,6 +30,17 @@ jobs:
       - name: Earthly version
         run: earthly --version
 
+      # https://github.com/aws-actions/configure-aws-credentials
+      # https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: arn:aws:iam::770916339360:role/foo-dev-ecr-github-action-role
+          aws-region: ap-northeast-1
+
+      - name: Display AWS identity
+        run: aws sts get-caller-identity
+
       - name: Checkout source
         uses: actions/checkout@v2
 
@@ -43,28 +54,31 @@ jobs:
           fi
           git checkout -b "$branch" || true
 
-      - name: Set up QEMU for multi-platform builds
-        id: qemu
-        uses: docker/setup-qemu-action@v1
-        with:
-          image: tonistiigi/binfmt:latest
-          platforms: all
+      # - name: Set up QEMU for multi-platform builds
+      #   id: qemu
+      #   uses: docker/setup-qemu-action@v2
 
       # https://github.com/marketplace/actions/docker-login
-      - name: Login to Docker Hub
+      - name: Login to ECR
+        id: login-ecr
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY_NAME }}
+      #     username: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      #     password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      # https://github.com/marketplace/actions/docker-login
+      - name: Login to DockerHub
         id: login-docker-hub
-        uses: docker/login-action@v1
+        uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # - name: Docker Login
-      #   run: echo "$DOCKERHUB_TOKEN" | docker login --username "$DOCKERHUB_USERNAME" --password-stdin
-
       - name: Build with Earthly
         # run: earthly --ci --push +build
-        run: earthly -P -V +all
+        # run: earthly -P -V +all
+        run: earthly -P -V --push +all
         # run: earthly -P -V +all-platforms
         # run: earthly -P -V --platform=linux/arm64 +deploy
         # run: earthly -P -V --platform=linux/arm64 +deploy-scan
-

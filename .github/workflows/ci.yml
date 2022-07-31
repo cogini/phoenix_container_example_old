@@ -46,30 +46,13 @@ jobs:
           echo "::set-output name=run_id::${GITHUB_RUN_ID}"
           echo "::set-output name=run_num::${GITHUB_RUN_NUMBER}"
 
-      # - name: Put back the git branch into git (Earthly uses it for tagging)
-      #   id: branch
-      #   run: |
-      #     branch=""
-      #     if [ -n "$GITHUB_HEAD_REF" ]; then
-      #       branch="$GITHUB_HEAD_REF"
-      #     else
-      #       branch="${GITHUB_REF##*/}"
-      #     fi
-      #     git checkout -b "$branch" || true
-      #     echo "##[set-output name=branch;]${branch}"
-
       # - name: Set up QEMU for multi-platform builds
       #   id: qemu
       #   uses: docker/setup-qemu-action@v2
-      #   # with:
-      #   #   image: tonistiigi/binfmt:latest
-      #   #   platforms: all
 
       - name: Set up Docker Buildx
         id: buildx
         uses: docker/setup-buildx-action@v2
-        # with:
-        #   install: true
 
       # https://github.com/marketplace/actions/docker-login
       - name: Login to ECR
@@ -80,20 +63,13 @@ jobs:
       #     username: ${{ secrets.AWS_ACCESS_KEY_ID }}
       #     password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
+      # https://github.com/marketplace/actions/docker-login
       - name: Login to DockerHub
         id: login-docker-hub
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      # - name: Cache Docker layers
-      #   uses: actions/cache@v2
-      #   with:
-      #     path: /tmp/.buildx-cache
-      #     key: ${{ runner.os }}-buildx-${{ github.sha }}
-      #     restore-keys: |
-      #       ${{ runner.os }}-buildx-
 
       - name: Build Docker image and push
         if: github.event_name != 'pull_request'
@@ -104,8 +80,6 @@ jobs:
           builder: ${{ steps.buildx.outputs.name }}
           file: ./deploy/Dockerfile.debian
           push: true
-          # cache-from: type=local,src=/tmp/.buildx-cache
-          # cache-to: type=local,mode=max,dest=/tmp/.buildx-cache-new
           cache-from: type=gha,scope=${{ github.workflow }}
           cache-to: type=gha,scope=${{ github.workflow }}
           tags: |
@@ -121,18 +95,7 @@ jobs:
           builder: ${{ steps.buildx.outputs.name }}
           file: ./deploy/Dockerfile.debian
           push: true
-          # cache-from: type=local,src=/tmp/.buildx-cache
-          # cache-to: type=local,mode=max,dest=/tmp/.buildx-cache-new
           cache-from: type=gha,scope=${{ github.workflow }}
           cache-to: type=gha,scope=${{ github.workflow }}
-          # ${{ steps.vars.outputs.registry }}/${{ github.event.repository.name }}:${{ steps.branch.outputs.branch }}-${{ env.GITHUB_SHA_SHORT }}
           tags: |
             ${{ env.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-
-      # Temp fix
-      # https://github.com/docker/build-push-action/issues/252
-      # https://github.com/moby/buildkit/issues/1896
-      # - name: Move cache
-      #   run: |
-      #     rm -rf /tmp/.buildx-cache
-      #     mv /tmp/.buildx-cache-new /tmp/.buildx-cache
