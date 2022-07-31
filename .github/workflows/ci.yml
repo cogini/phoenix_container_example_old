@@ -80,15 +80,15 @@ jobs:
           file: ./deploy/Dockerfile.debian
           # push: false
           load: true
-          target: test
+          target: test-image
           cache-from: type=gha,scope=${{ github.workflow }}
           cache-to: type=gha,scope=${{ github.workflow }}
           tags: |
             ${{ env.IMAGE_NAME }}:test
 
       - name: Run tests
-        env:
-          DATABASE_HOST: postgres
+        # env:
+        #   DATABASE_HOST: postgres
         run: |
           docker-compose up test
           docker-compose run test mix test
