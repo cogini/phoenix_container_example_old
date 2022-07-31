@@ -13,26 +13,39 @@
 version: 0.2
 env:
   variables:
-    # Enable docker buildx
     DOCKER_BUILDKIT: 1
     DOCKER_CLI_EXPERIMENTAL: enabled
     COMPOSE_DOCKER_CLI_BUILD: 1
+    # TASKDEF=ecs/taskdef.json
+    TASKDEF: ecs/taskdef-otel.json
+  parameter-store:
+    DOCKERHUB_USERNAME: /cogini/foo/dev/creds/dockerhub_username
+    DOCKERHUB_TOKEN: /cogini/foo/dev/creds/dockerhub_token
 phases:
   install:
     # runtime-versions:
     #   docker: 19
     commands:
+      - export REGISTRY_NAME="$(dirname $REPO_URL)"
+      - export REGISTRY="${REGISTRY_NAME}/"
+
+      # - mkdir -p /etc/docker
+      # - sed -i -e "s!<REGISTRY_NAME>!${REGISTRY_NAME}!g" ecs/docker-daemon.json | tee /etc/docker/daemon.json
+      # - cat /etc/docker/daemon.json
+
       - /usr/sbin/service docker start
       # https://docs.aws.amazon.com/codebuild/latest/APIReference/API_ProjectEnvironment.html
       # - nohup /usr/local/bin/dockerd --host=unix:///var/run/docker.sock --host=tcp://0.0.0.0:2375 --storage-driver=overlay&
-      - timeout 15 sh -c "until docker info; do echo .; sleep 1; done"
-  pre_build:
-    commands:
-      # - cat /etc/lsb-release
-      # - python3 --version
-      # - aws --version
-      # - docker version
-      # - docker-compose --version
+      # - timeout 15 sh -c "until docker info; do echo .; sleep 1; done"
+
+      # - export DOCKERHUB_AUTH="$(echo "${DOCKERHUB_USERNAME}:${DOCKERHUB_TOKEN}" | base64)"
+      - mkdir -p /root/.docker
+      # - echo '{"credsStore":"ecr-login"}' | tee /root/.docker/config.json
+      #  - sed -i -e "s/<REGISTRY_NAME>/${REGISTRY_NAME}/g" -e "s/<DOCKERHUB_AUTH>/${DOCKERHUB_AUTH}/g" ecs/docker-config.json
+      # - cp ecs/docker-config.json /root/.docker/config.json
+      - sed -e "s/<REGISTRY_NAME>/${REGISTRY_NAME}/g" ecs/docker-config.json > /root/.docker/config.json
+      # - jq --arg registry "$REGISTRY_NAME" '.credHelpers += {($registry):"ecr-login"}' ecs/docker-config.json
+      # - cat /root/.docker/config.json
 
       # Add support for cross arch builds (Arm)
       # - docker run --rm --privileged linuxkit/binfmt:v0.8
@@ -40,52 +53,72 @@ phases:
       # - ls -l /proc/sys/fs/binfmt_misc/*
       # - ls -1 /proc/sys/fs/binfmt_misc/qemu-*
 
-      # - ls -l /root/.cache/docker
-      # - ls -l /var/lib/docker
-
       # Create builder instance
       - docker buildx create --name docker-container
       - docker buildx use docker-container
+      # - docker buildx use default
       # - docker buildx inspect --bootstrap
 
-      - export REGISTRY="$(dirname $REPO_URL)/"
+      # Log into Docker Hub
+      - echo "$DOCKERHUB_TOKEN" | docker login --username "$DOCKERHUB_USERNAME" --password-stdin
 
+      # https://docs.aws.amazon.com/codebuild/latest/APIReference/API_ProjectEnvironment.html
+      # https://github.com/awslabs/amazon-ecr-credential-helper
+      # - PYTHON=python2 amazon-linux-extras enable docker
+      # - yum clean metadata
+      # - yum -y install amazon-ecr-credential-helper
+
+      # - cat /etc/lsb-release
+      # - python3 --version
+      # - aws --version
+      # - docker-compose --version
+
+      - docker info
+      - docker system df -v
+      - docker df -v
+      - df -k
+
+      - docker --version
+      - uname -s
+      - uname -m
+
+  pre_build:
+    commands:
       # Log into Amazon ECR
       # Use new aws cli for login
       # - aws ecr get-login-password --region "$AWS_DEFAULT_REGION" | docker login --username AWS --password-stdin "$REGISTRY"
       # Use old aws cli for login
       # - $(aws ecr get-login --region "$AWS_DEFAULT_REGION" --no-include-email)
+      # Use amazon-ecr-credential-helper for login
       # Use amazon-ecr-credential-helper for login, installed in custom build image
-      - mkdir -p /root/.docker
-      - echo '{"credsStore":"ecr-login"}' | tee /root/.docker/config.json
+      # - mkdir -p /root/.docker
+      # - echo '{"credsStore":"ecr-login"}' | tee /root/.docker/config.json
 
-      # - rm -rf /root/.cache/docker
-
-      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      # - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      - COMMIT_HASH=$CODEBUILD_RESOLVED_SOURCE_VERSION
       - IMAGE_TAG=${COMMIT_HASH:=latest}
+
+      # Ensure that scripts are executable
+      - chmod u+x rel/overlays/bin/*
   build:
     commands:
-      # - BUILD_CACHE_REPO_URL="${REGISTRY}foo-app-ecs-build-cache"
-
-      # - docker buildx use docker-container
-      # - COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker-compose build
-      # - docker-compose run test mix test
-      # - $TEMPLATE_DIR/build.sh
-
-      # - docker buildx use default
-      # - docker buildx bake -f docker-compose.yml --print
-      # - docker buildx bake -f docker-compose.yml
-      # - docker-compose run test mix test
-      # - docker buildx use docker-container
-      # - docker-compose push app
-
-      # - docker buildx use docker-container
-
-      # Scan for app vulnerabilities
-      - trivy filesystem --exit-code 0 --severity HIGH --no-progress .
-      - trivy filesystem --exit-code 1 --severity CRITICAL --no-progress .
+      # Scan app source for vulnerabilities
+      # - trivy filesystem --exit-code 0 --severity HIGH --no-progress .
+      # - trivy filesystem --exit-code 1 --severity CRITICAL --no-progress .
       # - grype -vv --fail-on medium .
       # - grype -vv .
+
+      # - BUILD_CACHE_REPO_URL="${REGISTRY}foo-app-ecs-build-cache"
+
+      # - COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker-compose build
+      # - docker-compose run test mix test
+
+      # - $TEMPLATE_DIR/build.sh
+
+      # - docker buildx bake -f docker-compose.yml --print
+      # - docker buildx bake -f docker-compose.yml
+      #
+      # - docker-compose push app
 
       - docker buildx bake -f docker-bake.hcl ci
 
@@ -126,31 +159,33 @@ phases:
       # Write image definition files
       # https://docs.aws.amazon.com/codepipeline/latest/userguide/file-reference.html
       # Generate imagedefinitions.json file for standard ECS deploy action
-      - printf '[{"name":"%s","imageUri":"%s"}]' "$CONTAINER_NAME" "$REPO_URL:$IMAGE_TAG" | tee imagedefinitions.json
+      - printf '[{"name":"%s","imageUri":"%s"}]' "$CONTAINER_NAME" "${REPO_URL}:${IMAGE_TAG}" | tee imagedefinitions.json
       # Generate imageDetail.json file for CodeDeploy ECS blue/green deploy action
-      - printf '{"ImageURI":"%s"}' "$REPO_URL:$IMAGE_TAG" | tee imageDetail.json
+      - printf '{"ImageURI":"%s"}' "${REPO_URL}:${IMAGE_TAG}" | tee imageDetail.json
 
       # Generate files based on env vars passed from Terraform
       # https://docs.aws.amazon.com/codedeploy/latest/userguide/reference-appspec-file-structure-resources.html
-      - sed -i 's!<NAME>!'$CONTAINER_NAME'!g' ecs/appspec.yml ecs/taskdef.json
-      - sed -i 's!<PORT>!'$PORT'!g' ecs/appspec.yml ecs/taskdef.json
-      - sed -i 's!<TASK_ROLE_ARN>!'$TASK_ROLE_ARN'!g' ecs/taskdef.json
-      - sed -i 's!<EXECUTION_ROLE_ARN>!'$EXECUTION_ROLE_ARN'!g' ecs/taskdef.json
-      - sed -i 's!<CPU>!'$CPU'!g' ecs/taskdef.json
-      - sed -i 's!<MEMORY>!'$MEMORY'!g' ecs/taskdef.json
-      - sed -i 's!<AWSLOGS_GROUP>!'$AWSLOGS_GROUP'!g' ecs/taskdef.json
-      - sed -i 's!<AWSLOGS_REGION>!'$AWS_REGION'!g' ecs/taskdef.json
-      - sed -i 's!<AWSLOGS_STREAM_PREFIX>!'$AWSLOGS_STREAM_PREFIX'!g' ecs/taskdef.json
+      - sed -i -e "s!<NAME>!${CONTAINER_NAME}!g" -e "s!<PORT>!${PORT}!g" ecs/appspec.yml
+      - sed -i -e "s!<NAME>!${CONTAINER_NAME}!g" -e "s!<PORT>!${PORT}!g" $TASKDEF
+      - sed -i -e "s!<TASK_ROLE_ARN>!${TASK_ROLE_ARN}!g" $TASKDEF
+      - sed -i -e "s!<EXECUTION_ROLE_ARN>!${EXECUTION_ROLE_ARN}!g" $TASKDEF
+      - sed -i -e "s!<CPU>!${CPU}!g" -e "s!<MEMORY>!${MEMORY}!g" $TASKDEF
 
-      - sed -i 's!<CONFIG_S3_BUCKET>!'$CONFIG_S3_BUCKET'!g' ecs/taskdef.json
-      - sed -i 's!<CONFIG_S3_PREFIX>!'$CONFIG_S3_PREFIX'!g' ecs/taskdef.json
-      - sed -i 's!<AWS_REGION>!'$AWS_REGION'!g' ecs/taskdef.json
-      - sed -i 's!<AWS_ACCOUNT_ID>!'$AWS_ACCOUNT_ID'!g' ecs/taskdef.json
+      # - sed -i -e "s!<CPU_ARCH>!X86_64!g" $TASKDEF
+      - sed -i -e "s!<CPU_ARCH>!ARM64!g" $TASKDEF
+
+      - sed -i -e "s!<AWSLOGS_GROUP>!${AWSLOGS_GROUP}!g" $TASKDEF
+      - sed -i -e "s!<AWSLOGS_REGION>!${AWS_REGION}!g" $TASKDEF
+      - sed -i -e "s!<AWSLOGS_STREAM_PREFIX>!${AWSLOGS_STREAM_PREFIX}!g" $TASKDEF
+
+      - sed -i -e "s!<CONFIG_S3_BUCKET>!${CONFIG_S3_BUCKET}!g" -e "s!<CONFIG_S3_PREFIX>!${CONFIG_S3_PREFIX}!g" $TASKDEF
+      - sed -i "s!<AWS_REGION>!${AWS_REGION}!g" $TASKDEF
+      - sed -i "s!<AWS_ACCOUNT_ID>!${AWS_ACCOUNT_ID}!g" $TASKDEF
 
       - cat ecs/appspec.yml
-      - cat ecs/taskdef.json
+      - cat $TASKDEF
       - cp ecs/appspec.yml .
-      - cp ecs/taskdef.json .
+      - cp $TASKDEF taskdef.json
   # post_build:
   #   commands:
 artifacts:
@@ -159,9 +194,15 @@ artifacts:
     - imageDetail.json
     - appspec.yml
     - taskdef.json
-cache:
-  paths:
-    # - '/var/lib/docker/**/*'
-    - '/root/.cache/docker/**/*'
-    - '/root/.cache/trivy/**/*'
-    # - '/root/.cache/grype/**/*'
+# cache:
+#   paths:
+#     # - '/var/lib/docker/**/*'
+#     # - '/root/.cache/docker/**/*'
+#     # - '/root/.cache/trivy/**/*'
+#     # - '/root/.cache/grype/**/*'
+# reports:
+#   mix-test-reports:
+#     files:
+#       # - "_build/test/lib/phoenix_container_example/reports/*.xml"
+#       - "junit-reports/*.xml"
+#     file-format: "JUNITXML"
