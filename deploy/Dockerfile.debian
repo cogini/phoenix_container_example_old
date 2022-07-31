@@ -116,7 +116,7 @@ FROM ${BUILD_IMAGE_NAME}:${BUILD_IMAGE_TAG} AS build-os-deps
     RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
         --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
-        set -ex && \
+        set -exu && \
         apt-get update -qq && \
         DEBIAN_FRONTEND=noninteractive \
         apt-get -y install -y -qq --no-install-recommends \
