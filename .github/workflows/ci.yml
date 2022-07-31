@@ -79,6 +79,46 @@ jobs:
           context: .
           builder: ${{ steps.buildx.outputs.name }}
           file: ./deploy/Dockerfile.debian
+          # push: false
+          load: true
+          cache-from: type=gha,scope=${{ github.workflow }}
+          cache-to: type=gha,scope=${{ github.workflow }}
+          tags: |
+            ${{ env.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:latest
+            ${{ env.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ${{ env.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.run_id }}
+
+      - name: Build Docker image and push
+        if: github.event_name == 'pull_request'
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          builder: ${{ steps.buildx.outputs.name }}
+          file: ./deploy/Dockerfile.debian
+          load: true
+          cache-from: type=gha,scope=${{ github.workflow }}
+          cache-to: type=gha,scope=${{ github.workflow }}
+          tags: |
+            ${{ env.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+      - name: Run tests
+        env:
+          DATABASE_HOST=postgres
+        run: |
+          docker-compose up test
+          docker-compose run test mix test
+          docker-compose run test mix credo
+          docker-compose run test mix deps.audit
+          docker-compose run test mix sobelow
+
+      - name: Build Docker image and push
+        if: github.event_name != 'pull_request'
+        id: docker
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          builder: ${{ steps.buildx.outputs.name }}
+          file: ./deploy/Dockerfile.debian
           push: true
           cache-from: type=gha,scope=${{ github.workflow }}
           cache-to: type=gha,scope=${{ github.workflow }}
