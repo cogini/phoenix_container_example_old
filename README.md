@@ -556,3 +556,5 @@ earthly -V -P --build-arg REGISTRY --build-arg REPO_URL --remote-cache="cogini/f
 
 docker buildx build -t distroless-deploy-base -f deploy/distroless/Dockerfile --progress plain --load .
 ```
+
+https://blog.tedivm.com/guides/2021/10/github-actions-push-to-aws-ecr-without-credentials-oidc/
