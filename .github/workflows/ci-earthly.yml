@@ -26,7 +26,7 @@ jobs:
       # https://github.com/marketplace/actions/setup-earthly
       - uses: earthly/actions-setup@v1
         with:
-          version: "latest" # or pin to an specific version, e.g. "v0.6.10"
+          version: "latest" # or pin to version, e.g. "v0.6.10"
 
       - name: Earthly version
         run: earthly --version
@@ -86,7 +86,7 @@ jobs:
           REGISTRY: "${{ steps.login-ecr.outputs.registry }}/"
         # run: earthly --ci --push +build
         # run: earthly -P -V +all
-        run: earthly -P -V --push +all
+        run: earthly -P -V --build-arg REGISTRY --strict --push +all
         # run: earthly -P -V +all-platforms
         # run: earthly -P -V --platform=linux/arm64 +deploy
         # run: earthly -P -V --platform=linux/arm64 +deploy-scan
