@@ -66,9 +66,12 @@ jobs:
           echo "::set-output name=run_id::${GITHUB_RUN_ID}"
           echo "::set-output name=run_num::${GITHUB_RUN_NUMBER}"
 
-      # - name: Set up QEMU for multi-platform builds
-      #   id: qemu
-      #   uses: docker/setup-qemu-action@v2
+      - name: Set up QEMU for multi-platform builds
+        id: qemu
+        uses: docker/setup-qemu-action@v2
+
+      - name: Display available platforms
+        run: echo "${{ steps.qemu.outputs.platforms }}"
 
       - name: Set up Docker Buildx
         id: buildx
