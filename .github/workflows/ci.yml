@@ -69,6 +69,9 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Dump workflow
+        run: cat "${{ github.workflow }}"
+
       - name: Build Docker test image
         id: docker-build-test
         uses: docker/build-push-action@v3
@@ -76,11 +79,12 @@ jobs:
           context: .
           builder: ${{ steps.buildx.outputs.name }}
           file: ./deploy/Dockerfile.debian
-          push: true
-          # load: true
+          # push: true
+          load: true
           target: test-image
-          cache-from: type=gha,scope=test-${{ github.workflow }}
-          cache-to: type=gha,scope=test-${{ github.workflow }}
+          # https://github.com/moby/buildkit#export-cache
+          cache-from: type=gha,scope=${{ github.workflow }}-test
+          cache-to: type=gha,scope=${{ github.workflow }}-test
           tags: |
             ${{ env.IMAGE_NAME }}:test
 
@@ -100,7 +104,7 @@ jobs:
           file: ./deploy/Dockerfile.debian
           push: true
           cache-from: type=gha,scope=${{ github.workflow }}
-          cache-to: type=gha,scope=${{ github.workflow }}
+          cache-to: type=gha,scope=${{ github.workflow }},mode=max
           tags: |
             ${{ env.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:latest
             ${{ env.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
