@@ -1,0 +1,231 @@
+---
+version: "3.9"
+services:
+  app:
+    image: "${REPO_URL}:${IMAGE_TAG:-latest}"
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.alpine
+      args:
+        BUILDKIT_INLINE_CACHE: "1"
+        MIX_ENV: prod
+        REGISTRY: ${REGISTRY}
+      target: deploy
+    environment:
+      - SECRET_KEY_BASE
+      - DATABASE_URL
+      - DATABASE_HOST=postgres
+      - DATABASE_DB
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
+      - AWS_REGION
+      - AWS_DEFAULT_REGION
+    # platform: "linux/arm64"
+    # platform: "linux/amd64"
+    ports:
+      - "4000:4000"
+    depends_on:
+      - postgres
+
+  app-debian:
+    image: "${REPO_URL}:${IMAGE_TAG:-latest}"
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.debian
+      args:
+        BUILDKIT_INLINE_CACHE: "1"
+        MIX_ENV: prod
+        REGISTRY: ${REGISTRY}
+      target: deploy
+    environment:
+      - SECRET_KEY_BASE
+      - DATABASE_URL
+      - DATABASE_HOST=postgres
+      - DATABASE_DB
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
+      - AWS_REGION
+      - AWS_DEFAULT_REGION
+    ports:
+      - "4000:4000"
+    # platform: "linux/arm64"
+    # platform: "linux/amd64"
+    depends_on:
+      - postgres
+
+  app-run:
+    # image: foo-app:latest
+    image: "${REPO_URL}:${IMAGE_TAG:-latest}"
+    environment:
+      - SECRET_KEY_BASE
+      - DATABASE_URL
+      - DATABASE_HOST=postgres
+      - DATABASE_DB
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
+      - AWS_REGION
+      - AWS_DEFAULT_REGION
+    ports:
+      - "4000:4000"
+    stdin_open: true
+    # tty: true
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  test:
+    image: test/foo-app:test
+    build:
+      target: test-image
+      dockerfile: deploy/Dockerfile.debian
+      context: .
+      args:
+        REGISTRY: ${REGISTRY}
+        PUBLIC_REGISTRY: ${PUBLIC_REGISTRY}
+    # command: sh -c 'while !</dev/tcp/db/5432; do sleep 1; done; set -ex mix test'
+    # command: sh -c 'mix test'
+    environment:
+      - MIX_ENV=test
+      - DATABASE_URL
+      - DATABASE_HOST=postgres
+      - DATABASE_DB
+      - SECRET_KEY_BASE
+    # stdin_open: true
+    # tty: true
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - "./junit-reports:/junit-reports"
+
+  codebuild:
+    # Custom build image for AWS CodeBuild
+    # build:
+    #   context: .
+    #   dockerfile: deploy/Dockerfile.codebuild
+    #   args:
+    #     BUILDKIT_INLINE_CACHE: "1"
+    #     REGISTRY: ${REGISTRY}
+    environment:
+      - REPO_URL
+      - TASKDEF=ecs/taskdef-otel.json
+      # - EARTHLY_BUILDKIT_CACHE_SIZE_MB=30000
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
+      - AWS_DEFAULT_REGION
+      - DOCKERHUB_USERNAME
+      - DOCKERHUB_TOKEN
+    image: "${REGISTRY}foo-app-ecs-build:latest"
+    read_only: false
+    privileged: true
+    volumes:
+      - ".:/app:delegated"
+
+  dev:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.debian
+      args:
+        BUILDKIT_INLINE_CACHE: "1"
+        MIX_ENV: dev
+        REGISTRY: ${REGISTRY}
+      target: dev
+    # command: /bin/bash -c /app/bin/app-start-dev
+    # command: /app/bin/app-start-dev
+    # command: /bin/sh -c "/app/_build/prod/rel/app/bin/app foreground"
+
+    # VSCode devcontainer needs something running
+    # command: ["tail", "-f", "/dev/null"]
+    # command: ["sleep", "infinity"]
+    # command: /bin/sh -c "while sleep 1000; do :; done"
+    command: mix phx.server
+    depends_on:
+      - postgres
+    environment:
+      - MIX_ENV=dev
+      - SECRET_KEY_BASE
+      - DATABASE_URL
+      - DATABASE_HOST=postgres
+      - DATABASE_DB
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
+      - AWS_REGION
+      - AWS_DEFAULT_REGION
+    user: root
+    image: foo-app-dev
+    ports:
+      - "4000:4000"
+    stdin_open: true
+    tty: true
+    volumes:
+      - ".:/app:delegated"
+      # - 'nfsmount:/app'
+
+  mssql:
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: some!Password
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    ports:
+      - "1433:1433"
+
+  mysql:
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+      # MYSQL_ROOT_PASSWORD: example
+    # command: --default-authentication-plugin=mysql_native_password
+    image: "${REGISTRY}mysql:8"
+    ports:
+      - "3306:3306"
+
+  # https://github.com/docker-library/docs/blob/master/postgres/README.md
+  # https://geshan.com.np/blog/2021/12/docker-postgres/
+  postgres:
+    # build:
+    #   context: .
+    #   dockerfile: deploy/Dockerfile.postgres
+    #   args:
+    #     REGISTRY: ${REGISTRY}
+    # image: app-db:latest
+    # image: postgres:14
+    image: postgres:14.1-alpine
+    restart: always
+    ports:
+      - '5432:5432'
+    # hostname: db
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - postgres_data_path:/var/lib/postgresql/data
+      # - ./db/init.sql:/docker-entrypoint-initdb.d/create_tables.sql
+    healthcheck:
+      # test: ["CMD-SHELL", "pg_isready -U postgres -d app_test"]
+      test: ["CMD-SHELL", "pg_isready"]
+      start_period: 5s
+      interval: 2s
+      timeout: 5s
+      retries: 20
+
+  vuln:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.alpine
+      # dockerfile: deploy/Dockerfile.debian
+      args:
+        BUILDKIT_INLINE_CACHE: "1"
+        REGISTRY: ${REGISTRY}
+      target: vuln
+    image: app-vuln
+
+volumes:
+  postgres_data_path:
+    driver: local
+
+# volumes:
+#   nfsmount:
+#     driver: local
+#     driver_opts:
+#       type: nfs
+#       o: addr=host.docker.internal,rw,nolock,hard,nointr,nfsvers=3
+#       device: ":${PWD}"

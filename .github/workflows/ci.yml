@@ -102,16 +102,15 @@ jobs:
           cache-to: type=gha,scope=${{ github.workflow }}-test,mode=max
           tags: |
             localhost:5000/test/${{ env.IMAGE_NAME }}:test
-            # ${{ steps.login-ecr.outputs.registry }}/${{ env.IMAGE_NAME }}:test
 
       - name: Run tests
         env:
           REGISTRY: localhost:5000/
           PUBLIC_REGISTRY: "${{ steps.login-ecr.outputs.registry }}/"
         run: |
-          docker-compose up test
-          docker-compose run test mix test
-          docker-compose run test mix do credo, deps.audit, sobelow
+          docker-compose -f docker-compose.gha.yml up test
+          docker-compose -f docker-compose.gha.yml run test mix test
+          docker-compose -f docker-compose.gha.yml run test mix do credo, deps.audit, sobelow
 
       - name: Build Docker deploy image and push
         if: github.event_name != 'pull_request'
