@@ -2,7 +2,7 @@
 version: "3.9"
 services:
   app:
-    image: "${REPO_URL}:${IMAGE_TAG}"
+    image: "${REPO_URL}:${IMAGE_TAG:-latest}"
     build:
       context: .
       dockerfile: deploy/Dockerfile.alpine
@@ -28,7 +28,7 @@ services:
       - postgres
 
   app-debian:
-    image: "${REPO_URL}:${IMAGE_TAG}"
+    image: "${REPO_URL}:${IMAGE_TAG:-latest}"
     build:
       context: .
       dockerfile: deploy/Dockerfile.debian
@@ -55,7 +55,7 @@ services:
 
   app-run:
     # image: foo-app:latest
-    image: "${REPO_URL}:${IMAGE_TAG}"
+    image: "${REPO_URL}:${IMAGE_TAG:-latest}"
     environment:
       - SECRET_KEY_BASE
       - DATABASE_URL
