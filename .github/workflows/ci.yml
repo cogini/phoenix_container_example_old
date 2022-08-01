@@ -86,15 +86,15 @@ jobs:
           tags: |
             ${{ env.IMAGE_NAME }}:test
 
-      - name: Run tests
-        # env:
-        #   DATABASE_HOST: postgres
-        run: |
-          docker-compose up test
-          docker-compose run test mix test
-          docker-compose run test mix credo
-          docker-compose run test mix deps.audit
-          docker-compose run test mix sobelow
+      # - name: Run tests
+      #   # env:
+      #   #   DATABASE_HOST: postgres
+      #   run: |
+      #     docker-compose up test
+      #     docker-compose run test mix test
+      #     docker-compose run test mix credo
+      #     docker-compose run test mix deps.audit
+      #     docker-compose run test mix sobelow
 
       - name: Build Docker deploy image and push
         if: github.event_name != 'pull_request'
