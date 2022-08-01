@@ -76,11 +76,11 @@ jobs:
           context: .
           builder: ${{ steps.buildx.outputs.name }}
           file: ./deploy/Dockerfile.debian
-          # push: true
-          load: true
+          push: true
+          # load: true
           target: test-image
-          cache-from: type=gha,scope=${{ github.workflow }}-test
-          cache-to: type=gha,scope=${{ github.workflow }}-test
+          cache-from: type=gha,scope=test-${{ github.workflow }}
+          cache-to: type=gha,scope=test-${{ github.workflow }}
           tags: |
             ${{ env.IMAGE_NAME }}:test
 
