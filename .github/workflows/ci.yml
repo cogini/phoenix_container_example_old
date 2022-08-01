@@ -66,12 +66,11 @@ jobs:
           echo "::set-output name=run_id::${GITHUB_RUN_ID}"
           echo "::set-output name=run_num::${GITHUB_RUN_NUMBER}"
 
-      - name: Set up QEMU for multi-platform builds
-        id: qemu
-        uses: docker/setup-qemu-action@v2
-
-      - name: Display available platforms
-        run: echo "${{ steps.qemu.outputs.platforms }}"
+      # - name: Set up QEMU for multi-platform builds
+      #   id: qemu
+      #   uses: docker/setup-qemu-action@v2
+      #   with:
+      #     platforms: linux/amd64,linux/arm64
 
       - name: Set up Docker Buildx
         id: buildx
@@ -86,7 +85,6 @@ jobs:
           context: .
           builder: ${{ steps.buildx.outputs.name }}
           file: ./deploy/Dockerfile.debian
-          # push: true
           load: true
           target: test-image
           # https://github.com/moby/buildkit#export-cache
@@ -94,6 +92,7 @@ jobs:
           cache-to: type=gha,scope=${{ github.workflow }}-test,mode=max
           tags: |
             ${{ env.IMAGE_NAME }}:test
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.IMAGE_NAME }}:test
 
       - name: Run tests
         env:
