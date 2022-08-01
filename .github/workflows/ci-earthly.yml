@@ -100,8 +100,9 @@ jobs:
         #   # REGISTRY: "${{ steps.login-ecr.outputs.registry }}/"
         # run: earthly --ci --push +build
         # run: earthly -P -V +all
+        run: earthly -P -V --build-arg REGISTRY --strict +deploy
         # run: earthly -P -V --build-arg REGISTRY --strict --push +all
-        run: earthly -P -V --build-arg REGISTRY --remote-cache="${REGISTRY}/${IMAGE_NAME}:cache" --ci --push +all
+        # run: earthly -P -V --build-arg REGISTRY --remote-cache="${REGISTRY}/${IMAGE_NAME}:cache" --ci --push +all
         # run: earthly -P -V +all-platforms
         # run: earthly -P -V --platform=linux/arm64 +deploy
         # run: earthly -P -V --platform=linux/arm64 +deploy-scan

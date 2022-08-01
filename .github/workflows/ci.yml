@@ -121,6 +121,8 @@ jobs:
             ${{ steps.login-ecr.outputs.registry }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
             ${{ steps.login-ecr.outputs.registry }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.run_id }}
 
+          # push: ${{ github.event_name != 'pull_request' }}
+
       - name: Build Docker deploy image and push
         if: github.event_name == 'pull_request'
         uses: docker/build-push-action@v3
