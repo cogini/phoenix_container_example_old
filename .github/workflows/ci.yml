@@ -69,9 +69,6 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Dump workflow
-        run: cat "${{ github.workflow }}"
-
       - name: Build Docker test image
         id: docker-build-test
         uses: docker/build-push-action@v3
@@ -84,7 +81,7 @@ jobs:
           target: test-image
           # https://github.com/moby/buildkit#export-cache
           cache-from: type=gha,scope=${{ github.workflow }}-test
-          cache-to: type=gha,scope=${{ github.workflow }}-test
+          cache-to: type=gha,scope=${{ github.workflow }}-test,mode=max
           tags: |
             ${{ env.IMAGE_NAME }}:test
 
