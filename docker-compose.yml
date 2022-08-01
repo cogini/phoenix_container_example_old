@@ -74,13 +74,14 @@ services:
         condition: service_healthy
 
   test:
-    image: foo-app:test
+    image: test/foo-app:test
     build:
       target: test-image
       dockerfile: deploy/Dockerfile.debian
       context: .
       args:
         REGISTRY: ${REGISTRY}
+        PUBLIC_REGISTRY: ${PUBLIC_REGISTRY}
     # command: sh -c 'while !</dev/tcp/db/5432; do sleep 1; done; set -ex mix test'
     # command: sh -c 'mix test'
     environment:
