@@ -126,11 +126,11 @@ phases:
       # - docker-compose build test
 
       # Run tests
-      - DATABASE_HOST=db docker-compose up test
-      - DATABASE_HOST=db docker-compose run test mix test
-      - DATABASE_HOST=db docker-compose run test mix credo
-      - DATABASE_HOST=db docker-compose run test mix deps.audit
-      - DATABASE_HOST=db docker-compose run test mix sobelow
+      - docker-compose up test
+      - docker-compose run test mix test
+      - docker-compose run test mix credo
+      - docker-compose run test mix deps.audit
+      - docker-compose run test mix sobelow
 
       # Build and push final deploy container
       # - $TEMPLATE_DIR/build.sh
