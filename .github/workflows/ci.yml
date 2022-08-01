@@ -83,7 +83,7 @@ jobs:
           builder: ${{ steps.buildx.outputs.name }}
           file: ./deploy/Dockerfile.debian
           # push: true
-          # load: true
+          load: true
           target: test-image
           # https://github.com/moby/buildkit#export-cache
           cache-from: type=gha,scope=${{ github.workflow }}-test
