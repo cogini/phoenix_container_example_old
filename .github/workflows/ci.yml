@@ -108,7 +108,7 @@ jobs:
       - name: Build test images
         env:
           REGISTRY: localhost:5000
-        run: docker buildx bake -f docker-bake.gha.hcl --build-arg REGISTRY=${REGISTRY}
+        run: docker buildx bake -f docker-bake.gha.hcl
 
       - name: Run tests
         env:
