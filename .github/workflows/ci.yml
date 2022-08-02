@@ -107,8 +107,8 @@ jobs:
 
       - name: Build test images
         env:
-          REGISTRY: localhost:5000
-          PUBLIC_REGISTRY: "${{ steps.login-ecr.outputs.registry }}"
+          REGISTRY: localhost:5000/
+          PUBLIC_REGISTRY: "${{ steps.login-ecr.outputs.registry }}/"
         run: docker buildx bake -f docker-bake.gha.hcl
 
       - name: Run tests
