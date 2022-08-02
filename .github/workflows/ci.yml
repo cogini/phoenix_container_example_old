@@ -17,10 +17,18 @@ jobs:
         ports:
           - 5000:5000
 
-    # Needed to interact with GitHub's OIDC Token endpoint for AWS
     permissions:
+      # Needed to interact with GitHub's OIDC Token endpoint for AWS
       id-token: write
       contents: read
+
+      # Needed to publish junit test results
+      checks: write
+      pull-requests: write
+      # Needed for private GitHub repos
+      # contents: read
+      issues: read
+
     env:
       IMAGE_NAME: foo-app
       AWS_ROLE: arn:aws:iam::770916339360:role/foo-dev-ecr-github-action-role
