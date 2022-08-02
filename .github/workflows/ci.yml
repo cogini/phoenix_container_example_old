@@ -22,8 +22,6 @@ jobs:
       id-token: write
       contents: read
     env:
-      # REGISTRY: 770916339360.dkr.ecr.ap-northeast-1.amazonaws.com/
-      # REGISTRY_NAME: 770916339360.dkr.ecr.ap-northeast-1.amazonaws.com
       IMAGE_NAME: foo-app
       AWS_ROLE: arn:aws:iam::770916339360:role/foo-dev-ecr-github-action-role
       AWS_REGION: ap-northeast-1
@@ -152,3 +150,10 @@ jobs:
           cache-to: type=gha,scope=${{ github.workflow }}
           tags: |
             ${{ steps.login-ecr.outputs.registry }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+      - name: Publish unit test results to GitHub
+        uses: EnricoMi/publish-unit-test-result-action@v1
+        if: always() # always run even if tests fail
+        with:
+          # files: _build/test/lib/*/test-junit-report.xml
+          files: junit-reports/*
