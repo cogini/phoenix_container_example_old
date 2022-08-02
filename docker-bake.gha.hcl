@@ -31,7 +31,7 @@ target "test" {
         PUBLIC_REGISTRY = "${PUBLIC_REGISTRY}"
     }
     tags = [
-        "${REGISTRY}cogini/foo-app:test"
+        "${REGISTRY}foo-app:test"
     ]
     cache-from = [
         "type=gha,scope=${CACHE_SCOPE}"
