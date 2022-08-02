@@ -86,35 +86,35 @@ jobs:
           driver-opts: network=host
 
       # https://github.com/docker/build-push-action
-      # - name: Build Docker test image
-      #   id: docker-build-test
-      #   uses: docker/build-push-action@v3
-      #   env:
-      #     REGISTRY: localhost:5000/
-      #     PUBLIC_REGISTRY: "${{ steps.login-ecr.outputs.registry }}/"
-      #   with:
-      #     context: .
-      #     builder: ${{ steps.buildx.outputs.name }}
-      #     file: ./deploy/Dockerfile.debian
-      #     # load: true
-      #     push: true
-      #     target: test-image
-      #     # https://github.com/moby/buildkit#export-cache
-      #     cache-from: type=gha,scope=${{ github.workflow }}-test
-      #     cache-to: type=gha,scope=${{ github.workflow }}-test,mode=max
-      #     tags: |
-      #       localhost:5000/test/${{ env.IMAGE_NAME }}:test
-
-      - name: Build test images
+      - name: Build Docker test image
+        id: docker-build-test
+        uses: docker/build-push-action@v3
         env:
           REGISTRY: localhost:5000/
           PUBLIC_REGISTRY: "${{ steps.login-ecr.outputs.registry }}/"
-        run: docker buildx bake -f docker-bake.gha.hcl
+        with:
+          context: .
+          builder: ${{ steps.buildx.outputs.name }}
+          file: ./deploy/Dockerfile.debian
+          # load: true
+          push: true
+          target: test-image
+          # https://github.com/moby/buildkit#export-cache
+          cache-from: type=gha,scope=${{ github.workflow }}-test
+          cache-to: type=gha,scope=${{ github.workflow }}-test,mode=max
+          tags: |
+            localhost:5000/test/${{ env.IMAGE_NAME }}:test
+
+      # - name: Build test images
+      #   env:
+      #     REGISTRY: localhost:5000/
+      #     PUBLIC_REGISTRY: "${{ steps.login-ecr.outputs.registry }}/"
+      #   run: docker buildx bake -f docker-bake.gha.hcl
 
       - name: Run tests
         env:
           REGISTRY: localhost:5000/
-          # PUBLIC_REGISTRY: "${{ steps.login-ecr.outputs.registry }}/"
+          PUBLIC_REGISTRY: "${{ steps.login-ecr.outputs.registry }}/"
         run: |
           docker-compose -f docker-compose.gha.yml up test
           docker-compose -f docker-compose.gha.yml run test mix test

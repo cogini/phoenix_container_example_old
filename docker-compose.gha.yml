@@ -2,14 +2,14 @@
 version: "3.9"
 services:
   test:
-    image: test/foo-app:test
-    build:
-      target: test-image
-      dockerfile: deploy/Dockerfile.debian
-      context: .
-      args:
-        REGISTRY: ${REGISTRY}
-        PUBLIC_REGISTRY: ${PUBLIC_REGISTRY}
+    image: ${REGISTRY}test/foo-app:test
+    # build:
+    #   target: test-image
+    #   dockerfile: deploy/Dockerfile.debian
+    #   context: .
+    #   args:
+    #     REGISTRY: ${REGISTRY}
+    #     PUBLIC_REGISTRY: ${PUBLIC_REGISTRY}
     # command: sh -c 'while !</dev/tcp/db/5432; do sleep 1; done; set -ex mix test'
     # command: sh -c 'mix test'
     environment:
@@ -25,6 +25,35 @@ services:
         condition: service_healthy
     volumes:
       - "./junit-reports:/junit-reports"
+
+  # https://github.com/docker-library/docs/blob/master/postgres/README.md
+  # https://geshan.com.np/blog/2021/12/docker-postgres/
+  postgres:
+    # build:
+    #   context: .
+    #   dockerfile: deploy/Dockerfile.postgres
+    #   args:
+    #     REGISTRY: ${REGISTRY}
+    # image: app-db:latest
+    # image: postgres:14
+    image: ${PUBLIC_REGISTRY}postgres:14.1-alpine
+    restart: always
+    ports:
+      - '5432:5432'
+    # hostname: db
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - postgres_data_path:/var/lib/postgresql/data
+      # - ./db/init.sql:/docker-entrypoint-initdb.d/create_tables.sql
+    healthcheck:
+      # test: ["CMD-SHELL", "pg_isready -U postgres -d app_test"]
+      test: ["CMD-SHELL", "pg_isready"]
+      start_period: 5s
+      interval: 2s
+      timeout: 5s
+      retries: 20
 
   mssql:
     environment:
@@ -43,34 +72,6 @@ services:
     ports:
       - "3306:3306"
 
-  # https://github.com/docker-library/docs/blob/master/postgres/README.md
-  # https://geshan.com.np/blog/2021/12/docker-postgres/
-  postgres:
-    # build:
-    #   context: .
-    #   dockerfile: deploy/Dockerfile.postgres
-    #   args:
-    #     REGISTRY: ${REGISTRY}
-    # image: app-db:latest
-    # image: postgres:14
-    image: postgres:14.1-alpine
-    restart: always
-    ports:
-      - '5432:5432'
-    # hostname: db
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-    volumes:
-      - postgres_data_path:/var/lib/postgresql/data
-      # - ./db/init.sql:/docker-entrypoint-initdb.d/create_tables.sql
-    healthcheck:
-      # test: ["CMD-SHELL", "pg_isready -U postgres -d app_test"]
-      test: ["CMD-SHELL", "pg_isready"]
-      start_period: 5s
-      interval: 2s
-      timeout: 5s
-      retries: 20
 
 volumes:
   postgres_data_path:

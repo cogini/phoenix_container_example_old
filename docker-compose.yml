@@ -161,23 +161,6 @@ services:
       - ".:/app:delegated"
       # - 'nfsmount:/app'
 
-  mssql:
-    environment:
-      ACCEPT_EULA: "Y"
-      SA_PASSWORD: some!Password
-    image: mcr.microsoft.com/mssql/server:2019-latest
-    ports:
-      - "1433:1433"
-
-  mysql:
-    environment:
-      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
-      # MYSQL_ROOT_PASSWORD: example
-    # command: --default-authentication-plugin=mysql_native_password
-    image: "${REGISTRY}mysql:8"
-    ports:
-      - "3306:3306"
-
   # https://github.com/docker-library/docs/blob/master/postgres/README.md
   # https://geshan.com.np/blog/2021/12/docker-postgres/
   postgres:
@@ -206,6 +189,24 @@ services:
       interval: 2s
       timeout: 5s
       retries: 20
+
+  mssql:
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: some!Password
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    ports:
+      - "1433:1433"
+
+  mysql:
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+      # MYSQL_ROOT_PASSWORD: example
+    # command: --default-authentication-plugin=mysql_native_password
+    image: "${REGISTRY}mysql:8"
+    ports:
+      - "3306:3306"
+
 
   vuln:
     build:
