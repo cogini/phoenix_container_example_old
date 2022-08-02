@@ -23,7 +23,8 @@ erl_crash.dump
 phoenix_container_example-*.tar
 
 # Ignore assets that are produced by build tools.
-/priv/static/assets/
+# /priv/static/assets/
+/priv/static/
 
 # Ignore digested assets cache.
 /priv/static/cache_manifest.json
@@ -53,8 +54,8 @@ npm-debug.log
 
 /artifacts/
 /reports/
-/junit-reports/*
-/sarif-reports/*
+/junit-reports/
+/sarif-reports/
 
 # Editor temp files
 *.swp
