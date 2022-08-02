@@ -23,20 +23,18 @@ jobs:
       contents: read
 
       # JUnit report file upload
-      # public repos
+      # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
       checks: write
       pull-requests: write
-      # private repos
       issues: read
-      # contents: read
 
     env:
       IMAGE_NAME: foo-app
       AWS_ROLE: arn:aws:iam::770916339360:role/foo-dev-ecr-github-action-role
       AWS_REGION: ap-northeast-1
     steps:
-      - name: Dump Event
-        run: cat "$GITHUB_EVENT_PATH"
+      # - name: Dump Event
+      #   run: cat "$GITHUB_EVENT_PATH"
 
       # https://github.com/aws-actions/configure-aws-credentials
       # https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
@@ -46,8 +44,8 @@ jobs:
           role-to-assume: ${{ env.AWS_ROLE }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Display AWS identity
-        run: aws sts get-caller-identity
+      # - name: Display AWS identity
+      #   run: aws sts get-caller-identity
 
       # https://github.com/aws-actions/amazon-ecr-login
       - name: Login to Amazon ECR
@@ -147,7 +145,7 @@ jobs:
 
           # push: ${{ github.event_name != 'pull_request' }}
 
-      - name: Build Docker deploy image and push
+      - name: Build deploy image and push
         if: github.event_name == 'pull_request'
         uses: docker/build-push-action@v3
         with:
