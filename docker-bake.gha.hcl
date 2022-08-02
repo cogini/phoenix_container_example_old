@@ -46,8 +46,7 @@ target "postgres" {
     dockerfile = "deploy/Dockerfile.postgres"
     context = "."
     args = {
-        REGISTRY = "${REGISTRY}"
-        PUBLIC_REGISTRY = "${PUBLIC_REGISTRY}"
+        REGISTRY = "${PUBLIC_REGISTRY}"
     }
     tags = [
         "${REGISTRY}postgres:14-alpine"
