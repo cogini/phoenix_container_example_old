@@ -112,8 +112,8 @@ jobs:
       - name: Run tests
         env:
           REGISTRY: localhost:5000/
-          PUBLIC_REGISTRY: "${{ steps.login-ecr.outputs.registry }}/"
-          # PUBLIC_REGISTRY: ""
+          # PUBLIC_REGISTRY: "${{ steps.login-ecr.outputs.registry }}/"
+          PUBLIC_REGISTRY: ""
         run: |
           docker-compose -f docker-compose.gha.yml up test
           docker-compose -f docker-compose.gha.yml run test mix test
