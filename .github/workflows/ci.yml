@@ -23,8 +23,10 @@ jobs:
       contents: read
 
       # JUnit report file upload
+      # public repos
       checks: write
       pull-requests: write
+      # private repos
       issues: read
       # contents: read
 
@@ -159,8 +161,8 @@ jobs:
             ${{ steps.login-ecr.outputs.registry }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
 
       - name: Publish unit test results to GitHub
-        uses: EnricoMi/publish-unit-test-result-action@v1
+        uses: EnricoMi/publish-unit-test-result-action@v2
         if: always() # always run even if tests fail
         with:
           # files: _build/test/lib/*/test-junit-report.xml
-          files: junit-reports/*.xml
+          junit_files: junit-reports/**/*.xml
