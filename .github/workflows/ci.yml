@@ -156,4 +156,4 @@ jobs:
         if: always() # always run even if tests fail
         with:
           # files: _build/test/lib/*/test-junit-report.xml
-          files: junit-reports/*
+          files: junit-reports/*.xml
