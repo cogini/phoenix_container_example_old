@@ -22,12 +22,11 @@ jobs:
       id-token: write
       contents: read
 
-      # Needed to publish junit test results
+      # JUnit report file upload
       checks: write
       pull-requests: write
-      # Needed for private GitHub repos
-      # contents: read
       issues: read
+      # contents: read
 
     env:
       IMAGE_NAME: foo-app
