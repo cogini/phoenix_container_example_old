@@ -1,13 +1,23 @@
-# Deploy using Debian
+# Deploy using Alpine
 VERSION --shell-out-anywhere --use-copy-include-patterns --referenced-save-only 0.6
 
 ARG ELIXIR_VERSION=1.13.3
-# ARG OTP_VERSION=23.3.4
 ARG OTP_VERSION=24.2
 ARG NODE_VERSION=16.14.1
 # ARG NODE_VERSION=lts
 
 ARG ALPINE_VERSION=3.15.0
+
+# By default, packages come from the APK index for the base Alpine image.
+# Package versions are consistent between builds, and we normally upgrade by
+# upgrading the Alpine version.
+ARG APK_UPDATE=":"
+ARG APK_UPGRADE=":"
+
+# If a vulnerability is fixed in packages but not yet released in an Alpine base image,
+# then we can run update/upgrade as part of the build.
+# ARG APK_UPDATE="apk update"
+# ARG APK_UPGRADE="apk upgrade --update-cache -a"
 
 # Docker registry for internal images, e.g. 123.dkr.ecr.ap-northeast-1.amazonaws.com/
 # If blank, docker.io will be used. If specified, should have a trailing slash.
@@ -40,15 +50,6 @@ ARG APP_GROUP_ID=$APP_USER_ID
 
 ARG LANG=C.UTF-8
 
-# By default, packages come from the APK index for the base Alpine image.
-# Package versions are consistent between builds, and we normally upgrade by
-# upgrading the Alpine version.
-ARG APK_UPDATE=":"
-ARG APK_UPGRADE=":"
-# If a vulnerability is fixed in packages but not yet released in an Alpine base image,
-# Then we can run update/upgrade as part of the build.
-# ARG APK_UPDATE="apk update"
-# ARG APK_UPGRADE="apk upgrade --update-cache -a"
 
 # Create build base image with OS dependencies
 build-os-deps:
@@ -59,7 +60,7 @@ build-os-deps:
     # See https://wiki.alpinelinux.org/wiki/Local_APK_cache for details
     # on the local cache and need for the symlink
     RUN --mount=type=cache,id=apk,target=/var/cache/apk \
-        set -ex && \
+        set -exu && \
         $APK_UPDATE && $APK_UPGRADE && \
         # Install build tools
         # apk add --no-progress alpine-sdk && \
@@ -117,7 +118,7 @@ deploy-base:
 
     SAVE IMAGE --cache-hint
 
-# Scan deploy image for security vulnerabilities
+# Scan image for security vulnerabilities
 deploy-scan:
     FROM +deploy
 

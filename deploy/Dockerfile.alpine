@@ -2,18 +2,28 @@
 #
 # Build app
 #
-# It takes advantage of caching and parallel build support in BuildKit.
-#
 # The "syntax" line must be the first thing in the file, as it enables the
 # new syntax for caching, etc. see
 # https://docs.docker.com/develop/develop-images/build_enhancements/
 # https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/experimental.md
 
-ARG ELIXIR_VERSION=1.13.3
-ARG OTP_VERSION=24.2
+ARG ELIXIR_VERSION=1.13.4
+ARG OTP_VERSION=24.3.4
 ARG NODE_VERSION=16.14.1
+# ARG NODE_VERSION=lts
 
-ARG ALPINE_VERSION=3.15.0
+ARG ALPINE_VERSION=3.15.4
+
+# By default, packages come from the APK index for the base Alpine image.
+# Package versions are consistent between builds, and we normally upgrade by
+# upgrading the Alpine version.
+ARG APK_UPDATE=":"
+ARG APK_UPGRADE=":"
+
+# If a vulnerability is fixed in packages but not yet released in an Alpine base image,
+# then we can run update/upgrade as part of the build.
+# ARG APK_UPDATE="apk update"
+# ARG APK_UPGRADE="apk upgrade --update-cache -a"
 
 # Docker registry for internal images, e.g. 123.dkr.ecr.ap-northeast-1.amazonaws.com/
 # If blank, docker.io will be used. If specified, should have a trailing slash.
@@ -48,16 +58,6 @@ ARG APP_USER_ID=65532
 ARG APP_GROUP_ID=$APP_USER_ID
 
 ARG LANG=C.UTF-8
-
-# By default, packages come from the APK index for the base Alpine image.
-# Package versions are consistent between builds, and we normally upgrade by
-# upgrading the Alpine version.
-ARG APK_UPDATE=":"
-ARG APK_UPGRADE=":"
-# If a vulnerability is fixed in packages but not yet released in an Alpine base image,
-# Then we can run update/upgrade as part of the build.
-# ARG APK_UPDATE="apk update"
-# ARG APK_UPGRADE="apk upgrade --update-cache -a"
 
 # ARG http_proxy
 # ARG https_proxy=$http_proxy
@@ -97,7 +97,7 @@ FROM ${BUILD_IMAGE_NAME}:${BUILD_IMAGE_TAG} AS build-os-deps
     # See https://wiki.alpinelinux.org/wiki/Local_APK_cache for details
     # on the local cache and need for the symlink
     RUN --mount=type=cache,id=apk,target=/var/cache/apk \
-        set -ex && \
+        set -exu && \
         $APK_UPDATE && $APK_UPGRADE && \
         # Install build tools
         # apk add --no-progress alpine-sdk && \
@@ -197,6 +197,7 @@ FROM build-deps-get AS deploy-release
 
     WORKDIR $APP_DIR
 
+    # This does a partial compile.
     # Doing "mix do compile, phx.digest, release" in a single stage is worse,
     # because a single line of code changed causes a complete recompile.
     # With the stages separated most of the compilation is cached.
@@ -298,6 +299,7 @@ FROM ${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG} AS deploy-base
 
 # Create final app image which gets deployed
 FROM deploy-base AS deploy
+    ARG LANG
     ARG APP_DIR
     ARG APP_NAME
     ARG APP_USER
@@ -311,53 +313,17 @@ FROM deploy-base AS deploy
     # Set environment vars used by the app
     # SECRET_KEY_BASE and DATABASE_URL env vars should be set when running the application
     # maybe set COOKIE and other things
-    ENV HOME=$APP_DIR \
+    ENV LANG=$LANG \
+        HOME=$APP_DIR \
         PORT=$APP_PORT \
         PHX_SERVER=true \
         RELEASE=$RELEASE \
         RELEASE_TMP="/run/${APP_NAME}"
 
-    # USER $APP_USER
-
-    # Setting WORKDIR after USER makes directory be owned by the user.
-    # Setting it before makes it owned by root, which is more secure.
-    # The app needs to be able to write to a tmp directory on startup, which by
-    # default is under the release. This can be changed by setting RELEASE_TMP to
-    # /tmp or, more securely, /run/foo
-    WORKDIR $APP_DIR
-
-    # When using a startup script, copy to /app/bin
-    # COPY bin ./bin
-
-    USER $APP_USER
-
-    # Chown files while copying. Running "RUN chown -R app:app /app"
-    # adds an extra layer which is about 10Mb, a huge difference if the
-    # app image is around 20Mb.
-
-    # TODO: For more security, change specific files to have group read/execute
-    # permissions while leaving them owned by root
-
-    # When using a startup script, unpack release under "/app/current" dir
-    # WORKDIR $APP_DIR/current
-
-    COPY --from=deploy-release --chown="$APP_USER:$APP_GROUP" "/app/_build/${MIX_ENV}/rel/${RELEASE}" ./
-
-    EXPOSE $APP_PORT
-
-    # "bin" is the directory under the unpacked release, and "prod" is the name
-    # of the release
-    ENTRYPOINT ["bin/prod"]
-
-    # Run under init to avoid zombie processes
-    # https://github.com/krallin/tini
-    # ENTRYPOINT ["/sbin/tini", "--", "bin/prod"]
-
-    # Run app in foreground
-    CMD ["start"]
-
-    # Run via startup script
-    # CMD ["/app/bin/start-docker"]
+    # Create dirs writable by app user
+    RUN mkdir -p "/run/${APP_NAME}" && \
+        chown -R "${APP_USER}:${APP_GROUP}" \
+            "/run/${APP_NAME}"
 
     # USER $APP_USER
 
@@ -398,7 +364,11 @@ FROM deploy-base AS deploy
     # Run app in foreground
     CMD ["start"]
 
-# Scan for security vulnerabilities
+    # Wrapper script which runs e.g. migrations before starting
+    # ENTRYPOINT ["bin/start-docker"]
+
+
+# Scan image for security vulnerabilities
 FROM deploy as deploy-scan
     USER root
 
@@ -410,6 +380,7 @@ FROM deploy as deploy-scan
 
     RUN --mount=type=cache,id=apk,target=/var/cache/apk,sharing=locked \
         set -ex && \
+        mkdir -p /sarif-reports && \
         # Succeed for issues of severity = HIGH
         # trivy filesystem $TRIVY_OPTS --format sarif -o /sarif-reports/trivy.high.sarif --exit-code 0 --severity HIGH --no-progress / && \
         trivy filesystem $TRIVY_OPTS --exit-code 0 --severity HIGH --no-progress / && \
