@@ -2,14 +2,11 @@
 VERSION --use-cache-command --shell-out-anywhere --use-copy-include-patterns --referenced-save-only 0.6
 
 ARG ELIXIR_VERSION=1.13.4
-# ARG OTP_VERSION=23.3.4
 # ARG OTP_VERSION=24.3.4
 ARG OTP_VERSION=25.0-rc3
-# ARG NODE_VERSION=14.4
 ARG NODE_VERSION=16.14.1
 # ARG NODE_VERSION=lts
 
-# ARG ALPINE_VERSION=3.14.3
 ARG ALPINE_VERSION=3.15.4
 
 # ARG ELIXIR_DEBIAN_VERSION=buster-20210208
@@ -470,7 +467,7 @@ deploy:
 
     COPY +deploy-release/release ./
 
-    EXPOSE $PORT
+    EXPOSE $APP_PORT
 
     # "bin" is the directory under the unpacked release, and "prod" is the name
     # of the release
@@ -483,7 +480,7 @@ deploy:
     # Run app in foreground
     CMD ["start"]
 
-    # Wrapper script which runs migrations before starting
+    # Wrapper script which runs e.g. migrations before starting
     # ENTRYPOINT ["bin/start-docker"]
 
     # SAVE IMAGE --push ${OUTPUT_URL}:${OUTPUT_IMAGE_TAG}
@@ -502,6 +499,7 @@ deploy-scan:
     FROM base+deploy-scan
 
     RUN \
+        set -ex && \
         mkdir -p /sarif-reports && \
         # Succeed for issues of severity = HIGH
         # trivy filesystem $TRIVY_OPTS --format sarif -o /sarif-reports/trivy.high.sarif --exit-code 0 --severity HIGH --no-progress / && \
