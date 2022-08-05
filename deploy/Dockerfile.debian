@@ -7,9 +7,7 @@
 # https://docs.docker.com/develop/develop-images/build_enhancements/
 # https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/experimental.md
 
-# App versions
 ARG ELIXIR_VERSION=1.13.3
-# ARG OTP_VERSION=23.3.4
 ARG OTP_VERSION=24.2
 ARG NODE_VERSION=16.14.1
 # ARG NODE_VERSION=lts
