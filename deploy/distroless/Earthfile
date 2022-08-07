@@ -50,15 +50,11 @@ ARG LINUX_ARCH=$(uname -m)
 build-os-deps:
     FROM ${BUILD_IMAGE_NAME}:${BUILD_IMAGE_TAG}
 
-    # Create OS user and group to run app under
-    RUN if ! grep -q "$APP_USER" /etc/passwd; \
-        then groupadd -g "$APP_GROUP_ID" "$APP_GROUP" && \
-        useradd -l -u "$APP_USER_ID" -g "$APP_GROUP" -s /usr/sbin/nologin "$APP_USER" && \
-        rm /var/log/lastlog && rm /var/log/faillog; fi
+    ENV LANG=$LANG
 
     # Configure apt caching for use with BuildKit.
-    # The default Debian Docker image has special apt config to clear caches, but if
-    # we are using --mount=type=cache, then we want it.
+    # The default Debian Docker image has special apt config to clear caches,
+    # but if we are using --mount=type=cache, then we want it.
     # https://github.com/debuerreotype/debuerreotype/blob/master/scripts/debuerreotype-minimizing-config
     RUN set -exu && \
         rm -f /etc/apt/apt.conf.d/docker-clean && \
@@ -66,7 +62,6 @@ build-os-deps:
         echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression
 
     # Install tools and libraries to build binary libraries
-    # Not necessary for a minimal Phoenix app, but likely needed
     RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
         --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
@@ -192,7 +187,6 @@ deploy-install:
         apt-get update -qq && \
         DEBIAN_FRONTEND=noninteractive \
         apt-get -y install -y -qq --no-install-recommends \
-            # Enable installation of packages over https
             # apt-transport-https \
             ca-certificates \
             curl \

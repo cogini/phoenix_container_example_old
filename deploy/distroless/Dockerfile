@@ -5,7 +5,6 @@ ARG REGISTRY=""
 # Public images may be mirrored into the private registry, with e.g. Skopeo
 ARG PUBLIC_REGISTRY=$REGISTRY
 
-# Deploy base image
 # https://github.com/GoogleContainerTools/distroless/blob/main/base/README.md
 ARG DEPLOY_IMAGE_NAME=gcr.io/distroless/base-debian11
 # ARG DEPLOY_IMAGE_TAG=debug-nonroot
@@ -32,7 +31,6 @@ FROM ${INSTALL_IMAGE_NAME}:${INSTALL_IMAGE_TAG} AS deploy-install
         apt-get update -qq && \
         DEBIAN_FRONTEND=noninteractive \
         apt-get -y install -y -qq --no-install-recommends \
-            # Enable installation of packages over https
             # apt-transport-https \
             ca-certificates \
             curl \
@@ -69,7 +67,8 @@ FROM ${INSTALL_IMAGE_NAME}:${INSTALL_IMAGE_TAG} AS deploy-install
     #     rm -rf ./aws && \
     #     rm awscliv2.zip
 
-FROM ${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG} as deploy-base
+# Create base image for deploy, with everything but the code release
+FROM ${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG} AS deploy-base
     ARG LANG
     ARG LINUX_ARCH
 
