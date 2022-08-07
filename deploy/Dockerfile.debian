@@ -1,8 +1,9 @@
 # Build app
 # Deploy using Debian
 
-ARG ELIXIR_VERSION=1.13.3
-ARG OTP_VERSION=24.2
+ARG ELIXIR_VERSION=1.13.4
+# ARG OTP_VERSION=24.2
+ARG OTP_VERSION=24.3.1
 ARG NODE_VERSION=16.14.1
 # ARG NODE_VERSION=lts
 
@@ -79,6 +80,17 @@ ARG APP_PORT=4000
 FROM ${BUILD_IMAGE_NAME}:${BUILD_IMAGE_TAG} AS build-os-deps
     ARG LANG
     ENV LANG=$LANG
+
+    ARG APP_USER
+    ARG APP_GROUP
+    ARG APP_USER_ID
+    ARG APP_GROUP_ID
+
+    # Create OS user and group to run app under
+    RUN if ! grep -q "$APP_USER" /etc/passwd; \
+        then groupadd -g "$APP_GROUP_ID" "$APP_GROUP" && \
+        useradd -l -u "$APP_USER_ID" -g "$APP_GROUP" -s /usr/sbin/nologin "$APP_USER" && \
+        rm /var/log/lastlog && rm /var/log/faillog; fi
 
     # Configure apt caching for use with BuildKit.
     # The default Debian Docker image has special apt config to clear caches,
@@ -577,9 +589,7 @@ FROM build-os-deps AS dev
     # RUN --mount=target=.
     # see https://adoptingerlang.org/docs/production/docker/#efficient-caching
 
-    RUN --mount=type=cache,target=~/.hex/packages/hexpm,sharing=locked \
-        --mount=type=cache,target=~/.cache/rebar3,sharing=locked \
-        mix do local.rebar --force, local.hex --force
+    RUN mix do local.rebar --force, local.hex --force
 
     EXPOSE $APP_PORT
 
