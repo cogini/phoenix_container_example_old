@@ -50,6 +50,12 @@ ARG APP_GROUP_ID=$APP_USER_ID
 
 ARG LANG=C.UTF-8
 
+# Fail for issues of severity = HIGH
+# ARG TRIVY_OPTS="--exit-code 1 --severity HIGH"
+# Fail for issues of severity = CRITICAL
+ARG TRIVY_OPTS="--exit-code 1 --severity CRITICAL"
+# Fail for any issues
+# ARG TRIVY_OPTS="-d --exit-code 1"
 
 # Create build base image with OS dependencies
 build-os-deps:
@@ -91,8 +97,9 @@ deploy-base:
     RUN addgroup -g $APP_GROUP_ID -S "$APP_GROUP" && \
         adduser -u $APP_USER_ID -S "$APP_USER" -G "$APP_GROUP" -h "$HOME"
 
-    # Create app dirs
-    RUN mkdir -p "/run/${APP_NAME}" && \
+    RUN \
+        # Create app dirs
+        mkdir -p "/run/${APP_NAME}" && \
         # Make dirs writable by app
         chown -R "${APP_USER}:${APP_GROUP}" \
             # Needed for RELEASE_TMP
@@ -132,6 +139,7 @@ deploy-scan:
 
     RUN --mount=type=cache,id=apk,target=/var/cache/apk,sharing=locked \
         set -ex && \
+        mkdir -p /sarif-reports && \
         # Succeed for issues of severity = HIGH
         # trivy filesystem $TRIVY_OPTS --format sarif -o /sarif-reports/trivy.high.sarif --exit-code 0 --severity HIGH --no-progress / && \
         trivy filesystem $TRIVY_OPTS --exit-code 0 --severity HIGH --no-progress / && \
