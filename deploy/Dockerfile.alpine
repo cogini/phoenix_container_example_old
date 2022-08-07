@@ -1,4 +1,5 @@
 # Build app
+# Deploy using Alpine
 
 ARG ELIXIR_VERSION=1.13.4
 ARG OTP_VERSION=24.3.4
@@ -75,7 +76,6 @@ ARG APP_PORT=4000
 FROM ${BUILD_IMAGE_NAME}:${BUILD_IMAGE_TAG} AS build-os-deps
     ARG APK_UPDATE
     ARG APK_UPGRADE
-
     ARG LANG
     ENV LANG=$LANG
 
@@ -99,9 +99,10 @@ FROM ${BUILD_IMAGE_NAME}:${BUILD_IMAGE_TAG} AS build-os-deps
     #     apk del .build-dependencies && rm -f msodbcsql*.sig mssql-tools*.apk
     # ENV PATH="/opt/mssql-tools/bin:${PATH}"
 
-# Fetch and compile Elixir app deps
+# Get Elixir deps
 FROM build-os-deps AS build-deps-get
     ARG APP_DIR
+    ENV HOME=$APP_DIR
 
     WORKDIR $APP_DIR
 
@@ -111,7 +112,6 @@ FROM build-os-deps AS build-deps-get
     COPY config ./config
     COPY mix.exs .
     COPY mix.lock .
-
     RUN mix deps.get
 
     RUN mix esbuild.install
@@ -120,18 +120,17 @@ FROM build-os-deps AS build-deps-get
 FROM build-deps-get AS test-image
     ARG APP_DIR
 
-    ENV HOME=$APP_DIR \
-        MIX_ENV=test
+    ENV MIX_ENV=test
 
     WORKDIR $APP_DIR
 
     # Compile deps separately from app, improving Docker caching
-    RUN mix do local.rebar --force, local.hex --force
+    # RUN mix do local.rebar --force, local.hex --force
     RUN mix deps.compile
 
-    # COPY .formatter.exs ./
-    # COPY ./coveralls.json ./
+    # COPY coveralls.json ./
     # COPY .credo.exs ./
+    COPY .formatter.exs ./
     # COPY dialyzer-ignore ./
 
     # Non-umbrella
@@ -144,14 +143,10 @@ FROM build-deps-get AS test-image
     # COPY apps ./apps
     # COPY priv ./priv
 
-    # RUN --mount=type=cache,id=hex,target=/opt/hex,sharing=locked \
-    #    # --mount=type=cache,id=rebar,target=~/.cache/rebar3,sharing=locked \
     RUN mix compile --warnings-as-errors
 
     # For umbrella, using `mix cmd` ensures each app is compiled in
     # isolation https://github.com/elixir-lang/elixir/issues/9407
-    # RUN --mount=type=cache,target=~/.hex/packages/hexpm,sharing=locked \
-    #     --mount=type=cache,target=~/.cache/rebar3,sharing=locked \
     #     mix cmd mix compile --warnings-as-errors
 
 # Create Elixir release
