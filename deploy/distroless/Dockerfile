@@ -21,7 +21,7 @@ ARG LANG=C.UTF-8
 ARG LINUX_ARCH=aarch64
 
 # Staging image for binaries which are copied into final deploy image
-FROM ${REGISTRY}${INSTALL_IMAGE_NAME}:${INSTALL_IMAGE_TAG} AS deploy-install
+FROM ${INSTALL_IMAGE_NAME}:${INSTALL_IMAGE_TAG} AS deploy-install
     # Configure apt caching for use with BuildKit
     # RUN set -exu && \
     #     rm -f /etc/apt/apt.conf.d/docker-clean && \
@@ -30,10 +30,9 @@ FROM ${REGISTRY}${INSTALL_IMAGE_NAME}:${INSTALL_IMAGE_TAG} AS deploy-install
 
     RUN set -exu && \
         apt-get update -qq && \
-        # Avoid warnings
-        # apt-get -y install -y -qq --no-install-recommends dialog apt-utils \
-        # Enable installation of packages over https
+        DEBIAN_FRONTEND=noninteractive \
         apt-get -y install -y -qq --no-install-recommends \
+            # Enable installation of packages over https
             # apt-transport-https \
             ca-certificates \
             curl \

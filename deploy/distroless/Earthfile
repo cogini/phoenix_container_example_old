@@ -2,9 +2,7 @@
 # https://github.com/GoogleContainerTools/distroless
 VERSION --shell-out-anywhere --use-copy-include-patterns --referenced-save-only 0.6
 
-# App versions
 ARG ELIXIR_VERSION=1.13.3
-# ARG OTP_VERSION=23.3.4
 ARG OTP_VERSION=24.2
 ARG NODE_VERSION=16.14.1
 # ARG NODE_VERSION=lts
@@ -29,7 +27,6 @@ ARG PUBLIC_REGISTRY=$REGISTRY
 ARG BUILD_IMAGE_NAME=${PUBLIC_REGISTRY}hexpm/elixir
 ARG BUILD_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-${ELIXIR_DEBIAN_VERSION}
 
-# Deploy base image
 # https://github.com/GoogleContainerTools/distroless/blob/main/base/README.md
 ARG DEPLOY_IMAGE_NAME=gcr.io/distroless/base-debian11
 # ARG DEPLOY_IMAGE_TAG=debug-nonroot
@@ -195,6 +192,7 @@ deploy-install:
         apt-get update -qq && \
         DEBIAN_FRONTEND=noninteractive \
         apt-get -y install -y -qq --no-install-recommends \
+            # Enable installation of packages over https
             # apt-transport-https \
             ca-certificates \
             curl \
