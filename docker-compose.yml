@@ -121,7 +121,7 @@ services:
     volumes:
       - ".:/app:delegated"
 
-  dev:
+  app-dev:
     build:
       context: .
       dockerfile: deploy/Dockerfile.debian
@@ -136,9 +136,9 @@ services:
 
     # VSCode devcontainer needs something running
     # command: ["tail", "-f", "/dev/null"]
-    # command: ["sleep", "infinity"]
+    command: ["sleep", "infinity"]
     # command: /bin/sh -c "while sleep 1000; do :; done"
-    command: mix phx.server
+    # command: mix phx.server
     depends_on:
       - postgres
     environment:
@@ -152,11 +152,13 @@ services:
       - AWS_REGION
       - AWS_DEFAULT_REGION
     user: root
-    image: foo-app-dev
+    image: app-dev
     ports:
       - "4000:4000"
     stdin_open: true
     tty: true
+    cap_add:
+      - CAP_SYS_ADMIN
     volumes:
       - ".:/app:delegated"
       # - 'nfsmount:/app'
@@ -207,8 +209,7 @@ services:
     ports:
       - "3306:3306"
 
-
-  vuln:
+  deploy-scan:
     build:
       context: .
       dockerfile: deploy/Dockerfile.alpine
@@ -216,8 +217,8 @@ services:
       args:
         BUILDKIT_INLINE_CACHE: "1"
         REGISTRY: ${REGISTRY}
-      target: vuln
-    image: app-vuln
+      target: deploy-scan
+    image: deploy-scan
 
 volumes:
   postgres_data_path:
