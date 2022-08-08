@@ -162,5 +162,7 @@ jobs:
         uses: EnricoMi/publish-unit-test-result-action@v2
         if: always() # always run even if tests fail
         with:
+          # Local build
           # files: _build/test/lib/*/test-junit-report.xml
+          # Exported from container
           junit_files: junit-reports/**/*.xml
