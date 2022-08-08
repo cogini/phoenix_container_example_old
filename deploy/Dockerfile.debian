@@ -18,6 +18,16 @@ ARG ELIXIR_DEBIAN_VERSION=bullseye-20210902-slim
 # ARG DEBIAN_VERSION=buster-slim
 ARG DEBIAN_VERSION=bullseye-slim
 
+# Use snapshot for consistent dependencies
+# Need to be updated manually
+# See https://snapshot.debian.org/
+# ARG DEBIAN_SNAPSHOT=20220601
+#
+# RUN set -exu && \
+#     echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/$DEBIAN_SNAPSHOT bullseye main" > /etc/apt/sources.list && \
+#     echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/$DEBIAN_SNAPSHOT bullseye-security main" >> /etc/apt/sources.list && \
+#     echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/$DEBIAN_SNAPSHOT bullseye-updates main" >> /etc/apt/sources.list
+
 # Docker registry for internal images, e.g. 123.dkr.ecr.ap-northeast-1.amazonaws.com/
 # If blank, docker.io will be used. If specified, should have a trailing slash.
 ARG REGISTRY=""
