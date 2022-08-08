@@ -3,7 +3,8 @@
 
 ARG ELIXIR_VERSION=1.13.4
 # ARG OTP_VERSION=24.2
-ARG OTP_VERSION=24.3.1
+# ARG OTP_VERSION=24.3.4.2
+ARG OTP_VERSION=25.0.3
 ARG NODE_VERSION=16.14.1
 # ARG NODE_VERSION=lts
 
@@ -199,14 +200,13 @@ FROM build-os-deps AS build-deps-get
 
     WORKDIR $APP_DIR
 
-    RUN mix do local.rebar --force, local.hex --force
-
     # Copy only the minimum files needed for deps, improving caching
     COPY config ./config
     COPY mix.exs .
     COPY mix.lock .
-    RUN mix deps.get
 
+    RUN mix do local.rebar --force, local.hex --force
+    RUN mix deps.get
     RUN mix esbuild.install
 
 # Create base image for tests
@@ -531,7 +531,6 @@ FROM deploy-base AS deploy
     # ENTRYPOINT ["bin/start-docker"]
 
 # Dev image which mounts code from local filesystem
-# FROM ${REGISTRY}${ELIXIR_IMAGE_NAME}:${ELIXIR_IMAGE_TAG} AS dev
 FROM build-os-deps AS dev
     ARG LANG
     ARG APP_NAME
@@ -545,7 +544,16 @@ FROM build-os-deps AS dev
     # Set environment vars used by the app
     ENV LANG=$LANG \
         HOME=$APP_DIR \
-        PORT=$APP_PORT
+        PORT=$APP_PORT \
+        PHX_SERVER=true
+
+    RUN \
+        # Create app dirs
+        mkdir -p "/run/${APP_NAME}" && \
+        # Make dirs writable by app
+        chown -R "${APP_USER}:${APP_GROUP}" \
+            # Needed for RELEASE_TMP
+            "/run/${APP_NAME}"
 
     RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
@@ -557,6 +565,11 @@ FROM build-os-deps AS dev
             inotify-tools \
             ssh \
             sudo \
+            debootstrap \
+            cdebootstrap \
+            schroot \
+            fakeroot \
+            fakechroot \
             && \
         # https://www.networkworld.com/article/3453032/cleaning-up-with-apt-get.html
         # https://manpages.ubuntu.com/manpages/jammy/man8/apt-get.8.html
@@ -585,18 +598,20 @@ FROM build-os-deps AS dev
 
     WORKDIR $APP_DIR
 
+    RUN mix do local.rebar --force, local.hex --force
+
+    # RUN mix esbuild.install
+
     # Instead of copying sources, could use bind mount, e.g.
     # RUN --mount=target=.
     # see https://adoptingerlang.org/docs/production/docker/#efficient-caching
-
-    RUN mix do local.rebar --force, local.hex --force
 
     EXPOSE $APP_PORT
 
     CMD [ "sleep", "infinity" ]
 
 # Copy build artifacts to host
-FROM scratch as artifacts
+FROM scratch AS artifacts
     ARG MIX_ENV
     ARG RELEASE
 
