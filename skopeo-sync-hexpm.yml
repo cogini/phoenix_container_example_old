@@ -15,4 +15,6 @@ docker.io:
       - 1.13.3-erlang-24.2-alpine-3.15.0
       - 1.13.3-erlang-24.2-debian-bullseye-20210902-slim
       - 1.13.3-erlang-24.3.1-debian-bullseye-20210902-slim
-      - 1.13.4-erlang-25.0-rc3-debian-bullseye-20210902-slim
+      - 1.13.4-erlang-24.3.1-debian-bullseye-20210902-slim
+      - 1.13.4-erlang-24.3.4.2-debian-bullseye-20210902-slim
+      - 1.13.4-erlang-25.0.3-debian-bullseye-20210902-slim
