@@ -3,7 +3,7 @@
 
 ARG ELIXIR_VERSION=1.13.4
 ARG OTP_VERSION=24.3.4
-ARG ALPINE_VERSION=3.15.3
+ARG ALPINE_VERSION=3.16.0
 
 # By default, packages come from the APK index for the base Alpine image.
 # Package versions are consistent between builds, and we normally upgrade by
