@@ -330,8 +330,7 @@ FROM deploy AS deploy-scan
         apk add --no-progress curl && \
         curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
 
-    RUN --mount=type=cache,id=apk,target=/var/cache/apk,sharing=locked \
-        set -exu && \
+    RUN set -exu && \
         mkdir -p /sarif-reports && \
         # Succeed for issues of severity = HIGH
         # trivy filesystem $TRIVY_OPTS --format sarif -o /sarif-reports/trivy.high.sarif --exit-code 0 --severity HIGH --no-progress / && \
