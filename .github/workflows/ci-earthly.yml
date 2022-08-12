@@ -13,20 +13,24 @@ jobs:
     # runs-on: ubuntu-20.04
     # Needed to interact with GitHub's OIDC Token endpoint for AWS
     permissions:
+      # Needed to interact with GitHub's OIDC Token endpoint for AWS
       id-token: write
       contents: read
+
+      # JUnit report file upload
+      # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
+      checks: write
+      pull-requests: write
+      issues: read
+
     env:
-      REGISTRY: 770916339360.dkr.ecr.ap-northeast-1.amazonaws.com/
-      REGISTRY_NAME: 770916339360.dkr.ecr.ap-northeast-1.amazonaws.com
       IMAGE_NAME: foo-app
-      # DOCKER_BUILDKIT: 1
-      # DOCKER_CLI_EXPERIMENTAL: enabled
-      # COMPOSE_DOCKER_CLI_BUILD: 1
+      AWS_ROLE: arn:aws:iam::770916339360:role/foo-dev-ecr-github-action-role
       FORCE_COLOR: 1
       AWS_REGION: ap-northeast-1
     steps:
-      - name: Dump Event
-        run: cat "$GITHUB_EVENT_PATH"
+      # - name: Dump Event
+      #   run: cat "$GITHUB_EVENT_PATH"
 
       # https://github.com/marketplace/actions/setup-earthly
       - uses: earthly/actions-setup@v1
@@ -39,22 +43,22 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
-          role-to-assume: arn:aws:iam::770916339360:role/foo-dev-ecr-github-action-role
+          role-to-assume: ${{ env.AWS_ROLE }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Display AWS identity
-        run: aws sts get-caller-identity
+      # - name: Display AWS identity
+      #   run: aws sts get-caller-identity
 
       # https://github.com/aws-actions/amazon-ecr-login
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-#       - name: Login to ECR
-#         id: login-ecr
-#         uses: docker/login-action@v2
-#         with:
-#           registry: ${{ env.REGISTRY_NAME }}
+      # - name: Login to ECR
+      #   id: login-ecr
+      #   uses: docker/login-action@v2
+      #   with:
+      #     registry: ${{ env.REGISTRY_NAME }}
       #     username: ${{ secrets.AWS_ACCESS_KEY_ID }}
       #     password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
@@ -84,20 +88,24 @@ jobs:
       # - name: Set up QEMU for multi-platform builds
       #   id: qemu
       #   uses: docker/setup-qemu-action@v2
+      #   with:
+      #     platforms: linux/amd64,linux/arm64
 
       # - name: Display available platforms
       #   run: echo "${{ steps.qemu.outputs.platforms }}"
 
-      - name: Set up Docker Buildx
+      - name: Set up Docker buildx
         id: buildx
         uses: docker/setup-buildx-action@v2
+        with:
+          driver-opts: network=host
 
       - name: Dump Environment
         run: env|sort
 
       - name: Build with Earthly
-        # env:
-        #   # REGISTRY: "${{ steps.login-ecr.outputs.registry }}/"
+        env:
+          REGISTRY: "${{ steps.login-ecr.outputs.registry }}/"
         # run: earthly --ci --push +build
         # run: earthly -P -V +all
         run: earthly -P -V --build-arg REGISTRY --strict +deploy
@@ -106,3 +114,11 @@ jobs:
         # run: earthly -P -V +all-platforms
         # run: earthly -P -V --platform=linux/arm64 +deploy
         # run: earthly -P -V --platform=linux/arm64 +deploy-scan
+      - name: Publish unit test results to GitHub
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always() # always run even if tests fail
+        with:
+          # Local build
+          # files: _build/test/lib/*/test-junit-report.xml
+          # Exported from container
+          junit_files: junit-reports/**/*.xml
