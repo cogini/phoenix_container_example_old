@@ -11,7 +11,7 @@ defmodule PhoenixContainerExample.MixProject do
       elixir: "~> 1.12",
       elixirc_paths: elixirc_paths(Mix.env()),
       # elixirc_options: [warnings_as_errors: Mix.env() != :dev],
-      compilers: [:gettext] ++ Mix.compilers(),
+      # compilers: Mix.compilers(),
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       dialyzer: [
@@ -43,7 +43,7 @@ defmodule PhoenixContainerExample.MixProject do
     [
       mod: {PhoenixContainerExample.Application, []},
       extra_applications:
-        [:logger, :runtime_tools, :gproc, :tls_certificate_check, :ssl] ++
+        [:logger, :runtime_tools, :gproc, :tls_certificate_check, :ssl, :eex] ++
           extra_applications(Mix.env())
     ]
   end
@@ -84,7 +84,7 @@ defmodule PhoenixContainerExample.MixProject do
       {:gettext, "~> 0.18"},
       {:jason, "~> 1.2"},
       {:junit_formatter, "~> 3.3", only: [:dev, :test], runtime: false},
-      {:mix_audit, "~> 1.0.0", only: [:dev, :test], runtime: false},
+      {:mix_audit, "~> 2.0", only: [:dev, :test], runtime: false},
       {:opentelemetry, "~> 1.0", override: true},
       {:opentelemetry_api, "~> 1.0", override: true},
       {:opentelemetry_ecto, "~> 1.0.0-rc.5"},
@@ -101,7 +101,7 @@ defmodule PhoenixContainerExample.MixProject do
       {:postgrex, ">= 0.0.0"},
       {:sobelow, "~> 0.11.0", only: [:dev, :test], runtime: false},
       {:swoosh, "~> 1.3"},
-      {:telemetry, "~> 0.4.3", override: true},
+      {:telemetry, "~> 1.0", override: true},
       {:telemetry_metrics, "~> 0.6"},
       {:telemetry_poller, "~> 1.0"}
     ]
