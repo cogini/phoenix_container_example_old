@@ -5,7 +5,7 @@ services:
     image: "${REPO_URL}:${IMAGE_TAG:-latest}"
     build:
       context: .
-      dockerfile: deploy/Dockerfile.alpine
+      dockerfile: deploy/alpine.Dockerfile
       args:
         BUILDKIT_INLINE_CACHE: "1"
         MIX_ENV: prod
@@ -31,7 +31,7 @@ services:
     image: "${REPO_URL}:${IMAGE_TAG:-latest}"
     build:
       context: .
-      dockerfile: deploy/Dockerfile.debian
+      dockerfile: deploy/debian.Dockerfile
       args:
         BUILDKIT_INLINE_CACHE: "1"
         MIX_ENV: prod
@@ -77,7 +77,7 @@ services:
     image: test/foo-app:test
     build:
       target: test-image
-      dockerfile: deploy/Dockerfile.debian
+      dockerfile: deploy/debian.Dockerfile
       context: .
       args:
         REGISTRY: ${REGISTRY}
@@ -102,7 +102,7 @@ services:
     # Custom build image for AWS CodeBuild
     # build:
     #   context: .
-    #   dockerfile: deploy/Dockerfile.codebuild
+    #   dockerfile: deploy/codebuild.Dockerfile
     #   args:
     #     BUILDKIT_INLINE_CACHE: "1"
     #     REGISTRY: ${REGISTRY}
@@ -124,7 +124,7 @@ services:
   app-dev:
     build:
       context: .
-      dockerfile: deploy/Dockerfile.debian
+      dockerfile: deploy/debian.Dockerfile
       args:
         BUILDKIT_INLINE_CACHE: "1"
         MIX_ENV: dev
@@ -168,7 +168,7 @@ services:
   postgres:
     # build:
     #   context: .
-    #   dockerfile: deploy/Dockerfile.postgres
+    #   dockerfile: deploy/postgres.Dockerfile
     #   args:
     #     REGISTRY: ${REGISTRY}
     # image: app-db:latest
@@ -212,8 +212,8 @@ services:
   deploy-scan:
     build:
       context: .
-      dockerfile: deploy/Dockerfile.alpine
-      # dockerfile: deploy/Dockerfile.debian
+      dockerfile: deploy/alpine.Dockerfile
+      # dockerfile: deploy/debian.Dockerfile
       args:
         BUILDKIT_INLINE_CACHE: "1"
         REGISTRY: ${REGISTRY}

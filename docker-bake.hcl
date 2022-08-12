@@ -31,7 +31,7 @@ group "dev" {
 }
 
 target "app" {
-    dockerfile = "deploy/Dockerfile.alpine"
+    dockerfile = "deploy/alpine.Dockerfile"
     target = "deploy"
     context = "."
     args = {
@@ -59,11 +59,11 @@ target "app" {
 
 target "app-debian" {
     inherits = ["app"]
-    dockerfile = "deploy/Dockerfile.debian"
+    dockerfile = "deploy/debian.Dockerfile"
 }
 
 target "dev" {
-    dockerfile = "deploy/Dockerfile.debian"
+    dockerfile = "deploy/debian.Dockerfile"
     target = "dev"
     context = "."
     args = {
@@ -73,7 +73,7 @@ target "dev" {
 }
 
 target "test" {
-    dockerfile = "deploy/Dockerfile.debian"
+    dockerfile = "deploy/debian.Dockerfile"
     target = "test"
     context = "."
     args = {
@@ -93,7 +93,7 @@ target "test" {
 }
 
 target "vuln" {
-    dockerfile = "deploy/Dockerfile.alpine"
+    dockerfile = "deploy/alpine.Dockerfile"
     context = "."
     args = {
         REGISTRY = "${REGISTRY}"
@@ -108,7 +108,7 @@ target "vuln" {
 }
 
 target "db" {
-    dockerfile = "deploy/Dockerfile.postgres"
+    dockerfile = "deploy/postgres.Dockerfile"
     context = "."
     args = {
         REGISTRY = "${REGISTRY}"

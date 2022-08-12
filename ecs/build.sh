@@ -28,7 +28,7 @@ TARGET="${TARGET:-deploy}"
 TARGET_ARG="--target ${TARGET}"
 
 # Dockerfile
-DOCKERFILE="${DOCKERFILE:-deploy/Dockerfile.debian}"
+DOCKERFILE="${DOCKERFILE:-deploy/debian.Dockerfile}"
 IMAGE_NAME=""
 TAGS="-t ${REPO_URL}:latest -t ${REPO_URL}:${IMAGE_TAG}"
 MIX_ENV="${MIX_ENV:-prod}"

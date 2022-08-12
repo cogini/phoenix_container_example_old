@@ -5,7 +5,7 @@ services:
     image: ${REGISTRY}test/foo-app:test
     # build:
     #   target: test-image
-    #   dockerfile: deploy/Dockerfile.debian
+    #   dockerfile: deploy/debian.Dockerfile
     #   context: .
     #   args:
     #     REGISTRY: ${REGISTRY}
@@ -31,7 +31,7 @@ services:
   postgres:
     # build:
     #   context: .
-    #   dockerfile: deploy/Dockerfile.postgres
+    #   dockerfile: deploy/postgres.Dockerfile
     #   args:
     #     REGISTRY: ${REGISTRY}
     # image: app-db:latest

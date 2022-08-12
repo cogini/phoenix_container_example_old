@@ -23,7 +23,7 @@ group "default" {
 }
 
 target "test" {
-    dockerfile = "deploy/Dockerfile.debian"
+    dockerfile = "deploy/debian.Dockerfile"
     target = "test-image"
     context = "."
     args = {
@@ -43,7 +43,7 @@ target "test" {
 }
 
 target "postgres" {
-    dockerfile = "deploy/Dockerfile.postgres"
+    dockerfile = "deploy/postgres.Dockerfile"
     context = "."
     args = {
         REGISTRY = "${PUBLIC_REGISTRY}"

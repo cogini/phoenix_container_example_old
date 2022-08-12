@@ -75,7 +75,7 @@ over caching and cross builds. `build.sh` is a wrapper on `docker buildx build`
 which sets various options.
 
   ```shell
-  DOCKERFILE=deploy/Dockerfile.debian ecs/build.sh
+  DOCKERFILE=deploy/debian.Dockerfile ecs/build.sh
   ```
 
 To run the prod app locally, talking to the db container:
@@ -413,7 +413,7 @@ data layers. `docker buildkit build` then uses `--cache-from` and `--cache-to`
 options to control the location of the cache. See `build.sh` for details.
 
   ```shell
-  CACHE_REPO_URL=$REPO_URL CACHE_TYPE=registry DOCKERFILE=deploy/Dockerfile.alpine ecs/build.sh
+  CACHE_REPO_URL=$REPO_URL CACHE_TYPE=registry DOCKERFILE=deploy/alpine.Dockerfile ecs/build.sh
   ```
 
 It currently works quite well for local cache. At some point, registry caching

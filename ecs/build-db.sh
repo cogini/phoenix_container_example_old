@@ -22,7 +22,7 @@ TARGET="${TARGET:-app-db}"
 TARGET_ARG=""
 
 # Dockerfile
-DOCKERFILE="${DOCKERFILE:-deploy/Dockerfile.postgres}"
+DOCKERFILE="${DOCKERFILE:-deploy/postgres.Dockerfile}"
 TAGS="-t ${TARGET}"
 BUILD_ARGS=""
 

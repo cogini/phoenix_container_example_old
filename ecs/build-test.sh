@@ -28,7 +28,7 @@ TARGET="${TARGET:-test}"
 TARGET_ARG="--target ${TARGET}"
 
 # Dockerfile
-DOCKERFILE="${DOCKERFILE:-deploy/Dockerfile.alpine}"
+DOCKERFILE="${DOCKERFILE:-deploy/alpine.Dockerfile}"
 IMAGE_NAME="${IMAGE_NAME:-app-test}"
 TAGS="-t ${IMAGE_NAME}"
 MIX_ENV="${MIX_ENV:-prod}"
