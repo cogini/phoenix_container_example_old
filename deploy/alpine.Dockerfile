@@ -106,7 +106,7 @@ FROM build-os-deps AS build-deps-get
 
     WORKDIR $APP_DIR
 
-    RUN mix do local.rebar --force, local.hex --force
+    RUN mix 'do' local.rebar --force, local.hex --force
 
     # Copy only the minimum files needed for deps, improving caching
     COPY config ./config
@@ -125,7 +125,7 @@ FROM build-deps-get AS test-image
     WORKDIR $APP_DIR
 
     # Compile deps separately from app, improving Docker caching
-    # RUN mix do local.rebar --force, local.hex --force
+    # RUN mix 'do' local.rebar --force, local.hex --force
     RUN mix deps.compile
 
     # COPY coveralls.json ./
@@ -159,7 +159,7 @@ FROM build-deps-get AS deploy-release
     WORKDIR $APP_DIR
 
     # This does a partial compile.
-    # Doing "mix do compile, assets.deploy" in a single stage is worse
+    # Doing "mix 'do' compile, assets.deploy" in a single stage is worse
     # because a single line of code changed causes a complete recompile.
     # With the stages separated most of the compilation is cached.
 
@@ -240,7 +240,6 @@ FROM ${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG} AS deploy-base
         # Support outbound TLS connections
         apk add --no-progress ca-certificates && \
         # apk add shared-mime-info tzdata && \
-
         # Allow app to listen on HTTPS.
         # May not be needed if HTTPS is handled outside the application, e.g. in load balancer.
         apk add --no-progress openssl
