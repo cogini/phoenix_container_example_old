@@ -215,7 +215,7 @@ FROM build-os-deps AS build-deps-get
     COPY mix.exs .
     COPY mix.lock .
 
-    RUN mix do local.rebar --force, local.hex --force
+    RUN mix 'do' local.rebar --force, local.hex --force
     RUN mix deps.get
     RUN mix esbuild.install
 
@@ -228,7 +228,7 @@ FROM build-deps-get AS test-image
     WORKDIR $APP_DIR
 
     # Compile deps separately from app, improving Docker caching
-    # RUN mix do local.rebar --force, local.hex --force
+    # RUN mix 'do' local.rebar --force, local.hex --force
     RUN mix deps.compile
 
     # COPY coveralls.json ./
@@ -262,7 +262,7 @@ FROM build-deps-get AS deploy-release
     WORKDIR $APP_DIR
 
     # This does a partial compile.
-    # Doing "mix do compile, assets.deploy" in a single stage is worse
+    # Doing "mix 'do' compile, assets.deploy" in a single stage is worse
     # because a single line of code changed causes a complete recompile.
     # With the stages separated most of the compilation is cached.
 
@@ -504,7 +504,7 @@ FROM deploy-base AS deploy
         # Writable tmp directory for releases
         RELEASE_TMP="/run/${APP_NAME}"
 
-    RUN \
+    RUN set -exu && \
         # Create app dirs
         mkdir -p "/run/${APP_NAME}" && \
         # Make dirs writable by app
@@ -545,11 +545,11 @@ FROM deploy-base AS deploy
     # https://github.com/krallin/tini
     # ENTRYPOINT ["/sbin/tini", "--", "bin/prod"]
 
-    # Run app in foreground
-    CMD ["start"]
-
     # Wrapper script which runs e.g. migrations before starting
     # ENTRYPOINT ["bin/start-docker"]
+
+    # Run app in foreground
+    CMD ["start"]
 
 # Dev image which mounts code from local filesystem
 FROM build-os-deps AS dev
@@ -568,7 +568,7 @@ FROM build-os-deps AS dev
         PORT=$APP_PORT \
         PHX_SERVER=true
 
-    RUN \
+    RUN set -exu && \
         # Create app dirs
         mkdir -p "/run/${APP_NAME}" && \
         # Make dirs writable by app
@@ -616,7 +616,7 @@ FROM build-os-deps AS dev
 
     WORKDIR $APP_DIR
 
-    RUN mix do local.rebar --force, local.hex --force
+    RUN mix 'do' local.rebar --force, local.hex --force
 
     # RUN mix esbuild.install
 
