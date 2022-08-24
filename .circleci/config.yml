@@ -23,3 +23,5 @@ jobs:
       - run: mix compile --warnings-as-errors
       - run: mix ecto.create
       - run: mix test
+      - store_test_results:
+        path: ~/junit-reports/
