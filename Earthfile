@@ -305,7 +305,7 @@ test-app:
 
     COPY docker-compose.test.yml ./docker-compose.yml
 
-    RUN mkdir -p /junit-reports
+    RUN mkdir -p _build/junit-reports
 
     WITH DOCKER \
             # Image names need to match docker-compose.test.yml
@@ -318,7 +318,7 @@ test-app:
         RUN docker-compose run test /bin/sh -c "mix ecto.setup && mix test && mix test --cover"
     END
 
-    SAVE ARTIFACT /junit-reports /junit-reports AS LOCAL junit-reports
+    SAVE ARTIFACT _build/junit-reports /junit-reports AS LOCAL junit-reports
 
 test-static:
     FROM ${DIND_IMAGE_NAME}:${DIND_IMAGE_TAG}

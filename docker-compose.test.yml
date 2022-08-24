@@ -38,7 +38,7 @@ services:
         condition: service_healthy
       # - postgres
     volumes:
-      - /junit-reports:/junit-reports
+      - "./junit-reports:/app/_build/junit-reports"
 
 volumes:
   postgres_data_path:
