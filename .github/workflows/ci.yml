@@ -33,7 +33,7 @@ jobs:
       AWS_ROLE: arn:aws:iam::770916339360:role/foo-dev-ecr-github-action-role
       AWS_REGION: ap-northeast-1
     steps:
-      # - name: Dump Event
+      # - name: Dump event
       #   run: cat "$GITHUB_EVENT_PATH"
 
       # https://github.com/aws-actions/configure-aws-credentials
