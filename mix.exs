@@ -28,7 +28,8 @@ defmodule PhoenixContainerExample.MixProject do
         coveralls: :test,
         "coveralls.detail": :test,
         "coveralls.post": :test,
-        "coveralls.html": :test
+        "coveralls.html": :test,
+        "coveralls.lcov": :test
       ],
       deps: deps(),
       default_release: :prod,
@@ -79,7 +80,7 @@ defmodule PhoenixContainerExample.MixProject do
       {:dialyxir, "~> 1.0", only: [:dev, :test], runtime: false},
       {:ecto_sql, "~> 3.6"},
       {:esbuild, "~> 0.3", runtime: Mix.env() == :dev},
-      {:excoveralls, "~> 0.10", only: :test},
+      {:excoveralls, "~> 0.14", only: [:dev, :test]},
       {:floki, ">= 0.30.0", only: :test},
       {:gettext, "~> 0.18"},
       {:jason, "~> 1.2"},
