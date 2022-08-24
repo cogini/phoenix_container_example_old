@@ -1,3 +1,5 @@
+---
+version: 2.1
 # Define a job to be invoked later in a workflow.
 # See: https://circleci.com/docs/2.0/configuration-reference/#jobs
 jobs:
@@ -24,4 +26,4 @@ jobs:
       - run: mix ecto.create
       - run: mix test
       - store_test_results:
-        path: ~/junit-reports/
+          path: junit-reports
