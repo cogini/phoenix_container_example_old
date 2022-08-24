@@ -19,6 +19,9 @@ jobs:
     steps:
       - checkout
 
+      - run: mix 'do' local.rebar --force, local.hex --force
       - run: mix deps.get
+      - run: mix esbuild.install
+      - run: mix compile --warnings-as-errors
       - run: mix ecto.create
       - run: mix test
