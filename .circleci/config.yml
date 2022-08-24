@@ -11,7 +11,7 @@ jobs:
       # Specify service dependencies here if necessary
       # CircleCI maintains a library of pre-built images
       # documented at https://circleci.com/docs/2.0/circleci-images/
-      - image: cimg/postgres
+      - image: cimg/postgres:14.4
 
     working_directory: ~/repo
     # Add steps to the job
