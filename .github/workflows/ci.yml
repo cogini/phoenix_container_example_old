@@ -165,4 +165,4 @@ jobs:
         uses: EnricoMi/publish-unit-test-result-action@v2
         if: always() # always run even if tests fail
         with:
-          junit_files: _build/**/junit-reports/*.xml
+          junit_files: _build/test/junit-reports/*.xml
