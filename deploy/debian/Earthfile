@@ -46,6 +46,9 @@ ARG APP_GROUP_ID=$APP_USER_ID
 
 ARG LANG=C.UTF-8
 
+ARG AWS_ACCESS_KEY_ID=""
+ARG AWS_SECRET_ACCESS_KEY=""
+
 # Create build base image with OS dependencies
 build-os-deps:
     FROM ${BUILD_IMAGE_NAME}:${BUILD_IMAGE_TAG}
