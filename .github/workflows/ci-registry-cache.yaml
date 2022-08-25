@@ -82,7 +82,7 @@ jobs:
         with:
           context: .
           builder: ${{ steps.buildx.outputs.name }}
-          file: ./deploy/Dockerfile.debian
+          file: ./deploy/debian.Dockerfile
           push: true
           cache-from: type=registry,ref=${{ env.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:cache
           cache-to: type=inline,mode=max
