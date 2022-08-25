@@ -1,0 +1,31 @@
+---
+# CircleCI 2.0 configuration file
+# Check https://circleci.com/docs/2.0/language-elixir/ for more details
+version: 2.1
+# Define a job to be invoked later in a workflow.
+# See: https://circleci.com/docs/2.0/configuration-reference/#jobs
+jobs:
+  build:
+    # Specify the execution environment. You can specify an image from Dockerhub or use one of our Convenience Images from CircleCI's Developer Hub.
+    # See: https://circleci.com/docs/2.0/configuration-reference/#docker-machine-macos-windows-executor
+    docker:
+      - image: cimg/elixir:1.13.4
+
+      # Specify service dependencies here if necessary
+      # CircleCI maintains a library of pre-built images
+      # documented at https://circleci.com/docs/2.0/circleci-images/
+      - image: cimg/postgres:14.4
+
+    working_directory: ~/repo
+    # Add steps to the job
+    # See: https://circleci.com/docs/2.0/configuration-reference/#steps
+    steps:
+      - checkout
+      - run: mix 'do' local.rebar --force, local.hex --force
+      - run: mix deps.get
+      # - run: mix esbuild.install
+      - run: mix compile --warnings-as-errors
+      - run: mix ecto.create
+      - run: mix test
+      - store_test_results:
+          path: _build/test/junit-reports
