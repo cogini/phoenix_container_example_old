@@ -54,7 +54,7 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v1
 
       - name: Login to ECR
-        id: login-ecr
+        id: login-ecr-generic
         uses: docker/login-action@v2
         with:
           registry: ${{ steps.login-ecr.outputs.registry }}
