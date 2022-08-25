@@ -96,7 +96,7 @@ services:
       postgres:
         condition: service_healthy
     volumes:
-      - "./junit-reports:/app/_build/junit-reports"
+      - "./junit-reports:/app/_build/test/junit-reports"
 
   codebuild:
     # Custom build image for AWS CodeBuild

@@ -24,7 +24,7 @@ services:
       postgres:
         condition: service_healthy
     volumes:
-      - "./junit-reports:/app/_build/junit-reports"
+      - "./junit-reports:/app/_build/test/junit-reports"
 
   # https://github.com/docker-library/docs/blob/master/postgres/README.md
   # https://geshan.com.np/blog/2021/12/docker-postgres/
