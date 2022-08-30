@@ -11,7 +11,6 @@ defmodule PhoenixContainerExample.MixProject do
       elixir: "~> 1.12",
       elixirc_paths: elixirc_paths(Mix.env()),
       # elixirc_options: [warnings_as_errors: Mix.env() != :dev],
-      # compilers: Mix.compilers(),
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       dialyzer: [
@@ -74,12 +73,11 @@ defmodule PhoenixContainerExample.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
-      # {:opentelemetry_phoenix, "~> 0.2.0"},
       {:coverex, "~> 1.5", only: [:dev, :test], runtime: false},
       {:credo, "~> 1.5", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.0", only: [:dev, :test], runtime: false},
       {:ecto_sql, "~> 3.6"},
-      {:esbuild, "~> 0.3", runtime: Mix.env() == :dev},
+      {:esbuild, "~> 0.4", runtime: Mix.env() == :dev},
       {:excoveralls, "~> 0.14", only: [:dev, :test]},
       {:floki, ">= 0.30.0", only: :test},
       {:gettext, "~> 0.18"},
@@ -92,7 +90,7 @@ defmodule PhoenixContainerExample.MixProject do
       {:opentelemetry_exporter, "~> 1.0"},
       {:opentelemetry_logger_metadata, "~> 0.1.0"},
       {:opentelemetry_phoenix, "~> 1.0.0-rc.7"},
-      {:phoenix, "~> 1.6.6"},
+      {:phoenix, "~> 1.6.11"},
       {:phoenix_ecto, "~> 4.4"},
       {:phoenix_html, "~> 3.0"},
       {:phoenix_live_dashboard, "~> 0.6"},
@@ -102,7 +100,6 @@ defmodule PhoenixContainerExample.MixProject do
       {:postgrex, ">= 0.0.0"},
       {:sobelow, "~> 0.11.0", only: [:dev, :test], runtime: false},
       {:swoosh, "~> 1.3"},
-      {:telemetry, "~> 1.0", override: true},
       {:telemetry_metrics, "~> 0.6"},
       {:telemetry_poller, "~> 1.0"}
     ]
@@ -116,7 +113,6 @@ defmodule PhoenixContainerExample.MixProject do
   # See the documentation for `Mix` for more info on aliases.
   defp aliases do
     [
-      # setup: ["deps.get", "ecto.setup", "cmd npm install --prefix assets"],
       setup: ["deps.get", "ecto.setup"],
       "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
