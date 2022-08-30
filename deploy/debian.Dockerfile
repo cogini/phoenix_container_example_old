@@ -21,12 +21,7 @@ ARG DEBIAN_VERSION=bullseye-slim
 # Use snapshot for consistent dependencies
 # Need to be updated manually
 # See https://snapshot.debian.org/
-# ARG DEBIAN_SNAPSHOT=20220601
-#
-# RUN set -exu && \
-#     echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/$DEBIAN_SNAPSHOT bullseye main" > /etc/apt/sources.list && \
-#     echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/$DEBIAN_SNAPSHOT bullseye-security main" >> /etc/apt/sources.list && \
-#     echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/$DEBIAN_SNAPSHOT bullseye-updates main" >> /etc/apt/sources.list
+ARG DEBIAN_SNAPSHOT=20220601
 
 # Docker registry for internal images, e.g. 123.dkr.ecr.ap-northeast-1.amazonaws.com/
 # If blank, docker.io will be used. If specified, should have a trailing slash.
@@ -89,6 +84,7 @@ ARG APP_PORT=4000
 
 # Create build base image with OS dependencies
 FROM ${BUILD_IMAGE_NAME}:${BUILD_IMAGE_TAG} AS build-os-deps
+    ARG DEBIAN_SNAPSHOT
     ARG LANG
     ENV LANG=$LANG
 
@@ -111,6 +107,19 @@ FROM ${BUILD_IMAGE_NAME}:${BUILD_IMAGE_TAG} AS build-os-deps
         rm -f /etc/apt/apt.conf.d/docker-clean && \
         echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache && \
         echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression
+
+    RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
+        --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
+        --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
+        set -exu && \
+        apt-get update -qq && \
+        DEBIAN_FRONTEND=noninteractive \
+        apt-get -y install -y -qq --no-install-recommends ca-certificates
+
+    RUN set -exu && \
+        echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT} bullseye main" > /etc/apt/sources.list && \
+        echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/${DEBIAN_SNAPSHOT} bullseye-security main" >> /etc/apt/sources.list && \
+        echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT} bullseye-updates main" >> /etc/apt/sources.list
 
     # Install tools and libraries to build binary libraries
     RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
@@ -143,11 +152,17 @@ FROM ${BUILD_IMAGE_NAME}:${BUILD_IMAGE_TAG} AS build-os-deps
         # Install node using n
         # curl -L https://raw.githubusercontent.com/tj/n/master/bin/n -o /usr/local/bin/n && \
         # chmod +x /usr/local/bin/n && \
-        # # Install lts version
+        # # Install lts version of node
         # # n lts && \
-        # # Install specific version
+        # # Install specific version of node
         # n "$NODE_VERSION" && \
         # rm /usr/local/bin/n && \
+        # Install yarn from repo
+        # curl -sL https://dl.yarnpkg.com/debian/pubkey.gpg -o /etc/apt/trusted.gpg.d/yarn.asc && \
+        # echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list && \
+        # echo "Package: *\nPin: release o=dl.yarnpkg.com\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/yarn.pref && \
+        # apt-get update -qq && \
+        # apt-get -y install -y -qq --no-install-recommends yarn && \
         # Install latest Postgres from postgres.org repo
         # curl -sL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /etc/apt/trusted.gpg.d/postgresql-ACCC4CF8.asc && \
         # echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -sc)-pgdg main" | tee /etc/apt/sources.list.d/pgdg.list && \
@@ -228,7 +243,6 @@ FROM build-deps-get AS test-image
     WORKDIR $APP_DIR
 
     # Compile deps separately from app, improving Docker caching
-    # RUN mix 'do' local.rebar --force, local.hex --force
     RUN mix deps.compile
 
     # COPY coveralls.json ./
@@ -288,6 +302,11 @@ FROM build-deps-get AS deploy-release
     #   npm install && \
     #   node node_modules/webpack/bin/webpack.js --mode production
 
+    # Install JavaScript deps using yarn
+    # COPY assets/package.json assets/package.json
+    # COPY assets/yarn.lock assets/yarn.lock
+    # RUN yarn --cwd ./assets install --prod
+
     # Build JS and CS with esbuild
     COPY assets ./assets
     COPY priv ./priv
@@ -308,6 +327,7 @@ FROM build-deps-get AS deploy-release
 
 # Create staging image for binaries which are copied into final deploy image
 FROM ${INSTALL_IMAGE_NAME}:${INSTALL_IMAGE_TAG} AS deploy-install
+    ARG DEBIAN_SNAPSHOT
     # ARG AWS_CLI_VERSION
 
     # Configure apt caching for use with BuildKit.
@@ -317,6 +337,19 @@ FROM ${INSTALL_IMAGE_NAME}:${INSTALL_IMAGE_TAG} AS deploy-install
         rm -f /etc/apt/apt.conf.d/docker-clean && \
         echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache && \
         echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression
+
+    RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
+        --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
+        --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
+        set -exu && \
+        apt-get update -qq && \
+        DEBIAN_FRONTEND=noninteractive \
+        apt-get -y install -y -qq --no-install-recommends ca-certificates
+
+    RUN set -exu && \
+        echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT} bullseye main" > /etc/apt/sources.list && \
+        echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/${DEBIAN_SNAPSHOT} bullseye-security main" >> /etc/apt/sources.list && \
+        echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT} bullseye-updates main" >> /etc/apt/sources.list
 
     RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
@@ -383,6 +416,7 @@ FROM ${INSTALL_IMAGE_NAME}:${INSTALL_IMAGE_TAG} AS deploy-install
 
 # Create base image for deploy, with everything but the code release
 FROM ${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG} AS deploy-base
+    ARG DEBIAN_SNAPSHOT
     ARG LANG
     ARG APP_USER
     ARG APP_GROUP
@@ -409,6 +443,19 @@ FROM ${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG} AS deploy-base
         rm -f /etc/apt/apt.conf.d/docker-clean && \
         echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache && \
         echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression
+
+    RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
+        --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
+        --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
+        set -exu && \
+        apt-get update -qq && \
+        DEBIAN_FRONTEND=noninteractive \
+        apt-get -y install -y -qq --no-install-recommends ca-certificates
+
+    RUN set -exu && \
+        echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT} bullseye main" > /etc/apt/sources.list && \
+        echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/${DEBIAN_SNAPSHOT} bullseye-security main" >> /etc/apt/sources.list && \
+        echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT} bullseye-updates main" >> /etc/apt/sources.list
 
     # If LANG=C.UTF-8 is not enough, build full featured locale
     # RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
@@ -441,7 +488,7 @@ FROM ${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG} AS deploy-base
             # bind-utils \
             # Needed by Erlang VM
             libtinfo6 \
-            && \
+        && \
         # Remove packages installed temporarily. Removes everything related to
         # packages, including the configuration files, and packages
         # automatically installed because a package required them but, with the
@@ -588,7 +635,7 @@ FROM build-os-deps AS dev
             sudo \
             debootstrap \
             schroot \
-            && \
+        && \
         # https://www.networkworld.com/article/3453032/cleaning-up-with-apt-get.html
         # https://manpages.ubuntu.com/manpages/jammy/man8/apt-get.8.html
         # Remove packages installed temporarily. Removes everything related to
