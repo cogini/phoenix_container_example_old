@@ -21,7 +21,8 @@ config :phoenix_container_example, PhoenixContainerExampleWeb.Endpoint,
   server: false
 
 # In test we don't send emails.
-config :phoenix_container_example, PhoenixContainerExample.Mailer, adapter: Swoosh.Adapters.Test
+config :phoenix_container_example, PhoenixContainerExample.Mailer,
+  adapter: Swoosh.Adapters.Test
 
 # Print only warnings and errors during test
 config :logger, level: :warn
