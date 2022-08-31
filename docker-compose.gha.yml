@@ -2,7 +2,7 @@
 version: "3.9"
 services:
   test:
-    image: ${REGISTRY}test/foo-app:test
+    image: ${REGISTRY}cogini/foo-app:test
     # build:
     #   target: test-image
     #   dockerfile: deploy/debian.Dockerfile

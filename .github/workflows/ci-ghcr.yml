@@ -12,11 +12,6 @@ jobs:
     name: Docker build and push
     runs-on: ubuntu-latest
     # runs-on: ubuntu-20.04
-    services:
-      registry:
-        image: registry:2
-        ports:
-          - 5000:5000
 
     permissions:
       # Needed to interact with GitHub's OIDC Token endpoint for AWS
@@ -110,7 +105,7 @@ jobs:
         id: docker-build-test
         uses: docker/build-push-action@v3
         env:
-          REGISTRY: localhost:5000/
+          REGISTRY: ghcr.io/
           PUBLIC_REGISTRY: "${{ steps.login-ecr.outputs.registry }}/"
         with:
           context: .
@@ -123,7 +118,7 @@ jobs:
           cache-from: type=gha,scope=${{ github.workflow }}-test
           cache-to: type=gha,scope=${{ github.workflow }}-test,mode=max
           tags: |
-            localhost:5000/cogini/${{ env.IMAGE_NAME }}:test
+            ghcr.io/cogini/${{ env.IMAGE_NAME }}:test
 
       # - name: Build test images
       #   env:
@@ -133,7 +128,7 @@ jobs:
 
       - name: Run tests
         env:
-          REGISTRY: localhost:5000/
+          REGISTRY: chcr.io/
           # PUBLIC_REGISTRY: "${{ steps.login-ecr.outputs.registry }}/"
           PUBLIC_REGISTRY: ""
         run: |
