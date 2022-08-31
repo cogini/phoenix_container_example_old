@@ -16,6 +16,7 @@ defmodule PhoenixContainerExample.MixProject do
       dialyzer: [
         # plt_add_deps: :project,
         # plt_add_apps: [:ssl, :mnesia, :compiler, :xmerl, :inets],
+        plt_add_apps: [:mix, :ex_unit],
         # plt_add_apps: [:poison],
         # plt_add_deps: true,
         # flags: ["-Werror_handling", "-Wrace_conditions"],
