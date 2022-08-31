@@ -1,12 +1,11 @@
 ---
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+    types: [labeled, synchronize, reopened, unlabeled]
 name: CI
-on: ["push", "pull_request"]
-# on:
-#   push:
-#     branches: [main]
-#   pull_request:
-#     branches: [main]
-#     types: [labeled,synchronize,reopened,unlabeled]
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -32,6 +31,7 @@ jobs:
       IMAGE_NAME: foo-app
       AWS_ROLE_TO_ASSUME: arn:aws:iam::770916339360:role/foo-dev-ecr-github-action-role
       AWS_REGION: ap-northeast-1
+
     steps:
       # - name: Dump event
       #   run: cat "$GITHUB_EVENT_PATH"
@@ -77,6 +77,16 @@ jobs:
           echo "GITHUB_SHA_SHORT=$(echo $GITHUB_SHA | cut -c 1-7)" >> $GITHUB_ENV
           echo "::set-output name=run_id::${GITHUB_RUN_ID}"
           echo "::set-output name=run_num::${GITHUB_RUN_NUMBER}"
+
+      - name: Get branch name for push
+        if: github.event_name != 'pull_request'
+        run: |
+          echo "BRANCH=$(echo ${GITHUB_REF#refs/heads/})" >> $GITHUB_ENV
+
+      - name: Get pull_request branch name
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "BRANCH=$(echo $GITHUB_HEAD_REF | tr '//\\' '.' | cut -c -55)" >> $GITHUB_ENV
 
       # - name: Set up QEMU for multi-platform builds
       #   id: qemu
@@ -128,6 +138,7 @@ jobs:
           docker-compose -f docker-compose.gha.yml up test
           docker-compose -f docker-compose.gha.yml run test mix test
           docker-compose -f docker-compose.gha.yml run test mix do credo, deps.audit, sobelow
+          docker-compose -f docker-compose.gha.yml run test mix dialyzer --halt-exit-status
 
       - name: Build deploy image and push
         if: github.event_name != 'pull_request'
@@ -163,7 +174,8 @@ jobs:
 
       - name: Publish unit test results to GitHub
         uses: EnricoMi/publish-unit-test-result-action@v2
-        if: always() # always run even if tests fail
+        # Run even if tests fail
+        if: always()
         with:
           # Volume mounted from local filesystem into build
           junit_files: junit-reports/*.xml
