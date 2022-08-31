@@ -266,6 +266,8 @@ FROM build-deps-get AS test-image
     # isolation https://github.com/elixir-lang/elixir/issues/9407
     #     mix cmd mix compile --warnings-as-errors
 
+    RUN mix dialyzer --plt
+
 # Create Elixir release
 FROM build-deps-get AS deploy-release
     ARG APP_DIR
