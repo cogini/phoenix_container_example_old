@@ -1,10 +1,11 @@
 ---
-on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-    types: [labeled, synchronize, reopened, unlabeled]
+on: push
+# on:
+#   push:
+#     branches: [main]
+#   pull_request:
+#     branches: [main]
+#     types: [labeled, synchronize, reopened, unlabeled]
 name: CI
 jobs:
   docker-build:
