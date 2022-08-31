@@ -264,10 +264,9 @@ test-image:
 test-image-dialyzer:
     FROM +build-deps-get
 
-    # This needs to run in MIX_ENV=dev
     ENV LANG=$LANG \
         HOME=$APP_DIR \
-        MIX_ENV=dev
+        MIX_ENV=test
 
     # ENV MIX_HOME=$MIX_HOME \
     #     HEX_HOME=$HEX_HOME \
