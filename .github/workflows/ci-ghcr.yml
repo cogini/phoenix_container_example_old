@@ -144,20 +144,17 @@ jobs:
   build-prod:
     name: Build prod image and push
     runs-on: ubuntu-latest
-    permissions:
-      # JUnit report file upload
-      # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
-      checks: write
-      pull-requests: write
-      issues: read
-    runs-on: ubuntu-latest
     # runs-on: ubuntu-20.04
-
     permissions:
       # Needed to interact with GitHub's OIDC Token endpoint for AWS
       id-token: write
       contents: read
 
+      # JUnit report file upload
+      # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
+      checks: write
+      pull-requests: write
+      issues: read
     steps:
       # - name: Dump event
       #   run: cat "$GITHUB_EVENT_PATH"
