@@ -120,7 +120,7 @@ jobs:
           cache-from: type=gha,scope=${{ github.workflow }}-test
           cache-to: type=gha,scope=${{ github.workflow }}-test,mode=max
           tags: |
-            $${ env.REGISTRY_NAME }}/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:test
+            ghcr.io/cogini/${{ env.IMAGE_NAME }}:test
 
   test:
     name: Run tests
