@@ -120,7 +120,7 @@ jobs:
       checks: write
       pull-requests: write
       issues: read
-    needs: [build-test-image]
+    needs: [build-test]
     steps:
       - name: Run tests
         env:
@@ -131,7 +131,6 @@ jobs:
           docker-compose -f docker-compose.gha.yml up test
           docker-compose -f docker-compose.gha.yml run test mix test
           docker-compose -f docker-compose.gha.yml run test mix do credo, deps.audit, sobelow
-          docker-compose -f docker-compose.gha.yml run test mix dialyzer --halt-exit-status
 
       - name: Publish unit test results to GitHub
         uses: EnricoMi/publish-unit-test-result-action@v2
@@ -140,6 +139,21 @@ jobs:
         with:
           # Volume mounted from local filesystem into build
           junit_files: junit-reports/*.xml
+
+  test-dialyzer:
+    name: Run dialyzer
+    runs-on: ubuntu-latest
+    needs: [build-test]
+    steps:
+      - name: Run tests
+        env:
+          REGISTRY: chcr.io/
+          # PUBLIC_REGISTRY: "${{ steps.login-ecr.outputs.registry }}/"
+          PUBLIC_REGISTRY: ""
+        run: |
+          docker-compose -f docker-compose.gha.yml up test
+          docker-compose -f docker-compose.gha.yml run test mix test
+          docker-compose -f docker-compose.gha.yml run test mix do credo, deps.audit, sobelow
 
   build-prod:
     name: Build prod image and push
