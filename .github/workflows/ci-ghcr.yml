@@ -6,29 +6,20 @@ on: push
 #   pull_request:
 #     branches: [main]
 #     types: [labeled, synchronize, reopened, unlabeled]
-name: CI
+name: CI ghcr.io
+env:
+  IMAGE_NAME: foo-app
+  ORG: cogini
+  AWS_ROLE_TO_ASSUME: arn:aws:iam::770916339360:role/foo-dev-ecr-github-action-role
+  AWS_REGION: ap-northeast-1
 jobs:
-  docker-build:
-    name: Docker build and push
+  build-test:
+    name: Build test image
     runs-on: ubuntu-latest
-    # runs-on: ubuntu-20.04
-
     permissions:
       # Needed to interact with GitHub's OIDC Token endpoint for AWS
       id-token: write
       contents: read
-
-      # JUnit report file upload
-      # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
-      checks: write
-      pull-requests: write
-      issues: read
-
-    env:
-      IMAGE_NAME: foo-app
-      AWS_ROLE_TO_ASSUME: arn:aws:iam::770916339360:role/foo-dev-ecr-github-action-role
-      AWS_REGION: ap-northeast-1
-
     steps:
       # - name: Dump event
       #   run: cat "$GITHUB_EVENT_PATH"
@@ -118,14 +109,19 @@ jobs:
           cache-from: type=gha,scope=${{ github.workflow }}-test
           cache-to: type=gha,scope=${{ github.workflow }}-test,mode=max
           tags: |
-            ghcr.io/cogini/${{ env.IMAGE_NAME }}:test
+            ghcr.io/${{ env.ORG }}/${{ env.IMAGE_NAME }}:test
 
-      # - name: Build test images
-      #   env:
-      #     REGISTRY: localhost:5000/
-      #     PUBLIC_REGISTRY: "${{ steps.login-ecr.outputs.registry }}/"
-      #   run: docker buildx bake -f docker-bake.gha.hcl
-
+  test:
+    name: Run tests
+    runs-on: ubuntu-latest
+    permissions:
+      # JUnit report file upload
+      # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
+      checks: write
+      pull-requests: write
+      issues: read
+    needs: [build-test-image]
+    steps:
       - name: Run tests
         env:
           REGISTRY: chcr.io/
@@ -136,6 +132,102 @@ jobs:
           docker-compose -f docker-compose.gha.yml run test mix test
           docker-compose -f docker-compose.gha.yml run test mix do credo, deps.audit, sobelow
           docker-compose -f docker-compose.gha.yml run test mix dialyzer --halt-exit-status
+
+      - name: Publish unit test results to GitHub
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        # Run even if tests fail
+        if: always()
+        with:
+          # Volume mounted from local filesystem into build
+          junit_files: junit-reports/*.xml
+
+  build-prod:
+    name: Build prod image and push
+    runs-on: ubuntu-latest
+    permissions:
+      # JUnit report file upload
+      # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
+      checks: write
+      pull-requests: write
+      issues: read
+    runs-on: ubuntu-latest
+    # runs-on: ubuntu-20.04
+
+    permissions:
+      # Needed to interact with GitHub's OIDC Token endpoint for AWS
+      id-token: write
+      contents: read
+
+    steps:
+      # - name: Dump event
+      #   run: cat "$GITHUB_EVENT_PATH"
+
+      # https://github.com/aws-actions/configure-aws-credentials
+      # https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # - name: Display AWS identity
+      #   run: aws sts get-caller-identity
+
+      # https://github.com/aws-actions/amazon-ecr-login
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      # - name: Login to ECR
+      #   id: login-ecr
+      #   uses: docker/login-action@v2
+      #   with:
+      #     registry: ${{ env.REGISTRY_NAME }}
+      #     username: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      #     password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      # https://github.com/marketplace/actions/docker-login
+      - name: Login to DockerHub
+        id: login-docker-hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Checkout source
+        uses: actions/checkout@v2
+
+      - name: Set variables
+        id: vars
+        run: |
+          echo "GITHUB_SHA_SHORT=$(echo $GITHUB_SHA | cut -c 1-7)" >> $GITHUB_ENV
+          echo "::set-output name=run_id::${GITHUB_RUN_ID}"
+          echo "::set-output name=run_num::${GITHUB_RUN_NUMBER}"
+
+      - name: Get branch name for push
+        if: github.event_name != 'pull_request'
+        run: |
+          echo "BRANCH=$(echo ${GITHUB_REF#refs/heads/})" >> $GITHUB_ENV
+
+      - name: Get pull_request branch name
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "BRANCH=$(echo $GITHUB_HEAD_REF | tr '//\\' '.' | cut -c -55)" >> $GITHUB_ENV
+
+      # - name: Set up QEMU for multi-platform builds
+      #   id: qemu
+      #   uses: docker/setup-qemu-action@v2
+      #   with:
+      #     platforms: linux/amd64,linux/arm64
+
+      # - name: Display available platforms
+      #   run: echo "${{ steps.qemu.outputs.platforms }}"
+
+      - name: Set up Docker buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v2
+        with:
+          driver-opts: network=host
 
       - name: Build deploy image and push
         if: github.event_name != 'pull_request'
@@ -153,26 +245,3 @@ jobs:
           tags: |
             ${{ steps.login-ecr.outputs.registry }}/${{ env.IMAGE_NAME }}:latest
             ${{ steps.login-ecr.outputs.registry }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-
-          # push: ${{ github.event_name != 'pull_request' }}
-
-      - name: Build deploy image and push
-        if: github.event_name == 'pull_request'
-        uses: docker/build-push-action@v3
-        with:
-          context: .
-          builder: ${{ steps.buildx.outputs.name }}
-          file: ./deploy/debian.Dockerfile
-          push: true
-          cache-from: type=gha,scope=${{ github.workflow }}
-          cache-to: type=gha,scope=${{ github.workflow }}
-          tags: |
-            ${{ steps.login-ecr.outputs.registry }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-
-      - name: Publish unit test results to GitHub
-        uses: EnricoMi/publish-unit-test-result-action@v2
-        # Run even if tests fail
-        if: always()
-        with:
-          # Volume mounted from local filesystem into build
-          junit_files: junit-reports/*.xml
