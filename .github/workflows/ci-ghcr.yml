@@ -8,19 +8,20 @@ on: push
 #     types: [labeled, synchronize, reopened, unlabeled]
 name: CI ghcr.io
 env:
+  IMAGE_OWNER: cogini
   IMAGE_NAME: foo-app
   # IMAGE_NAME: ${{ github.repository }}
-  ORG: cogini
+  # IMAGE_OWNER: ${{ github.repository_owner }}
   AWS_ROLE_TO_ASSUME: arn:aws:iam::770916339360:role/foo-dev-ecr-github-action-role
   AWS_REGION: ap-northeast-1
 jobs:
   build-test:
     name: Build test image
     runs-on: ubuntu-latest
-    permissions:
-      # Needed to interact with GitHub's OIDC Token endpoint for AWS
-      id-token: write
-      contents: read
+    # permissions:
+    #   # Needed to interact with GitHub's OIDC Token endpoint for AWS
+    #   id-token: write
+    #   contents: read
     steps:
       # - name: Dump event
       #   run: cat "$GITHUB_EVENT_PATH"
@@ -104,6 +105,7 @@ jobs:
         id: docker-build-test
         uses: docker/build-push-action@v3
         env:
+          REGISTRY_NAME: ghcr.io
           REGISTRY: ghcr.io/
           PUBLIC_REGISTRY: "${{ steps.login-ecr.outputs.registry }}/"
         with:
@@ -117,7 +119,7 @@ jobs:
           cache-from: type=gha,scope=${{ github.workflow }}-test
           cache-to: type=gha,scope=${{ github.workflow }}-test,mode=max
           tags: |
-            ghcr.io/${{ env.ORG }}/${{ env.IMAGE_NAME }}:test
+            $${ env.REGISTRY_NAME }}/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:test
 
   test:
     name: Run tests
