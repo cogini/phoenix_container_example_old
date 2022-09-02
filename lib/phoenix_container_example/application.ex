@@ -7,7 +7,9 @@ defmodule PhoenixContainerExample.Application do
 
   @impl true
   def start(_type, _args) do
+    :logger.add_handlers(:phoenix_container_example)
     OpentelemetryLoggerMetadata.setup()
+    OpentelemetryPhoenix.setup()
 
     children = [
       # Start the Ecto repository
