@@ -2,16 +2,7 @@
 version: "3.9"
 services:
   test:
-    image: ${REGISTRY}cogini/foo-app:test
-    # build:
-    #   target: test-image
-    #   dockerfile: deploy/debian.Dockerfile
-    #   context: .
-    #   args:
-    #     REGISTRY: ${REGISTRY}
-    #     PUBLIC_REGISTRY: ${PUBLIC_REGISTRY}
-    # command: sh -c 'while !</dev/tcp/db/5432; do sleep 1; done; set -ex mix test'
-    # command: sh -c 'mix test'
+    image: ${REGISTRY}${IMAGE_OWNER}/${IMAGE_NAME}:test
     environment:
       - MIX_ENV=test
       - DATABASE_URL
@@ -29,18 +20,10 @@ services:
   # https://github.com/docker-library/docs/blob/master/postgres/README.md
   # https://geshan.com.np/blog/2021/12/docker-postgres/
   postgres:
-    # build:
-    #   context: .
-    #   dockerfile: deploy/postgres.Dockerfile
-    #   args:
-    #     REGISTRY: ${REGISTRY}
-    # image: app-db:latest
-    # image: postgres:14
     image: ${PUBLIC_REGISTRY}postgres:14.1-alpine
     restart: always
     ports:
       - '5432:5432'
-    # hostname: db
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
@@ -56,22 +39,21 @@ services:
       retries: 20
 
   mssql:
+    image: mcr.microsoft.com/mssql/server:2019-latest
     environment:
       ACCEPT_EULA: "Y"
       SA_PASSWORD: some!Password
-    image: mcr.microsoft.com/mssql/server:2019-latest
     ports:
       - "1433:1433"
 
   mysql:
+    image: "${PUBLIC_REGISTRY}mysql:8"
     environment:
       MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
       # MYSQL_ROOT_PASSWORD: example
     # command: --default-authentication-plugin=mysql_native_password
-    image: "${REGISTRY}mysql:8"
     ports:
       - "3306:3306"
-
 
 volumes:
   postgres_data_path:
