@@ -13,7 +13,10 @@ config :phoenix_container_example, PhoenixContainerExampleWeb.Endpoint,
   cache_static_manifest: "priv/static/cache_manifest.json"
 
 # Do not print debug messages in production
-config :logger, level: :info, metadata: :all
+# config :logger, level: :info, metadata: :all
+config :logger,
+  level: :info,
+  metadata: [:file, :line, :pid, :request_id, :trace_id, :span_id]
 
 # ## SSL Support
 #

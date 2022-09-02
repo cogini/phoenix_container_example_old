@@ -26,6 +26,7 @@ config :phoenix_container_example, PhoenixContainerExample.Mailer,
 
 # Print only warnings and errors during test
 config :logger, level: :warn
+  metadata: [:file, :line]
 
 # Initialize plugs at runtime for faster test compilation
 config :phoenix, :plug_init_mode, :runtime

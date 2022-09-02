@@ -44,10 +44,24 @@ config :esbuild,
     env: %{"NODE_PATH" => Path.expand("../deps", __DIR__)}
   ]
 
+config :logger,
+  level: :info,
+  # backends: [:console],
+  utc_log: true
+
 # Configures Elixir's Logger
 config :logger, :console,
   format: "$time $metadata[$level] $message\n",
-  metadata: [:request_id]
+  metadata: [:request_id, :trace_id, :span_id]
+
+config :phoenix_container_example, :logger, [
+  {:handler, :default, :logger_std_h,
+    %{formatter: {:flatlog, %{
+      map_depth: 3,
+      term_depth: 50
+    }}}
+  }
+]
 
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
