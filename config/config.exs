@@ -56,12 +56,17 @@ config :logger, :console,
 
 config :phoenix_container_example, :logger, [
   {:handler, :default, :logger_std_h,
-    %{formatter: {:flatlog, %{
-      map_depth: 3,
-      term_depth: 50
-    }}}
+    %{formatter: {:logger_formatter_json, %{}}}
   }
 ]
+
+if System.get_env("RELEASE_MODE") do
+  config :kernel, :logger, [
+    {:handler, :default, :logger_std_h,
+      %{formatter: {:logger_formatter_json, %{}}}
+    }
+  ]
+end
 
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason

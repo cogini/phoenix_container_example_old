@@ -25,8 +25,19 @@ config :phoenix_container_example, PhoenixContainerExample.Mailer,
   adapter: Swoosh.Adapters.Test
 
 # Print only warnings and errors during test
-config :logger, level: :warn
+config :logger,
+  # level: :warn,
+  level: :debug,
   metadata: [:file, :line]
+
+config :phoenix_container_example, :logger, [
+  {:handler, :default, :logger_std_h,
+    %{formatter: {:flatlog, %{
+      map_depth: 3,
+      term_depth: 50
+    }}}
+  }
+]
 
 # Initialize plugs at runtime for faster test compilation
 config :phoenix, :plug_init_mode, :runtime

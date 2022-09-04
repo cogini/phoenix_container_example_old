@@ -85,6 +85,8 @@ defmodule PhoenixContainerExample.MixProject do
       {:gettext, "~> 0.18"},
       {:jason, "~> 1.2"},
       {:junit_formatter, "~> 3.3", only: [:dev, :test], runtime: false},
+      # {:logger_formatter_json, path: "../logger_formatter_json"},
+      {:logger_formatter_json, github: "cogini/logger_formatter_json"},
       {:mix_audit, "~> 2.0", only: [:dev, :test], runtime: false},
       {:opentelemetry, "~> 1.1"},
       {:opentelemetry_api, "~> 1.1"},
