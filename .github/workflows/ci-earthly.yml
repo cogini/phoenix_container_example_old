@@ -59,14 +59,15 @@ jobs:
       - name: Dump environment
         run: env|sort
 
-      # - name: Login to ECR
-      #   id: docker-login-ecr
-      #   uses: docker/login-action@v2
-      #   with:
-      #     # registry: ${{ env.REGISTRY_NAME }}
-      #     registry: ${{ steps.login-ecr.outputs.registry }}
-      #     username: ${{ steps.login-ecr.outputs.username }}
-      #     password: ${{ steps.login-ecr.outputs.password }}
+      - name: Login to ECR
+        id: docker-login-ecr
+        uses: docker/login-action@v2
+        with:
+          # registry: ${{ env.REGISTRY_NAME }}
+          registry: ${{ steps.login-ecr.outputs.registry }}
+          # username: ${{ steps.login-ecr.outputs.username }}
+          # username: AWS
+          # password: ${{ steps.login-ecr.outputs.password }}
 
       # https://github.com/marketplace/actions/docker-login
       - name: Login to DockerHub
