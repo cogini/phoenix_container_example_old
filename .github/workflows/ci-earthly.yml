@@ -52,20 +52,21 @@ jobs:
       #   run: aws sts get-caller-identity
 
       # https://github.com/aws-actions/amazon-ecr-login
-      # - name: Login to Amazon ECR
-      #   id: login-ecr
-      #   uses: aws-actions/amazon-ecr-login@v1
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
 
       - name: Dump environment
         run: env|sort
 
       - name: Login to ECR
-        id: login-ecr
+        id: docker-login-ecr
         uses: docker/login-action@v2
         with:
+          # registry: ${{ env.REGISTRY_NAME }}
           registry: ${{ steps.login-ecr.outputs.registry }}
-          username: ${{ env.AWS_ACCESS_KEY_ID }}
-          password: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          username: ${{ steps.login-ecr.outputs.username }}
+          password: ${{ steps.login-ecr.outputs.password }}
 
       # https://github.com/marketplace/actions/docker-login
       - name: Login to DockerHub
