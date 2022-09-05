@@ -21,8 +21,7 @@ config :phoenix_container_example, PhoenixContainerExampleWeb.Endpoint,
   server: false
 
 # In test we don't send emails.
-config :phoenix_container_example, PhoenixContainerExample.Mailer,
-  adapter: Swoosh.Adapters.Test
+config :phoenix_container_example, PhoenixContainerExample.Mailer, adapter: Swoosh.Adapters.Test
 
 # Print only warnings and errors during test
 config :logger,
@@ -32,11 +31,14 @@ config :logger,
 
 config :phoenix_container_example, :logger, [
   {:handler, :default, :logger_std_h,
-    %{formatter: {:flatlog, %{
-      map_depth: 3,
-      term_depth: 50
-    }}}
-  }
+   %{
+     formatter:
+       {:flatlog,
+        %{
+          map_depth: 3,
+          term_depth: 50
+        }}
+   }}
 ]
 
 # Initialize plugs at runtime for faster test compilation

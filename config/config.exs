@@ -28,8 +28,7 @@ config :phoenix_container_example, PhoenixContainerExampleWeb.Endpoint,
 #
 # For production it's recommended to configure a different adapter
 # at the `config/runtime.exs`.
-config :phoenix_container_example, PhoenixContainerExample.Mailer,
-  adapter: Swoosh.Adapters.Local
+config :phoenix_container_example, PhoenixContainerExample.Mailer, adapter: Swoosh.Adapters.Local
 
 # Swoosh API client is needed for adapters other than SMTP.
 config :swoosh, :api_client, false
@@ -56,15 +55,47 @@ config :logger, :console,
 
 config :phoenix_container_example, :logger, [
   {:handler, :default, :logger_std_h,
-    %{formatter: {:logger_formatter_json, %{}}}
-  }
+   %{
+     formatter:
+       {:logger_formatter_json,
+        %{
+          names: :datadog,
+          template: [
+            :time,
+            :level,
+            :msg,
+            :file,
+            :line,
+            :mfa,
+            :pid,
+            :trace_id,
+            :span_id
+          ]
+        }}
+   }}
 ]
 
 if System.get_env("RELEASE_MODE") do
   config :kernel, :logger, [
     {:handler, :default, :logger_std_h,
-      %{formatter: {:logger_formatter_json, %{}}}
-    }
+     %{
+       formatter:
+         {:logger_formatter_json,
+          %{
+            names: :datadog,
+            template: [
+              :time,
+              :level,
+              :msg,
+              :file,
+              :line,
+              :mfa,
+              :pid,
+              :trace_id,
+              :span_id
+            ]
+          }}
+     }}
   ]
 end
 

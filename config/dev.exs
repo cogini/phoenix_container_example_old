@@ -69,8 +69,9 @@ config :phoenix_container_example, PhoenixContainerExampleWeb.Endpoint,
 config :logger, :console,
   format: "$time $metadata[$level] $message\n",
   metadata: :all
-  # metadata: [:file, :line, :pid, :request_id, :trace_id, :span_id]
-  # metadata: [:mfa]
+
+# metadata: [:file, :line, :pid, :request_id, :trace_id, :span_id]
+# metadata: [:mfa]
 
 # Set a higher stacktrace during development. Avoid configuring such
 # in production as building large stacktraces may be expensive.
