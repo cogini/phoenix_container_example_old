@@ -1,12 +1,12 @@
 ---
-on: push
+name: CI
+on: ["push", "pull_request"]
 # on:
 #   push:
 #     branches: [main]
 #   pull_request:
 #     branches: [main]
 #     types: [labeled, synchronize, reopened, unlabeled]
-name: CI
 env:
   IMAGE_NAME: foo-app
   # IMAGE_NAME: ${{ github.repository }}
@@ -144,6 +144,7 @@ jobs:
         uses: docker/build-push-action@v3
         env:
           REGISTRY: "${{ steps.login-ecr.outputs.registry }}/"
+          REGISTRY_NAME: ${{ steps.login-ecr.outputs.registry }}
         with:
           context: .
           builder: ${{ steps.buildx.outputs.name }}

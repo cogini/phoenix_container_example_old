@@ -7,8 +7,16 @@ on: ["push", "pull_request"]
 #   pull_request:
 #     branches: [main]
 #     types: [labeled,synchronize,reopened,unlabeled]
+env:
+  IMAGE_NAME: foo-app
+  # IMAGE_NAME: ${{ github.repository }}
+  IMAGE_OWNER: ${{ github.repository_owner }}
+  AWS_ROLE_TO_ASSUME: arn:aws:iam::770916339360:role/foo-dev-ecr-github-action-role
+  AWS_REGION: ap-northeast-1
+  FORCE_COLOR: 1
 jobs:
   build:
+    name: Build image and push
     runs-on: ubuntu-latest
     # runs-on: ubuntu-20.04
     permissions:
@@ -16,17 +24,12 @@ jobs:
       id-token: write
       contents: read
 
-      # JUnit report file upload
+      # Needed to upload JUnit report files
       # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
       checks: write
       pull-requests: write
       issues: read
 
-    env:
-      IMAGE_NAME: foo-app
-      AWS_ROLE_TO_ASSUME: arn:aws:iam::770916339360:role/foo-dev-ecr-github-action-role
-      FORCE_COLOR: 1
-      AWS_REGION: ap-northeast-1
     steps:
       # - name: Dump event
       #   run: cat "$GITHUB_EVENT_PATH"
@@ -106,8 +109,8 @@ jobs:
         with:
           driver-opts: network=host
 
-      - name: Dump environment
-        run: env|sort
+      # - name: Dump environment
+      #   run: env|sort
 
       - name: Build with Earthly
         env:
@@ -124,7 +127,8 @@ jobs:
         # run: earthly -P -V --platform=linux/arm64 +deploy-scan
       - name: Publish unit test results to GitHub
         uses: EnricoMi/publish-unit-test-result-action@v2
-        if: always() # always run even if tests fail
+        # Run even if tests fail
+        if: always()
         with:
           # Exported from build to local filesystem
           junit_files: junit-reports/*.xml
