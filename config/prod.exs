@@ -16,7 +16,8 @@ config :phoenix_container_example, PhoenixContainerExampleWeb.Endpoint,
 # config :logger, level: :info, metadata: :all
 config :logger,
   level: :info,
-  metadata: [:file, :line, :pid, :request_id, :trace_id, :span_id]
+  metadata: :all
+  # metadata: [:file, :line, :pid, :request_id, :trace_id, :span_id]
 
 # ## SSL Support
 #

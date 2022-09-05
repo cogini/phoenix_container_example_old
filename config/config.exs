@@ -59,18 +59,18 @@ config :phoenix_container_example, :logger, [
      formatter:
        {:logger_formatter_json,
         %{
-          names: :datadog,
-          template: [
-            :time,
-            :level,
-            :msg,
-            :file,
-            :line,
-            :mfa,
-            :pid,
-            :trace_id,
-            :span_id
-          ]
+          names: :datadog
+          # template: [
+          #   :msg,
+          #   :time,
+          #   :level,
+          #   :file,
+          #   :line,
+          #   :mfa,
+          #   :pid,
+          #   :trace_id,
+          #   :span_id
+          # ]
         }}
    }}
 ]
@@ -82,18 +82,18 @@ if System.get_env("RELEASE_MODE") do
        formatter:
          {:logger_formatter_json,
           %{
-            names: :datadog,
-            template: [
-              :time,
-              :level,
-              :msg,
-              :file,
-              :line,
-              :mfa,
-              :pid,
-              :trace_id,
-              :span_id
-            ]
+            names: :datadog
+            # template: [
+            #   :msg,
+            #   :time,
+            #   :level,
+            #   :file,
+            #   :line,
+            #   :mfa,
+            #   :pid,
+            #   :trace_id,
+            #   :span_id
+            # ]
           }}
      }}
   ]
