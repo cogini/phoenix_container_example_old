@@ -128,9 +128,7 @@ phases:
       # Run tests
       - docker-compose up test
       - docker-compose run test mix test
-      - docker-compose run test mix credo
-      - docker-compose run test mix deps.audit
-      - docker-compose run test mix sobelow
+      - docker-compose run test mix do credo, deps.audit, sobelow
 
       # Build and push final deploy container
       # - $TEMPLATE_DIR/build.sh
