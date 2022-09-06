@@ -28,18 +28,6 @@ config :logger,
   level: :warn,
   metadata: [:file, :line]
 
-# config :phoenix_container_example, :logger, [
-#   {:handler, :default, :logger_std_h,
-#    %{
-#      formatter:
-#        {:flatlog,
-#         %{
-#           map_depth: 3,
-#           term_depth: 50
-#         }}
-#    }}
-# ]
-
 # Initialize plugs at runtime for faster test compilation
 config :phoenix, :plug_init_mode, :runtime
 
