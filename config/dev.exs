@@ -68,10 +68,9 @@ config :phoenix_container_example, PhoenixContainerExampleWeb.Endpoint,
 # Do not include metadata nor timestamps in development logs
 config :logger, :console,
   format: "$time $metadata[$level] $message\n",
-  metadata: :all
+  metadata: [:mfa]
 
 # metadata: [:file, :line, :pid, :request_id, :trace_id, :span_id]
-# metadata: [:mfa]
 
 config :phoenix_container_example, :logger, [
   {:handler, :default, :logger_std_h,
