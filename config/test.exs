@@ -11,7 +11,7 @@ config :phoenix_container_example, PhoenixContainerExample.Repo,
   hostname: System.get_env("DATABASE_HOST") || "localhost",
   database: System.get_env("DATABASE_DB") || "app_test#{System.get_env("MIX_TEST_PARTITION")}",
   pool: Ecto.Adapters.SQL.Sandbox,
-  pool_size: 10
+  pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10")
 
 # We don't run a server during test. If one is required,
 # you can enable the server option below.
