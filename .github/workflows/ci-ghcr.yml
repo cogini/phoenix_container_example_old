@@ -165,7 +165,7 @@ jobs:
         run: |
           docker-compose -f docker-compose.gha.yml up test
           docker-compose -f docker-compose.gha.yml run test mix test
-          docker-compose -f docker-compose.gha.yml run test mix do credo, deps.audit, sobelow
+          docker-compose -f docker-compose.gha.yml run test mix do format --check-formatted, credo, deps.audit, sobelow
 
       - name: Publish unit test results to GitHub
         uses: EnricoMi/publish-unit-test-result-action@v2
