@@ -72,17 +72,6 @@ config :logger, :console,
 
 # metadata: [:file, :line, :pid, :request_id, :trace_id, :span_id]
 
-config :phoenix_container_example, :logger, [
-  {:handler, :default, :logger_std_h,
-   %{
-     formatter:
-       {:logger_formatter_json,
-        %{
-          names: :datadog
-        }}
-   }}
-]
-
 # Set a higher stacktrace during development. Avoid configuring such
 # in production as building large stacktraces may be expensive.
 config :phoenix, :stacktrace_depth, 20

@@ -45,7 +45,6 @@ config :esbuild,
 
 config :logger,
   level: :info,
-  # backends: [:console],
   utc_log: true
 
 # Configures Elixir's Logger
