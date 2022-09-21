@@ -74,20 +74,19 @@ defmodule PhoenixContainerExample.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
-      {:coverex, "~> 1.5", only: [:dev, :test], runtime: false},
-      {:credo, "~> 1.5", only: [:dev, :test], runtime: false},
-      {:dialyxir, "~> 1.0", only: [:dev, :test], runtime: false},
+      {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
+      {:dialyxir, "~> 1.2", only: [:dev, :test], runtime: false},
       {:ecto_sql, "~> 3.6"},
       {:esbuild, "~> 0.4", runtime: Mix.env() == :dev},
-      {:excoveralls, "~> 0.14", only: [:dev, :test]},
+      {:excoveralls, "~> 0.14", only: [:dev, :test], runtime: false},
       {:flatlog, "~> 0.1.2", only: :dev},
       {:floki, ">= 0.30.0", only: :test},
       {:gettext, "~> 0.18"},
       {:jason, "~> 1.2"},
       {:junit_formatter, "~> 3.3", only: [:dev, :test], runtime: false},
-      # {:logger_formatter_json, path: "../logger_formatter_json"},
-      {:logger_formatter_json, github: "cogini/logger_formatter_json"},
+      {:logger_formatter_json, github: "reachfh/logger_formatter_json"},
       {:mix_audit, "~> 2.0", only: [:dev, :test], runtime: false},
+      {:observer_cli, "~> 1.7"},
       {:opentelemetry, "~> 1.1"},
       {:opentelemetry_api, "~> 1.1"},
       {:opentelemetry_ecto, "~> 1.0"},
@@ -102,9 +101,11 @@ defmodule PhoenixContainerExample.MixProject do
       {:phoenix_live_view, "~> 0.17.5"},
       {:plug_cowboy, "~> 2.5"},
       {:postgrex, ">= 0.0.0"},
-      {:sobelow, "~> 0.11.0", only: [:dev, :test], runtime: false},
+      {:sobelow, "~> 0.11", only: [:dev, :test], runtime: false},
       {:swoosh, "~> 1.3"},
       {:telemetry_metrics, "~> 0.6"},
+      {:telemetry_metrics_prometheus, "~> 1.1"},
+      # {:telemetry_metrics_statsd, "~> 0.6.2"},
       {:telemetry_poller, "~> 1.0"}
     ]
   end
