@@ -1,8 +1,8 @@
 defmodule PhoenixContainerExample.MixProject do
   use Mix.Project
 
-  @version "0.1.0"
   @app :phoenix_container_example
+  @version "0.1.0"
 
   def project do
     [
@@ -31,9 +31,9 @@ defmodule PhoenixContainerExample.MixProject do
         "coveralls.html": :test,
         "coveralls.lcov": :test
       ],
-      deps: deps(),
       default_release: :prod,
-      releases: releases()
+      releases: releases(),
+      deps: deps()
     ]
   end
 
@@ -60,9 +60,7 @@ defmodule PhoenixContainerExample.MixProject do
   defp releases do
     [
       prod: [
-        version: @version,
         include_executables_for: [:unix]
-        # applications: [:runtime_tools :permanent, :opentelemetry_exporter :load, :opentelemetry :temporary, @app :permanent]
         # Don't need to tar if we are just going to copy it
         # steps: [:assemble, :tar]
       ]
