@@ -635,8 +635,8 @@ FROM build-os-deps AS dev
             inotify-tools \
             ssh \
             sudo \
-            debootstrap \
-            schroot \
+            # debootstrap \
+            # schroot \
         && \
         # https://www.networkworld.com/article/3453032/cleaning-up-with-apt-get.html
         # https://manpages.ubuntu.com/manpages/jammy/man8/apt-get.8.html
