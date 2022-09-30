@@ -596,7 +596,7 @@ FROM deploy-base AS deploy
     EXPOSE $APP_PORT
 
     # "bin" is the directory under the unpacked release, and "prod" is the name
-    # of the release top level script
+    # of the release top level script, which should match the RELEASE var.
     ENTRYPOINT ["bin/prod"]
 
     # Run under init to avoid zombie processes
