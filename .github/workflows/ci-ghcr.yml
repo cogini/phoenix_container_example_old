@@ -18,10 +18,10 @@ jobs:
     name: Build test image
     runs-on: ubuntu-latest
     permissions:
-      # Needed to interact with GitHub's OIDC Token endpoint for AWS
+      # Interact with GitHub's OIDC Token endpoint for AWS
       id-token: write
       contents: read
-      # Needed to push to ghcr.io repository
+      # Push to ghcr.io repository
       packages: write
     steps:
       # - name: Dump event
@@ -126,13 +126,13 @@ jobs:
     name: Run tests
     runs-on: ubuntu-latest
     permissions:
-      # Needed to interact with GitHub's OIDC Token endpoint for AWS
+      # Interact with GitHub's OIDC Token endpoint for AWS
       id-token: write
       contents: read
-      # Needed to read from ghcr.io repository
+      # Read from ghcr.io repository
       packages: read
 
-      # JUnit report file upload
+      # Upload JUnit report files
       # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
       checks: write
       pull-requests: write
@@ -180,13 +180,13 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build-test]
     permissions:
-      # Needed to interact with GitHub's OIDC Token endpoint for AWS
+      # Interact with GitHub's OIDC Token endpoint for AWS
       id-token: write
       contents: read
-      # Needed to read from ghcr.io repository
+      # Read from ghcr.io repository
       packages: read
 
-      # JUnit report file upload
+      # Upload JUnit report files
       # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
       checks: write
       pull-requests: write
@@ -224,14 +224,14 @@ jobs:
     runs-on: ubuntu-latest
     # runs-on: ubuntu-20.04
     permissions:
-      # Needed to interact with GitHub's OIDC Token endpoint for AWS
+      # Interact with GitHub's OIDC Token endpoint for AWS
       id-token: write
       contents: read
 
-      # Needed to push to ghcr.io repository
+      # Push to ghcr.io repository
       packages: write
 
-      # JUnit report file upload
+      # Upload JUnit report files
       # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
       checks: write
       pull-requests: write
