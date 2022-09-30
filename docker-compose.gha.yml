@@ -17,6 +17,11 @@ services:
     volumes:
       - "./junit-reports:/app/_build/test/junit-reports"
 
+  scan:
+    image: ${REGISTRY}${IMAGE_OWNER}/${IMAGE_NAME}:scan
+    volumes:
+      - "./sarif-reports:/sarif-reports"
+
   # https://github.com/docker-library/docs/blob/master/postgres/README.md
   # https://geshan.com.np/blog/2021/12/docker-postgres/
   postgres:
