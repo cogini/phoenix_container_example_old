@@ -496,18 +496,17 @@ Create initial project:
 
 Generate templates to customize release:
 
+    mix release.init
+    * creating rel/vm.args.eex
+    * creating rel/env.sh.eex
+    * creating rel/env.bat.eex
+
     mix phx.gen.release
     * creating rel/overlays/bin/server
     * creating rel/overlays/bin/server.bat
     * creating rel/overlays/bin/migrate
     * creating rel/overlays/bin/migrate.bat
     * creating lib/phoenix_container_example/release.ex
-
-    mix release.init
-
-    * creating rel/vm.args.eex
-    * creating rel/env.sh.eex
-    * creating rel/env.bat.eex
 
 https://hexdocs.pm/mix/Mix.Tasks.Release.html
 
