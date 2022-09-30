@@ -430,6 +430,7 @@ jobs:
         with:
           context: .
           builder: ${{ steps.buildx.outputs.name }}
+          file: ./deploy/debian.Dockerfile
           # file: ./Dockerfile
           # load: true
           push: true
