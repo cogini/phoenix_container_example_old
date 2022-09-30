@@ -478,8 +478,8 @@ jobs:
         run: |
           mkdir -p ./sarif-reports
           docker-compose -f docker-compose.gha.yml up scan
-          docker-compose -f docker-compose.gha.yml run scan trivy filesystem --format table -o /sarif-reports/trivy.sarif --no-progress --severity CRITICAL --no-progress /
-          docker-compose -f docker-compose.gha.yml run scan trivy filesystem --format sarif -o /sarif-reports/trivy.sarif --no-progress --exit-code 1 --severity CRITICAL --no-progress /
+          docker-compose -f docker-compose.gha.yml run scan trivy filesystem --no-progress /
+          docker-compose -f docker-compose.gha.yml run scan trivy filesystem --severity CRITICAL --exit-code 1 --format sarif -o /sarif-reports/trivy.sarif --no-progress /
 
       # https://github.com/aquasecurity/trivy-action
       # - name: Run Trivy vulnerability scanner
