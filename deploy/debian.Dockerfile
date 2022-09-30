@@ -252,7 +252,7 @@ FROM build-deps-get AS test-image
     RUN mix deps.compile
 
     # COPY coveralls.json ./
-    # COPY .credo.exs ./
+    COPY .credo.exs ./
     COPY .formatter.exs ./
     # COPY dialyzer-ignore ./
 
