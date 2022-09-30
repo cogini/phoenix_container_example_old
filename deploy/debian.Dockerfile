@@ -149,6 +149,12 @@ FROM ${BUILD_IMAGE_NAME}:${BUILD_IMAGE_TAG} AS build-os-deps
             # libpq-dev \
             # postgresql-client \
             && \
+        # Install Trivy
+        curl -sL https://aquasecurity.github.io/trivy-repo/deb/public.key -o /etc/apt/trusted.gpg.d/trivy.asc && \
+        printf "deb https://aquasecurity.github.io/trivy-repo/deb %s main" "$(lsb_release -sc)" | tee -a /etc/apt/sources.list.d/trivy.list && \
+        apt-get update -qq && \
+        apt-get -y install -y -qq --no-install-recommends trivy && \
+        curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin && \
         # Install node using n
         # curl -L https://raw.githubusercontent.com/tj/n/master/bin/n -o /usr/local/bin/n && \
         # chmod +x /usr/local/bin/n && \
@@ -376,7 +382,7 @@ FROM ${INSTALL_IMAGE_NAME}:${INSTALL_IMAGE_TAG} AS deploy-install
         printf "deb https://aquasecurity.github.io/trivy-repo/deb %s main" "$(lsb_release -sc)" | tee -a /etc/apt/sources.list.d/trivy.list && \
         apt-get update -qq && \
         apt-get -y install -y -qq --no-install-recommends trivy && \
-        # curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin && \
+        curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin && \
         # Generate locales specified in /etc/locale.gen
         locale-gen && \
         # Remove packages installed temporarily. Removes everything related to
@@ -517,20 +523,23 @@ FROM ${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG} AS deploy-base
 # Create deploy image with vulnerability scanners
 FROM deploy-base AS deploy-scan
     ARG TRIVY_OPTS
-    COPY --from=deploy-install /usr/local/bin/trivy /usr/local/bin/trivy
-    COPY --from=deploy-install /usr/local/share/trivy/templates /usr/local/share/trivy/templates
+    # COPY --from=deploy-install /usr/local/bin/trivy /usr/local/bin/trivy
+    # COPY --from=deploy-install /usr/local/share/trivy/templates /usr/local/share/trivy/templates
     # COPY --from=deploy-install /usr/local/bin/grype /usr/local/bin/grype
+    COPY --from=test-image /usr/local/bin/trivy /usr/local/bin/trivy
+    COPY --from=test-image /usr/local/share/trivy/templates /usr/local/share/trivy/templates
+    COPY --from=test-image /usr/local/bin/grype /usr/local/bin/grype
 
-    RUN set -exu && \
-        mkdir -p /sarif-reports && \
-        # Succeed for issues of severity = HIGH
-        # trivy filesystem $TRIVY_OPTS --format sarif -o /sarif-reports/trivy.high.sarif --exit-code 0 --severity HIGH --no-progress / && \
-        trivy filesystem $TRIVY_OPTS --exit-code 0 --severity HIGH --no-progress / && \
-        # Fail for issues of severity = CRITICAL
-        # trivy filesystem $TRIVY_OPTS --format sarif -o /sarif-reports/trivy.sarif --exit-code 1 --severity CRITICAL --no-progress /
-        # Fail for any issues
-        # trivy filesystem -d --exit-code 1 --no-progress /
-        trivy filesystem --format sarif -o /sarif-reports/trivy.sarif --no-progress $TRIVY_OPTS --no-progress /
+    # RUN set -exu && \
+    #     mkdir -p /sarif-reports && \
+    #     # Succeed for issues of severity = HIGH
+    #     # trivy filesystem $TRIVY_OPTS --format sarif -o /sarif-reports/trivy.high.sarif --exit-code 0 --severity HIGH --no-progress / && \
+    #     trivy filesystem $TRIVY_OPTS --exit-code 0 --severity HIGH --no-progress / && \
+    #     # Fail for issues of severity = CRITICAL
+    #     # trivy filesystem $TRIVY_OPTS --format sarif -o /sarif-reports/trivy.sarif --exit-code 1 --severity CRITICAL --no-progress /
+    #     # Fail for any issues
+    #     # trivy filesystem -d --exit-code 1 --no-progress /
+    #     trivy filesystem --format sarif -o /sarif-reports/trivy.sarif --no-progress $TRIVY_OPTS --no-progress /
 
 # Create final app image which gets deployed
 FROM deploy-base AS deploy
