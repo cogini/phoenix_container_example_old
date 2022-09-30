@@ -467,8 +467,8 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # - name: Checkout source
-      #   uses: actions/checkout@v2
+      - name: Checkout source
+        uses: actions/checkout@v2
 
       - name: Scan image
         env:
