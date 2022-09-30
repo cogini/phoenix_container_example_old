@@ -330,3 +330,150 @@ jobs:
           tags: |
             ${{ steps.login-ecr.outputs.registry }}/${{ env.IMAGE_NAME }}:latest
             ${{ steps.login-ecr.outputs.registry }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+  build-scan:
+    name: Build prod image with security scanning tools
+    runs-on: ubuntu-latest
+    permissions:
+      # Interact with GitHub's OIDC Token endpoint for AWS
+      id-token: write
+      contents: read
+      # Push to ghcr.io repository
+      packages: write
+    # needs: [build-prod, build-test]
+    steps:
+      # - name: Dump event
+      #   run: cat "$GITHUB_EVENT_PATH"
+
+      # https://github.com/aws-actions/configure-aws-credentials
+      # https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # - name: Display AWS identity
+      #   run: aws sts get-caller-identity
+
+      # https://github.com/aws-actions/amazon-ecr-login
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      # - name: Login to ECR
+      #   id: login-ecr
+      #   uses: docker/login-action@v2
+      #   with:
+      #     registry: ${{ env.REGISTRY_NAME }}
+      #     username: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      #     password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # https://github.com/marketplace/actions/docker-login
+      - name: Login to DockerHub
+        id: login-docker-hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Checkout source
+        uses: actions/checkout@v2
+
+      - name: Set variables
+        id: vars
+        run: |
+          echo "GITHUB_SHA_SHORT=$(echo $GITHUB_SHA | cut -c 1-7)" >> $GITHUB_ENV
+          echo "::set-output name=run_id::${GITHUB_RUN_ID}"
+          echo "::set-output name=run_num::${GITHUB_RUN_NUMBER}"
+
+      - name: Get branch name for push
+        if: github.event_name != 'pull_request'
+        run: |
+          echo "BRANCH=$(echo ${GITHUB_REF#refs/heads/})" >> $GITHUB_ENV
+
+      - name: Get pull_request branch name
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "BRANCH=$(echo $GITHUB_HEAD_REF | tr '//\\' '.' | cut -c -55)" >> $GITHUB_ENV
+
+      # - name: Set up QEMU for multi-platform builds
+      #   id: qemu
+      #   uses: docker/setup-qemu-action@v2
+      #   with:
+      #     platforms: linux/amd64,linux/arm64
+
+      # - name: Display available platforms
+      #   run: echo "${{ steps.qemu.outputs.platforms }}"
+
+      - name: Set up Docker buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v2
+        with:
+          driver-opts: network=host
+
+      # https://github.com/docker/build-push-action
+      - name: Build deploy-scan image
+        id: docker-build-scan
+        uses: docker/build-push-action@v3
+        env:
+          REGISTRY_NAME: ghcr.io
+          REGISTRY: ghcr.io/
+          PUBLIC_REGISTRY: "${{ steps.login-ecr.outputs.registry }}/"
+        with:
+          context: .
+          builder: ${{ steps.buildx.outputs.name }}
+          # file: ./Dockerfile
+          # load: true
+          push: true
+          target: deploy-scan
+          # https://github.com/moby/buildkit#export-cache
+          cache-from: type=gha,scope=${{ github.workflow }}-scan
+          cache-to: type=gha,scope=${{ github.workflow }}-scan,mode=max
+          tags: |
+            ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:scan
+
+  scan:
+    name: Run security scans on prod image
+    runs-on: ubuntu-latest
+    needs: [build-scan]
+    permissions:
+      # Interact with GitHub's OIDC Token endpoint for AWS
+      id-token: write
+      contents: read
+      # Read from ghcr.io repository
+      packages: read
+
+      # Upload JUnit report files
+      # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
+      checks: write
+      pull-requests: write
+      issues: read
+    steps:
+      # https://github.com/marketplace/actions/docker-login
+      - name: Log in to GHCR
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Checkout source
+        uses: actions/checkout@v2
+
+      - name: Run tests
+        env:
+          REGISTRY: ghcr.io/
+          # PUBLIC_REGISTRY: "${{ steps.login-ecr.outputs.registry }}/"
+          PUBLIC_REGISTRY: ""
+        run: |
+          mkdir -p ./sarif-reports
+          docker-compose -f docker-compose.gha.yml up scan
+          docker-compose -f docker-compose.gha.yml run scan trivy filesystem --format sarif -o /sarif-reports/trivy.sarif --no-progress --exit-code 1 --severity CRITICAL --no-progress /
