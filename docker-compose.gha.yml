@@ -19,6 +19,13 @@ services:
 
   scan:
     image: ${REGISTRY}${IMAGE_OWNER}/${IMAGE_NAME}:scan
+    build:
+      context: .
+      dockerfile: deploy/debian.Dockerfile
+      args:
+        BUILDKIT_INLINE_CACHE: "1"
+        REGISTRY: ${REGISTRY}
+      target: deploy-scan
     volumes:
       - "./sarif-reports:/sarif-reports"
 
