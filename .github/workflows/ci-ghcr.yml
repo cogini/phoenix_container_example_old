@@ -499,8 +499,6 @@ jobs:
           # docker-compose -f docker-compose.gha.yml run scan trivy filesystem --severity CRITICAL --exit-code 1 --format sarif -o /sarif-reports/trivy.sarif --no-progress /
           docker-compose -f docker-compose.gha.yml run scan trivy filesystem --format sarif -o /sarif-reports/trivy.sarif --no-progress /
 
-      https://docs.github.com/en/actions/using-jobs/running-jobs-in-a-container
-
       # https://github.com/aquasecurity/trivy-action
       # - name: Run Trivy vulnerability scanner
       #   uses: aquasecurity/trivy-action@master
@@ -523,6 +521,7 @@ jobs:
           sarif_file: './sarif-reports/trivy.sarif'
           category: trivy
 
+  # https://docs.github.com/en/actions/using-jobs/running-jobs-in-a-container
   container-test-job:
     runs-on: ubuntu-latest
     container:
