@@ -1,0 +1,53 @@
+on:
+  schedule:
+    - cron: '0 * * * *'
+
+name: CI ghcr.io
+env:
+  # IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME: foo-app
+  IMAGE_OWNER: ${{ github.repository_owner }}
+jobs:
+  scan:
+    name: Run security scans
+    runs-on: ubuntu-latest
+    # permissions: write-all
+    permissions:
+      # Read from ghcr.io repository
+      packages: read
+
+      # Upload JUnit report files
+      # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
+      checks: write
+      pull-requests: write
+      issues: read
+
+      # Upload SARIF report files
+      security-events: read
+
+    steps:
+      # https://github.com/marketplace/actions/docker-login
+      - name: Log in to GHCR
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Checkout source
+        uses: actions/checkout@v2
+
+      - name: Run security scans
+        env:
+          REGISTRY: ghcr.io/
+          # PUBLIC_REGISTRY: "${{ steps.login-ecr.outputs.registry }}/"
+          PUBLIC_REGISTRY: ""
+        run: |
+          mkdir -p ./sarif-reports
+          docker-compose -f docker-compose.gha.yml up test
+          docker-compose -f docker-compose.gha.yml run test trivy fs --no-progress .
+          docker-compose -f docker-compose.gha.yml run test trivy fs --format sarif -o /sarif-reports/trivy-code.sarif --no-progress --exit-code 1 .
+
+          docker-compose -f docker-compose.gha.yml run scan trivy fs --no-progress /
+          # docker-compose -f docker-compose.gha.yml run scan trivy fs --severity CRITICAL --exit-code 1 --format sarif -o /sarif-reports/trivy.sarif --no-progress /
+          docker-compose -f docker-compose.gha.yml run scan trivy fs --format sarif -o /sarif-reports/trivy-deploy.sarif --no-progress --exit-code 1 /
