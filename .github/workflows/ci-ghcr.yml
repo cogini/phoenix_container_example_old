@@ -474,6 +474,7 @@ jobs:
 
       # Upload SARIF report files
       security-events: read
+
     steps:
       # https://github.com/marketplace/actions/docker-login
       - name: Log in to GHCR
@@ -498,6 +499,8 @@ jobs:
           # docker-compose -f docker-compose.gha.yml run scan trivy filesystem --severity CRITICAL --exit-code 1 --format sarif -o /sarif-reports/trivy.sarif --no-progress /
           docker-compose -f docker-compose.gha.yml run scan trivy filesystem --format sarif -o /sarif-reports/trivy.sarif --no-progress /
 
+      https://docs.github.com/en/actions/using-jobs/running-jobs-in-a-container
+
       # https://github.com/aquasecurity/trivy-action
       # - name: Run Trivy vulnerability scanner
       #   uses: aquasecurity/trivy-action@master
@@ -519,3 +522,14 @@ jobs:
         with:
           sarif_file: './sarif-reports/trivy.sarif'
           category: trivy
+
+  container-test-job:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:scan
+      volumes:
+        - /sarif-reports:/sarif-reports
+    needs: [build-scan]
+    steps:
+      - name: Check for dockerenv file
+        run: trivy filesystem --no-progress /
