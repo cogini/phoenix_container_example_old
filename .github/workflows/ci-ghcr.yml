@@ -526,7 +526,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build-scan]
     container:
-      image: "ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:scan"
+      image: ghcr.io/${{ github.repository_owner }}/foo-app:scan
       volumes:
         - /sarif-reports:/sarif-reports
     steps:
