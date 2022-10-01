@@ -3,6 +3,13 @@ version: "3.9"
 services:
   test:
     image: ${REGISTRY}${IMAGE_OWNER}/${IMAGE_NAME}:test
+    build:
+      context: .
+      dockerfile: deploy/debian.Dockerfile
+      args:
+        BUILDKIT_INLINE_CACHE: "1"
+        REGISTRY: ${REGISTRY}
+      target: test-image
     environment:
       - MIX_ENV=test
       - DATABASE_URL
