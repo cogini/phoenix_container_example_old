@@ -19,7 +19,7 @@ ARG ELIXIR_DEBIAN_VERSION=bullseye-20210902-slim
 ARG DEBIAN_VERSION=bullseye-slim
 
 # Use snapshot for consistent dependencies
-# Need to be updated manually
+# Needs to be updated manually
 # See https://snapshot.debian.org/
 ARG DEBIAN_SNAPSHOT=20220601
 
