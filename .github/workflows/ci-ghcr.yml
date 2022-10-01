@@ -445,7 +445,6 @@ jobs:
           context: .
           builder: ${{ steps.buildx.outputs.name }}
           file: ./deploy/debian.Dockerfile
-          # file: ./Dockerfile
           # load: true
           push: true
           target: deploy-scan
@@ -495,7 +494,7 @@ jobs:
         run: |
           mkdir -p ./sarif-reports
           docker-compose -f docker-compose.gha.yml up scan
-          # docker-compose -f docker-compose.gha.yml run scan trivy filesystem --no-progress /
+          docker-compose -f docker-compose.gha.yml run scan trivy filesystem --no-progress /
           # docker-compose -f docker-compose.gha.yml run scan trivy filesystem --severity CRITICAL --exit-code 1 --format sarif -o /sarif-reports/trivy.sarif --no-progress /
           docker-compose -f docker-compose.gha.yml run scan trivy filesystem --format sarif -o /sarif-reports/trivy.sarif --no-progress /
 
@@ -510,7 +509,7 @@ jobs:
       #     # ignore-unfixed: true
       #     # vuln-type: 'os,library'
       #     # severity: 'CRITICAL,HIGH'
-      #     output: 'trivy-results.sarif'
+      #     output: './sarif-reports/trivy.sarif'
 
       # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning
       # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github
