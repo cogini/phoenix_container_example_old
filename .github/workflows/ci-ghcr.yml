@@ -23,6 +23,20 @@ jobs:
       contents: read
       # Push to ghcr.io repository
       packages: write
+    # permissions:
+    #   actions: read|write|none
+    #   checks: read|write|none
+    #   contents: read|write|none
+    #   deployments: read|write|none
+    #   id-token: read|write|none
+    #   issues: read|write|none
+    #   discussions: read|write|none
+    #   packages: read|write|none
+    #   pages: read|write|none
+    #   pull-requests: read|write|none
+    #   repository-projects: read|write|none
+    #   security-events: read|write|none
+    #   statuses: read|write|none
     steps:
       # - name: Dump event
       #   run: cat "$GITHUB_EVENT_PATH"
@@ -460,7 +474,7 @@ jobs:
       issues: read
 
       # Upload SARIF report files
-      security_events: read
+      security-events: read
     steps:
       # https://github.com/marketplace/actions/docker-login
       - name: Log in to GHCR
