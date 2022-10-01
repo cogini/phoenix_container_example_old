@@ -545,15 +545,20 @@ Allow db configuration to be overridden by env vars:
    pool_size: 10
  ```
 
-```shell
+```command
 createuser --createdb --encrypted --pwprompt postgres
 docker-compose run test mix ecto.setup
 ```
 
-```shell
+```command
 earthly -V -P --build-arg REGISTRY --build-arg REPO_URL --remote-cache="cogini/foo-app:cache" --strict --no-output --push +all
 
 docker buildx build -t distroless-deploy-base -f deploy/distroless/Dockerfile --progress plain --load .
 ```
 
 https://blog.tedivm.com/guides/2021/10/github-actions-push-to-aws-ecr-without-credentials-oidc/
+
+```command
+docker-compose -f docker-compose.gha.yml --env-file .envrc build scan
+docker-compose -f docker-compose.gha.yml run scan trivy filesystem /
+```
