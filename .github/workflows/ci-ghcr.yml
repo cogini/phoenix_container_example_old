@@ -13,6 +13,8 @@ env:
   IMAGE_OWNER: ${{ github.repository_owner }}
   AWS_ROLE_TO_ASSUME: arn:aws:iam::770916339360:role/foo-dev-ecr-github-action-role
   AWS_REGION: ap-northeast-1
+  DOCKER_BUILDKIT: '1'
+  COMPOSE_DOCKER_CLI_BUILD: '1'
 jobs:
   build-test:
     name: Build test image
