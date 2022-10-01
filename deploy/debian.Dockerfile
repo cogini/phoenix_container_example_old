@@ -21,8 +21,8 @@ ARG DEBIAN_VERSION=bullseye-slim
 # Use snapshot for consistent dependencies
 # Needs to be updated manually
 # See https://snapshot.debian.org/
-# ARG DEBIAN_SNAPSHOT=20220601
-ARG DEBIAN_SNAPSHOT=20220930
+ARG DEBIAN_SNAPSHOT=20220601
+# ARG DEBIAN_SNAPSHOT=20220930
 
 # Docker registry for internal images, e.g. 123.dkr.ecr.ap-northeast-1.amazonaws.com/
 # If blank, docker.io will be used. If specified, should have a trailing slash.
