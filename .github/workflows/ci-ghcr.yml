@@ -189,15 +189,6 @@ jobs:
           # Volume mounted from local filesystem into build
           junit_files: junit-reports/*.xml
 
-      # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning
-      # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github
-      - name: Upload Trivy scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v2
-        if: always()
-        with:
-          sarif_file: './sarif-reports/'
-          category: trivy
-
   test-dialyzer:
     name: Run dialyzer
     runs-on: ubuntu-latest
