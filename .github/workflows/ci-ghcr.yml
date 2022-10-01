@@ -178,6 +178,8 @@ jobs:
           REGISTRY: ghcr.io/
           # PUBLIC_REGISTRY: "${{ steps.login-ecr.outputs.registry }}/"
           PUBLIC_REGISTRY: ""
+          IMAGE_OWNER: cogini
+          IMAGE_NAME: foo-app
         run: |
           docker-compose -f docker-compose.gha.yml up test
           docker-compose -f docker-compose.gha.yml run test mix test
