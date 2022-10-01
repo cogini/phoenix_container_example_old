@@ -2,7 +2,7 @@ on:
   schedule:
     - cron: '0 * * * *'
 
-name: CI ghcr.io
+name: Security scan
 env:
   # IMAGE_NAME: ${{ github.repository }}
   IMAGE_NAME: foo-app
