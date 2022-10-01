@@ -180,6 +180,7 @@ jobs:
           docker-compose -f docker-compose.gha.yml up test
           docker-compose -f docker-compose.gha.yml run test mix test
           docker-compose -f docker-compose.gha.yml run test mix do format --check-formatted, credo, deps.audit, sobelow
+          docker-compose -f docker-compose.gha.yml run scan trivy fs --format sarif -o /sarif-reports/trivy-code.sarif --no-progress .
 
       - name: Publish unit test results to GitHub
         uses: EnricoMi/publish-unit-test-result-action@v2
@@ -188,6 +189,15 @@ jobs:
         with:
           # Volume mounted from local filesystem into build
           junit_files: junit-reports/*.xml
+
+      # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning
+      # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: './sarif-reports/'
+          category: trivy
 
   test-dialyzer:
     name: Run dialyzer
