@@ -522,7 +522,7 @@ FROM ${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG} AS deploy-base
 
 # Create deploy image with vulnerability scanners
 FROM deploy-base AS deploy-scan
-    ARG TRIVY_OPTS
+    # ARG TRIVY_OPTS
     # COPY --from=deploy-install /usr/local/bin/trivy /usr/local/bin/trivy
     # COPY --from=deploy-install /usr/local/share/trivy/templates /usr/local/share/trivy/templates
     # COPY --from=deploy-install /usr/local/bin/grype /usr/local/bin/grype
