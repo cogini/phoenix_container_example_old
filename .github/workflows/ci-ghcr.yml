@@ -558,6 +558,9 @@ jobs:
       volumes:
         - /sarif-reports:/sarif-reports
         - /trivy-cache:/trivy-cache
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Trivy scan image
         run: trivy image ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ github.sha }} --debug --cache-dir /trivy-cache
