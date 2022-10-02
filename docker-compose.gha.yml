@@ -4,12 +4,13 @@ services:
   test:
     image: ${REGISTRY}${IMAGE_OWNER}/${IMAGE_NAME}:test
     build:
-      context: .
       dockerfile: deploy/debian.Dockerfile
+      target: test-image
       args:
         BUILDKIT_INLINE_CACHE: "1"
         REGISTRY: ${REGISTRY}
-      target: test-image
+        PUBLIC_REGISTRY: ${PUBLIC_REGISTRY}
+      context: .
     environment:
       - MIX_ENV=test
       - DATABASE_URL

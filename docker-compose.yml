@@ -4,13 +4,14 @@ services:
   app:
     image: "${REPO_URL}:${IMAGE_TAG:-latest}"
     build:
-      context: .
       dockerfile: deploy/alpine.Dockerfile
       args:
         BUILDKIT_INLINE_CACHE: "1"
         MIX_ENV: prod
         REGISTRY: ${REGISTRY}
+        PUBLIC_REGISTRY: ${PUBLIC_REGISTRY}
       target: deploy
+      context: .
     environment:
       - SECRET_KEY_BASE
       - DATABASE_URL
@@ -74,16 +75,15 @@ services:
         condition: service_healthy
 
   test:
-    image: test/foo-app:test
+    image: ${REGISTRY}${IMAGE_OWNER}/${IMAGE_NAME}:test
     build:
-      target: test-image
       dockerfile: deploy/debian.Dockerfile
-      context: .
+      target: test-image
       args:
+        BUILDKIT_INLINE_CACHE: "1"
         REGISTRY: ${REGISTRY}
         PUBLIC_REGISTRY: ${PUBLIC_REGISTRY}
-    # command: sh -c 'while !</dev/tcp/db/5432; do sleep 1; done; set -ex mix test'
-    # command: sh -c 'mix test'
+      context: .
     environment:
       - MIX_ENV=test
       - DATABASE_URL
@@ -193,19 +193,19 @@ services:
       retries: 20
 
   mssql:
+    image: mcr.microsoft.com/mssql/server:2019-latest
     environment:
       ACCEPT_EULA: "Y"
       SA_PASSWORD: some!Password
-    image: mcr.microsoft.com/mssql/server:2019-latest
     ports:
       - "1433:1433"
 
   mysql:
+    image: "${PUBLIC_REGISTRY}mysql:8"
     environment:
       MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
       # MYSQL_ROOT_PASSWORD: example
     # command: --default-authentication-plugin=mysql_native_password
-    image: "${REGISTRY}mysql:8"
     ports:
       - "3306:3306"
 
