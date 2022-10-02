@@ -348,6 +348,7 @@ jobs:
           tags: |
             ${{ steps.login-ecr.outputs.registry }}/${{ env.IMAGE_NAME }}:latest
             ${{ steps.login-ecr.outputs.registry }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:latest
 
   build-scan:
     name: Build prod image with security scanning tools
@@ -563,7 +564,7 @@ jobs:
       #   password: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Trivy scan image
-        run: trivy image ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ github.sha }} --debug --cache-dir /trivy-cache
+        run: trivy image ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:latest --debug --cache-dir /trivy-cache
         # run: trivy image ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:latest --debug --cache-dir /trivy-cache
         # run: trivy image ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ github.sha }} --format sarif -o /sarif-reports/trivy-image.sarif /
 
