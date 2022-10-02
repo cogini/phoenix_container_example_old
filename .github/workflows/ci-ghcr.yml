@@ -498,7 +498,7 @@ jobs:
           # PUBLIC_REGISTRY: "${{ steps.login-ecr.outputs.registry }}/"
           PUBLIC_REGISTRY: ""
         run: |
-          mkdir -p /sarif-reports
+          mkdir -p ./sarif-reports
           docker pull "${REGISTRY}${IMAGE_OWNER}/${IMAGE_NAME}:test"
           docker-compose -f docker-compose.gha.yml up test
           docker-compose -f docker-compose.gha.yml run test trivy fs --no-progress .
@@ -510,7 +510,7 @@ jobs:
           # PUBLIC_REGISTRY: "${{ steps.login-ecr.outputs.registry }}/"
           PUBLIC_REGISTRY: ""
         run: |
-          mkdir -p /sarif-reports
+          mkdir -p ./sarif-reports
           docker pull "${REGISTRY}${IMAGE_OWNER}/${IMAGE_NAME}:scan"
           docker-compose -f docker-compose.gha.yml run scan trivy fs --no-progress /
           docker-compose -f docker-compose.gha.yml run scan trivy fs --format sarif -o /sarif-reports/trivy-deploy.sarif --no-progress /
@@ -535,7 +535,7 @@ jobs:
         uses: github/codeql-action/upload-sarif@v2
         if: always()
         with:
-          sarif_file: '/sarif-reports/'
+          sarif_file: './sarif-reports/'
           category: trivy
 
   # https://docs.github.com/en/actions/using-jobs/running-jobs-in-a-container
