@@ -8,9 +8,9 @@ on: push
 #     types: [labeled, synchronize, reopened, unlabeled]
 name: CI ghcr.io
 env:
-  IMAGE_NAME: foo-app
-  # IMAGE_NAME: ${{ github.repository }}
   IMAGE_OWNER: ${{ github.repository_owner }}
+  # IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME: foo-app
   AWS_ROLE_TO_ASSUME: arn:aws:iam::770916339360:role/foo-dev-ecr-github-action-role
   AWS_REGION: ap-northeast-1
   DOCKER_BUILDKIT: '1'
@@ -122,14 +122,12 @@ jobs:
         id: docker-build-test
         uses: docker/build-push-action@v3
         env:
-          REGISTRY_NAME: ghcr.io
           REGISTRY: ghcr.io/
           PUBLIC_REGISTRY: "${{ steps.login-ecr.outputs.registry }}/"
         with:
           context: .
           builder: ${{ steps.buildx.outputs.name }}
           file: ./deploy/debian.Dockerfile
-          # load: true
           push: true
           target: test-image
           # https://github.com/moby/buildkit#export-cache
@@ -164,7 +162,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Login to DockerHub
+      - name: Log in to DockerHub
         id: login-docker-hub
         uses: docker/login-action@v2
         with:
@@ -179,8 +177,6 @@ jobs:
           REGISTRY: ghcr.io/
           # PUBLIC_REGISTRY: "${{ steps.login-ecr.outputs.registry }}/"
           PUBLIC_REGISTRY: ""
-          IMAGE_OWNER: cogini
-          IMAGE_NAME: foo-app
         run: |
           docker-compose -f docker-compose.gha.yml up test
           docker-compose -f docker-compose.gha.yml run test mix test
@@ -445,7 +441,6 @@ jobs:
         id: docker-build-scan
         uses: docker/build-push-action@v3
         env:
-          REGISTRY_NAME: ghcr.io
           REGISTRY: ghcr.io/
           PUBLIC_REGISTRY: "${{ steps.login-ecr.outputs.registry }}/"
         with:
