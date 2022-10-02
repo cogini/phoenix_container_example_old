@@ -548,3 +548,18 @@ jobs:
     steps:
       - name: Trivy scan fs
         run: trivy fs --no-progress /
+
+  trivy-job:
+    runs-on: ubuntu-latest
+    needs: [build-prod]
+    env:
+      REGISTRY: ghcr.io/
+    container:
+      image: aquasec/trivy
+      volumes:
+        - /sarif-reports:/sarif-reports
+        # - cache
+    steps:
+      - name: Trivy scan image
+        # run: trivy image ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+        run: trivy image ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
