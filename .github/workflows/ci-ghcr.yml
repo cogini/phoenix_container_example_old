@@ -238,7 +238,7 @@ jobs:
           docker-compose -f docker-compose.gha.yml run test mix dialyzer --no-check --halt-exit-status --format github
 
   scan-code:
-    name: Run security scan on code
+    name: Security scan code
     runs-on: ubuntu-latest
     needs: [build-test]
     permissions: write-all
@@ -614,6 +614,8 @@ jobs:
     steps:
       - name: Run pwd
         run: pwd
+      - name: Run ls
+        run: ls
       - name: Run mix test
         run: mix test
       - name: Run mix checks
