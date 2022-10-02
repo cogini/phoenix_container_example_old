@@ -237,6 +237,66 @@ jobs:
           docker-compose -f docker-compose.gha.yml up test
           docker-compose -f docker-compose.gha.yml run test mix dialyzer --no-check --halt-exit-status --format github
 
+  scan-code:
+    name: Run security scan on code
+    runs-on: ubuntu-latest
+    needs: [build-test]
+    permissions: write-all
+    # permissions:
+    #   # Interact with GitHub's OIDC Token endpoint for AWS
+    #   id-token: write
+    #   contents: read
+    #   # Read from ghcr.io repository
+    #   packages: read
+    #
+    #   # Upload JUnit report files
+    #   # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
+    #   checks: write
+    #   pull-requests: write
+    #   issues: read
+    #   # Upload SARIF report files
+    #   security-events: read
+    steps:
+      # https://github.com/marketplace/actions/docker-login
+      - name: Log in to GHCR
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Login to DockerHub
+        id: login-docker-hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Checkout source
+        uses: actions/checkout@v2
+
+      - name: Run tests
+        env:
+          REGISTRY: ghcr.io/
+          # PUBLIC_REGISTRY: "${{ steps.login-ecr.outputs.registry }}/"
+          PUBLIC_REGISTRY: ""
+        run: |
+          mkdir -p ./sarif-reports
+          mkdir -p ./trivy-cache
+          docker pull "${REGISTRY}${IMAGE_OWNER}/${IMAGE_NAME}:test"
+          docker-compose -f docker-compose.gha.yml up test
+          docker-compose -f docker-compose.gha.yml run test trivy fs --no-progress --debug --cache-dir /trivy-cache .
+          docker-compose -f docker-compose.gha.yml run test trivy fs --format sarif -o /sarif-reports/trivy-code.sarif --no-progress --debug --cache-dir /trivy-cache .
+
+      # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning
+      # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github
+      - name: Upload scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: './sarif-reports/'
+          category: trivy
+
   build-prod:
     name: Build prod image and push
     runs-on: ubuntu-latest
@@ -552,6 +612,8 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
     steps:
+      - name: Run pwd
+        run: pwd
       - name: Run mix test
         run: mix test
       - name: Run mix checks
