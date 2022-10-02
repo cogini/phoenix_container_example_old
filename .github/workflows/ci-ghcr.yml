@@ -557,14 +557,16 @@ jobs:
       image: aquasec/trivy
       volumes:
         - /sarif-reports:/sarif-reports
+        - /trivy-cache:/trivy-cache
         # - cache
     steps:
       - name: Trivy scan image
-        run: trivy image ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ github.sha }} --format sarif -o /sarif-reports/trivy-image.sarif /
+        run: trivy image ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ github.sha }} --debug --cache-dir /trivy-cache
+        # run: trivy image ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ github.sha }} --format sarif -o /sarif-reports/trivy-image.sarif /
 
       # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning
       # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github
-      - name: Upload Trivy scan results to GitHub Security tab
+      - name: Upload scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v2
         if: always()
         with:
