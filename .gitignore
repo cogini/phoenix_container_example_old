@@ -42,6 +42,7 @@ npm-debug.log
 /assets/node_modules/
 
 /.env
+/.envrc
 /.gitconfig
 /.gnupg/
 /.hex/
