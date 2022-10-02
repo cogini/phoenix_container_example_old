@@ -561,5 +561,5 @@ jobs:
         # - cache
     steps:
       - name: Trivy scan image
-        # run: trivy image ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-        run: trivy image ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+        # run: trivy image ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+        run: trivy image ${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:latest
