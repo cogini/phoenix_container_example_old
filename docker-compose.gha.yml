@@ -24,6 +24,8 @@ services:
         condition: service_healthy
     volumes:
       - "./junit-reports:/app/_build/test/junit-reports"
+      - "./sarif-reports:/sarif-reports"
+      - "./trivy-cache:/trivy-cache"
 
   scan:
     image: ${REGISTRY}${IMAGE_OWNER}/${IMAGE_NAME}:scan
@@ -36,6 +38,7 @@ services:
       target: deploy-scan
     volumes:
       - "./sarif-reports:/sarif-reports"
+      - "./trivy-cache:/trivy-cache"
 
   # https://github.com/docker-library/docs/blob/master/postgres/README.md
   # https://geshan.com.np/blog/2021/12/docker-postgres/

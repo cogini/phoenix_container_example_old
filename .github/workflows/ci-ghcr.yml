@@ -499,10 +499,11 @@ jobs:
           PUBLIC_REGISTRY: ""
         run: |
           mkdir -p ./sarif-reports
+          mkdir -p ./trivy-cache
           docker pull "${REGISTRY}${IMAGE_OWNER}/${IMAGE_NAME}:test"
           docker-compose -f docker-compose.gha.yml up test
-          docker-compose -f docker-compose.gha.yml run test trivy fs --no-progress .
-          docker-compose -f docker-compose.gha.yml run test trivy fs --format sarif -o /sarif-reports/trivy-code.sarif --no-progress .
+          docker-compose -f docker-compose.gha.yml run test trivy fs --no-progress --debug --cache-dir /trivy-cache .
+          docker-compose -f docker-compose.gha.yml run test trivy fs --format sarif -o /sarif-reports/trivy-code.sarif --no-progress --debug --cache-dir /trivy-cache .
 
       - name: Security scan image
         env:
@@ -511,9 +512,10 @@ jobs:
           PUBLIC_REGISTRY: ""
         run: |
           mkdir -p ./sarif-reports
+          mkdir -p ./trivy-cache
           docker pull "${REGISTRY}${IMAGE_OWNER}/${IMAGE_NAME}:scan"
-          docker-compose -f docker-compose.gha.yml run scan trivy fs --no-progress /
-          docker-compose -f docker-compose.gha.yml run scan trivy fs --format sarif -o /sarif-reports/trivy-deploy.sarif --no-progress /
+          docker-compose -f docker-compose.gha.yml run scan trivy fs --no-progress --debug --cache-dir /trivy-cache /
+          docker-compose -f docker-compose.gha.yml run scan trivy fs --format sarif -o /sarif-reports/trivy-deploy.sarif --no-progress --debug --cache-dir /trivy-cache /
           # docker-compose -f docker-compose.gha.yml run scan trivy fs --severity CRITICAL --exit-code 1 --format sarif -o /sarif-reports/trivy.sarif --no-progress /
 
       # https://github.com/aquasecurity/trivy-action
