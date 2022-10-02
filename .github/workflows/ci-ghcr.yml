@@ -275,7 +275,7 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v2
 
-      - name: Run tests
+      - name: Trivy code
         env:
           REGISTRY: ghcr.io/
           # PUBLIC_REGISTRY: "${{ steps.login-ecr.outputs.registry }}/"
@@ -562,8 +562,8 @@ jobs:
           mkdir -p ./trivy-cache
           docker pull "${REGISTRY}${IMAGE_OWNER}/${IMAGE_NAME}:test"
           docker-compose -f docker-compose.gha.yml up test
-          docker-compose -f docker-compose.gha.yml run test trivy fs --no-progress --debug --cache-dir /trivy-cache .
-          docker-compose -f docker-compose.gha.yml run test trivy fs --format sarif -o /sarif-reports/trivy-code.sarif --no-progress --debug --cache-dir /trivy-cache .
+          docker-compose -f docker-compose.gha.yml run test trivy fs --no-progress --debug --cache-dir /trivy-cache --security-checks vuln .
+          docker-compose -f docker-compose.gha.yml run test trivy fs --format sarif -o /sarif-reports/trivy-code.sarif --no-progress --debug --cache-dir /trivy-cache --security-checks vuln .
 
       - name: Security scan image
         env:
