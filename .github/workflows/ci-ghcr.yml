@@ -288,6 +288,11 @@ jobs:
           docker-compose -f docker-compose.gha.yml run test trivy fs --no-progress --debug --cache-dir /trivy-cache .
           docker-compose -f docker-compose.gha.yml run test trivy fs --format sarif -o /sarif-reports/trivy-code.sarif --no-progress --debug --cache-dir /trivy-cache .
 
+        # TODO:
+        # * Don't scan Elixir deps dir
+        # * Scan standard deps like Yarn
+        # * Scan application code and put warnings inline using JUnit?
+
       # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning
       # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github
       - name: Upload scan results to GitHub Security tab
