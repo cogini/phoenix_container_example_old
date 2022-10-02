@@ -558,7 +558,6 @@ jobs:
       volumes:
         - /sarif-reports:/sarif-reports
         - /trivy-cache:/trivy-cache
-        # - cache
     steps:
       - name: Trivy scan image
         run: trivy image ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ github.sha }} --debug --cache-dir /trivy-cache
@@ -570,5 +569,5 @@ jobs:
         uses: github/codeql-action/upload-sarif@v2
         if: always()
         with:
-          sarif_file: './sarif-reports/'
+          sarif_file: '/sarif-reports/'
           category: trivy
