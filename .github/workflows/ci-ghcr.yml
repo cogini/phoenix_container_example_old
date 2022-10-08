@@ -47,7 +47,6 @@ jobs:
 
       # https://github.com/marketplace/actions/docker-login
       - name: Log in to Docker Hub
-        if: ${{ secrets.DOCKERHUB_USERNAME }}
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
