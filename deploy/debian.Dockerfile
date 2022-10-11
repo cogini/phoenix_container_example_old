@@ -246,6 +246,9 @@ FROM build-os-deps AS build-deps-get
     RUN mix deps.get
     RUN mix esbuild.install
 
+    # RUN yarn add newman
+    RUN yarn add snyk
+
 # Create base image for tests
 FROM build-deps-get AS test-image
     ARG APP_DIR
