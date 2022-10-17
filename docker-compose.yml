@@ -1,44 +1,19 @@
 ---
 version: "3.9"
 services:
-  app:
-    image: "${REPO_URL}:${IMAGE_TAG:-latest}"
+  deploy:
+    image: ${REGISTRY:-docker.io/}${IMAGE_OWNER}/${IMAGE_NAME}:${IMAGE_TAG:-latest}
     build:
-      dockerfile: deploy/alpine.Dockerfile
-      args:
-        BUILDKIT_INLINE_CACHE: "1"
-        MIX_ENV: prod
-        REGISTRY: ${REGISTRY}
-        PUBLIC_REGISTRY: ${PUBLIC_REGISTRY}
-      target: deploy
-      context: .
-    environment:
-      - SECRET_KEY_BASE
-      - DATABASE_URL
-      - DATABASE_HOST=postgres
-      - DATABASE_DB
-      - AWS_ACCESS_KEY_ID
-      - AWS_SECRET_ACCESS_KEY
-      - AWS_REGION
-      - AWS_DEFAULT_REGION
-    # platform: "linux/arm64"
-    # platform: "linux/amd64"
-    ports:
-      - "4000:4000"
-    depends_on:
-      - postgres
-
-  app-debian:
-    image: "${REPO_URL}:${IMAGE_TAG:-latest}"
-    build:
-      context: .
       dockerfile: deploy/debian.Dockerfile
       args:
         BUILDKIT_INLINE_CACHE: "1"
         MIX_ENV: prod
-        REGISTRY: ${REGISTRY}
+        REGISTRY: ${REGISTRY:-docker.io/}
+        # PUBLIC_REGISTRY: ${PUBLIC_REGISTRY}
       target: deploy
+      context: .
     environment:
+      - PORT=4000
       - SECRET_KEY_BASE
       - DATABASE_URL
       - DATABASE_HOST=postgres
@@ -47,42 +22,23 @@ services:
       - AWS_SECRET_ACCESS_KEY
       - AWS_REGION
       - AWS_DEFAULT_REGION
-    ports:
-      - "4000:4000"
-    # platform: "linux/arm64"
-    # platform: "linux/amd64"
-    depends_on:
-      - postgres
-
-  app-run:
-    # image: foo-app:latest
-    image: "${REPO_URL}:${IMAGE_TAG:-latest}"
-    environment:
-      - SECRET_KEY_BASE
-      - DATABASE_URL
-      - DATABASE_HOST=postgres
-      - DATABASE_DB
-      - AWS_ACCESS_KEY_ID
-      - AWS_SECRET_ACCESS_KEY
-      - AWS_REGION
-      - AWS_DEFAULT_REGION
-    ports:
-      - "4000:4000"
     stdin_open: true
-    # tty: true
+    tty: true
+    ports:
+      - "4000:4000"
     depends_on:
       postgres:
         condition: service_healthy
 
   test:
-    image: ${REGISTRY}${IMAGE_OWNER}/${IMAGE_NAME}:test
+    image: ${REGISTRY:-docker.io/}${IMAGE_OWNER}/${IMAGE_NAME}:test
     build:
       dockerfile: deploy/debian.Dockerfile
       target: test-image
       args:
         BUILDKIT_INLINE_CACHE: "1"
-        REGISTRY: ${REGISTRY}
-        PUBLIC_REGISTRY: ${PUBLIC_REGISTRY}
+        REGISTRY: ${REGISTRY:-docker.io/}
+        # PUBLIC_REGISTRY: ${PUBLIC_REGISTRY}
       context: .
     environment:
       - MIX_ENV=test
@@ -97,38 +53,18 @@ services:
         condition: service_healthy
     volumes:
       - "./junit-reports:/app/_build/test/junit-reports"
+      - "./sarif-reports:/sarif-reports"
+      - "./trivy-cache:/trivy-cache"
 
-  codebuild:
-    # Custom build image for AWS CodeBuild
-    # build:
-    #   context: .
-    #   dockerfile: deploy/codebuild.Dockerfile
-    #   args:
-    #     BUILDKIT_INLINE_CACHE: "1"
-    #     REGISTRY: ${REGISTRY}
-    environment:
-      - REPO_URL
-      - TASKDEF=ecs/taskdef-otel.json
-      # - EARTHLY_BUILDKIT_CACHE_SIZE_MB=30000
-      - AWS_ACCESS_KEY_ID
-      - AWS_SECRET_ACCESS_KEY
-      - AWS_DEFAULT_REGION
-      - DOCKERHUB_USERNAME
-      - DOCKERHUB_TOKEN
-    image: "${REGISTRY}foo-app-ecs-build:latest"
-    read_only: false
-    privileged: true
-    volumes:
-      - ".:/app:delegated"
-
-  app-dev:
+  dev:
+    # image: ${REGISTRY}${IMAGE_OWNER}/${IMAGE_NAME}:dev
     build:
       context: .
       dockerfile: deploy/debian.Dockerfile
       args:
         BUILDKIT_INLINE_CACHE: "1"
         MIX_ENV: dev
-        REGISTRY: ${REGISTRY}
+        REGISTRY: ${REGISTRY:-docker.io/}
       target: dev
     # command: /bin/bash -c /app/bin/app-start-dev
     # command: /app/bin/app-start-dev
@@ -151,8 +87,6 @@ services:
       - AWS_SECRET_ACCESS_KEY
       - AWS_REGION
       - AWS_DEFAULT_REGION
-    user: root
-    image: app-dev
     ports:
       - "4000:4000"
     stdin_open: true
@@ -163,21 +97,41 @@ services:
       - ".:/app:delegated"
       # - 'nfsmount:/app'
 
+  codebuild:
+    image: "${REGISTRY:-docker.io/}foo-app-ecs-build:latest"
+    # Custom build image for AWS CodeBuild
+    # build:
+    #   context: .
+    #   dockerfile: deploy/codebuild.Dockerfile
+    #   args:
+    #     BUILDKIT_INLINE_CACHE: "1"
+    #     REGISTRY: ${REGISTRY:-docker.io/}
+    environment:
+      - REPO_URL
+      - TASKDEF=ecs/taskdef-otel.json
+      # - EARTHLY_BUILDKIT_CACHE_SIZE_MB=30000
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
+      - AWS_DEFAULT_REGION
+      - DOCKERHUB_USERNAME
+      - DOCKERHUB_TOKEN
+    read_only: false
+    privileged: true
+    volumes:
+      - ".:/app:delegated"
+
   # https://github.com/docker-library/docs/blob/master/postgres/README.md
   # https://geshan.com.np/blog/2021/12/docker-postgres/
   postgres:
+    image: "${PUBLIC_REGISTRY:-docker.io/}foo-app-ecs-build:latest"
     # build:
     #   context: .
     #   dockerfile: deploy/postgres.Dockerfile
     #   args:
-    #     REGISTRY: ${REGISTRY}
-    # image: app-db:latest
-    # image: postgres:14
-    image: postgres:14.1-alpine
+    #     REGISTRY: ${REGISTRY:-docker.io/}
     restart: always
     ports:
       - '5432:5432'
-    # hostname: db
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
@@ -201,7 +155,7 @@ services:
       - "1433:1433"
 
   mysql:
-    image: "${PUBLIC_REGISTRY}mysql:8"
+    image: "${PUBLIC_REGISTRY:-docker.io/}mysql:8"
     environment:
       MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
       # MYSQL_ROOT_PASSWORD: example
@@ -212,11 +166,10 @@ services:
   deploy-scan:
     build:
       context: .
-      dockerfile: deploy/alpine.Dockerfile
-      # dockerfile: deploy/debian.Dockerfile
+      dockerfile: deploy/debian.Dockerfile
       args:
         BUILDKIT_INLINE_CACHE: "1"
-        REGISTRY: ${REGISTRY}
+        REGISTRY: ${REGISTRY:-docker.io/}
       target: deploy-scan
     image: deploy-scan
 
