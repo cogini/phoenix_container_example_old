@@ -1,39 +1,25 @@
-.elixir_ls
-.git
-.github
-.gitconfig
-.gitignore
-.gnupg
-.hex
-.mix
-.env
-.hound.yml
+# Ignore everything by default
+*
 
-.devcontainer
-.vscode
-.vscode-server
+# Elixir dirs
+!apps
+!assets
+!bin
+!config
+!lib
+!priv
+!priv
+!rel
+!test
 
-.dockerignore
-.earthignore
+# Build files
+!mix.exs
+!mix.lock
 
-assets/node_modules
-priv/static/assets
+!.credo.exs
+!.formatter.exs
+!coveralls.json
+!dialyzer-ignore
 
-# test
-deps
-_build
-build
-tmp
-
-ecs
-deploy
-container
-
-artifacts
-reports
-junit-reports
-
-skopeo-*
-
-erl_crash.dump
-.DS_Store
+# Add files
+!LICENSE
