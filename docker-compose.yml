@@ -57,7 +57,7 @@ services:
       - "./trivy-cache:/trivy-cache"
 
   dev:
-    # image: ${REGISTRY}${IMAGE_OWNER}/${IMAGE_NAME}:dev
+    image: ${REGISTRY:-docker.io/}${IMAGE_OWNER}/${IMAGE_NAME}:dev
     build:
       context: .
       dockerfile: deploy/debian.Dockerfile
@@ -123,7 +123,7 @@ services:
   # https://github.com/docker-library/docs/blob/master/postgres/README.md
   # https://geshan.com.np/blog/2021/12/docker-postgres/
   postgres:
-    image: "${PUBLIC_REGISTRY:-docker.io/}foo-app-ecs-build:latest"
+    image: "${PUBLIC_REGISTRY:-docker.io/}postgres:14-alpine"
     # build:
     #   context: .
     #   dockerfile: deploy/postgres.Dockerfile
