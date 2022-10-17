@@ -17,7 +17,7 @@
     "workspaceFolder": "/app",
 
     // Start specific services in your Docker Compose config.
-    "runServices": ["dev"],
+    "runServices": ["dev", "postgres"],
 
     // Connect as a non-root user. See https://aka.ms/vscode-remote/containers/non-root.
     "remoteUser": "nonroot",
