@@ -8,8 +8,8 @@ services:
       target: test-image
       args:
         BUILDKIT_INLINE_CACHE: "1"
-        REGISTRY: ${REGISTRY}
-        PUBLIC_REGISTRY: ${PUBLIC_REGISTRY}
+        REGISTRY: ${REGISTRY:-docker.io/}
+        # PUBLIC_REGISTRY: ${PUBLIC_REGISTRY}
       context: .
     environment:
       - MIX_ENV=test
