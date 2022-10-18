@@ -50,6 +50,7 @@ npm-debug.log
 /.gnupg/
 /.hex/
 /.mix/
+/.ssh/
 /.vscode-server/
 /.vscode/
 /tmp/
