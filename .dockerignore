@@ -20,6 +20,7 @@
 !.formatter.exs
 !coveralls.json
 !dialyzer-ignore
+!trivy.yaml
 
 # Add files
 !LICENSE
