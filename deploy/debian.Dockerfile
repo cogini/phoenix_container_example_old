@@ -267,6 +267,7 @@ FROM build-deps-get AS test-image
     COPY .credo.exs ./
     COPY .formatter.exs ./
     # COPY dialyzer-ignore ./
+    COPY trivy.yaml ./
 
     # Non-umbrella
     COPY lib ./lib
@@ -539,6 +540,8 @@ FROM deploy-base AS deploy-scan
     COPY --from=test-image /usr/local/bin/trivy /usr/local/bin/trivy
     COPY --from=test-image /usr/local/share/trivy/templates /usr/local/share/trivy/templates
     COPY --from=test-image /usr/local/bin/grype /usr/local/bin/grype
+
+    COPY trivy.yaml ./
 
     # RUN set -exu && \
     #     mkdir -p /sarif-reports && \
