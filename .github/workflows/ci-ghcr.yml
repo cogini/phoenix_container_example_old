@@ -124,7 +124,7 @@ jobs:
         run: |
           docker pull "${REGISTRY}${IMAGE_OWNER}/${IMAGE_NAME}:test"
           docker-compose -f docker-compose.gha.yml up test
-          docker-compose -f docker-compose.gha.yml run test mix test
+          docker-compose -f docker-compose.gha.yml run test mix do test --cover, test.coverage
           docker-compose -f docker-compose.gha.yml run test mix do format --check-formatted, credo, deps.audit, sobelow
 
       - name: Publish unit test results to GitHub
