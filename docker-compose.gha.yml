@@ -1,41 +1,38 @@
 ---
 version: "3.9"
 services:
+  # Image used to run tests
   test:
-    image: ${REGISTRY}${IMAGE_OWNER}/${IMAGE_NAME}:test
-    build:
-      dockerfile: deploy/debian.Dockerfile
-      target: test-image
-      args:
-        BUILDKIT_INLINE_CACHE: "1"
-        REGISTRY: ${REGISTRY:-docker.io/}
-        # PUBLIC_REGISTRY: ${PUBLIC_REGISTRY}
-      context: .
+    image: ${REGISTRY:-docker.io/}${IMAGE_OWNER}/${IMAGE_NAME}:test
     environment:
-      - MIX_ENV=test
-      - DATABASE_URL
       - DATABASE_HOST=postgres
       - DATABASE_DB
+      - MIX_ENV=test
       - SECRET_KEY_BASE
-    # stdin_open: true
-    # tty: true
-    depends_on:
-      postgres:
-        condition: service_healthy
     volumes:
       - "./junit-reports:/app/_build/test/junit-reports"
       - "./sarif-reports:/sarif-reports"
       - "./trivy-cache:/trivy-cache"
+    # depends_on:
+    #   postgres:
+    #     condition: service_healthy
 
+  # Final deploy service
+  deploy:
+    image: ${REGISTRY:-docker.io/}${IMAGE_OWNER}/${IMAGE_NAME}:${IMAGE_TAG:-latest}
+    environment:
+      - DATABASE_URL=ecto://postgres:postgres@postgres:5432/app_prod
+      - PORT=4001
+      - SECRET_KEY_BASE
+    ports:
+      - '4001:4001'
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Deploy image plus security scan tools
   scan:
-    image: ${REGISTRY}${IMAGE_OWNER}/${IMAGE_NAME}:scan
-    build:
-      context: .
-      dockerfile: deploy/debian.Dockerfile
-      args:
-        BUILDKIT_INLINE_CACHE: "1"
-        REGISTRY: ${REGISTRY}
-      target: deploy-scan
+    image: ${REGISTRY:-docker.io/}${IMAGE_OWNER}/${IMAGE_NAME}:scan
     volumes:
       - "./sarif-reports:/sarif-reports"
       - "./trivy-cache:/trivy-cache"
@@ -43,23 +40,44 @@ services:
   # https://github.com/docker-library/docs/blob/master/postgres/README.md
   # https://geshan.com.np/blog/2021/12/docker-postgres/
   postgres:
-    image: ${PUBLIC_REGISTRY}postgres:14.1-alpine
+    image: "${PUBLIC_REGISTRY:-docker.io/}postgres:14.1-alpine"
     restart: always
     ports:
-      - '5432:5432'
+      - '5432'
+    user: postgres
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
     volumes:
       - postgres_data_path:/var/lib/postgresql/data
-      # - ./db/init.sql:/docker-entrypoint-initdb.d/create_tables.sql
+      # - ./db/postgres/init.sql:/docker-entrypoint-initdb.d/create_tables.sql
     healthcheck:
-      # test: ["CMD-SHELL", "pg_isready -U postgres -d app_test"]
-      test: ["CMD-SHELL", "pg_isready"]
-      start_period: 5s
-      interval: 2s
-      timeout: 5s
-      retries: 20
+      # test: ["CMD", "pg_isready -U postgres -d app_test"]
+      # test: ["psql", "-w", "-U", "postgres", "-d", "app_test", "-c", "SELECT 1"]
+      test: ["CMD", "pg_isready"]
+      start_period: 2s
+      interval: 1s
+      timeout: 1s
+      retries: 10
+
+  mysql:
+    # https://hub.docker.com/_/mysql
+    image: "${PUBLIC_REGISTRY:-docker.io/}mysql:8"
+    environment:
+      # MYSQL_DATABASE=test
+      # MYSQL_ROOT_PASSWORD: example
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+    # command: --default-authentication-plugin=mysql_native_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data_path:/var/lib/mysql
+    # - "./db/mysql/initdb.d:/docker-entrypoint-initdb.d"
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "127.0.0.1"]
+      timeout: 10s
+      retries: 10
 
   mssql:
     image: mcr.microsoft.com/mssql/server:2019-latest
@@ -67,17 +85,20 @@ services:
       ACCEPT_EULA: "Y"
       SA_PASSWORD: some!Password
     ports:
-      - "1433:1433"
+      - '1433'
 
-  mysql:
-    image: "${PUBLIC_REGISTRY}mysql:8"
-    environment:
-      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
-      # MYSQL_ROOT_PASSWORD: example
-    # command: --default-authentication-plugin=mysql_native_password
-    ports:
-      - "3306:3306"
+  # redis:
+  #   image: "${PUBLIC_REGISTRY:-docker.io/}redis:4"
+  #   ports:
+  #     - '6379'
+  #   healthcheck:
+  #     test: ["CMD", "redis-cli", "ping"]
+  #     interval: 1s
+  #     timeout: 3s
+  #     retries: 10
 
 volumes:
   postgres_data_path:
+    driver: local
+  mysql_data_path:
     driver: local

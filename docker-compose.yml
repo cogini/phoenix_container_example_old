@@ -1,35 +1,7 @@
 ---
 version: "3.9"
 services:
-  deploy:
-    image: ${REGISTRY:-docker.io/}${IMAGE_OWNER}/${IMAGE_NAME}:${IMAGE_TAG:-latest}
-    build:
-      dockerfile: deploy/debian.Dockerfile
-      args:
-        BUILDKIT_INLINE_CACHE: "1"
-        MIX_ENV: prod
-        REGISTRY: ${REGISTRY:-docker.io/}
-        # PUBLIC_REGISTRY: ${PUBLIC_REGISTRY}
-      target: deploy
-      context: .
-    environment:
-      - PORT=4000
-      - SECRET_KEY_BASE
-      - DATABASE_URL
-      - DATABASE_HOST=postgres
-      - DATABASE_DB
-      - AWS_ACCESS_KEY_ID
-      - AWS_SECRET_ACCESS_KEY
-      - AWS_REGION
-      - AWS_DEFAULT_REGION
-    stdin_open: true
-    tty: true
-    ports:
-      - "4000:4000"
-    depends_on:
-      postgres:
-        condition: service_healthy
-
+  # Image used to run tests
   test:
     image: ${REGISTRY:-docker.io/}${IMAGE_OWNER}/${IMAGE_NAME}:test
     build:
@@ -38,34 +10,71 @@ services:
       args:
         BUILDKIT_INLINE_CACHE: "1"
         REGISTRY: ${REGISTRY:-docker.io/}
-        # PUBLIC_REGISTRY: ${PUBLIC_REGISTRY}
       context: .
     environment:
-      - MIX_ENV=test
-      - DATABASE_URL
       - DATABASE_HOST=postgres
       - DATABASE_DB
+      - MIX_ENV=test
       - SECRET_KEY_BASE
-    # stdin_open: true
-    # tty: true
-    depends_on:
-      postgres:
-        condition: service_healthy
     volumes:
       - "./junit-reports:/app/_build/test/junit-reports"
       - "./sarif-reports:/sarif-reports"
       - "./trivy-cache:/trivy-cache"
+    depends_on:
+      postgres:
+        condition: service_healthy
 
+  # Final deploy service
+  deploy:
+    image: ${REGISTRY:-docker.io/}${IMAGE_OWNER}/${IMAGE_NAME}:${IMAGE_TAG:-latest}
+    build:
+      dockerfile: deploy/debian.Dockerfile
+      target: deploy
+      args:
+        MIX_ENV: prod
+        BUILDKIT_INLINE_CACHE: "1"
+        REGISTRY: ${REGISTRY:-docker.io/}
+      context: .
+    environment:
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
+      - AWS_REGION
+      - AWS_DEFAULT_REGION
+      - DATABASE_URL=ecto://postgres:postgres@postgres:5432/app_prod
+      - PORT=4000
+      - SECRET_KEY_BASE
+    ports:
+      - "4000:4000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Deploy image plus security scan tools
+  scan:
+    image: ${REGISTRY:-docker.io/}${IMAGE_OWNER}/${IMAGE_NAME}:scan
+    build:
+      target: deploy-scan
+      args:
+        MIX_ENV: prod
+        BUILDKIT_INLINE_CACHE: "1"
+        REGISTRY: ${REGISTRY:-docker.io/}
+      context: .
+      dockerfile: deploy/debian.Dockerfile
+    volumes:
+      - "./sarif-reports:/sarif-reports"
+      - "./trivy-cache:/trivy-cache"
+
+  # Development image
   dev:
     image: ${REGISTRY:-docker.io/}${IMAGE_OWNER}/${IMAGE_NAME}:dev
     build:
-      context: .
-      dockerfile: deploy/debian.Dockerfile
+      target: dev
       args:
         BUILDKIT_INLINE_CACHE: "1"
         MIX_ENV: dev
         REGISTRY: ${REGISTRY:-docker.io/}
-      target: dev
+      context: .
+      dockerfile: deploy/debian.Dockerfile
     # command: /bin/bash -c /app/bin/app-start-dev
     # command: /app/bin/app-start-dev
     # command: /bin/sh -c "/app/_build/prod/rel/app/bin/app foreground"
@@ -75,8 +84,6 @@ services:
     command: ["sleep", "infinity"]
     # command: /bin/sh -c "while sleep 1000; do :; done"
     # command: mix phx.server
-    depends_on:
-      - postgres
     environment:
       - MIX_ENV=dev
       - SECRET_KEY_BASE
@@ -96,6 +103,66 @@ services:
     volumes:
       - ".:/app:delegated"
       # - 'nfsmount:/app'
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # https://github.com/docker-library/docs/blob/master/postgres/README.md
+  # https://geshan.com.np/blog/2021/12/docker-postgres/
+  postgres:
+    image: "${PUBLIC_REGISTRY:-docker.io/}postgres:14.1-alpine"
+    # build:
+    #   context: .
+    #   dockerfile: deploy/postgres.Dockerfile
+    #   args:
+    #     REGISTRY: ${REGISTRY:-docker.io/}
+    restart: always
+    ports:
+      - '5432'
+    user: postgres
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - postgres_data_path:/var/lib/postgresql/data
+      # - ./db/postgres/init.sql:/docker-entrypoint-initdb.d/create_tables.sql
+    healthcheck:
+      # test: ["CMD", "pg_isready -U postgres -d app_test"]
+      # test: ["psql", "-w", "-U", "postgres", "-d", "app_test", "-c", "SELECT 1"]
+      test: ["CMD", "pg_isready"]
+      start_period: 2s
+      interval: 1s
+      timeout: 1s
+      retries: 10
+
+  # mysql:
+  #   # https://hub.docker.com/_/mysql
+  #   image: "${PUBLIC_REGISTRY:-docker.io/}mysql:8"
+  #   environment:
+  #     - MYSQL_ALLOW_EMPTY_PASSWORD=yes
+  #     - MYSQL_ROOT_PASSWORD=
+  #     - MYSQL_DATABASE=test
+  #   # command: --default-authentication-plugin=mysql_native_password
+  #   ports:
+  #     - '3306'
+  #   volumes:
+  #     - mysql_data_path:/var/lib/mysql
+  #   # - "./db/mysql/initdb.d:/docker-entrypoint-initdb.d"
+  #   healthcheck:
+  #     test: ["CMD", "mysqladmin" ,"ping", "-h", "127.0.0.1"]
+  #     # test: ["CMD", "mysql" ,"-h", "mysql", "-P", "3306", "-u", "root", "-e", "SELECT 1", "cache"]
+  #     start_period: 1s
+  #     interval: 1s
+  #     timeout: 1s
+  #     retries: 10
+
+  # mssql:
+  #   image: mcr.microsoft.com/mssql/server:2019-latest
+  #   environment:
+  #     ACCEPT_EULA: "Y"
+  #     SA_PASSWORD: some!Password
+  #   ports:
+  #     - '1433'
 
   codebuild:
     image: "${REGISTRY:-docker.io/}foo-app-ecs-build:latest"
@@ -120,67 +187,8 @@ services:
     volumes:
       - ".:/app:delegated"
 
-  # https://github.com/docker-library/docs/blob/master/postgres/README.md
-  # https://geshan.com.np/blog/2021/12/docker-postgres/
-  postgres:
-    image: "${PUBLIC_REGISTRY:-docker.io/}postgres:14-alpine"
-    # build:
-    #   context: .
-    #   dockerfile: deploy/postgres.Dockerfile
-    #   args:
-    #     REGISTRY: ${REGISTRY:-docker.io/}
-    restart: always
-    ports:
-      - '5432:5432'
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-    volumes:
-      - postgres_data_path:/var/lib/postgresql/data
-      # - ./db/init.sql:/docker-entrypoint-initdb.d/create_tables.sql
-    healthcheck:
-      # test: ["CMD-SHELL", "pg_isready -U postgres -d app_test"]
-      test: ["CMD-SHELL", "pg_isready"]
-      start_period: 5s
-      interval: 2s
-      timeout: 5s
-      retries: 20
-
-  mssql:
-    image: mcr.microsoft.com/mssql/server:2019-latest
-    environment:
-      ACCEPT_EULA: "Y"
-      SA_PASSWORD: some!Password
-    ports:
-      - "1433:1433"
-
-  mysql:
-    image: "${PUBLIC_REGISTRY:-docker.io/}mysql:8"
-    environment:
-      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
-      # MYSQL_ROOT_PASSWORD: example
-    # command: --default-authentication-plugin=mysql_native_password
-    ports:
-      - "3306:3306"
-
-  deploy-scan:
-    build:
-      context: .
-      dockerfile: deploy/debian.Dockerfile
-      args:
-        BUILDKIT_INLINE_CACHE: "1"
-        REGISTRY: ${REGISTRY:-docker.io/}
-      target: deploy-scan
-    image: deploy-scan
-
 volumes:
   postgres_data_path:
     driver: local
-
-# volumes:
-#   nfsmount:
-#     driver: local
-#     driver_opts:
-#       type: nfs
-#       o: addr=host.docker.internal,rw,nolock,hard,nointr,nfsvers=3
-#       device: ":${PWD}"
+  # mysql_data_path:
+  #   driver: local
