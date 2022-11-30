@@ -27,6 +27,7 @@ jobs:
 
       # Upload SARIF report files
       security-events: write
+
     steps:
       # https://github.com/marketplace/actions/docker-login
       - name: Log in to GHCR
@@ -37,19 +38,24 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Check out source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
+
+      - name: Pull scan
+        env:
+          REGISTRY: ghcr.io/
+          PUBLIC_REGISTRY: ""
+        run: |
+          docker compose -f docker-compose.gha.yml pull --quiet scan
 
       - name: Security scan image
         env:
           REGISTRY: ghcr.io/
-          # PUBLIC_REGISTRY: "${{ steps.login-ecr.outputs.registry }}/"
           PUBLIC_REGISTRY: ""
         run: |
           mkdir -p ./sarif-reports
           mkdir -p ./trivy-cache
-          docker pull "${REGISTRY}${IMAGE_OWNER}/${IMAGE_NAME}:scan"
-          docker-compose -f docker-compose.gha.yml run scan trivy fs --no-progress --debug --cache-dir /trivy-cache /
-          docker-compose -f docker-compose.gha.yml run scan trivy fs --format sarif -o /sarif-reports/trivy-deploy.sarif --no-progress --debug --cache-dir /trivy-cache /
+          docker compose -f docker-compose.gha.yml run scan trivy fs --no-progress --debug --cache-dir /trivy-cache /
+          # docker compose -f docker-compose.gha.yml run scan trivy fs --format sarif -o /sarif-reports/trivy-deploy.sarif --no-progress --debug --cache-dir /trivy-cache /
 
       # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning
       # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github
