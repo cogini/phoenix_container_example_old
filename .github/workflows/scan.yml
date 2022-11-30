@@ -9,7 +9,7 @@ env:
   IMAGE_OWNER: ${{ github.repository_owner }}
 jobs:
   scan:
-    name: Run security scans
+    name: Security scan prod image
     runs-on: ubuntu-latest
     permissions:
       # Interact with GitHub's OIDC Token endpoint for AWS
