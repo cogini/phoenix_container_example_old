@@ -366,7 +366,7 @@ jobs:
           tags: |
             ${{ steps.login-ecr.outputs.registry }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
   scan:
-    name: Security scan image
+    name: Security scan prod image
     runs-on: ubuntu-latest
     needs: [build-prod]
     # permissions: write-all
