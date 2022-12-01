@@ -1,16 +1,14 @@
 defmodule PhoenixContainerExample.MixProject do
   use Mix.Project
 
-  @app :phoenix_container_example
-  @version "0.1.0"
-
   def project do
     [
-      app: @app,
-      version: @version,
-      elixir: "~> 1.12",
+      app: :phoenix_container_example,
+      version: "0.1.0",
+      elixir: "~> 1.13",
       elixirc_paths: elixirc_paths(Mix.env()),
       # elixirc_options: [warnings_as_errors: Mix.env() != :dev],
+      build_embedded: Mix.env() == :prod,
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       dialyzer: [
@@ -39,9 +37,6 @@ defmodule PhoenixContainerExample.MixProject do
     ]
   end
 
-  # Configuration for the OTP application.
-  #
-  # Type `mix help compile.app` for more information.
   def application do
     [
       mod: {PhoenixContainerExample.Application, []},
@@ -51,11 +46,11 @@ defmodule PhoenixContainerExample.MixProject do
     ]
   end
 
-  def extra_applications(:test), do: [:tools]
   def extra_applications(:dev), do: [:tools]
+  def extra_applications(:test), do: [:tools]
   def extra_applications(_), do: []
 
-  # Specifies which paths to compile per environment.
+  defp elixirc_paths(:dev), do: ["lib", "test/support"]
   defp elixirc_paths(:test), do: ["lib", "test/support"]
   defp elixirc_paths(_), do: ["lib"]
 
@@ -69,9 +64,6 @@ defmodule PhoenixContainerExample.MixProject do
     ]
   end
 
-  # Specifies your project dependencies.
-  #
-  # Type `mix help deps` for examples and options.
   defp deps do
     [
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
@@ -96,9 +88,9 @@ defmodule PhoenixContainerExample.MixProject do
       {:phoenix, "~> 1.6.11"},
       {:phoenix_ecto, "~> 4.4"},
       {:phoenix_html, "~> 3.0"},
-      {:phoenix_live_dashboard, "~> 0.7"},
+      {:phoenix_live_dashboard, "~> 0.6"},
       {:phoenix_live_reload, "~> 1.2", only: :dev},
-      {:phoenix_live_view, "~> 0.18"},
+      {:phoenix_live_view, "~> 0.17.5"},
       {:plug_cowboy, "~> 2.5"},
       {:postgrex, ">= 0.0.0"},
       {:sobelow, "~> 0.11", only: [:dev, :test], runtime: false},
@@ -110,12 +102,6 @@ defmodule PhoenixContainerExample.MixProject do
     ]
   end
 
-  # Aliases are shortcuts or tasks specific to the current project.
-  # For example, to install project dependencies and perform other setup tasks, run:
-  #
-  #     $ mix setup
-  #
-  # See the documentation for `Mix` for more info on aliases.
   defp aliases do
     [
       setup: ["deps.get", "ecto.setup"],
@@ -126,15 +112,21 @@ defmodule PhoenixContainerExample.MixProject do
       # "assets.deploy": ["yarn --cwd assets deploy", "phx.digest"],
       quality: [
         "format --check-formatted",
+        "deps.unlock --check-unused",
         "credo",
-        "dialyzer --halt-exit-status",
-        "sobelow --exit"
+        "hex.audit",
+        "deps.audit",
+        "sobelow --exit",
+        "dialyzer --halt-exit-status"
       ],
       "quality.ci": [
         "format --check-formatted",
-        "credo --ignore refactor,duplicated",
-        "dialyzer --halt-exit-status",
-        "sobelow --exit"
+        "deps.unlock --check-unused",
+        "hex.audit",
+        "deps.audit",
+        "credo",
+        "sobelow --exit",
+        "dialyzer --halt-exit-status"
       ]
     ]
   end
