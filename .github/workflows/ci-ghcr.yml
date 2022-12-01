@@ -140,7 +140,7 @@ jobs:
           REGISTRY: ghcr.io/
           PUBLIC_REGISTRY: ""
         run: |
-          docker compose -f docker-compose.gha.yml run test mix do format --check-formatted, mix deps.unlock --check-unused, credo, hex.audit, deps.audit, sobelow
+          docker compose -f docker-compose.gha.yml run test mix do format --check-formatted, deps.unlock --check-unused, credo, hex.audit, deps.audit, sobelow
 
       - name: Publish unit test results to GitHub
         uses: EnricoMi/publish-unit-test-result-action@v2
