@@ -413,8 +413,8 @@ jobs:
         run: |
           mkdir -p ./sarif-reports
           mkdir -p ./trivy-cache
-          # docker compose -f docker-compose.gha.yml run scan trivy fs --no-progress --debug --cache-dir /trivy-cache /
-          docker compose -f docker-compose.gha.yml run scan trivy fs --format sarif -o /sarif-reports/trivy-deploy.sarif --no-progress --debug --cache-dir /trivy-cache /
+          docker compose -f docker-compose.gha.yml run scan trivy fs --no-progress --debug --cache-dir /trivy-cache /
+          # docker compose -f docker-compose.gha.yml run scan trivy fs --format sarif -o /sarif-reports/trivy-deploy.sarif --no-progress --debug --cache-dir /trivy-cache /
 
       # https://github.com/aquasecurity/trivy-action
       # - name: Run Trivy vulnerability scanner
