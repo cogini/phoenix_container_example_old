@@ -24,7 +24,7 @@ jobs:
           - 5000:5000
 
     permissions:
-      # Interact with GitHub's OIDC Token endpoint for AWS
+      # Interact with GitHub OIDC Token endpoint for AWS
       id-token: write
       contents: read
 
@@ -35,6 +35,11 @@ jobs:
       issues: read
 
     steps:
+      - name: Cancel previous runs
+        uses: styfle/cancel-workflow-action@0.11.0
+        with:
+          access_token: ${{ github.token }}
+
       # https://github.com/aws-actions/configure-aws-credentials
       # https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
       - name: Configure AWS credentials
@@ -43,8 +48,10 @@ jobs:
           role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ env.AWS_REGION }}
 
+      # https://github.com/marketplace/actions/docker-login
+
       # https://github.com/aws-actions/amazon-ecr-login
-      - name: Login to Amazon ECR
+      - name: Log in to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
@@ -56,8 +63,8 @@ jobs:
       #     username: ${{ secrets.AWS_ACCESS_KEY_ID }}
       #     password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
-      # https://github.com/marketplace/actions/docker-login
-      - name: Log in to DockerHub
+      # Pull public images without rate limits
+      - name: Log in to Docker Hub
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -123,8 +130,16 @@ jobs:
           # https://github.com/moby/buildkit#export-cache
           cache-from: type=gha,scope=${{ github.workflow }}-test
           cache-to: type=gha,scope=${{ github.workflow }}-test,mode=max
+          # ssh: default
           tags: |
             localhost:5000/${{ env.IMAGE_OWNER}}/${{ env.IMAGE_NAME }}:test
+
+      - name: Start postgres
+        env:
+          REGISTRY: ghcr.io/
+          PUBLIC_REGISTRY: ""
+        run: |
+          docker compose -f docker-compose.gha.yml up --wait --detach postgres
 
       - name: Run tests
         env:
@@ -132,10 +147,21 @@ jobs:
           # PUBLIC_REGISTRY: "${{ steps.login-ecr.outputs.registry }}/"
           PUBLIC_REGISTRY: ""
         run: |
-          docker compose -f docker-compose.gha.yml up test
-          docker compose -f docker-compose.gha.yml run test mix test
-          docker compose -f docker-compose.gha.yml run test mix do credo, deps.audit, sobelow
-          docker compose -f docker-compose.gha.yml run test mix dialyzer --halt-exit-status
+          docker compose -f docker-compose.gha.yml run test mix test --cover
+
+      - name: Run quality checks
+        env:
+          REGISTRY: localhost:5000/
+          PUBLIC_REGISTRY: ""
+        run: |
+          docker compose -f docker-compose.gha.yml run test mix do format --check-formatted, deps.unlock --check-unused, credo, hex.audit, deps.audit, sobelow
+
+      - name: Run dialyzer
+        env:
+          REGISTRY: localhost:5000/
+          PUBLIC_REGISTRY: ""
+        run: |
+          docker compose -f docker-compose.gha.yml run test mix dialyzer --no-check --halt-exit-status --format github
 
       - name: Build deploy image and push
         if: github.event_name != 'pull_request'
@@ -165,7 +191,7 @@ jobs:
           file: ./deploy/debian.Dockerfile
           push: true
           cache-from: type=gha,scope=${{ github.workflow }}
-          cache-to: type=gha,scope=${{ github.workflow }}
+          cache-to: type=gha,scope=${{ github.workflow }},mode=max
           tags: |
             ${{ steps.login-ecr.outputs.registry }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
 
