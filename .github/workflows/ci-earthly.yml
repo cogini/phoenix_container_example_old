@@ -19,19 +19,21 @@ jobs:
     name: Build image and push
     runs-on: ubuntu-latest
     permissions:
-      # Needed to interact with GitHub's OIDC Token endpoint for AWS
+      # Interact with GitHub OIDC Token endpoint for AWS
       id-token: write
       contents: read
 
-      # Needed to upload JUnit report files
+      # Upload JUnit report files
       # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
       checks: write
       pull-requests: write
       issues: read
 
     steps:
-      # - name: Dump event
-      #   run: cat "$GITHUB_EVENT_PATH"
+      - name: Cancel previous runs
+        uses: styfle/cancel-workflow-action@0.11.0
+        with:
+          access_token: ${{ github.token }}
 
       # https://github.com/marketplace/actions/setup-earthly
       - uses: earthly/actions-setup@v1
@@ -48,7 +50,7 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       # https://github.com/aws-actions/amazon-ecr-login
-      - name: Login to Amazon ECR
+      - name: Log in to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
@@ -62,6 +64,7 @@ jobs:
       #     # username: AWS
       #     # password: ${{ steps.login-ecr.outputs.password }}
 
+      # Pull public images without rate limits
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
         with:
