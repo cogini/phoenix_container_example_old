@@ -50,19 +50,18 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       # https://github.com/aws-actions/amazon-ecr-login
-      - name: Log in to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
+      # - name: Log in to Amazon ECR
+      #   id: login-ecr
+      #   uses: aws-actions/amazon-ecr-login@v1
 
-      # - name: Log in to ECR
-      #   id: docker-login-ecr
-      #   uses: docker/login-action@v2
-      #   with:
-      #     # registry: ${{ env.REGISTRY_NAME }}
-      #     registry: ${{ steps.login-ecr.outputs.registry }}
-      #     # username: ${{ steps.login-ecr.outputs.username }}
-      #     # username: AWS
-      #     # password: ${{ steps.login-ecr.outputs.password }}
+      - name: Log in to ECR
+        uses: docker/login-action@v2
+        with:
+          # registry: ${{ env.REGISTRY_NAME }}
+          registry: ${{ steps.login-ecr.outputs.registry }}
+          # username: ${{ steps.login-ecr.outputs.username }}
+          # username: AWS
+          # password: ${{ steps.login-ecr.outputs.password }}
 
       # Pull public images without rate limits
       - name: Log in to Docker Hub
