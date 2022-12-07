@@ -6,10 +6,10 @@ on: ["push", "pull_request"]
 #     branches: [main]
 #   pull_request:
 #     branches: [main]
-#     types: [labeled,synchronize,reopened,unlabeled]
+#     types: [labeled, synchronize, reopened, unlabeled]
 env:
-  IMAGE_NAME: foo-app
   # IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME: foo-app
   IMAGE_OWNER: ${{ github.repository_owner }}
   AWS_ROLE_TO_ASSUME: arn:aws:iam::770916339360:role/foo-dev-ecr-github-action-role
   AWS_REGION: ap-northeast-1
@@ -18,7 +18,6 @@ jobs:
   build:
     name: Build image and push
     runs-on: ubuntu-latest
-    # runs-on: ubuntu-20.04
     permissions:
       # Needed to interact with GitHub's OIDC Token endpoint for AWS
       id-token: write
@@ -48,37 +47,29 @@ jobs:
           role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ env.AWS_REGION }}
 
-      # - name: Display AWS identity
-      #   run: aws sts get-caller-identity
-
       # https://github.com/aws-actions/amazon-ecr-login
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Dump environment
-        run: env|sort
+      # - name: Log in to ECR
+      #   id: docker-login-ecr
+      #   uses: docker/login-action@v2
+      #   with:
+      #     # registry: ${{ env.REGISTRY_NAME }}
+      #     registry: ${{ steps.login-ecr.outputs.registry }}
+      #     # username: ${{ steps.login-ecr.outputs.username }}
+      #     # username: AWS
+      #     # password: ${{ steps.login-ecr.outputs.password }}
 
-      - name: Login to ECR
-        id: docker-login-ecr
-        uses: docker/login-action@v2
-        with:
-          # registry: ${{ env.REGISTRY_NAME }}
-          registry: ${{ steps.login-ecr.outputs.registry }}
-          # username: ${{ steps.login-ecr.outputs.username }}
-          # username: AWS
-          # password: ${{ steps.login-ecr.outputs.password }}
-
-      # https://github.com/marketplace/actions/docker-login
-      - name: Login to DockerHub
-        id: login-docker-hub
+      - name: Log in to Docker Hub
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Checkout source
-        uses: actions/checkout@v2
+      - name: Check out source
+        uses: actions/checkout@v3
 
       - name: Set variables
         id: vars
@@ -99,23 +90,12 @@ jobs:
           git checkout -b "$branch" || true
           echo "::set-output name=branch::${branch}"
 
-      # - name: Set up QEMU for multi-platform builds
-      #   id: qemu
-      #   uses: docker/setup-qemu-action@v2
-      #   with:
-      #     platforms: linux/amd64,linux/arm64
-
-      # - name: Display available platforms
-      #   run: echo "${{ steps.qemu.outputs.platforms }}"
-
       - name: Set up Docker buildx
         id: buildx
         uses: docker/setup-buildx-action@v2
         with:
           driver-opts: network=host
 
-      - name: Dump environment
-        run: env|sort
 
       - name: Build with Earthly
         env:
