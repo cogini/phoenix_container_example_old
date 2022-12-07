@@ -8,8 +8,8 @@ on: ["push", "pull_request"]
 #     branches: [main]
 #     types: [labeled, synchronize, reopened, unlabeled]
 env:
-  IMAGE_NAME: foo-app
   # IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME: foo-app
   IMAGE_OWNER: ${{ github.repository_owner }}
   AWS_ROLE_TO_ASSUME: arn:aws:iam::770916339360:role/foo-dev-ecr-github-action-role
   AWS_REGION: ap-northeast-1
@@ -17,7 +17,6 @@ jobs:
   docker-build:
     name: Build image and push
     runs-on: ubuntu-latest
-    # runs-on: ubuntu-20.04
     services:
       registry:
         image: registry:2
@@ -25,20 +24,17 @@ jobs:
           - 5000:5000
 
     permissions:
-      # Needed to interact with GitHub's OIDC Token endpoint for AWS
+      # Interact with GitHub's OIDC Token endpoint for AWS
       id-token: write
       contents: read
 
-      # Needed to upload JUnit report files
+      # Upload JUnit report files
       # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
       checks: write
       pull-requests: write
       issues: read
 
     steps:
-      # - name: Dump event
-      #   run: cat "$GITHUB_EVENT_PATH"
-
       # https://github.com/aws-actions/configure-aws-credentials
       # https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
       - name: Configure AWS credentials
@@ -46,9 +42,6 @@ jobs:
         with:
           role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ env.AWS_REGION }}
-
-      # - name: Display AWS identity
-      #   run: aws sts get-caller-identity
 
       # https://github.com/aws-actions/amazon-ecr-login
       - name: Login to Amazon ECR
@@ -64,15 +57,14 @@ jobs:
       #     password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
       # https://github.com/marketplace/actions/docker-login
-      - name: Login to DockerHub
-        id: login-docker-hub
+      - name: Log in to DockerHub
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Checkout source
-        uses: actions/checkout@v2
+      - name: Check out source
+        uses: actions/checkout@v3
 
       - name: Set variables
         id: vars
@@ -86,10 +78,19 @@ jobs:
         run: |
           echo "BRANCH=$(echo ${GITHUB_REF#refs/heads/})" >> $GITHUB_ENV
 
-      - name: Get pull_request branch name
+      - name: Get branch name for pull_request
         if: github.event_name == 'pull_request'
         run: |
           echo "BRANCH=$(echo $GITHUB_HEAD_REF | tr '//\\' '.' | cut -c -55)" >> $GITHUB_ENV
+
+      # # https://github.com/marketplace/actions/webfactory-ssh-agent
+      # # https://docs.github.com/en/developers/overview/managing-deploy-keys#deploy-keys
+      # # ssh-keygen -t ed25519 -m pem -C "git@github.com:reachfh/api-utils.git" -f api-utils
+      # - name: Configure ssh keys
+      #   uses: webfactory/ssh-agent@v0.7.0
+      #   with:
+      #     ssh-private-key: |
+      #       ${{ secrets.SSH_PRIVATE_KEY }}
 
       # - name: Set up QEMU for multi-platform builds
       #   id: qemu
@@ -108,7 +109,6 @@ jobs:
 
       # https://github.com/docker/build-push-action
       - name: Build test image
-        id: docker-build-test
         uses: docker/build-push-action@v3
         env:
           REGISTRY_NAME: localhost:5000
@@ -118,7 +118,6 @@ jobs:
           context: .
           builder: ${{ steps.buildx.outputs.name }}
           file: ./deploy/debian.Dockerfile
-          # load: true
           push: true
           target: test-image
           # https://github.com/moby/buildkit#export-cache
@@ -133,10 +132,10 @@ jobs:
           # PUBLIC_REGISTRY: "${{ steps.login-ecr.outputs.registry }}/"
           PUBLIC_REGISTRY: ""
         run: |
-          docker-compose -f docker-compose.gha.yml up test
-          docker-compose -f docker-compose.gha.yml run test mix test
-          docker-compose -f docker-compose.gha.yml run test mix do credo, deps.audit, sobelow
-          docker-compose -f docker-compose.gha.yml run test mix dialyzer --halt-exit-status
+          docker compose -f docker-compose.gha.yml up test
+          docker compose -f docker-compose.gha.yml run test mix test
+          docker compose -f docker-compose.gha.yml run test mix do credo, deps.audit, sobelow
+          docker compose -f docker-compose.gha.yml run test mix dialyzer --halt-exit-status
 
       - name: Build deploy image and push
         if: github.event_name != 'pull_request'
@@ -152,6 +151,7 @@ jobs:
           push: true
           cache-from: type=gha,scope=${{ github.workflow }}
           cache-to: type=gha,scope=${{ github.workflow }},mode=max
+          # ssh: default
           tags: |
             ${{ steps.login-ecr.outputs.registry }}/${{ env.IMAGE_NAME }}:latest
             ${{ steps.login-ecr.outputs.registry }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
