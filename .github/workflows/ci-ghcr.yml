@@ -385,6 +385,7 @@ jobs:
           cache-to: type=gha,scope=${{ github.workflow }},mode=max
           tags: |
             ${{ steps.login-ecr.outputs.registry }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+
   scan:
     name: Security scan prod image
     runs-on: ubuntu-latest
