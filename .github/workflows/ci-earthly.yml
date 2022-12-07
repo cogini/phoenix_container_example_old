@@ -99,15 +99,14 @@ jobs:
         with:
           driver-opts: network=host
 
-
       - name: Build with Earthly
         env:
           REGISTRY: "${{ steps.login-ecr.outputs.registry }}/"
           REGISTRY_NAME: ${{ steps.login-ecr.outputs.registry }}
         # run: earthly --ci --push +build
         # run: earthly -P -V +all
-        # run: earthly -P -V --build-arg REGISTRY --build-arg AWS_ACCESS_KEY_ID --build-arg AWS_SECRET_ACCESS_KEY --strict +deploy
-        run: earthly -P -V --build-arg REGISTRY -strict +deploy
+        run: earthly -P -V --build-arg REGISTRY --build-arg AWS_ACCESS_KEY_ID --build-arg AWS_SECRET_ACCESS_KEY --strict +deploy
+        # run: earthly -P -V --build-arg REGISTRY --strict +deploy
         # run: earthly -P -V --build-arg REGISTRY --strict --push +all
         # run: earthly -P -V --build-arg REGISTRY --remote-cache="${REGISTRY}/${IMAGE_NAME}:cache" --ci --push +all
         # run: earthly -P -V +all-platforms
