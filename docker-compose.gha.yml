@@ -72,7 +72,6 @@ services:
   # https://geshan.com.np/blog/2021/12/docker-postgres/
   postgres:
     image: "${PUBLIC_REGISTRY:-docker.io/}postgres:14.1-alpine"
-    restart: always
     ports:
       - '5432'
     user: postgres
@@ -83,6 +82,7 @@ services:
     volumes:
       - postgres_data_path:/var/lib/postgresql/data
       # - ./db/postgres/init.sql:/docker-entrypoint-initdb.d/create_tables.sql
+    restart: always
     healthcheck:
       # test: ["CMD", "pg_isready -U postgres -d app_test"]
       # test: ["psql", "-w", "-U", "postgres", "-d", "app_test", "-c", "SELECT 1"]
