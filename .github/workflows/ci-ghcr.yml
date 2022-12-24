@@ -222,7 +222,7 @@ jobs:
           REGISTRY: ghcr.io/
           PUBLIC_REGISTRY: ""
         run: |
-          docker compose -f docker-compose.gha.yml run test mix dialyzer --no-check --halt-exit-status --format github
+          docker compose -f docker-compose.gha.yml run test mix dialyzer --no-check --format github
 
   test-scan:
     name: Security scan code
