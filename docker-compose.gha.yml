@@ -144,6 +144,12 @@ services:
       timeout: 3s
       retries: 10
 
+  trivy:
+    # image: "${PUBLIC_REGISTRY:-docker.io/}aquasec/trivy"
+    image: ghcr.io/aquasecurity/trivy
+    volumes:
+      - "./.cache:/root/.cache"
+      - "/var/run/docker.sock:/var/run/docker.sock"
 
 volumes:
   postgres_data_path:
