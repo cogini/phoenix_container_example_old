@@ -49,6 +49,18 @@ services:
       - SECRET_KEY_BASE='0cSFk8v5IsZIIGCjY+X66l5xULUl/2mczI4Eqf7slpyns5nBkhegDn6YH9th+5D2'
     ports:
       - '4001:4001'
+    # healthcheck:
+    #   test: ["CMD", "curl", "--fail", "http://127.0.0.1:4001/healthz"]
+    #   start_period: 2s
+    #   interval: 1s
+    #   timeout: 1s
+    #   retries: 20
+    # healthcheck:
+    #   test: ["CMD", "bin/prod", "eval", "PhoenixContainerExample.Health.liveness()"]
+    #   start_period: 2s
+    #   interval: 2s
+    #   timeout: 1s
+    #   retries: 20
     depends_on:
       postgres:
         condition: service_healthy
