@@ -151,6 +151,51 @@ services:
       - "./.cache:/root/.cache"
       - "/var/run/docker.sock:/var/run/docker.sock"
 
+  # https://docs.datadoghq.com/getting_started/agent/
+  # https://github.com/DataDog/datadog-agent/blob/main/pkg/config/config_template.yaml
+  datadog:
+    # image: "${PUBLIC_REGISTRY:-docker.io/}datadog/agent:7"
+    # image: public.ecr.aws/datadog/agent:7
+    # image: gcr.io/datadoghq/agent:7
+    image: gcr.io/datadoghq/agent:latest
+    # volumes:
+    #   # Main Datadog config
+    #   - ./datadog.yml:/etc/datadog-agent/datadog.yaml
+    #   # Log config for service for app
+    #   - ./datadog-conf.yml:/etc/datadog-agent/conf.d/app.d/conf.yml
+    ports:
+      - "4317:4317"       # OTLP over gRPC
+      - "4318:4318"       # OTLP over HTTP
+      - "8125:8125/udp"   # Datadog DogStatsD metrics receier
+      - "8126:8126"       # Datadog trace receiver
+      - "5002:5002"       # web ui
+      - "10518:10518"     # Datadog log receiver
+    # healthcheck:
+    #   test: ["CMD", "/probe.sh"]
+    #   start_period: 1s
+    #   interval: 2s
+    #   timeout: 5s
+    #   retries: 20
+    environment:
+      - DD_API_KEY
+      - DD_SITE
+      # - DD_HOSTNAME=dev-box
+      - DD_HOSTNAME="none"
+      - DD_TAGS=environment:development
+      - DD_ENV=development
+      - DD_INSIDE_CI="true"
+      - DD_CHECKS_TAG_CARDINALITY=high
+      - DD_CLOUD_PROVIDER_METADATA=aws
+      - DD_GUI_PORT=5002
+        # Agent log_level
+      - DD_LOG_LEVEL
+      - DD_LOGS_ENABLED=true
+      - DD_APM_ENABLED=true
+      - DD_APM_NON_LOCAL_TRAFFIC=true
+      - DD_DOGSTATSD_TAG_CARDINALITY=high
+      - DD_DOGSTATSD_NON_LOCAL_TRAFFIC=true
+    restart: always
+
 volumes:
   postgres_data_path:
     driver: local
