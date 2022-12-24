@@ -157,6 +157,13 @@ jobs:
         run: |
           docker compose -f docker-compose.gha.yml up --wait --detach postgres
 
+      - name: Initialize test database
+        env:
+          REGISTRY: ghcr.io/
+          PUBLIC_REGISTRY: ""
+        run: |
+          docker compose -f docker-compose.gha.yml run test mix do ecto.create, ecto.migrate
+
       - name: Run tests
         env:
           REGISTRY: ghcr.io/
