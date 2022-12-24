@@ -138,3 +138,11 @@ volumes:
     driver: local
   # mysql_data_path:
   #   driver: local
+
+# secrets:
+#   oban_license_key:
+#     file: ./.dev_secrets/oban_license_key.txt
+#   oban_key_fingerprint:
+#     file: ./.dev_secrets/oban_fingerprint.txt
+#   access_token:
+#     file: ./.access_token
