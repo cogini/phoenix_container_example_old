@@ -3,7 +3,7 @@ version: "3.9"
 services:
   # Image used to run tests
   test:
-    image: ${REGISTRY:-docker.io/}${IMAGE_OWNER}/${IMAGE_NAME}:test
+    image: "${REGISTRY:-docker.io/}${IMAGE_OWNER}/${IMAGE_NAME}:test${GITHUB_SHA}"
     environment:
       - DATABASE_HOST=postgres
       - DATABASE_DB
@@ -19,7 +19,7 @@ services:
 
   # Final deploy service
   deploy:
-    image: ${REGISTRY:-docker.io/}${IMAGE_OWNER}/${IMAGE_NAME}:${IMAGE_TAG:-latest}
+    image: "${REGISTRY:-docker.io/}${IMAGE_OWNER}/${IMAGE_NAME}:${IMAGE_TAG:-latest}"
     environment:
       - DATABASE_URL=ecto://postgres:postgres@postgres:5432/app_prod
       - PORT=4001
@@ -32,7 +32,7 @@ services:
 
   # Deploy image plus security scan tools
   scan:
-    image: ${REGISTRY:-docker.io/}${IMAGE_OWNER}/${IMAGE_NAME}:scan
+    image: "${REGISTRY:-docker.io/}${IMAGE_OWNER}/${IMAGE_NAME}:scan${GITHUB_SHA}"
     volumes:
       - "./sarif-reports:/sarif-reports"
       - "./trivy-cache:/trivy-cache"
