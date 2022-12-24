@@ -144,6 +144,12 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v3
 
+      - name: Pull repos
+        env:
+          REGISTRY: ghcr.io/
+          PUBLIC_REGISTRY: ""
+        run: echo "postgres test" | xargs -n 1 -P 8 docker compose -f docker-compose.gha.yml pull
+
       - name: Start postgres
         env:
           REGISTRY: ghcr.io/
