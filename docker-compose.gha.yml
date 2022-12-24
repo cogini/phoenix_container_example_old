@@ -46,7 +46,7 @@ services:
     environment:
       - DATABASE_URL=ecto://postgres:postgres@postgres:5432/app_prod
       - PORT=4001
-      - SECRET_KEY_BASE
+      - SECRET_KEY_BASE='0cSFk8v5IsZIIGCjY+X66l5xULUl/2mczI4Eqf7slpyns5nBkhegDn6YH9th+5D2'
     ports:
       - '4001:4001'
     depends_on:
