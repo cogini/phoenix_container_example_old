@@ -4,11 +4,14 @@ on: push
 # on:
 #   push:
 #     branches: [main]
+#     paths-ignore:
+#       - 'README.md'
+#       - '.github/**'
+#       - '.gitignore'
 #   pull_request:
 #     branches: [main]
-#     types: [labeled, synchronize, reopened, unlabeled]
+#     types: [labeled,synchronize,reopened,unlabeled]
 env:
-  # IMAGE_NAME: ${{ github.repository }}
   IMAGE_NAME: foo-app
   IMAGE_OWNER: ${{ github.repository_owner }}
   AWS_ROLE_TO_ASSUME: arn:aws:iam::770916339360:role/foo-dev-ecr-github-action-role
