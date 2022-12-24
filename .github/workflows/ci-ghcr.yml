@@ -36,22 +36,6 @@ jobs:
         with:
           access_token: ${{ github.token }}
 
-      # https://github.com/marketplace/actions/docker-login
-
-      - name: Log in to GHCR
-        uses: docker/login-action@v2
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      # Pull public images without rate limits
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
       - name: Check out source
         uses: actions/checkout@v3
 
@@ -72,6 +56,22 @@ jobs:
         run: |
           echo "BRANCH=$(echo $GITHUB_HEAD_REF | tr '//\\' '.' | cut -c -55)" >> $GITHUB_ENV
 
+      # https://github.com/marketplace/actions/docker-login
+      - name: Log in to GHCR
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Pull public images without rate limits
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # Configure machine key or deploy keys to access private repos from build
       # # https://github.com/marketplace/actions/webfactory-ssh-agent
       # # https://docs.github.com/en/developers/overview/managing-deploy-keys#deploy-keys
       # # ssh-keygen -t ed25519 -m pem -C "git@github.com:reachfh/api-utils.git" -f api-utils
