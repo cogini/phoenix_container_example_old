@@ -103,11 +103,11 @@ jobs:
           REGISTRY: ghcr.io/
           PUBLIC_REGISTRY: ""
         with:
+          file: ./deploy/debian.Dockerfile
+          target: test-image
           context: .
           builder: ${{ steps.buildx.outputs.name }}
-          file: ./deploy/debian.Dockerfile
           push: true
-          target: test-image
           # https://github.com/moby/buildkit#export-cache
           cache-from: type=gha,scope=${{ github.workflow }}-test
           cache-to: type=gha,scope=${{ github.workflow }}-test,mode=max
