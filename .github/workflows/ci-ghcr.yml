@@ -368,7 +368,7 @@ jobs:
         with:
           driver-opts: network=host
 
-      - name: Build final deploy image
+      - name: Build deploy image and push to GHCR
         # if: github.event_name != 'pull_request'
         uses: docker/build-push-action@v3
         env:
@@ -384,8 +384,12 @@ jobs:
           # ssh: default
           tags: |
             ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          # secrets: |
+          #   "access_token=${{ secrets.DEVOPS_ACCESS_TOKEN }}"
+          #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
+          #   "oban_license_key=${{ secrets.OBAN_LICENSE_KEY }}"
 
-      - name: Build scan image
+      - name: Build deploy image and push to AWS
         uses: docker/build-push-action@v3
         env:
           REGISTRY: ghcr.io/
@@ -515,12 +519,18 @@ jobs:
       #     role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
       #     aws-region: ${{ env.AWS_REGION }}
 
-      # # https://github.com/aws-actions/amazon-ecr-login
+      # https://github.com/aws-actions/amazon-ecr-login
       # - name: Login to Amazon ECR
       #   id: login-ecr
       #   uses: aws-actions/amazon-ecr-login@v1
 
-      # https://github.com/marketplace/actions/docker-login
+      # - name: Log in to ECR
+      #   uses: docker/login-action@v2
+      #   with:
+      #     registry: ${{ env.ECR_REGISTRY }}
+      #     username: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      #     password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
       - name: Log in to GHCR
         uses: docker/login-action@v2
         with:
