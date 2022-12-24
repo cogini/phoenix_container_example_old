@@ -544,6 +544,7 @@ jobs:
           echo "ECR_REGISTRY=${{ steps.ecr-login.outputs.registry }}" >> $GITHUB_ENV
 
       - name: Tag GHCR release
+        if: github.event_name != 'pull_request'
         run: |
           docker buildx imagetools create --append ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ github.sha }} --tag ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:latest
 
