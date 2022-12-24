@@ -538,8 +538,9 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # - name: Check out source
-      #   uses: actions/checkout@v3
+      - name: Set vars
+        run: |
+          echo "ECR_REGISTRY=${{ steps.ecr-login.outputs.registry }}" >> $GITHUB_ENV
 
       - name: Tag GHCR release
         run: |
