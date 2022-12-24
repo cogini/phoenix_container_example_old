@@ -310,7 +310,7 @@ jobs:
 
       # https://github.com/aws-actions/amazon-ecr-login
       - name: Log in to Amazon ECR
-        id: login-ecr
+        id: ecr-login
         uses: aws-actions/amazon-ecr-login@v1
 
       # - name: Log in to ECR
@@ -522,7 +522,7 @@ jobs:
 
       # https://github.com/aws-actions/amazon-ecr-login
       # - name: Login to Amazon ECR
-      #   id: login-ecr
+      #   id: ecr-login
       #   uses: aws-actions/amazon-ecr-login@v1
 
       # - name: Log in to ECR
