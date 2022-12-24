@@ -113,7 +113,11 @@ jobs:
           cache-to: type=gha,scope=${{ github.workflow }}-test,mode=max
           # ssh: default
           tags: |
-            ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:test
+            ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:test${{ github.sha }}
+          # secrets: |
+          #   "access_token=${{ secrets.DEVOPS_ACCESS_TOKEN }}"
+          #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
+          #   "oban_license_key=${{ secrets.OBAN_LICENSE_KEY }}"
 
   test:
     name: Run tests
