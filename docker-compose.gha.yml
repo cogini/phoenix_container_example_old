@@ -121,15 +121,17 @@ services:
   #   ports:
   #     - '1433'
 
-  # redis:
-  #   image: "${PUBLIC_REGISTRY:-docker.io/}redis:4"
-  #   ports:
-  #     - '6379'
-  #   healthcheck:
-  #     test: ["CMD", "redis-cli", "ping"]
-  #     interval: 1s
-  #     timeout: 3s
-  #     retries: 10
+  redis:
+    image: "${PUBLIC_REGISTRY:-docker.io/}redis:4"
+    ports:
+      - '6379'
+    restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 1s
+      timeout: 3s
+      retries: 10
+
 
 volumes:
   postgres_data_path:
