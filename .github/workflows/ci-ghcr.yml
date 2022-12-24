@@ -264,9 +264,9 @@ jobs:
           PUBLIC_REGISTRY: ""
         run: |
           mkdir -p ./sarif-reports
-          mkdir -p ./trivy-cache
-          docker compose -f docker-compose.gha.yml run test trivy fs --no-progress --debug --cache-dir /trivy-cache .
-          # docker compose -f docker-compose.gha.yml run test trivy fs --format sarif -o /sarif-reports/trivy-code.sarif --no-progress --debug --cache-dir /trivy-cache .
+          mkdir -p ./.cache
+          docker compose -f docker-compose.gha.yml run test trivy fs --no-progress --debug --cache-dir /var/cache .
+          # docker compose -f docker-compose.gha.yml run test trivy fs --format sarif -o /sarif-reports/trivy-code.sarif --no-progress --debug --cache-dir /var/cache .
 
         # TODO:
         # * Don't scan Elixir deps dir
