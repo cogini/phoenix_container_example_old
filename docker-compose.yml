@@ -23,7 +23,7 @@ services:
     volumes:
       - "./junit-reports:/app/_build/test/junit-reports"
       - "./sarif-reports:/sarif-reports"
-      - "./trivy-cache:/trivy-cache"
+      - "./.cache:/var/cache"
     # depends_on:
     #   postgres:
     #     condition: service_healthy
