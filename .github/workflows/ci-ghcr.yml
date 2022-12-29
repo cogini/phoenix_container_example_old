@@ -423,6 +423,27 @@ jobs:
           #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
           #   "oban_license_key=${{ secrets.OBAN_LICENSE_KEY }}"
 
+      # - name: Build scan image
+      #   uses: docker/build-push-action@v3
+      #   env:
+      #     REGISTRY: ghcr.io/
+      #   with:
+      #     file: Dockerfile
+      #     target: deploy-scan
+      #     context: .
+      #     builder: ${{ steps.buildx.outputs.name }}
+      #     push: true
+      #     # https://github.com/moby/buildkit#export-cache
+      #     cache-from: type=gha,scope=${{ github.workflow }}-scan
+      #     cache-to: type=gha,scope=${{ github.workflow }}-scan,mode=max
+      #     # ssh: default
+      #     tags: |
+      #       ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:scan${{ github.sha }}
+      #     # secrets: |
+      #     #   "access_token=${{ secrets.DEVOPS_ACCESS_TOKEN }}"
+      #     #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
+      #     #   "oban_license_key=${{ secrets.OBAN_LICENSE_KEY }}"
+
   scan:
     name: Security scan prod image
     runs-on: ubuntu-latest
