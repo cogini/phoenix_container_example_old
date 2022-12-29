@@ -16,9 +16,9 @@ services:
       #   - oban_key_fingerprint
       #   - access_token
     environment:
-      - DATABASE_HOST=postgres
       - DATABASE_DB
-      - MIX_ENV=test
+      - DATABASE_HOST=postgres
+      - DB_HOST=postgres
       - SECRET_KEY_BASE
     volumes:
       - "./junit-reports:/app/_build/test/junit-reports"
