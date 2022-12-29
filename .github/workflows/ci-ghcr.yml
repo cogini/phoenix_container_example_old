@@ -497,19 +497,20 @@ jobs:
       - name: Scan image with Trivy
         run: |
           mkdir -p ./.cache
+          mkdir -p ./sarif-reports
           docker compose -f docker-compose.gha.yml run trivy image ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
 
       # https://github.com/aquasecurity/trivy-action
-      # - name: Run Trivy vulnerability scanner
-      #   uses: aquasecurity/trivy-action@master
-      #   with:
-      #     image-ref: ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-      #     format: 'sarif'
-      #     exit-code: '1'
-      #     # ignore-unfixed: true
-      #     # vuln-type: 'os,library'
-      #     # severity: 'CRITICAL,HIGH'
-      #     output: './sarif-reports/trivy.sarif'
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          format: 'sarif'
+          exit-code: '1'
+          # ignore-unfixed: true
+          # vuln-type: 'os,library'
+          # severity: 'CRITICAL,HIGH'
+          output: './sarif-reports/trivy.sarif'
 
       # # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning
       # # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github
