@@ -30,7 +30,7 @@ services:
 
   # Final deploy service
   deploy:
-    image: ${REGISTRY:-docker.io/}${IMAGE_OWNER}/${IMAGE_NAME}:${IMAGE_TAG:-latest}
+    image: "${REGISTRY:-docker.io/}${IMAGE_OWNER}/${IMAGE_NAME}:${IMAGE_TAG:-latest}"
     build:
       dockerfile: deploy/debian.Dockerfile
       target: deploy
