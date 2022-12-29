@@ -117,6 +117,7 @@ services:
   #   volumes:
   #     - mysql_data_path:/var/lib/mysql
   #   # - "./db/mysql/initdb.d:/docker-entrypoint-initdb.d"
+  #   restart: always
   #   healthcheck:
   #     test: ["CMD", "mysqladmin" ,"ping", "-h", "127.0.0.1"]
   #     # test: ["CMD", "mysql" ,"-h", "mysql", "-P", "3306", "-u", "root", "-e", "SELECT 1", "cache"]
