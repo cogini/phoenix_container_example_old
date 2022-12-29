@@ -395,6 +395,8 @@ jobs:
           #   "oban_license_key=${{ secrets.OBAN_LICENSE_KEY }}"
 
       - name: Build deploy image and push to AWS
+        uses: docker/build-push-action@v3
+        env:
           REGISTRY: "${{ env.ECR_REGISTRY }}/"
           PUBLIC_REGISTRY: ""
         with:
