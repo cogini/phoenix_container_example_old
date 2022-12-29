@@ -455,22 +455,34 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v3
 
-      - name: Pull scan
+      # - name: Pull scan
+      #   env:
+      #     REGISTRY: ghcr.io/
+      #     PUBLIC_REGISTRY: ""
+      #   run: |
+      #     docker compose -f docker-compose.gha.yml pull --quiet scan
+
+      # - name: Security scan image
+      #   env:
+      #     REGISTRY: ghcr.io/
+      #     PUBLIC_REGISTRY: ""
+      #   run: |
+      #     # mkdir -p ./sarif-reports
+      #     mkdir -p ./.cache
+      #     docker compose -f docker-compose.gha.yml run scan trivy fs --no-progress --debug --cache-dir /var/cache /
+      #     # docker compose -f docker-compose.gha.yml run scan trivy fs --format sarif -o /sarif-reports/trivy-deploy.sarif --no-progress --debug --cache-dir /var/cache /
+
+      - name: Pull repos
         env:
           REGISTRY: ghcr.io/
           PUBLIC_REGISTRY: ""
         run: |
           docker compose -f docker-compose.gha.yml pull --quiet scan
 
-      - name: Security scan image
-        env:
-          REGISTRY: ghcr.io/
-          PUBLIC_REGISTRY: ""
+      - name: Scan image with Trivy
         run: |
-          mkdir -p ./sarif-reports
-          mkdir -p ./trivy-cache
-          docker compose -f docker-compose.gha.yml run scan trivy fs --no-progress --debug --cache-dir /trivy-cache /
-          # docker compose -f docker-compose.gha.yml run scan trivy fs --format sarif -o /sarif-reports/trivy-deploy.sarif --no-progress --debug --cache-dir /trivy-cache /
+          mkdir -p ./.cache/trivy
+          docker compose -f docker-compose.gha.yml run trivy image ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
 
       # https://github.com/aquasecurity/trivy-action
       # - name: Run Trivy vulnerability scanner
