@@ -44,10 +44,6 @@ services:
       #   - access_token
       context: .
     environment:
-      - AWS_ACCESS_KEY_ID
-      - AWS_SECRET_ACCESS_KEY
-      - AWS_REGION
-      - AWS_DEFAULT_REGION
       - DATABASE_URL=ecto://postgres:postgres@postgres:5432/app_prod
       - PORT=4000
       - SECRET_KEY_BASE
