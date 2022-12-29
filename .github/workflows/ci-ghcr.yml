@@ -497,8 +497,8 @@ jobs:
         env:
           REGISTRY: ghcr.io/
           PUBLIC_REGISTRY: ""
-        run: |
-          docker compose -f docker-compose.gha.yml pull --quiet scan
+          IMAGE_TAG: ${{ github.sha }}
+        run: echo "trivy deploy" | xargs -n 1 -P 8 docker compose -f docker-compose.gha.yml pull
 
       - name: Scan image with Trivy
         run: |
