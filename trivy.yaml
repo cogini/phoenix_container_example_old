@@ -18,7 +18,7 @@ debug: false
 dependency-tree: false
 exit-code: 0
 format: table
-generate-default-config: true
+# generate-default-config: true
 ignore-policy: ""
 ignorefile: .trivyignore
 insecure: false
