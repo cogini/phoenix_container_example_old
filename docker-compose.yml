@@ -3,7 +3,7 @@ version: "3.9"
 services:
   # Image used to run tests
   test:
-    image: ${REGISTRY:-docker.io/}${IMAGE_OWNER}/${IMAGE_NAME}:test
+    image: "${REGISTRY:-docker.io/}${IMAGE_OWNER}/${IMAGE_NAME}:test${GITHUB_SHA}"
     build:
       dockerfile: deploy/debian.Dockerfile
       target: test-image
@@ -11,22 +11,26 @@ services:
         BUILDKIT_INLINE_CACHE: "1"
         REGISTRY: ${REGISTRY:-docker.io/}
       context: .
+      # secrets:
+      #   - oban_license_key
+      #   - oban_key_fingerprint
+      #   - access_token
     environment:
-      - DATABASE_HOST=postgres
       - DATABASE_DB
-      - MIX_ENV=test
+      - DATABASE_HOST=postgres
+      - DB_HOST=postgres
       - SECRET_KEY_BASE
     volumes:
       - "./junit-reports:/app/_build/test/junit-reports"
       - "./sarif-reports:/sarif-reports"
-      - "./trivy-cache:/trivy-cache"
-    depends_on:
-      postgres:
-        condition: service_healthy
+      - "./.cache:/var/cache"
+    # depends_on:
+    #   postgres:
+    #     condition: service_healthy
 
   # Final deploy service
   deploy:
-    image: ${REGISTRY:-docker.io/}${IMAGE_OWNER}/${IMAGE_NAME}:${IMAGE_TAG:-latest}
+    image: "${REGISTRY:-docker.io/}${IMAGE_OWNER}/${IMAGE_NAME}:${IMAGE_TAG:-latest}"
     build:
       dockerfile: deploy/debian.Dockerfile
       target: deploy
@@ -34,35 +38,47 @@ services:
         MIX_ENV: prod
         BUILDKIT_INLINE_CACHE: "1"
         REGISTRY: ${REGISTRY:-docker.io/}
+      # secrets:
+      #   - oban_license_key
+      #   - oban_key_fingerprint
+      #   - access_token
       context: .
     environment:
-      - AWS_ACCESS_KEY_ID
-      - AWS_SECRET_ACCESS_KEY
-      - AWS_REGION
-      - AWS_DEFAULT_REGION
       - DATABASE_URL=ecto://postgres:postgres@postgres:5432/app_prod
       - PORT=4000
-      - SECRET_KEY_BASE
+      - SECRET_KEY_BASE='0cSFk8v5IsZIIGCjY+X66l5xULUl/2mczI4Eqf7slpyns5nBkhegDn6YH9th+5D2'
     ports:
       - "4000:4000"
+    # healthcheck:
+    #   test: ["CMD", "curl", "--fail", "http://127.0.0.1:4001/healthz"]
+    #   start_period: 2s
+    #   interval: 1s
+    #   timeout: 1s
+    #   retries: 20
+    healthcheck:
+      test: ["CMD", "bin/prod", "eval", "PhoenixContainerExample.Health.liveness()"]
+      start_period: 2s
+      interval: 2s
+      timeout: 1s
+      retries: 20
     depends_on:
       postgres:
         condition: service_healthy
 
   # Deploy image plus security scan tools
   scan:
-    image: ${REGISTRY:-docker.io/}${IMAGE_OWNER}/${IMAGE_NAME}:scan
+    image: "${REGISTRY:-docker.io/}${IMAGE_OWNER}/${IMAGE_NAME}:scan${GITHUB_SHA}"
     build:
+      dockerfile: deploy/debian.Dockerfile
       target: deploy-scan
       args:
         MIX_ENV: prod
         BUILDKIT_INLINE_CACHE: "1"
         REGISTRY: ${REGISTRY:-docker.io/}
       context: .
-      dockerfile: deploy/debian.Dockerfile
     volumes:
       - "./sarif-reports:/sarif-reports"
-      - "./trivy-cache:/trivy-cache"
+      - "./.cache:/var/cache"
 
   # Development image
   dev:
@@ -90,10 +106,6 @@ services:
       - DATABASE_URL
       - DATABASE_HOST=postgres
       - DATABASE_DB
-      - AWS_ACCESS_KEY_ID
-      - AWS_SECRET_ACCESS_KEY
-      - AWS_REGION
-      - AWS_DEFAULT_REGION
     ports:
       - "4000:4000"
     stdin_open: true
@@ -110,7 +122,7 @@ services:
   # https://github.com/docker-library/docs/blob/master/postgres/README.md
   # https://geshan.com.np/blog/2021/12/docker-postgres/
   postgres:
-    image: "${PUBLIC_REGISTRY:-docker.io/}postgres:14.1-alpine"
+    image: "${PUBLIC_REGISTRY:-docker.io/}postgres:14.6-alpine"
     # build:
     #   context: .
     #   dockerfile: deploy/postgres.Dockerfile
@@ -123,6 +135,7 @@ services:
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
     volumes:
       - postgres_data_path:/var/lib/postgresql/data
       # - ./db/postgres/init.sql:/docker-entrypoint-initdb.d/create_tables.sql
@@ -135,26 +148,27 @@ services:
       timeout: 1s
       retries: 10
 
-  # mysql:
-  #   # https://hub.docker.com/_/mysql
-  #   image: "${PUBLIC_REGISTRY:-docker.io/}mysql:8"
-  #   environment:
-  #     - MYSQL_ALLOW_EMPTY_PASSWORD=yes
-  #     - MYSQL_ROOT_PASSWORD=
-  #     - MYSQL_DATABASE=test
-  #   # command: --default-authentication-plugin=mysql_native_password
-  #   ports:
-  #     - '3306'
-  #   volumes:
-  #     - mysql_data_path:/var/lib/mysql
-  #   # - "./db/mysql/initdb.d:/docker-entrypoint-initdb.d"
-  #   healthcheck:
-  #     test: ["CMD", "mysqladmin" ,"ping", "-h", "127.0.0.1"]
-  #     # test: ["CMD", "mysql" ,"-h", "mysql", "-P", "3306", "-u", "root", "-e", "SELECT 1", "cache"]
-  #     start_period: 1s
-  #     interval: 1s
-  #     timeout: 1s
-  #     retries: 10
+  mysql:
+    # https://hub.docker.com/_/mysql
+    image: "${PUBLIC_REGISTRY:-docker.io/}mysql:8"
+    environment:
+      - MYSQL_ALLOW_EMPTY_PASSWORD=yes
+      - MYSQL_DATABASE=test
+      - MYSQL_ROOT_PASSWORD=
+    # command: --default-authentication-plugin=mysql_native_password
+    ports:
+      - '3306'
+    volumes:
+      - mysql_data_path:/var/lib/mysql
+    # - "./db/mysql/initdb.d:/docker-entrypoint-initdb.d"
+    restart: always
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "127.0.0.1"]
+      # test: ["CMD", "mysql" ,"-h", "mysql", "-P", "3306", "-u", "root", "-e", "SELECT 1", "cache"]
+      start_period: 1s
+      interval: 1s
+      timeout: 1s
+      retries: 10
 
   # mssql:
   #   image: mcr.microsoft.com/mssql/server:2019-latest
@@ -163,6 +177,23 @@ services:
   #     SA_PASSWORD: some!Password
   #   ports:
   #     - '1433'
+
+  redis:
+    image: "${PUBLIC_REGISTRY:-docker.io/}redis:4"
+    ports:
+      - '6379'
+    restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 1s
+      timeout: 3s
+      retries: 10
+
+  newman:
+    image: "${PUBLIC_REGISTRY:-docker.io/}postman/newman"
+    volumes:
+      - "./postman:/etc/newman"
+      - "./junit-reports:/junit-reports"
 
   codebuild:
     image: "${REGISTRY:-docker.io/}foo-app-ecs-build:latest"

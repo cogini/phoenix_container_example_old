@@ -197,6 +197,12 @@ services:
       - DD_DOGSTATSD_NON_LOCAL_TRAFFIC=true
     restart: always
 
+  newman:
+    image: "${PUBLIC_REGISTRY:-docker.io/}postman/newman"
+    volumes:
+      - "./postman:/etc/newman"
+      - "./junit-reports:/junit-reports"
+
 volumes:
   postgres_data_path:
     driver: local
