@@ -395,11 +395,11 @@ jobs:
         env:
           REGISTRY: ghcr.io/
         with:
+          file: ./deploy/debian.Dockerfile
+          target: deploy-scan
           context: .
           builder: ${{ steps.buildx.outputs.name }}
-          file: ./deploy/debian.Dockerfile
           push: true
-          target: deploy-scan
           # https://github.com/moby/buildkit#export-cache
           cache-from: type=gha,scope=${{ github.workflow }}-scan
           cache-to: type=gha,scope=${{ github.workflow }}-scan,mode=max
