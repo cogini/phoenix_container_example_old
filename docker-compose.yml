@@ -11,6 +11,10 @@ services:
         BUILDKIT_INLINE_CACHE: "1"
         REGISTRY: ${REGISTRY:-docker.io/}
       context: .
+      # secrets:
+      #   - oban_license_key
+      #   - oban_key_fingerprint
+      #   - access_token
     environment:
       - DATABASE_HOST=postgres
       - DATABASE_DB
@@ -20,9 +24,9 @@ services:
       - "./junit-reports:/app/_build/test/junit-reports"
       - "./sarif-reports:/sarif-reports"
       - "./trivy-cache:/trivy-cache"
-    depends_on:
-      postgres:
-        condition: service_healthy
+    # depends_on:
+    #   postgres:
+    #     condition: service_healthy
 
   # Final deploy service
   deploy:
