@@ -118,7 +118,7 @@ services:
   # https://github.com/docker-library/docs/blob/master/postgres/README.md
   # https://geshan.com.np/blog/2021/12/docker-postgres/
   postgres:
-    image: "${PUBLIC_REGISTRY:-docker.io/}postgres:14.1-alpine"
+    image: "${PUBLIC_REGISTRY:-docker.io/}postgres:14.6-alpine"
     # build:
     #   context: .
     #   dockerfile: deploy/postgres.Dockerfile
