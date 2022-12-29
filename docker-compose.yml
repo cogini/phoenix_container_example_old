@@ -78,7 +78,7 @@ services:
       context: .
     volumes:
       - "./sarif-reports:/sarif-reports"
-      - "./trivy-cache:/trivy-cache"
+      - "./.cache:/var/cache"
 
   # Development image
   dev:
