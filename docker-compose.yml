@@ -57,13 +57,13 @@ services:
   scan:
     image: ${REGISTRY:-docker.io/}${IMAGE_OWNER}/${IMAGE_NAME}:scan
     build:
+      dockerfile: deploy/debian.Dockerfile
       target: deploy-scan
       args:
         MIX_ENV: prod
         BUILDKIT_INLINE_CACHE: "1"
         REGISTRY: ${REGISTRY:-docker.io/}
       context: .
-      dockerfile: deploy/debian.Dockerfile
     volumes:
       - "./sarif-reports:/sarif-reports"
       - "./trivy-cache:/trivy-cache"
