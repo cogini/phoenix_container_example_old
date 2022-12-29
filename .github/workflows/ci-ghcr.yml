@@ -496,7 +496,7 @@ jobs:
 
       - name: Scan image with Trivy
         run: |
-          mkdir -p ./.cache/trivy
+          mkdir -p ./.cache
           docker compose -f docker-compose.gha.yml run trivy image ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
 
       # https://github.com/aquasecurity/trivy-action
