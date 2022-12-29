@@ -38,6 +38,10 @@ services:
         MIX_ENV: prod
         BUILDKIT_INLINE_CACHE: "1"
         REGISTRY: ${REGISTRY:-docker.io/}
+      # secrets:
+      #   - oban_license_key
+      #   - oban_key_fingerprint
+      #   - access_token
       context: .
     environment:
       - AWS_ACCESS_KEY_ID
