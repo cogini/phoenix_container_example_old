@@ -376,7 +376,10 @@ jobs:
           driver-opts: network=host
 
       - name: Build deploy image and push to GHCR
+<<<<<<< HEAD
         # if: github.event_name != 'pull_request'
+=======
+>>>>>>> c41f658 (Doc)
         uses: docker/build-push-action@v3
         env:
           REGISTRY: ghcr.io/
