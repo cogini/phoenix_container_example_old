@@ -180,6 +180,8 @@ phases:
       - sed -i -e "s!<NAME>!${CONTAINER_NAME}!g" -e "s!<PORT>!${PORT}!g" $TASKDEF
       - sed -i -e "s!<TASK_ROLE_ARN>!${TASK_ROLE_ARN}!g" $TASKDEF
 
+      - jq --null-input -f ecs/taskdef-otel.jq
+
       - cat ecs/appspec.yml
       - cat $TASKDEF
       - cp ecs/appspec.yml .
