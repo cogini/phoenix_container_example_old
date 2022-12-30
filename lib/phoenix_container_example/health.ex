@@ -2,6 +2,8 @@ defmodule PhoenixContainerExample.Health do
   @moduledoc """
   Collect app status for Kubernetes health checks.
   """
+  @app :phoenix_container_example
+  @repos Application.compile_env(@app, :ecto_repos) || []
 
   alias PhoenixContainerExample.Repo
 
@@ -23,7 +25,16 @@ defmodule PhoenixContainerExample.Health do
           | {:error, {status_code :: non_neg_integer(), reason :: binary()}}
           | {:error, reason :: binary()}
   def startup do
-    liveness()
+    migrations =
+      @repos
+      |> Enum.map(&Ecto.Migrator.migrations/1)
+      |> List.flatten()
+
+    if Enum.empty?(migrations) do
+      liveness()
+    else
+      {:error, "Database not migrated"}
+    end
   end
 
   @doc """
