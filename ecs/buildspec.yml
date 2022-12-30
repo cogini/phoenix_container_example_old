@@ -18,6 +18,8 @@ env:
     COMPOSE_DOCKER_CLI_BUILD: 1
     # TASKDEF=ecs/taskdef.json
     TASKDEF: ecs/taskdef-otel.json
+    CPU_ARCH: ARM64
+    # CPU_ARCH: X86_64
   parameter-store:
     DOCKERHUB_USERNAME: /cogini/foo/dev/creds/dockerhub_username
     DOCKERHUB_TOKEN: /cogini/foo/dev/creds/dockerhub_token
@@ -97,6 +99,7 @@ phases:
       # - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
       - COMMIT_HASH=$CODEBUILD_RESOLVED_SOURCE_VERSION
       - IMAGE_TAG=${COMMIT_HASH:=latest}
+      - IMAGE_URI="${REPO_URL}:${IMAGE_TAG}"
 
       # Ensure that scripts are executable
       - chmod u+x rel/overlays/bin/*
@@ -157,9 +160,9 @@ phases:
       # Write image definition files
       # https://docs.aws.amazon.com/codepipeline/latest/userguide/file-reference.html
       # Generate imagedefinitions.json file for standard ECS deploy action
-      - printf '[{"name":"%s","imageUri":"%s"}]' "$CONTAINER_NAME" "${REPO_URL}:${IMAGE_TAG}" | tee imagedefinitions.json
+      - printf '[{"name":"%s","imageUri":"%s"}]' "$CONTAINER_NAME" "$IMAGE_URI" | tee imagedefinitions.json
       # Generate imageDetail.json file for CodeDeploy ECS blue/green deploy action
-      - printf '{"ImageURI":"%s"}' "${REPO_URL}:${IMAGE_TAG}" | tee imageDetail.json
+      - printf '{"ImageURI":"%s"}' "$IMAGE_URI" | tee imageDetail.json
 
       # Generate files based on env vars passed from Terraform
       # https://docs.aws.amazon.com/codedeploy/latest/userguide/reference-appspec-file-structure-resources.html
