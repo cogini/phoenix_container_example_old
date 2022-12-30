@@ -80,6 +80,8 @@ phases:
       - uname -s
       - uname -m
 
+      - apt-get install jq
+
   pre_build:
     commands:
       # Log into Amazon ECR
