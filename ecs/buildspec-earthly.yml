@@ -18,6 +18,8 @@ env:
     COMPOSE_DOCKER_CLI_BUILD: 1
     # TASKDEF=ecs/taskdef.json
     TASKDEF: ecs/taskdef-otel.json
+    CPU_ARCH: ARM64
+    # CPU_ARCH: X86_64
     # Make Earthly not output color
     NO_COLOR: 1
   parameter-store:
@@ -93,6 +95,7 @@ phases:
       # - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
       - COMMIT_HASH=$CODEBUILD_RESOLVED_SOURCE_VERSION
       - IMAGE_TAG=${COMMIT_HASH:=latest}
+      - IMAGE_URI="${REPO_URL}:${IMAGE_TAG}"
 
       # Ensure that scripts are executable
       - chmod u+x rel/overlays/bin/*
@@ -127,28 +130,27 @@ phases:
       # Write image definition files
       # https://docs.aws.amazon.com/codepipeline/latest/userguide/file-reference.html
       # Generate imagedefinitions.json file for standard ECS deploy action
-      - printf '[{"name":"%s","imageUri":"%s"}]' "$CONTAINER_NAME" "${REPO_URL}:${IMAGE_TAG}" | tee imagedefinitions.json
+      - printf '[{"name":"%s","imageUri":"%s"}]' "$CONTAINER_NAME" "$IMAGE_URI" | tee imagedefinitions.json
       # Generate imageDetail.json file for CodeDeploy ECS blue/green deploy action
-      - printf '{"ImageURI":"%s"}' "${REPO_URL}:${IMAGE_TAG}" | tee imageDetail.json
+      - printf '{"ImageURI":"%s"}' "$IMAGE_URI" | tee imageDetail.json
 
       # Generate files based on env vars passed from Terraform
       # https://docs.aws.amazon.com/codedeploy/latest/userguide/reference-appspec-file-structure-resources.html
       - sed -i -e "s!<NAME>!${CONTAINER_NAME}!g" -e "s!<PORT>!${PORT}!g" ecs/appspec.yml
-      - sed -i -e "s!<NAME>!${CONTAINER_NAME}!g" -e "s!<PORT>!${PORT}!g" $TASKDEF
-      - sed -i -e "s!<TASK_ROLE_ARN>!${TASK_ROLE_ARN}!g" $TASKDEF
-      - sed -i -e "s!<EXECUTION_ROLE_ARN>!${EXECUTION_ROLE_ARN}!g" $TASKDEF
-      - sed -i -e "s!<CPU>!${CPU}!g" -e "s!<MEMORY>!${MEMORY}!g" $TASKDEF
 
-      # - sed -i -e "s!<CPU_ARCH>!X86_64!g" $TASKDEF
-      - sed -i -e "s!<CPU_ARCH>!ARM64!g" $TASKDEF
+      - sed -i -e "s!<CPU_ARCH>!${CPU_ARCH}!g" $TASKDEF
 
       - sed -i -e "s!<AWSLOGS_GROUP>!${AWSLOGS_GROUP}!g" $TASKDEF
       - sed -i -e "s!<AWSLOGS_REGION>!${AWS_REGION}!g" $TASKDEF
       - sed -i -e "s!<AWSLOGS_STREAM_PREFIX>!${AWSLOGS_STREAM_PREFIX}!g" $TASKDEF
-
+      - sed -i -e "s!<AWS_ACCOUNT_ID>!${AWS_ACCOUNT_ID}!g" $TASKDEF
+      - sed -i -e "s!<AWS_REGION>!${AWS_REGION}!g" $TASKDEF
       - sed -i -e "s!<CONFIG_S3_BUCKET>!${CONFIG_S3_BUCKET}!g" -e "s!<CONFIG_S3_PREFIX>!${CONFIG_S3_PREFIX}!g" $TASKDEF
-      - sed -i "s!<AWS_REGION>!${AWS_REGION}!g" $TASKDEF
-      - sed -i "s!<AWS_ACCOUNT_ID>!${AWS_ACCOUNT_ID}!g" $TASKDEF
+      - sed -i -e "s!<CPU>!${CPU}!g" -e "s!<MEMORY>!${MEMORY}!g" $TASKDEF
+      - sed -i -e "s!<CPU_ARCH>!${CPU_ARCH}!g" $TASKDEF
+      - sed -i -e "s!<EXECUTION_ROLE_ARN>!${EXECUTION_ROLE_ARN}!g" $TASKDEF
+      - sed -i -e "s!<NAME>!${CONTAINER_NAME}!g" -e "s!<PORT>!${PORT}!g" $TASKDEF
+      - sed -i -e "s!<TASK_ROLE_ARN>!${TASK_ROLE_ARN}!g" $TASKDEF
 
       - cat ecs/appspec.yml
       - cat $TASKDEF
