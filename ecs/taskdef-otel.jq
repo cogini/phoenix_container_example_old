@@ -21,7 +21,7 @@
                 }
             ],
             "essential": true,
-            "image": "<IMAGE1_NAME>",
+            "image": env.IMAGE_URI,
             "logConfiguration": {
                 "logDriver": "awslogs",
                 "options": {
