@@ -140,8 +140,6 @@ phases:
       # https://docs.aws.amazon.com/codedeploy/latest/userguide/reference-appspec-file-structure-resources.html
       - sed -i -e "s!<NAME>!${CONTAINER_NAME}!g" -e "s!<PORT>!${PORT}!g" ecs/appspec.yml
 
-      - sed -i -e "s!<CPU_ARCH>!${CPU_ARCH}!g" $TASKDEF
-
       - sed -i -e "s!<AWSLOGS_GROUP>!${AWSLOGS_GROUP}!g" $TASKDEF
       - sed -i -e "s!<AWSLOGS_REGION>!${AWS_REGION}!g" $TASKDEF
       - sed -i -e "s!<AWSLOGS_STREAM_PREFIX>!${AWSLOGS_STREAM_PREFIX}!g" $TASKDEF
