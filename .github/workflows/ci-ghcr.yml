@@ -18,6 +18,7 @@ env:
   AWS_REGION: ap-northeast-1
   DOCKER_BUILDKIT: '1'
   COMPOSE_DOCKER_CLI_BUILD: '1'
+  COMPOSE_FILE: docker-compose.gha.yml
 jobs:
   build-test:
     name: Build test image
@@ -148,35 +149,35 @@ jobs:
         env:
           REGISTRY: ghcr.io/
           PUBLIC_REGISTRY: ""
-        run: echo "postgres test" | xargs -n 1 -P 8 docker compose -f docker-compose.gha.yml pull
+        run: echo "postgres test" | xargs -n 1 -P 8 docker compose pull
 
       - name: Start postgres
         env:
           REGISTRY: ghcr.io/
           PUBLIC_REGISTRY: ""
         run: |
-          docker compose -f docker-compose.gha.yml up --wait --detach postgres
+          docker compose up --wait --detach postgres
 
       - name: Initialize test database
         env:
           REGISTRY: ghcr.io/
           PUBLIC_REGISTRY: ""
         run: |
-          docker compose -f docker-compose.gha.yml run test mix do ecto.create, ecto.migrate
+          docker compose run test mix do ecto.create, ecto.migrate
 
       - name: Run tests
         env:
           REGISTRY: ghcr.io/
           PUBLIC_REGISTRY: ""
         run: |
-          docker compose -f docker-compose.gha.yml run test mix test --cover
+          docker compose run test mix test --cover
 
       - name: Run quality checks
         env:
           REGISTRY: ghcr.io/
           PUBLIC_REGISTRY: ""
         run: |
-          docker compose -f docker-compose.gha.yml run test mix do format --check-formatted, deps.unlock --check-unused, credo, hex.audit, deps.audit, sobelow
+          docker compose run test mix do format --check-formatted, deps.unlock --check-unused, credo, hex.audit, deps.audit, sobelow
 
       - name: Publish unit test results to GitHub
         uses: EnricoMi/publish-unit-test-result-action@v2
@@ -215,14 +216,14 @@ jobs:
           REGISTRY: ghcr.io/
           PUBLIC_REGISTRY: ""
         run: |
-          docker compose -f docker-compose.gha.yml pull --quiet test
+          docker compose pull --quiet test
 
       - name: Run dialyzer
         env:
           REGISTRY: ghcr.io/
           PUBLIC_REGISTRY: ""
         run: |
-          docker compose -f docker-compose.gha.yml run test mix dialyzer --no-check --format github
+          docker compose run test mix dialyzer --no-check --format github
 
   test-scan:
     name: Security scan code
@@ -256,7 +257,7 @@ jobs:
           REGISTRY: ghcr.io/
           PUBLIC_REGISTRY: ""
         run: |
-          docker compose -f docker-compose.gha.yml pull --quiet test
+          docker compose pull --quiet test
 
       - name: Trivy code
         env:
@@ -265,8 +266,8 @@ jobs:
         run: |
           mkdir -p ./sarif-reports
           mkdir -p ./.cache
-          docker compose -f docker-compose.gha.yml run test trivy fs --no-progress --debug --cache-dir /var/cache .
-          # docker compose -f docker-compose.gha.yml run test trivy fs --format sarif -o /sarif-reports/trivy-code.sarif --no-progress --debug --cache-dir /var/cache .
+          docker compose run test trivy fs --no-progress --debug --cache-dir /var/cache .
+          # docker compose run test trivy fs --format sarif -o /sarif-reports/trivy-code.sarif --no-progress --debug --cache-dir /var/cache .
 
         # TODO:
         # * Don't scan Elixir deps dir
@@ -474,7 +475,7 @@ jobs:
       #     REGISTRY: ghcr.io/
       #     PUBLIC_REGISTRY: ""
       #   run: |
-      #     docker compose -f docker-compose.gha.yml pull --quiet scan
+      #     docker compose pull --quiet scan
 
       # - name: Security scan image
       #   env:
@@ -483,21 +484,21 @@ jobs:
       #   run: |
       #     # mkdir -p ./sarif-reports
       #     mkdir -p ./.cache
-      #     docker compose -f docker-compose.gha.yml run scan trivy fs --no-progress --debug --cache-dir /var/cache /
-      #     # docker compose -f docker-compose.gha.yml run scan trivy fs --format sarif -o /sarif-reports/trivy-deploy.sarif --no-progress --debug --cache-dir /var/cache /
+      #     docker compose run scan trivy fs --no-progress --debug --cache-dir /var/cache /
+      #     # docker compose run scan trivy fs --format sarif -o /sarif-reports/trivy-deploy.sarif --no-progress --debug --cache-dir /var/cache /
 
       - name: Pull repos
         env:
           REGISTRY: ghcr.io/
           PUBLIC_REGISTRY: ""
           IMAGE_TAG: ${{ github.sha }}
-        run: echo "trivy deploy" | xargs -n 1 -P 8 docker compose -f docker-compose.gha.yml pull
+        run: echo "trivy deploy" | xargs -n 1 -P 8 docker compose pull
 
       - name: Scan image with Trivy
         run: |
           mkdir -p ./.cache
           mkdir -p ./sarif-reports
-          docker compose -f docker-compose.gha.yml run trivy image ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          docker compose run trivy image ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
 
       # https://github.com/aquasecurity/trivy-action
       # https://github.com/marketplace/actions/aqua-security-trivy#inputs
