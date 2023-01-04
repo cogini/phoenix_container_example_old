@@ -15,6 +15,7 @@ on: push
 env:
   IMAGE_NAME: foo-app
   IMAGE_OWNER: ${{ github.repository_owner }}
+  # Used by aws-actions/configure-aws-credentials to access AWS
   AWS_ROLE_TO_ASSUME: arn:aws:iam::770916339360:role/foo-dev-ecr-github-action-role
   AWS_REGION: ap-northeast-1
   DOCKER_BUILDKIT: '1'
@@ -406,7 +407,6 @@ jobs:
           context: .
           builder: ${{ steps.buildx.outputs.name }}
           push: true
-          # https://github.com/moby/buildkit#export-cache
           cache-from: type=gha,scope=${{ github.workflow }}
           cache-to: type=gha,scope=${{ github.workflow }},mode=max
           # ssh: default
