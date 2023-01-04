@@ -7,6 +7,7 @@ on: push
 #     paths-ignore:
 #       - 'README.md'
 #       - '.github/**'
+#       - '.vscode'
 #       - '.gitignore'
 #   pull_request:
 #     branches: [main]
