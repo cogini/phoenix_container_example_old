@@ -167,7 +167,7 @@ services:
     ports:
       - "4317:4317"       # OTLP over gRPC
       - "4318:4318"       # OTLP over HTTP
-      - "8125:8125/udp"   # Datadog DogStatsD metrics receier
+      - "8125:8125/udp"   # Datadog DogStatsD metrics receiver
       - "8126:8126"       # Datadog trace receiver
       - "5002:5002"       # web ui
       - "10518:10518"     # Datadog log receiver
