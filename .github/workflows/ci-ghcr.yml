@@ -15,7 +15,6 @@ on: push
 env:
   IMAGE_NAME: foo-app
   IMAGE_OWNER: ${{ github.repository_owner }}
-  IMAGE_TAG: ${{ github.sha }}
   # Registry for dev and test images
   REGISTRY: ghcr.io/
   # Registry for public images, default is docker.io
