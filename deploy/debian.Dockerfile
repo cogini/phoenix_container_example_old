@@ -538,7 +538,7 @@ FROM ${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG} AS deploy-base
             # Enable the app to make outbound SSL calls.
             ca-certificates \
             # Run health checks
-            # curl \
+            curl \
             # Allow app to listen on HTTPS. May not be needed if handled
             # outside the application, e.g. in load balancer.
             openssl \
