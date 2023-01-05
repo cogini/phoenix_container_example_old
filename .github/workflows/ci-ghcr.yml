@@ -261,18 +261,12 @@ jobs:
       - name: Pull test
         run: docker compose pull --quiet test
 
-      - name: Trivy code
+      - name: Scan code with trivy
         run: |
           mkdir -p ./.cache
           mkdir -p ./sarif-reports
           docker compose run test trivy fs --no-progress --debug --cache-dir /var/cache .
           # docker compose run test trivy fs --format sarif -o /sarif-reports/trivy-code.sarif --no-progress --debug --cache-dir /var/cache .
-
-        # TODO:
-        # * Don't scan Elixir deps dir
-        # * Scan application code and put warnings inline using JUnit?
-        #   Fail build on security issues in our code
-        # * Configure trivy options via file
 
       # Requires GitHub Advanced Security
       # https://docs.github.com/en/get-started/learning-about-github/about-github-advanced-security
@@ -478,7 +472,7 @@ jobs:
       - name: Pull repos
         run: echo "trivy deploy" | xargs -n 1 -P 8 docker compose pull
 
-      - name: Scan image with Trivy
+      - name: Scan image with trivy
         run: |
           mkdir -p ./.cache
           mkdir -p ./sarif-reports
@@ -486,7 +480,7 @@ jobs:
 
       # https://github.com/aquasecurity/trivy-action
       # https://github.com/marketplace/actions/aqua-security-trivy#inputs
-      - name: Run Trivy vulnerability scanner
+      - name: Scan image with trivy action
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{github.sha}}
@@ -498,6 +492,8 @@ jobs:
           cache-dir: ./.cache
           output: './sarif-reports/trivy.sarif'
 
+      # Requires GitHub Advanced Security
+      # https://docs.github.com/en/get-started/learning-about-github/about-github-advanced-security
       # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning
       # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github
       # - name: Upload Trivy scan results to GitHub Security tab
