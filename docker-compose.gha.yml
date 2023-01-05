@@ -66,19 +66,19 @@ services:
         condition: service_healthy
 
   # Deploy image plus security scan tools
-  scan:
-    image: "${REGISTRY:-docker.io/}${IMAGE_OWNER}/${IMAGE_NAME}:scan${GITHUB_SHA}"
-    build:
-      dockerfile: deploy/debian.Dockerfile
-      target: deploy-scan
-      args:
-        MIX_ENV: prod
-        BUILDKIT_INLINE_CACHE: "1"
-        REGISTRY: ${REGISTRY:-docker.io/}
-      context: .
-    volumes:
-      - "./.cache:/var/cache"
-      - "./sarif-reports:/sarif-reports"
+  # scan:
+  #   image: "${REGISTRY:-docker.io/}${IMAGE_OWNER}/${IMAGE_NAME}:scan${GITHUB_SHA}"
+  #   build:
+  #     dockerfile: deploy/debian.Dockerfile
+  #     target: deploy-scan
+  #     args:
+  #       MIX_ENV: prod
+  #       BUILDKIT_INLINE_CACHE: "1"
+  #       REGISTRY: ${REGISTRY:-docker.io/}
+  #     context: .
+  #   volumes:
+  #     - "./.cache:/var/cache"
+  #     - "./sarif-reports:/sarif-reports"
 
   # https://github.com/docker-library/docs/blob/master/postgres/README.md
   # https://geshan.com.np/blog/2021/12/docker-postgres/
