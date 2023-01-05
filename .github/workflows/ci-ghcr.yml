@@ -168,6 +168,14 @@ jobs:
       # - name: Start redis
       #   run: docker compose up --wait --detach redis
 
+      # - name: Start datadog
+      #   env:
+      #     DD_API_KEY: ${{ secrets.ACTIONS_DD_API_KEY }}
+      #     DD_ENV: ci
+      #     DD_HOSTNAME: "none"
+      #     DD_INSIDE_CI: "true"
+      #   run: docker compose up --detach datadog
+
       - name: Initialize test database
         run: docker compose run test mix do ecto.create, ecto.migrate
 
@@ -184,6 +192,16 @@ jobs:
         with:
           # Volume mounted from local filesystem into build
           junit_files: junit-reports/*.xml
+
+      # - name: Upload test results to Datadog
+      #   if: always()
+      #   continue-on-error: true
+      #   env:
+      #     DD_API_KEY: ${{ secrets.ACTIONS_DD_API_KEY }}
+      #     DD_ENV: ci
+      #   run: |
+      #     npm install -g @datadog/datadog-ci
+      #     datadog-ci junit upload --service api-graphql junit-reports/*.xml
 
   test-dialyzer:
     name: Run dialyzer
