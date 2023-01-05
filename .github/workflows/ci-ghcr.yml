@@ -279,6 +279,22 @@ jobs:
       #     sarif_file: './sarif-reports/'
       #     category: trivy
 
+      # https://github.com/marketplace/actions/anchore-container-scan
+      - name: Scan code with grype
+        uses: anchore/scan-action@v3
+        id: scan-grype
+        with:
+          path: .
+          # severity-cutoff: critical
+          # output-format: sarif
+
+      # - name: Upload grype scan results to GitHub Security tab
+      #   uses: github/codeql-action/upload-sarif@v2
+      #   if: always()
+      #   with:
+      #     sarif_file: ${{ steps.scan-grype.outputs.sarif }}
+      #     category: grype
+
   build-prod:
     name: Build prod image
     runs-on: ubuntu-latest
@@ -503,10 +519,21 @@ jobs:
       #     sarif_file: './sarif-reports/'
       #     category: trivy
 
+      # https://github.com/marketplace/actions/anchore-container-scan
       - name: Scan image with grype action
         uses: anchore/scan-action@v3
+        id: scan-grype
         with:
           image: ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{github.sha}}
+          # severity-cutoff: critical
+          # output-format: sarif
+
+      # - name: Upload grype scan results to GitHub Security tab
+      #   uses: github/codeql-action/upload-sarif@v2
+      #   if: always()
+      #   with:
+      #     sarif_file: ${{ steps.scan-grype.outputs.sarif }}
+      #     category: grype
 
   deploy:
     name: Deploy final images
