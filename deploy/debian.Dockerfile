@@ -142,12 +142,12 @@ FROM ${BUILD_IMAGE_NAME}:${BUILD_IMAGE_TAG} AS build-os-deps
         echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list && \
         printf "Package: *\nPin: release o=dl.yarnpkg.com\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/yarn.pref && \
         # Install Trivy
-        curl -sL https://aquasecurity.github.io/trivy-repo/deb/public.key -o /etc/apt/trusted.gpg.d/trivy.asc && \
-        printf "deb https://aquasecurity.github.io/trivy-repo/deb %s main" "$(lsb_release -sc)" | tee -a /etc/apt/sources.list.d/trivy.list && \
+        # curl -sL https://aquasecurity.github.io/trivy-repo/deb/public.key -o /etc/apt/trusted.gpg.d/trivy.asc && \
+        # printf "deb https://aquasecurity.github.io/trivy-repo/deb %s main" "$(lsb_release -sc)" | tee -a /etc/apt/sources.list.d/trivy.list && \
         apt-get update -qq && \
         apt-get -y install -y -qq --no-install-recommends yarn && \
-        apt-get -y install -y -qq --no-install-recommends trivy && \
-        curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin && \
+        # apt-get -y install -y -qq --no-install-recommends trivy && \
+        # curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin && \
         # Install node using n
         # curl -L https://raw.githubusercontent.com/tj/n/master/bin/n -o /usr/local/bin/n && \
         # chmod +x /usr/local/bin/n && \
@@ -281,7 +281,7 @@ FROM build-deps-get AS test-image
     COPY .credo.exs ./
     COPY .formatter.exs ./
     # COPY dialyzer-ignore ./
-    COPY trivy.yaml ./
+    # COPY trivy.yaml ./
 
     # Non-umbrella
     COPY lib ./lib
@@ -411,11 +411,11 @@ FROM ${INSTALL_IMAGE_NAME}:${INSTALL_IMAGE_TAG} AS deploy-install
             # Needed by Erlang VM
             libtinfo6 \
             && \
-        curl -sL https://aquasecurity.github.io/trivy-repo/deb/public.key -o /etc/apt/trusted.gpg.d/trivy.asc && \
-        printf "deb https://aquasecurity.github.io/trivy-repo/deb %s main" "$(lsb_release -sc)" | tee -a /etc/apt/sources.list.d/trivy.list && \
-        apt-get update -qq && \
-        apt-get -y install -y -qq --no-install-recommends trivy && \
-        curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin && \
+        # curl -sL https://aquasecurity.github.io/trivy-repo/deb/public.key -o /etc/apt/trusted.gpg.d/trivy.asc && \
+        # printf "deb https://aquasecurity.github.io/trivy-repo/deb %s main" "$(lsb_release -sc)" | tee -a /etc/apt/sources.list.d/trivy.list && \
+        # apt-get update -qq && \
+        # apt-get -y install -y -qq --no-install-recommends trivy && \
+        # curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin && \
         # Generate locales specified in /etc/locale.gen
         locale-gen && \
         # Remove packages installed temporarily. Removes everything related to
@@ -563,12 +563,6 @@ FROM ${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG} AS deploy-base
         truncate -s 0 /var/log/apt/* && \
         truncate -s 0 /var/log/dpkg.log
 
-# Create deploy image with vulnerability scanners
-# FROM deploy-base AS deploy-scan
-#     # COPY --from=test-image /usr/local/bin/trivy /usr/local/bin/trivy
-#     # COPY --from=test-image /usr/local/share/trivy/templates /usr/local/share/trivy/templates
-#     COPY --from=test-image /usr/local/bin/grype /usr/local/bin/grype
-#     # COPY trivy.yaml ./
 
 # Create final app image which gets deployed
 FROM deploy-base AS deploy
