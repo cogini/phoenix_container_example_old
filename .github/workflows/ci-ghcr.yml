@@ -273,7 +273,7 @@ jobs:
         with:
           scan-type: 'fs'
           scan-ref: '.'
-          trivy-config: trivy.yaml
+          # trivy-config: trivy.yaml
 
       # Requires GitHub Advanced Security
       # https://docs.github.com/en/get-started/learning-about-github/about-github-advanced-security
