@@ -28,6 +28,7 @@ env:
   DOCKER_BUILDKIT: '1'
   COMPOSE_DOCKER_CLI_BUILD: '1'
   COMPOSE_FILE: docker-compose.gha.yml
+  DOCKER_FILE: deploy/debian.Dockerfile
 jobs:
   build-test:
     # Build image used to run tests
@@ -109,7 +110,7 @@ jobs:
       - name: Build test image and push to GHCR
         uses: docker/build-push-action@v3
         with:
-          file: ./deploy/debian.Dockerfile
+          file: ${{ env.DOCKER_FILE} }
           target: test-image
           context: .
           builder: ${{ steps.buildx.outputs.name }}
@@ -385,7 +386,7 @@ jobs:
       - name: Build deploy image and push to GHCR
         uses: docker/build-push-action@v3
         with:
-          file: ./deploy/debian.Dockerfile
+          file: ${{ env.DOCKER_FILE }}
           target: deploy
           context: .
           builder: ${{ steps.buildx.outputs.name }}
@@ -405,7 +406,7 @@ jobs:
         env:
           REGISTRY: "${{ env.ECR_REGISTRY }}/"
         with:
-          file: ./deploy/debian.Dockerfile
+          file: ${{ env.DOCKER_FILE }}
           target: deploy
           context: .
           builder: ${{ steps.buildx.outputs.name }}
@@ -595,7 +596,7 @@ jobs:
         env:
           REGISTRY: "${{ env.ECR_REGISTRY }}/"
         with:
-          file: deploy/debian.Dockerfile
+          file: ${{ env.DOCKER_FILE }}
           target: deploy
           context: .
           builder: ${{ steps.buildx.outputs.name }}
