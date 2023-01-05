@@ -260,12 +260,12 @@ jobs:
       - name: Pull test
         run: docker compose pull --quiet test
 
-      - name: Scan code with trivy
-        run: |
-          mkdir -p ./.cache
-          mkdir -p ./sarif-reports
-          docker compose run test trivy fs --no-progress --debug --cache-dir /var/cache .
-          # docker compose run test trivy fs --format sarif -o /sarif-reports/trivy-code.sarif --no-progress --debug --cache-dir /var/cache .
+      # - name: Scan code with trivy
+      #   run: |
+      #     mkdir -p ./.cache
+      #     mkdir -p ./sarif-reports
+      #     docker compose run test trivy fs --no-progress --debug --cache-dir /var/cache .
+      #     # docker compose run test trivy fs --format sarif -o /sarif-reports/trivy-code.sarif --no-progress --debug --cache-dir /var/cache .
 
       # https://github.com/marketplace/actions/aqua-security-trivy
       - name: Scan code with trivy action
@@ -484,11 +484,11 @@ jobs:
       - name: Pull repos
         run: echo "trivy deploy" | xargs -n 1 -P 8 docker compose pull
 
-      - name: Scan image with trivy
-        run: |
-          mkdir -p ./.cache
-          mkdir -p ./sarif-reports
-          docker compose run trivy image ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{github.sha}}
+      # - name: Scan image with trivy
+      #   run: |
+      #     mkdir -p ./.cache
+      #     mkdir -p ./sarif-reports
+      #     docker compose run trivy image ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{github.sha}}
 
       - name: Scan image with trivy action
         uses: aquasecurity/trivy-action@master
