@@ -524,6 +524,9 @@ jobs:
         id: ecr-login
         uses: aws-actions/amazon-ecr-login@v1
 
+      - name: Set vars
+        run: echo "ECR_REGISTRY=${{ steps.ecr-login.outputs.registry }}" >> $GITHUB_ENV
+
       # - name: Log in to ECR
       #   uses: docker/login-action@v2
       #   with:
@@ -537,10 +540,6 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Set vars
-        run: |
-          echo "ECR_REGISTRY=${{ steps.ecr-login.outputs.registry }}" >> $GITHUB_ENV
 
       - name: Tag GHCR release as latest
         if: github.event_name != 'pull_request'
