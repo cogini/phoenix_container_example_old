@@ -267,6 +267,14 @@ jobs:
           docker compose run test trivy fs --no-progress --debug --cache-dir /var/cache .
           # docker compose run test trivy fs --format sarif -o /sarif-reports/trivy-code.sarif --no-progress --debug --cache-dir /var/cache .
 
+      # https://github.com/marketplace/actions/aqua-security-trivy
+      - name: Scan code with trivy action
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          trivy-config: trivy.yaml
+
       # Requires GitHub Advanced Security
       # https://docs.github.com/en/get-started/learning-about-github/about-github-advanced-security
       # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning
