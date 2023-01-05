@@ -11,7 +11,7 @@ on: push
 #       - '.gitignore'
 #   pull_request:
 #     branches: [main]
-#     types: [labeled,synchronize,reopened,unlabeled]
+#     types: [opened,synchronize,reopened,labeled,unlabeled]
 env:
   IMAGE_NAME: foo-app
   IMAGE_OWNER: ${{ github.repository_owner }}
