@@ -476,16 +476,6 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v3
 
-      # - name: Pull scan
-      #   run: docker compose pull --quiet scan
-
-      # - name: Security scan image
-      #   run: |
-      #     # mkdir -p ./sarif-reports
-      #     mkdir -p ./.cache
-      #     docker compose run scan trivy fs --no-progress --debug --cache-dir /var/cache /
-      #     # docker compose run scan trivy fs --format sarif -o /sarif-reports/trivy-deploy.sarif --no-progress --debug --cache-dir /var/cache /
-
       - name: Pull repos
         run: echo "trivy deploy" | xargs -n 1 -P 8 docker compose pull
 
@@ -653,30 +643,3 @@ jobs:
   #   steps:
   #     - name: Trivy scan fs
   #       run: trivy fs --no-progress /
-
-  # trivy-job:
-  #   runs-on: ubuntu-latest
-  #   needs: [build-prod]
-  #   permissions: write-all
-  #   container:
-  #     image: aquasec/trivy
-  #     volumes:
-  #       - /sarif-reports:/sarif-reports
-  #       - /trivy-cache:/trivy-cache
-  #     credentials:
-  #       username: ${{ github.actor }}
-  #       password: ${{ secrets.GITHUB_TOKEN }}
-  #   steps:
-  #     - name: Trivy scan image
-  #       run: trivy image ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:latest --debug --cache-dir /trivy-cache
-  #       # run: trivy image ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:latest --debug --cache-dir /trivy-cache
-  #       # run: trivy image ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ github.sha }} --format sarif -o /sarif-reports/trivy-image.sarif /
-
-  #     # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning
-  #     # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github
-  #     # - name: Upload scan results to GitHub Security tab
-  #     #   uses: github/codeql-action/upload-sarif@v2
-  #     #   if: always()
-  #     #   with:
-  #     #     sarif_file: '/sarif-reports/'
-  #     #     category: trivy
