@@ -20,8 +20,6 @@ env:
   REGISTRY: ghcr.io/
   # Registry for public images, default is docker.io
   PUBLIC_REGISTRY: ""
-  # Registry for production images, set from aws-actions/amazon-ecr-login
-  # ECR_REGISTRY: 123.dkr.ecr.us-east-1.amazonaws.com
   # Used by aws-actions/configure-aws-credentials to give GitHub Actions access
   # to AWS, potentially more secure than using secrets for AWS keys.
   AWS_ROLE_TO_ASSUME: arn:aws:iam::770916339360:role/foo-dev-ecr-github-action-role
