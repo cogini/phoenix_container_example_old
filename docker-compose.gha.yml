@@ -77,8 +77,8 @@ services:
         REGISTRY: ${REGISTRY:-docker.io/}
       context: .
     volumes:
-      - "./sarif-reports:/sarif-reports"
       - "./.cache:/var/cache"
+      - "./sarif-reports:/sarif-reports"
 
   # https://github.com/docker-library/docs/blob/master/postgres/README.md
   # https://geshan.com.np/blog/2021/12/docker-postgres/
