@@ -75,10 +75,10 @@ FROM ${BUILD_IMAGE_NAME}:${BUILD_IMAGE_TAG} AS build-os-deps
     ARG LANG
     ENV LANG=$LANG
 
-    ARG APP_USER
     ARG APP_GROUP
-    ARG APP_USER_ID
     ARG APP_GROUP_ID
+    ARG APP_USER
+    ARG APP_USER_ID
 
     # Create OS user and group to run app under
     RUN if ! grep -q "$APP_USER" /etc/passwd; \
