@@ -160,27 +160,22 @@ jobs:
       # TODO: Starting services in parallel fails with error
       # "Error response from daemon: network api_default is ambiguous (2 matches found on name)"
       # - name: Start required services
-      #   run: |
-      #     echo "postgres redis" | xargs -n 1 -P 8 docker compose up --wait --detach
+      #   run: echo "postgres redis" | xargs -n 1 -P 8 docker compose up --wait --detach
 
       - name: Start postgres
-        run: |
-          docker compose up --wait --detach postgres
+        run: docker compose up --wait --detach postgres
 
       # - name: Start redis
-      #   run: |
-      #     docker compose up --wait --detach redis
+      #   run: docker compose up --wait --detach redis
+
       - name: Initialize test database
-        run: |
-          docker compose run test mix do ecto.create, ecto.migrate
+        run: docker compose run test mix do ecto.create, ecto.migrate
 
       - name: Run tests
-        run: |
-          docker compose run test mix test --cover
+        run: docker compose run test mix test --cover
 
       - name: Run quality checks
-        run: |
-          docker compose run test mix do format --check-formatted, deps.unlock --check-unused, credo, hex.audit, deps.audit, sobelow
+        run: docker compose run test mix do format --check-formatted, deps.unlock --check-unused, credo, hex.audit, deps.audit, sobelow
 
       - name: Publish unit test results to GitHub
         uses: EnricoMi/publish-unit-test-result-action@v2
@@ -215,12 +210,10 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Pull test
-        run: |
-          docker compose pull --quiet test
+        run: docker compose pull --quiet test
 
       - name: Run dialyzer
-        run: |
-          docker compose run test mix dialyzer --no-check --format github
+        run: docker compose run test mix dialyzer --no-check --format github
 
   test-scan:
     name: Security scan code
@@ -250,8 +243,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Pull test
-        run: |
-          docker compose pull --quiet test
+        run: docker compose pull --quiet test
 
       - name: Trivy code
         run: |
@@ -308,8 +300,7 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v1
 
       - name: Set vars
-        run: |
-          echo "ECR_REGISTRY=${{ steps.ecr-login.outputs.registry }}" >> $GITHUB_ENV
+        run: echo "ECR_REGISTRY=${{ steps.ecr-login.outputs.registry }}" >> $GITHUB_ENV
 
       # - name: Log in to ECR
       #   uses: docker/login-action@v2
@@ -459,8 +450,7 @@ jobs:
         uses: actions/checkout@v3
 
       # - name: Pull scan
-      #   run: |
-      #     docker compose pull --quiet scan
+      #   run: docker compose pull --quiet scan
 
       # - name: Security scan image
       #   run: |
@@ -476,14 +466,14 @@ jobs:
         run: |
           mkdir -p ./.cache
           mkdir -p ./sarif-reports
-          docker compose run trivy image ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          docker compose run trivy image ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{github.sha}}
 
       # https://github.com/aquasecurity/trivy-action
       # https://github.com/marketplace/actions/aqua-security-trivy#inputs
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          image-ref: ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{github.sha}}
           format: 'sarif'
           # exit-code: '1'
           # ignore-unfixed: true
@@ -554,8 +544,7 @@ jobs:
 
       - name: Tag GHCR release as latest
         if: github.event_name != 'pull_request'
-        run: |
-          docker buildx imagetools create --append ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ github.sha }} --tag ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:latest
+        run: docker buildx imagetools create --append ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{github.sha}} --tag ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:latest
 
       - name: Check out source
         uses: actions/checkout@v3
