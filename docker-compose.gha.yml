@@ -65,30 +65,10 @@ services:
       postgres:
         condition: service_healthy
 
-  # Deploy image plus security scan tools
-  # scan:
-  #   image: "${REGISTRY:-docker.io/}${IMAGE_OWNER}/${IMAGE_NAME}:scan${GITHUB_SHA}"
-  #   build:
-  #     dockerfile: deploy/debian.Dockerfile
-  #     target: deploy-scan
-  #     args:
-  #       MIX_ENV: prod
-  #       BUILDKIT_INLINE_CACHE: "1"
-  #       REGISTRY: ${REGISTRY:-docker.io/}
-  #     context: .
-  #   volumes:
-  #     - "./.cache:/var/cache"
-  #     - "./sarif-reports:/sarif-reports"
-
   # https://github.com/docker-library/docs/blob/master/postgres/README.md
   # https://geshan.com.np/blog/2021/12/docker-postgres/
   postgres:
     image: "${PUBLIC_REGISTRY:-docker.io/}postgres:14.6-alpine"
-    # build:
-    #   context: .
-    #   dockerfile: deploy/postgres.Dockerfile
-    #   args:
-    #     REGISTRY: ${REGISTRY:-docker.io/}
     ports:
       - '5432'
     user: postgres
@@ -183,11 +163,11 @@ services:
       - "./.cache:/root/.cache"
       - "/var/run/docker.sock:/var/run/docker.sock"
 
-  grype:
-    image: "${PUBLIC_REGISTRY:-docker.io/}anchore/grype"
-    volumes:
-      - "./.cache:/var/cache"
-      - "/var/run/docker.sock:/var/run/docker.sock"
+  # grype:
+  #   image: "${PUBLIC_REGISTRY:-docker.io/}anchore/grype"
+  #   volumes:
+  #     - "./.cache:/var/cache"
+  #     - "/var/run/docker.sock:/var/run/docker.sock"
 
   # https://docs.datadoghq.com/getting_started/agent/
   # https://github.com/DataDog/datadog-agent/blob/main/pkg/config/config_template.yaml
