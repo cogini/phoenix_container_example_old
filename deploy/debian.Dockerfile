@@ -13,7 +13,7 @@ ARG AWS_CLI_VERSION=2.0.61
 
 # ARG ELIXIR_DEBIAN_VERSION=buster-20210208
 # ARG ELIXIR_DEBIAN_VERSION=bullseye-20210902-slim
-ARG ELIXIR_DEBIAN_VERSION=bullseye-20221004-slim
+ARG ELIXIR_DEBIAN_VERSION=bullseye-20221219-slim
 
 # https://docker.debian.net/
 # https://hub.docker.com/_/debian
