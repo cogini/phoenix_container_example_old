@@ -21,9 +21,9 @@ services:
       - DB_HOST=postgres
       - SECRET_KEY_BASE
     volumes:
+      - "./.cache:/var/cache"
       - "./junit-reports:/app/_build/test/junit-reports"
       - "./sarif-reports:/sarif-reports"
-      - "./.cache:/var/cache"
     # depends_on:
     #   postgres:
     #     condition: service_healthy
@@ -146,7 +146,7 @@ services:
       retries: 10
 
   newman:
-    image: "${PUBLIC_REGISTRY:-docker.io/}postman/newman"
+    # image: "${PUBLIC_REGISTRY:-docker.io/}postman/newman"
     image: "${REGISTRY:-docker.io/}${IMAGE_OWNER}/newman"
     build:
       dockerfile: newman.Dockerfile
@@ -155,6 +155,7 @@ services:
         REGISTRY: ${REGISTRY:-docker.io/}
       context: .
     volumes:
+      # Mount Postman files into default location
       - "./postman:/etc/newman"
       - "./junit-reports:/junit-reports"
 
@@ -168,10 +169,9 @@ services:
   # https://docs.datadoghq.com/getting_started/agent/
   # https://github.com/DataDog/datadog-agent/blob/main/pkg/config/config_template.yaml
   datadog:
-    # image: "${PUBLIC_REGISTRY:-docker.io/}datadog/agent:7"
+    image: "${PUBLIC_REGISTRY:-docker.io/}datadog/agent:latest"
     # image: public.ecr.aws/datadog/agent:7
     # image: gcr.io/datadoghq/agent:7
-    image: gcr.io/datadoghq/agent:latest
     # volumes:
     #   # Main Datadog config
     #   - ./datadog.yml:/etc/datadog-agent/datadog.yaml
@@ -193,7 +193,6 @@ services:
     environment:
       - DD_API_KEY
       - DD_SITE
-      # - DD_HOSTNAME=dev-box
       - DD_HOSTNAME="none"
       - DD_TAGS=environment:development
       - DD_ENV=development
@@ -201,7 +200,6 @@ services:
       - DD_CHECKS_TAG_CARDINALITY=high
       - DD_CLOUD_PROVIDER_METADATA=aws
       - DD_GUI_PORT=5002
-        # Agent log_level
       - DD_LOG_LEVEL
       - DD_LOGS_ENABLED=true
       - DD_APM_ENABLED=true
@@ -216,10 +214,12 @@ volumes:
   # mysql_data_path:
   #   driver: local
 
+# Secrets needed for builds
 # secrets:
 #   oban_license_key:
 #     file: ./.dev_secrets/oban_license_key.txt
 #   oban_key_fingerprint:
 #     file: ./.dev_secrets/oban_fingerprint.txt
+#   # GitHub Personal Access Token
 #   access_token:
 #     file: ./.access_token
