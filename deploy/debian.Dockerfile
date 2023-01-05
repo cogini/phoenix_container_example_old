@@ -356,6 +356,8 @@ FROM build-deps-get AS deploy-release
     COPY priv ./priv
 
     RUN mix assets.deploy
+    # RUN esbuild default --minify
+    # RUN mix phx.digest
 
     # Non-umbrella
     COPY lib ./lib
@@ -643,6 +645,7 @@ FROM deploy-base AS deploy
     # When using a startup script, unpack release under "/app/current" dir
     # WORKDIR $APP_DIR/current
 
+    # COPY --from=deploy-release --chown="$APP_USER:$APP_GROUP" --chmod=774 "/app/_build/${MIX_ENV}/rel/${RELEASE}" ./
     COPY --from=deploy-release --chown="$APP_USER:$APP_GROUP" "/app/_build/${MIX_ENV}/rel/${RELEASE}" ./
 
     EXPOSE $APP_PORT
