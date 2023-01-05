@@ -297,5 +297,15 @@ services:
 volumes:
   postgres_data_path:
     driver: local
-  # mysql_data_path:
-  #   driver: local
+  mysql_data_path:
+    driver: local
+
+# Secrets for builds
+# secrets:
+#   oban_license_key:
+#     file: ./.dev_secrets/oban_license_key.txt
+#   oban_key_fingerprint:
+#     file: ./.dev_secrets/oban_fingerprint.txt
+#   # GitHub Personal Access Token
+#   access_token:
+#     file: ./.access_token
