@@ -10,7 +10,7 @@ on: push
 #       - '.vscode'
 #       - '.gitignore'
 #   pull_request:
-#     branches: [main]
+#     # branches: [main]
 #     types: [opened,synchronize,reopened,labeled,unlabeled]
 env:
   IMAGE_NAME: foo-app
