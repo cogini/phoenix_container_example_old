@@ -110,7 +110,7 @@ jobs:
       - name: Build test image and push to GHCR
         uses: docker/build-push-action@v3
         with:
-          file: ${{ env.DOCKER_FILE} }
+          file: ${{ env.DOCKER_FILE }}
           target: test-image
           context: .
           builder: ${{ steps.buildx.outputs.name }}
