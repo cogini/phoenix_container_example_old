@@ -61,13 +61,11 @@ jobs:
 
       - name: Get branch name for main
         if: github.event_name != 'pull_request'
-        run: |
-          echo "BRANCH=$(echo ${GITHUB_REF#refs/heads/})" >> $GITHUB_ENV
+        run: echo "BRANCH=$(echo ${GITHUB_REF#refs/heads/})" >> $GITHUB_ENV
 
       - name: Get branch name for pull_request
         if: github.event_name == 'pull_request'
-        run: |
-          echo "BRANCH=$(echo $GITHUB_HEAD_REF | tr '//\\' '.' | cut -c -55)" >> $GITHUB_ENV
+        run: echo "BRANCH=$(echo $GITHUB_HEAD_REF | tr '//\\' '.' | cut -c -55)" >> $GITHUB_ENV
 
       # https://github.com/marketplace/actions/docker-login
       - name: Log in to GHCR
