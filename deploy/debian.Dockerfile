@@ -71,15 +71,8 @@ ARG TRIVY_OPTS="--exit-code 1 --severity CRITICAL"
 ARG MIX_ENV=prod
 
 # Name of Elixir release
+# This should match mix.exs releases()
 ARG RELEASE=prod
-# This should match mix.exs, e.g.
-# defp releases do
-#   [
-#     prod: [
-#       include_executables_for: [:unix],
-#     ],
-#   ]
-# end
 
 # App listen port
 ARG APP_PORT=4000
@@ -318,8 +311,8 @@ FROM build-deps-get AS deploy-release
     #
     # Generate assets the really old way
     # RUN --mount=type=cache,target=~/.npm,sharing=locked \
-    #   npm install && \
-    #   node node_modules/webpack/bin/webpack.js --mode production
+    #     npm install && \
+    #     node node_modules/webpack/bin/webpack.js --mode production
 
     # Install JavaScript deps using yarn
     # COPY assets/package.json assets/package.json
@@ -337,6 +330,10 @@ FROM build-deps-get AS deploy-release
 
     # Umbrella
     # COPY apps ./apps
+
+    # For umbrella, using `mix cmd` ensures each app is compiled in
+    # isolation https://github.com/elixir-lang/elixir/issues/9407
+    # RUN mix cmd mix compile --warnings-as-errors
 
     RUN mix compile --warnings-as-errors
 
@@ -498,6 +495,8 @@ FROM ${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG} AS deploy-base
             # apt-transport-https \
             # Enable the app to make outbound SSL calls.
             ca-certificates \
+            # Run health checks
+            # curl \
             # Allow app to listen on HTTPS. May not be needed if handled
             # outside the application, e.g. in load balancer.
             openssl \
