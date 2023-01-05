@@ -365,13 +365,11 @@ jobs:
 
       - name: Get branch name for push
         if: github.event_name != 'pull_request'
-        run: |
-          echo "BRANCH=$(echo ${GITHUB_REF#refs/heads/})" >> $GITHUB_ENV
+        run: echo "BRANCH=$(echo ${GITHUB_REF#refs/heads/})" >> $GITHUB_ENV
 
       - name: Get branch name for pull_request
         if: github.event_name == 'pull_request'
-        run: |
-          echo "BRANCH=$(echo $GITHUB_HEAD_REF | tr '//\\' '.' | cut -c -55)" >> $GITHUB_ENV
+        run: echo "BRANCH=$(echo $GITHUB_HEAD_REF | tr '//\\' '.' | cut -c -55)" >> $GITHUB_ENV
 
       # - name: Configure ssh keys
       #   uses: webfactory/ssh-agent@v0.7.0
