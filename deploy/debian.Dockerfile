@@ -2,18 +2,12 @@
 # Deploy using Debian
 
 ARG ELIXIR_VERSION=1.14.2
-# ARG OTP_VERSION=24.2
 # ARG OTP_VERSION=24.3.4.2
 ARG OTP_VERSION=25.2
 
-ARG NODE_VERSION=16.14.1
-# ARG NODE_VERSION=lts
-
-ARG AWS_CLI_VERSION=2.0.61
-
 # ARG ELIXIR_DEBIAN_VERSION=buster-20210208
 # ARG ELIXIR_DEBIAN_VERSION=bullseye-20210902-slim
-ARG ELIXIR_DEBIAN_VERSION=bullseye-20221219-slim
+ARG ELIXIR_DEBIAN_VERSION=bullseye-20221004-slim
 
 # https://docker.debian.net/
 # https://hub.docker.com/_/debian
@@ -24,6 +18,11 @@ ARG DEBIAN_VERSION=bullseye-slim
 # Needs to be updated manually
 # See https://snapshot.debian.org/
 ARG DEBIAN_SNAPSHOT=20221219
+
+ARG NODE_VERSION=16.14.1
+# ARG NODE_VERSION=lts
+
+ARG AWS_CLI_VERSION=2.0.61
 
 # Docker registry for internal images, e.g. 123.dkr.ecr.ap-northeast-1.amazonaws.com/
 # If blank, docker.io will be used. If specified, should have a trailing slash.
