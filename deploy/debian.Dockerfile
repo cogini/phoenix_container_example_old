@@ -283,7 +283,7 @@ FROM build-deps-get AS deploy-release
     ARG APP_DIR
     ARG RELEASE
 
-    ENV MIX_ENV=prod
+    ARG MIX_ENV=prod
 
     WORKDIR $APP_DIR
 
@@ -439,7 +439,7 @@ FROM ${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG} AS deploy-base
     ARG APP_USER_ID
     ARG APP_GROUP_ID
 
-    ARG MIX_ENV=prod
+    ARG MIX_ENV
     ARG RELEASE
 
     # COPY --from=deploy-install /usr/lib/locale/C.UTF-8 /usr/lib/locale/C.UTF-8
@@ -561,7 +561,7 @@ FROM deploy-base AS deploy
     ARG APP_GROUP
     ARG APP_PORT
 
-    ARG MIX_ENV=prod
+    ARG MIX_ENV
     ARG RELEASE
 
     # Set environment vars used by the app
