@@ -503,6 +503,11 @@ jobs:
       #     sarif_file: './sarif-reports/'
       #     category: trivy
 
+      - name: Scan image with grype action
+        uses: anchore/scan-action@v3
+        with:
+          image: ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{github.sha}}
+
   deploy:
     name: Deploy final images
     if: github.event_name != 'pull_request'
