@@ -312,15 +312,12 @@ jobs:
       pull-requests: write
       issues: read
     steps:
-      # https://github.com/aws-actions/configure-aws-credentials
-      # https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1-node16
         with:
           role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ env.AWS_REGION }}
 
-      # https://github.com/aws-actions/amazon-ecr-login
       - name: Log in to Amazon ECR
         id: ecr-login
         uses: aws-actions/amazon-ecr-login@v1
@@ -368,11 +365,11 @@ jobs:
         run: |
           echo "BRANCH=$(echo $GITHUB_HEAD_REF | tr '//\\' '.' | cut -c -55)" >> $GITHUB_ENV
 
-      # https://github.com/marketplace/actions/webfactory-ssh-agent
-      # https://docs.github.com/en/developers/overview/managing-deploy-keys#deploy-keys
-      # ssh-keygen -t ed25519 -m pem -C "git@github.com:reachfh/api-utils.git" -f api-utils
       # - name: Configure ssh keys
       #   uses: webfactory/ssh-agent@v0.7.0
+      #   # https://github.com/marketplace/actions/webfactory-ssh-agent
+      #   # https://docs.github.com/en/developers/overview/managing-deploy-keys#deploy-keys
+      #   # ssh-keygen -t ed25519 -m pem -C "git@github.com:reachfh/api-utils.git" -f api-utils
       #   with:
       #     ssh-private-key: |
       #       ${{ secrets.SSH_PRIVATE_KEY }}
@@ -484,10 +481,10 @@ jobs:
           mkdir -p ./sarif-reports
           docker compose run trivy image ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{github.sha}}
 
-      # https://github.com/aquasecurity/trivy-action
-      # https://github.com/marketplace/actions/aqua-security-trivy#inputs
       - name: Scan image with trivy action
         uses: aquasecurity/trivy-action@master
+        # https://github.com/aquasecurity/trivy-action
+        # https://github.com/marketplace/actions/aqua-security-trivy#inputs
         with:
           image-ref: ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{github.sha}}
           format: 'sarif'
@@ -546,15 +543,12 @@ jobs:
       pull-requests: write
       issues: read
     steps:
-      # https://github.com/aws-actions/configure-aws-credentials
-      # https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1-node16
         with:
           role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ env.AWS_REGION }}
 
-      # https://github.com/aws-actions/amazon-ecr-login
       - name: Log in to Amazon ECR
         id: ecr-login
         uses: aws-actions/amazon-ecr-login@v1
