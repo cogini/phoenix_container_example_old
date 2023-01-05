@@ -137,6 +137,7 @@ FROM ${BUILD_IMAGE_NAME}:${BUILD_IMAGE_TAG} AS build-os-deps
             jq \
             # software-properties-common \
             lsb-release \
+            openssh-client \
             # Support ssl in container, as opposed to load balancer
             openssl \
             # Install default nodejs
@@ -238,11 +239,39 @@ FROM build-os-deps AS build-deps-get
     COPY mix.lock .
 
     RUN mix 'do' local.rebar --force, local.hex --force
-    RUN mix deps.get
-    RUN mix esbuild.install
 
-    # RUN yarn add newman
-    RUN yarn add snyk
+    # Add private repo for Oban
+    RUN --mount=type=secret,id=oban_license_key \
+        --mount=type=secret,id=oban_key_fingerprint \
+        if test -s /run/secrets/oban_license_key; then \
+            mix hex.repo add oban https://getoban.pro/repo \
+                --fetch-public-key "$(cat /run/secrets/oban_key_fingerprint)" \
+                --auth-key "$(cat /run/secrets/oban_license_key)"; \
+        fi
+
+    # Run deps.get with optional authentication to access private repos
+    RUN --mount=type=ssh \
+        --mount=type=secret,id=access_token \
+        # Access private repos using ssh identity
+        # https://docs.docker.com/engine/reference/commandline/buildx_build/#ssh
+        # https://stackoverflow.com/questions/73263731/dockerfile-run-mount-type-ssh-doesnt-seem-to-work
+        # Copying a predefined known_hosts file would be more secure, but would need to be maintained
+        if test -n "$SSH_AUTH_SOCK"; then \
+            mkdir -p /etc/ssh && \
+            ssh-keyscan github.com > /etc/ssh/ssh_known_hosts && \
+            mix deps.get; \
+        # Access private repos using access token
+        elif test -s /run/secrets/access_token; then \
+            GIT_ASKPASS=/run/secrets/access_token mix deps.get; \
+        else \
+            mix deps.get; \
+        fi
+
+    RUN mix esbuild.install --if-missing
+
+    # RUN yarn global add newman
+    # RUN yarn global add newman-reporter-junitfull
+    # RUN yarn global add snyk
 
 # Create base image for tests
 FROM build-deps-get AS test-image
@@ -278,6 +307,8 @@ FROM build-deps-get AS test-image
     # For umbrella, using `mix cmd` ensures each app is compiled in
     # isolation https://github.com/elixir-lang/elixir/issues/9407
     # RUN mix cmd mix compile --warnings-as-errors
+
+    # COPY Postman ./Postman
 
 # Create Elixir release
 FROM build-deps-get AS deploy-release
