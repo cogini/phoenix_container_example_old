@@ -60,14 +60,6 @@ ARG APP_GROUP_ID=$APP_USER_ID
 
 ARG LANG=C.UTF-8
 
-# Trivy vulnerability scanner
-# Fail for issues of severity = HIGH
-# ARG TRIVY_OPTS="--exit-code 1 --severity HIGH"
-# Fail for issues of severity = CRITICAL
-ARG TRIVY_OPTS="--exit-code 1 --severity CRITICAL"
-# Fail for any issues
-# ARG TRIVY_OPTS="-d --exit-code 1"
-
 # Elixir release env to build
 ARG MIX_ENV=prod
 
@@ -573,27 +565,11 @@ FROM ${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG} AS deploy-base
         truncate -s 0 /var/log/dpkg.log
 
 # Create deploy image with vulnerability scanners
-FROM deploy-base AS deploy-scan
-    # ARG TRIVY_OPTS
-    # COPY --from=deploy-install /usr/local/bin/trivy /usr/local/bin/trivy
-    # COPY --from=deploy-install /usr/local/share/trivy/templates /usr/local/share/trivy/templates
-    # COPY --from=deploy-install /usr/local/bin/grype /usr/local/bin/grype
-    COPY --from=test-image /usr/local/bin/trivy /usr/local/bin/trivy
-    COPY --from=test-image /usr/local/share/trivy/templates /usr/local/share/trivy/templates
-    COPY --from=test-image /usr/local/bin/grype /usr/local/bin/grype
-
-    COPY trivy.yaml ./
-
-    # RUN set -exu && \
-    #     mkdir -p /sarif-reports && \
-    #     # Succeed for issues of severity = HIGH
-    #     # trivy filesystem $TRIVY_OPTS --format sarif -o /sarif-reports/trivy.high.sarif --exit-code 0 --severity HIGH --no-progress / && \
-    #     trivy filesystem $TRIVY_OPTS --exit-code 0 --severity HIGH --no-progress / && \
-    #     # Fail for issues of severity = CRITICAL
-    #     # trivy filesystem $TRIVY_OPTS --format sarif -o /sarif-reports/trivy.sarif --exit-code 1 --severity CRITICAL --no-progress /
-    #     # Fail for any issues
-    #     # trivy filesystem -d --exit-code 1 --no-progress /
-    #     trivy filesystem --format sarif -o /sarif-reports/trivy.sarif --no-progress $TRIVY_OPTS --no-progress /
+# FROM deploy-base AS deploy-scan
+#     # COPY --from=test-image /usr/local/bin/trivy /usr/local/bin/trivy
+#     # COPY --from=test-image /usr/local/share/trivy/templates /usr/local/share/trivy/templates
+#     COPY --from=test-image /usr/local/bin/grype /usr/local/bin/grype
+#     # COPY trivy.yaml ./
 
 # Create final app image which gets deployed
 FROM deploy-base AS deploy
