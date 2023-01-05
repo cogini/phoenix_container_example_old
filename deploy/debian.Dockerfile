@@ -466,6 +466,7 @@ FROM ${INSTALL_IMAGE_NAME}:${INSTALL_IMAGE_TAG} AS deploy-install
 FROM ${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG} AS deploy-base
     ARG DEBIAN_SNAPSHOT
     ARG LANG
+    ARG APP_NAME
     ARG APP_USER
     ARG APP_GROUP
     ARG APP_USER_ID
@@ -483,6 +484,13 @@ FROM ${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG} AS deploy-base
         then groupadd -g "$APP_GROUP_ID" "$APP_GROUP" && \
         useradd -l -u "$APP_USER_ID" -g "$APP_GROUP" -s /usr/sbin/nologin "$APP_USER" && \
         rm /var/log/lastlog && rm /var/log/faillog; fi
+
+    # Create app dirs
+    RUN mkdir -p "/run/${APP_NAME}" && \
+        # Make dirs writable by app
+        chown -R "${APP_USER}:${APP_GROUP}" \
+            # Needed for RELEASE_TMP
+            "/run/${APP_NAME}"
 
     # Configure apt caching for use with BuildKit.
     # The default Debian Docker image has special config to clear caches.
