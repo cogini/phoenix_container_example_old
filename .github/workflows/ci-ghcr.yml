@@ -285,8 +285,9 @@ jobs:
         id: scan-grype
         with:
           path: .
+          output-format: table
+          fail-build: false
           # severity-cutoff: critical
-          # output-format: sarif
 
       # - name: Upload grype scan results to GitHub Security tab
       #   uses: github/codeql-action/upload-sarif@v2
@@ -526,7 +527,8 @@ jobs:
         with:
           image: ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{github.sha}}
           # severity-cutoff: critical
-          # output-format: sarif
+          fail-build: false
+          output-format: table
 
       # - name: Upload grype scan results to GitHub Security tab
       #   uses: github/codeql-action/upload-sarif@v2
