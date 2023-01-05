@@ -145,6 +145,18 @@ services:
       timeout: 3s
       retries: 10
 
+  # rabbitmq:
+  #   image: rabbitmq:3-management
+  #   restart: always
+  #   ports:
+  #     - '5672:5672'
+  #     - '8080:15672'
+  #   healthcheck:
+  #     test: ["CMD", "rabbitmqctl", "status"]
+  #     timeout: 5s
+  #     interval: 5s
+  #     retries: 5
+
   newman:
     # image: "${PUBLIC_REGISTRY:-docker.io/}postman/newman"
     image: "${REGISTRY:-docker.io/}${IMAGE_OWNER}/newman"
