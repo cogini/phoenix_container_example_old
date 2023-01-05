@@ -21,9 +21,9 @@ services:
       - DB_HOST=postgres
       - SECRET_KEY_BASE
     volumes:
+      - "./.cache:/var/cache"
       - "./junit-reports:/app/_build/test/junit-reports"
       - "./sarif-reports:/sarif-reports"
-      - "./.cache:/var/cache"
     # depends_on:
     #   postgres:
     #     condition: service_healthy
