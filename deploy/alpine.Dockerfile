@@ -182,8 +182,7 @@ FROM build-deps-get AS test-image
 FROM build-deps-get AS deploy-release
     ARG APP_DIR
     ARG RELEASE
-
-    ENV MIX_ENV=prod
+    ARG MIX_ENV=prod
 
     WORKDIR $APP_DIR
 
