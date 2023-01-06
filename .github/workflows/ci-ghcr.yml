@@ -259,14 +259,7 @@ jobs:
       - name: Pull test
         run: docker compose pull --quiet test
 
-      # - name: Scan code with trivy
-      #   run: |
-      #     mkdir -p ./.cache
-      #     mkdir -p ./sarif-reports
-      #     docker compose run test trivy fs --no-progress --debug --cache-dir /var/cache .
-      #     # docker compose run test trivy fs --format sarif -o /sarif-reports/trivy-code.sarif --no-progress --debug --cache-dir /var/cache .
-
-      - name: Scan code with trivy action
+      - name: Scan code with trivy
         uses: aquasecurity/trivy-action@master
         # https://github.com/marketplace/actions/aqua-security-trivy
         with:
