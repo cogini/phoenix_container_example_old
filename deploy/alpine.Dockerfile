@@ -258,6 +258,9 @@ FROM ${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG} AS deploy-base
     ARG MIX_ENV=prod
     ARG RELEASE
 
+    # Set environment vars used by the app
+    # SECRET_KEY_BASE and DATABASE_URL env vars should be set when running the application
+    # maybe set COOKIE and other things
     ENV LANG=$LANG
 
     # Create OS user and group to run app under
@@ -274,6 +277,7 @@ FROM ${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG} AS deploy-base
         ln -s /var/cache/apk /etc/apk/cache && \
         # Upgrading ensures that we get the latest packages, but makes the build nondeterministic
         $APK_UPDATE && $APK_UPGRADE && \
+        # apk add --no-progress $RUNTIME_PKGS && \
         # https://github.com/krallin/tini
         # apk add --no-progress tini && \
         # Make DNS resolution more reliable
