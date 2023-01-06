@@ -216,13 +216,28 @@ FROM build-deps-get AS deploy-release
     COPY assets ./assets
     COPY priv ./priv
 
+    # WORKDIR /app/assets
+    # COPY assets/package.json ./
+    # COPY assets/package-lock.json ./
+    # # COPY assets/tailwind.config.js ./
+    #
+    # RUN npm install
+    #
+    # WORKDIR $APP_DIR
+
     RUN mix assets.deploy
+    # RUN esbuild default --minify
+    # RUN mix phx.digest
 
     # Non-umbrella
     COPY lib ./lib
 
     # Umbrella
     # COPY apps ./apps
+
+    # For umbrella, using `mix cmd` ensures each app is compiled in
+    # isolation https://github.com/elixir-lang/elixir/issues/9407
+    # RUN mix cmd mix compile --warnings-as-errors
 
     RUN mix compile --warnings-as-errors
 
