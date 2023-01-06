@@ -199,7 +199,6 @@ FROM build-deps-get AS deploy-release
     #
     # COPY assets/package.json assets/package-lock.json ./
     #
-    # # Cache npm cache directory as type=cache
     # RUN --mount=type=cache,target=~/.npm,sharing=locked \
     #     npm --prefer-offline --no-audit --progress=false --loglevel=error ci
     #
