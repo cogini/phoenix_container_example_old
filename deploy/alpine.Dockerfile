@@ -55,14 +55,6 @@ ARG APP_GROUP_ID=$APP_USER_ID
 
 ARG LANG=C.UTF-8
 
-# Trivy vulnerability scanner
-# Fail for issues of severity = HIGH
-# ARG TRIVY_OPTS="--exit-code 1 --severity HIGH"
-# Fail for issues of severity = CRITICAL
-ARG TRIVY_OPTS="--exit-code 1 --severity CRITICAL"
-# Fail for any issues
-# ARG TRIVY_OPTS="-d --exit-code 1"
-
 # Elixir release env to build
 ARG MIX_ENV=prod
 
@@ -313,37 +305,6 @@ FROM deploy-base AS deploy
 
     # Wrapper script which runs e.g. migrations before starting
     # ENTRYPOINT ["bin/start-docker"]
-
-
-# Scan image for security vulnerabilities
-FROM deploy AS deploy-scan
-    ARG APK_UPDATE
-    ARG APK_UPGRADE
-    ARG TRIVY_OPTS
-    ARG APP_USER
-
-    USER root
-
-    RUN --mount=type=cache,id=apk,target=/var/cache/apk,sharing=locked \
-        set -exu && \
-        $APK_UPDATE && $APK_UPGRADE && \
-        # Vulnerability checking
-        apk add --no-progress curl && \
-        curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
-
-    RUN set -exu && \
-        mkdir -p /sarif-reports && \
-        # Succeed for issues of severity = HIGH
-        # trivy filesystem $TRIVY_OPTS --format sarif -o /sarif-reports/trivy.high.sarif --exit-code 0 --severity HIGH --no-progress / && \
-        trivy filesystem $TRIVY_OPTS --exit-code 0 --severity HIGH --no-progress / && \
-        # Fail for issues of severity = CRITICAL
-        # trivy filesystem $TRIVY_OPTS --format sarif -o /sarif-reports/trivy.sarif --exit-code 1 --severity CRITICAL --no-progress /
-        # Fail for any issues
-        # trivy filesystem -d --exit-code 1 --no-progress /
-        trivy filesystem --format sarif -o /sarif-reports/trivy.sarif --no-progress $TRIVY_OPTS --no-progress /
-
-        # curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin && \
-        # grype -vv --fail-on medium dir:/ \
 
 # Copy build artifacts to host
 FROM scratch as artifacts
