@@ -258,6 +258,8 @@ FROM ${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG} AS deploy-base
     ARG MIX_ENV=prod
     ARG RELEASE
 
+    ARG RUNTIME_PKGS
+
     # Set environment vars used by the app
     # SECRET_KEY_BASE and DATABASE_URL env vars should be set when running the application
     # maybe set COOKIE and other things
