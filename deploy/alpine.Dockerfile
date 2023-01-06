@@ -76,6 +76,19 @@ FROM ${BUILD_IMAGE_NAME}:${BUILD_IMAGE_TAG} AS build-os-deps
     ARG LANG
     ENV LANG=$LANG
 
+    # ARG APP_GROUP
+    # ARG APP_GROUP_ID
+    # ARG APP_USER
+    # ARG APP_USER_ID
+    # ARG APP_DIR
+    # ENV HOME=$APP_DIR
+
+    # Create OS user and group to run app under
+    # https://wiki.alpinelinux.org/wiki/Setting_up_a_new_user#adduser
+    # RUN if ! grep -q "$APP_USER" /etc/passwd; \
+    #     then addgroup -g $APP_GROUP_ID -S "$APP_GROUP" && \
+    #     adduser -u $APP_USER_ID -S "$APP_USER" -G "$APP_GROUP" -h "$HOME"; fi
+
     # See https://wiki.alpinelinux.org/wiki/Local_APK_cache for details
     # on the local cache and need for the symlink
     RUN --mount=type=cache,id=apk,target=/var/cache/apk,sharing=locked \
