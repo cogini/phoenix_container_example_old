@@ -285,7 +285,7 @@ FROM ${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG} AS deploy-base
         # apk add --no-progress bind-tools && \
         # Support outbound TLS connections
         apk add --no-progress ca-certificates && \
-        # apk add shared-mime-info tzdata && \
+        # apk add --no-progress shared-mime-info tzdata && \
         # Allow app to listen on HTTPS.
         # May not be needed if HTTPS is handled outside the application, e.g. in load balancer.
         apk add --no-progress openssl
