@@ -176,7 +176,7 @@ FROM build-deps-get AS test-image
 
     # For umbrella, using `mix cmd` ensures each app is compiled in
     # isolation https://github.com/elixir-lang/elixir/issues/9407
-    #     mix cmd mix compile --warnings-as-errors
+    # RUN mix cmd mix compile --warnings-as-errors
 
 # Create Elixir release
 FROM build-deps-get AS deploy-release
