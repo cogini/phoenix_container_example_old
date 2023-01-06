@@ -156,6 +156,8 @@ FROM build-deps-get AS test-image
     # Compile deps separately from app, improving Docker caching
     RUN mix deps.compile
 
+    RUN mix dialyzer --plt
+
     # COPY coveralls.json ./
     # COPY .credo.exs ./
     COPY .formatter.exs ./
