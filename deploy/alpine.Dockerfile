@@ -118,13 +118,13 @@ FROM build-os-deps AS build-deps-get
 
     WORKDIR $APP_DIR
 
-    RUN mix 'do' local.rebar --force, local.hex --force
-
     # Copy only the minimum files needed for deps, improving caching
     COPY config ./config
     COPY mix.exs .
     COPY mix.lock .
-    
+
+    RUN mix 'do' local.rebar --force, local.hex --force
+
     # Run deps.get with optional authentication to access private repos
     RUN --mount=type=ssh \
         --mount=type=secret,id=access_token \
