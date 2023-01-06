@@ -277,11 +277,9 @@ FROM build-deps-get AS test-image
 
     RUN mix dialyzer --plt
 
-    # COPY coveralls.json ./
-    COPY .credo.exs ./
-    COPY .formatter.exs ./
-    # COPY dialyzer-ignore ./
-    # COPY trivy.yaml ./
+    # Use glob pattern to deal with files which may not exist
+    # Must have at least one existing file
+    COPY .formatter.exs coveralls.jso[n] .credo.ex[s] dialyzer-ignor[e] trivy.yam[l] .
 
     # Non-umbrella
     COPY lib ./lib
