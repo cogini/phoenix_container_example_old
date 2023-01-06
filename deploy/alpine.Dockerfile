@@ -307,7 +307,7 @@ FROM deploy-base AS deploy
     # ENTRYPOINT ["bin/start-docker"]
 
 # Copy build artifacts to host
-FROM scratch as artifacts
+FROM scratch AS artifacts
     ARG MIX_ENV
     ARG RELEASE
 
