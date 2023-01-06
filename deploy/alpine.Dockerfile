@@ -300,7 +300,7 @@ FROM deploy-base AS deploy
     ARG APP_GROUP
     ARG APP_PORT
 
-    ARG MIX_ENV=prod
+    ARG MIX_ENV
     ARG RELEASE
 
     # Set environment vars used by the app
