@@ -262,6 +262,7 @@ FROM ${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG} AS deploy-base
     # SECRET_KEY_BASE and DATABASE_URL env vars should be set when running the application
     # maybe set COOKIE and other things
     ENV LANG=$LANG
+    ENV HOME=$APP_DIR
 
     # Create OS user and group to run app under
     # https://wiki.alpinelinux.org/wiki/Setting_up_a_new_user#adduser
