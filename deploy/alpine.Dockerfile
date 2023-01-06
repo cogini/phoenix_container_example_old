@@ -1,9 +1,17 @@
 # Build app
 # Deploy using Alpine
 
-ARG ELIXIR_VERSION=1.13.4
-ARG OTP_VERSION=24.3.4
-ARG ALPINE_VERSION=3.16.0
+# ARG ELIXIR_VERSION=1.13.4
+# ARG ELIXIR_VERSION=1.14.1
+ARG ELIXIR_VERSION=1.14.2
+
+# ARG OTP_VERSION=23.3.4
+# ARG OTP_VERSION=24.3.4.7
+ARG OTP_VERSION=25.0.4
+# ARG OTP_VERSION=25.2
+
+ARG ALPINE_VERSION=3.15.4
+# ARG ALPINE_VERSION=3.16.3
 
 # By default, packages come from the APK index for the base Alpine image.
 # Package versions are consistent between builds, and we normally upgrade by
