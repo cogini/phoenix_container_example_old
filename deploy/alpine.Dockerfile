@@ -65,6 +65,10 @@ ARG RELEASE=prod
 # App listen port
 ARG APP_PORT=4000
 
+# Left blank, allowing additional packages to be injected
+ARG RUNTIME_PKGS=""
+ARG DEV_PKGS=""
+
 # Create build base image with OS dependencies
 FROM ${BUILD_IMAGE_NAME}:${BUILD_IMAGE_TAG} AS build-os-deps
     ARG APK_UPDATE
