@@ -65,9 +65,9 @@ jobs:
         if: github.event_name == 'pull_request'
         run: echo "BRANCH=$(echo $GITHUB_HEAD_REF | tr '//\\' '.' | cut -c -55)" >> $GITHUB_ENV
 
-      # https://github.com/marketplace/actions/docker-login
       - name: Log in to GHCR
         uses: docker/login-action@v2
+        # https://github.com/marketplace/actions/docker-login
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -80,12 +80,12 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # Configure machine key or deploy keys to access private repos from build
-      # https://github.com/marketplace/actions/webfactory-ssh-agent
-      # https://docs.github.com/en/developers/overview/managing-deploy-keys#deploy-keys
-      # ssh-keygen -t ed25519 -m pem -C "git@github.com:reachfh/api-utils.git" -f api-utils
       # - name: Configure ssh keys
       #   uses: webfactory/ssh-agent@v0.7.0
+      #   # Configure machine key or deploy keys to access private repos from build
+      #   # https://github.com/marketplace/actions/webfactory-ssh-agent
+      #   # https://docs.github.com/en/developers/overview/managing-deploy-keys#deploy-keys
+      #   # ssh-keygen -t ed25519 -m pem -C "git@github.com:reachfh/api-utils.git" -f api-utils
       #   with:
       #     ssh-private-key: |
       #       ${{ secrets.SSH_PRIVATE_KEY }}
@@ -105,9 +105,9 @@ jobs:
         with:
           driver-opts: network=host
 
-      # https://github.com/docker/build-push-action
       - name: Build test image and push to GHCR
         uses: docker/build-push-action@v3
+        # https://github.com/docker/build-push-action
         with:
           file: ${{ env.DOCKER_FILE }}
           target: test-image
@@ -266,28 +266,28 @@ jobs:
       #     docker compose run test trivy fs --no-progress --debug --cache-dir /var/cache .
       #     # docker compose run test trivy fs --format sarif -o /sarif-reports/trivy-code.sarif --no-progress --debug --cache-dir /var/cache .
 
-      # https://github.com/marketplace/actions/aqua-security-trivy
       - name: Scan code with trivy action
         uses: aquasecurity/trivy-action@master
+        # https://github.com/marketplace/actions/aqua-security-trivy
         with:
           scan-type: 'fs'
           scan-ref: '.'
           # trivy-config: trivy.yaml
 
-      # Requires GitHub Advanced Security
-      # https://docs.github.com/en/get-started/learning-about-github/about-github-advanced-security
-      # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning
-      # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github
       # - name: Upload trivy scan results to GitHub Security tab
       #   uses: github/codeql-action/upload-sarif@v2
+      #   # Requires GitHub Advanced Security
+      #   # https://docs.github.com/en/get-started/learning-about-github/about-github-advanced-security
+      #   # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning
+      #   # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github
       #   if: always()
       #   with:
       #     sarif_file: './sarif-reports/'
       #     category: trivy
 
-      # https://github.com/marketplace/actions/anchore-container-scan
       - name: Scan code with grype
         uses: anchore/scan-action@v3
+        # https://github.com/marketplace/actions/anchore-container-scan
         id: scan-grype
         with:
           path: .
@@ -479,15 +479,9 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Pull repos
-        run: echo "trivy deploy" | xargs -n 1 -P 8 docker compose pull
+        run: echo "deploy" | xargs -n 1 -P 8 docker compose pull
 
-      # - name: Scan image with trivy
-      #   run: |
-      #     mkdir -p ./.cache
-      #     mkdir -p ./sarif-reports
-      #     docker compose run trivy image ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{github.sha}}
-
-      - name: Scan image with trivy action
+      - name: Scan image with trivy
         uses: aquasecurity/trivy-action@master
         # https://github.com/aquasecurity/trivy-action
         # https://github.com/marketplace/actions/aqua-security-trivy#inputs
@@ -501,20 +495,20 @@ jobs:
           cache-dir: ./.cache
           output: './sarif-reports/trivy.sarif'
 
-      # Requires GitHub Advanced Security
-      # https://docs.github.com/en/get-started/learning-about-github/about-github-advanced-security
-      # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning
-      # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github
       # - name: Upload Trivy scan results to GitHub Security tab
       #   uses: github/codeql-action/upload-sarif@v2
+      #   # Requires GitHub Advanced Security
+      #   # https://docs.github.com/en/get-started/learning-about-github/about-github-advanced-security
+      #   # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning
+      #   # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github
       #   if: always()
       #   with:
       #     sarif_file: './sarif-reports/'
       #     category: trivy
 
-      # https://github.com/marketplace/actions/anchore-container-scan
-      - name: Scan image with grype action
+      - name: Scan image with grype
         uses: anchore/scan-action@v3
+        # https://github.com/marketplace/actions/anchore-container-scan
         id: scan-grype
         with:
           image: ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{github.sha}}
@@ -591,7 +585,6 @@ jobs:
 
       # ECR does not support tagging without building
       - name: Build final deploy image and push to AWS ECR as latest
-        if: github.event_name != 'pull_request'
         uses: docker/build-push-action@v3
         env:
           REGISTRY: "${{ env.ECR_REGISTRY }}/"
