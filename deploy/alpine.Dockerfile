@@ -96,6 +96,8 @@ FROM ${BUILD_IMAGE_NAME}:${BUILD_IMAGE_TAG} AS build-os-deps
         ln -s /var/cache/apk /etc/apk/cache && \
         $APK_UPDATE && $APK_UPGRADE && \
         apk add --no-progress nodejs npm && \
+        # Get private repos
+        apk add --no-progress openssh && \
         # Tools and libraries to build binary libraries
         # apk add --no-progress alpine-sdk && \
         apk add --no-progress git build-base
@@ -122,7 +124,24 @@ FROM build-os-deps AS build-deps-get
     COPY config ./config
     COPY mix.exs .
     COPY mix.lock .
-    RUN mix deps.get
+    
+    # Run deps.get with optional authentication to access private repos
+    RUN --mount=type=ssh \
+        --mount=type=secret,id=access_token \
+        # Access private repos using ssh identity
+        # https://docs.docker.com/engine/reference/commandline/buildx_build/#ssh
+        # https://stackoverflow.com/questions/73263731/dockerfile-run-mount-type-ssh-doesnt-seem-to-work
+        # Copying a predefined known_hosts file would be more secure, but would need to be maintained
+        if test -n "$SSH_AUTH_SOCK"; then \
+            mkdir -p /etc/ssh && \
+            ssh-keyscan github.com > /etc/ssh/ssh_known_hosts && \
+            mix deps.get; \
+        # Access private repos using access token
+        elif test -s /run/secrets/access_token; then \
+            GIT_ASKPASS=/run/secrets/access_token mix deps.get; \
+        else \
+            mix deps.get; \
+        fi
 
     RUN mix esbuild.install
 
