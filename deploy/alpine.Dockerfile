@@ -143,7 +143,7 @@ FROM build-os-deps AS build-deps-get
             mix deps.get; \
         fi
 
-    RUN mix esbuild.install
+    RUN mix esbuild.install --if-missing
 
 # Create base image for tests
 FROM build-deps-get AS test-image
