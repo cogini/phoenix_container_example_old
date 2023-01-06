@@ -313,6 +313,9 @@ FROM deploy-base AS deploy
         # Writable tmp directory for releases
         RELEASE_TMP="/run/${APP_NAME}"
 
+    # The app needs to be able to write to a tmp directory on startup, which by
+    # default is under the release. This can be changed by setting RELEASE_TMP to
+    # /tmp or, more securely, /run/foo
     RUN \
         # Create app dirs
         mkdir -p "/run/${APP_NAME}" && \
