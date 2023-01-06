@@ -154,7 +154,6 @@ FROM build-deps-get AS test-image
     WORKDIR $APP_DIR
 
     # Compile deps separately from app, improving Docker caching
-    # RUN mix 'do' local.rebar --force, local.hex --force
     RUN mix deps.compile
 
     # COPY coveralls.json ./
