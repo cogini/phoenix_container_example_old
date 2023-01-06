@@ -67,15 +67,8 @@ ARG TRIVY_OPTS="--exit-code 1 --severity CRITICAL"
 ARG MIX_ENV=prod
 
 # Name of Elixir release
+# This should match mix.exs releases()
 ARG RELEASE=prod
-# This should match mix.exs, e.g.
-# defp releases do
-#   [
-#     prod: [
-#       include_executables_for: [:unix],
-#     ],
-#   ]
-# end
 
 # App listen port
 ARG APP_PORT=4000
