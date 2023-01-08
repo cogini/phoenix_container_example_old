@@ -574,6 +574,20 @@ jobs:
         with:
           driver-opts: network=host
 
+      # - name: Build final deploy image and push to GHCR as latest
+      #   uses: docker/build-push-action@v3
+      #   with:
+      #     file: ${{ env.DOCKER_FILE }}
+      #     target: deploy
+      #     context: .
+      #     builder: ${{ steps.buildx.outputs.name }}
+      #     push: true
+      #     cache-from: type=gha,scope=${{ github.workflow }}
+      #     cache-to: type=gha,scope=${{ github.workflow }},mode=max
+      #     tags: |
+      #       ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{ github.sha }}
+      #       ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:latest
+
       # ECR does not support tagging without building
       - name: Build final deploy image and push to AWS ECR as latest
         uses: docker/build-push-action@v3
