@@ -478,13 +478,13 @@ jobs:
         # https://github.com/marketplace/actions/aqua-security-trivy#inputs
         with:
           image-ref: ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{github.sha}}
-          format: 'sarif'
-          # exit-code: '1'
+          # exit-code: '1' # fail build
           # ignore-unfixed: true
           # vuln-type: 'os,library'
           # severity: 'CRITICAL,HIGH'
           cache-dir: ./.cache
-          output: './sarif-reports/trivy.sarif'
+          # format: 'sarif'
+          # output: './sarif-reports/trivy.sarif'
 
       # - name: Upload Trivy scan results to GitHub Security tab
       #   uses: github/codeql-action/upload-sarif@v2
