@@ -69,6 +69,10 @@ ARG RELEASE=prod
 # App listen port
 ARG APP_PORT=4000
 
+# Inject additional packages to builds
+ARG RUNTIME_PACKAGES=""
+ARG DEV_PACKAGES=""
+
 # Create build base image with OS dependencies
 FROM ${BUILD_IMAGE_NAME}:${BUILD_IMAGE_TAG} AS build-os-deps
     ARG DEBIAN_SNAPSHOT
@@ -136,7 +140,8 @@ FROM ${BUILD_IMAGE_NAME}:${BUILD_IMAGE_TAG} AS build-os-deps
             # Install default Postgres
             # libpq-dev \
             # postgresql-client \
-            && \
+            # $RUNTIME_PACKAGES \
+        && \
         # Install yarn
         curl -sL --ciphers ECDHE-RSA-AES128-GCM-SHA256 https://dl.yarnpkg.com/debian/pubkey.gpg -o /etc/apt/trusted.gpg.d/yarn.asc && \
         echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list && \
@@ -466,6 +471,7 @@ FROM ${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG} AS deploy-base
     ARG MIX_ENV
     ARG RELEASE
 
+    ARG RUNTIME_PACKAGES
     # COPY --from=deploy-install /usr/lib/locale/C.UTF-8 /usr/lib/locale/C.UTF-8
 
     ENV LANG=$LANG
@@ -537,6 +543,7 @@ FROM ${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG} AS deploy-base
             # bind-utils \
             # Needed by Erlang VM
             libtinfo6 \
+            # $RUNTIME_PACKAGES \
         && \
         # Remove packages installed temporarily. Removes everything related to
         # packages, including the configuration files, and packages
@@ -641,6 +648,8 @@ FROM build-os-deps AS dev
     ARG APP_PORT
 
     ARG MIX_ENV
+    ARG RUNTIME_PACKAGES
+    ARG DEV_PACKAGES
 
     # Set environment vars used by the app
     ENV LANG=$LANG \
@@ -666,6 +675,8 @@ FROM build-os-deps AS dev
             inotify-tools \
             ssh \
             sudo \
+            # $RUNTIME_PACKAGES \
+            # $DEV_PACKAGES \
         && \
         # https://www.networkworld.com/article/3453032/cleaning-up-with-apt-get.html
         # https://manpages.ubuntu.com/manpages/jammy/man8/apt-get.8.html
