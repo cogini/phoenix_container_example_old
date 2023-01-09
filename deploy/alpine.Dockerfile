@@ -181,6 +181,7 @@ FROM build-deps-get AS test-image
 FROM build-deps-get AS deploy-release
     ARG APP_DIR
     ARG RELEASE
+
     ARG MIX_ENV=prod
 
     WORKDIR $APP_DIR
@@ -209,10 +210,15 @@ FROM build-deps-get AS deploy-release
     #
     # Generate assets the really old way
     # RUN --mount=type=cache,target=~/.npm,sharing=locked \
-    #   npm install && \
-    #   node node_modules/webpack/bin/webpack.js --mode production
+    #     npm install && \
+    #     node node_modules/webpack/bin/webpack.js --mode production
 
-    # Build JS and CS with esbuild
+    # Install JavaScript deps using yarn
+    # COPY assets/package.json assets/package.json
+    # COPY assets/yarn.lock assets/yarn.lock
+    # RUN yarn --cwd ./assets install --prod
+
+    # Compile assets with esbuild
     COPY assets ./assets
     COPY priv ./priv
 
