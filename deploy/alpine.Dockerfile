@@ -197,7 +197,8 @@ FROM build-deps-get AS deploy-release
     # Compile assets the old way
     # WORKDIR /app/assets
     #
-    # COPY assets/package.json assets/package-lock.json ./
+    # COPY assets/package.json ./
+    # COPY assets/package-lock.json ./
     #
     # RUN --mount=type=cache,target=~/.npm,sharing=locked \
     #     npm --prefer-offline --no-audit --progress=false --loglevel=error ci
@@ -216,7 +217,7 @@ FROM build-deps-get AS deploy-release
     COPY assets ./assets
     COPY priv ./priv
 
-    # WORKDIR /app/assets
+    # WORKDIR "${APP_DIR}/assets"
     # COPY assets/package.json ./
     # COPY assets/package-lock.json ./
     # # COPY assets/tailwind.config.js ./
@@ -250,19 +251,19 @@ FROM ${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG} AS deploy-base
     ARG APK_UPDATE
     ARG APK_UPGRADE
     ARG LANG
+
     ARG APP_USER
     ARG APP_GROUP
     ARG APP_USER_ID
     ARG APP_GROUP_ID
 
-    ARG MIX_ENV=prod
+    ARG MIX_ENV
     ARG RELEASE
 
     ARG RUNTIME_PACKAGES
 
-    # Set environment vars used by the app
-    # SECRET_KEY_BASE and DATABASE_URL env vars should be set when running the application
-    # maybe set COOKIE and other things
+    # Set environment vars used by the app, e.g. SECRET_KEY_BASE, DATABASE_URL.
+    # Maybe set COOKIE and other things.
     ENV LANG=$LANG
     ENV HOME=$APP_DIR
 
@@ -281,6 +282,7 @@ FROM ${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG} AS deploy-base
         # Upgrading ensures that we get the latest packages, but makes the build nondeterministic
         $APK_UPDATE && $APK_UPGRADE && \
         # apk add --no-progress $RUNTIME_PACKAGES && \
+        # apk add --no-progress shared-mime-info tzdata && \
         # https://github.com/krallin/tini
         # apk add --no-progress tini && \
         # Make DNS resolution more reliable
@@ -288,7 +290,6 @@ FROM ${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG} AS deploy-base
         # apk add --no-progress bind-tools && \
         # Support outbound TLS connections
         apk add --no-progress ca-certificates && \
-        # apk add --no-progress shared-mime-info tzdata && \
         # Allow app to listen on HTTPS.
         # May not be needed if HTTPS is handled outside the application, e.g. in load balancer.
         apk add --no-progress openssl
