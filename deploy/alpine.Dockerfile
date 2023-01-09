@@ -276,7 +276,7 @@ FROM ${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG} AS deploy-base
     # https://wiki.alpinelinux.org/wiki/Setting_up_a_new_user#adduser
     RUN if ! grep -q "$APP_USER" /etc/passwd; \
         then addgroup -g $APP_GROUP_ID -S "$APP_GROUP" && \
-        adduser -u $APP_USER_ID -S "$APP_USER" -G "$APP_GROUP" -h "$HOME"; fi
+        adduser -u $APP_USER_ID -S "$APP_USER" -G "$APP_GROUP" -h "$APP_DIR"; fi
 
     # Install Alpine libraries needed at runtime
     # See https://wiki.alpinelinux.org/wiki/Local_APK_cache for details
