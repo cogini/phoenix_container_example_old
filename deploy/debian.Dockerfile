@@ -14,9 +14,8 @@ ARG ELIXIR_DEBIAN_VERSION=bullseye-20221004-slim
 # ARG DEBIAN_VERSION=buster-slim
 ARG DEBIAN_VERSION=bullseye-slim
 
-# Use snapshot for consistent dependencies
+# Use snapshot for consistent dependencies, see https://snapshot.debian.org/
 # Needs to be updated manually
-# See https://snapshot.debian.org/
 ARG DEBIAN_SNAPSHOT=20221219
 
 ARG NODE_VERSION=16.14.1
@@ -69,7 +68,7 @@ ARG RELEASE=prod
 # App listen port
 ARG APP_PORT=4000
 
-# Inject additional packages to builds
+# Allow additional packages to be injected into builds
 ARG RUNTIME_PACKAGES=""
 ARG DEV_PACKAGES=""
 
@@ -353,9 +352,9 @@ FROM build-deps-get AS deploy-release
     # COPY assets/package.json ./
     # COPY assets/package-lock.json ./
     # # COPY assets/tailwind.config.js ./
-
+    #
     # RUN npm install
-
+    #
     # WORKDIR $APP_DIR
 
     RUN mix assets.deploy
