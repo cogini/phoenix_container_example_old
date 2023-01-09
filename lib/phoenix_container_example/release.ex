@@ -78,6 +78,7 @@ defmodule PhoenixContainerExample.Release do
 
     for repo <- repos() do
       path = Path.join(repo_path(repo), file)
+
       if File.exists?(path) do
         Logger.info("Running #{inspect(repo)} seed #{path}")
         {:ok, _, _} = Ecto.Migrator.with_repo(repo, fn _ -> Code.require_file(path) end)
