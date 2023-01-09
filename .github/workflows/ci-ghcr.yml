@@ -1,4 +1,6 @@
 ---
+# Build and run tests in containers.
+# Push images to GitHub Container Registry (GHCR) and AWS ECR.
 name: CI ghcr.io
 on: push
 # on:
