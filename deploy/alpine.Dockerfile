@@ -65,9 +65,9 @@ ARG RELEASE=prod
 # App listen port
 ARG APP_PORT=4000
 
-# Left blank, allowing additional packages to be injected
-ARG RUNTIME_PKGS=""
-ARG DEV_PKGS=""
+# Allow additional packages to be easily injected into builds
+ARG RUNTIME_PACKAGES=""
+ARG DEV_PACKAGES=""
 
 # Create build base image with OS dependencies
 FROM ${BUILD_IMAGE_NAME}:${BUILD_IMAGE_TAG} AS build-os-deps
@@ -258,7 +258,7 @@ FROM ${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG} AS deploy-base
     ARG MIX_ENV=prod
     ARG RELEASE
 
-    ARG RUNTIME_PKGS
+    ARG RUNTIME_PACKAGES
 
     # Set environment vars used by the app
     # SECRET_KEY_BASE and DATABASE_URL env vars should be set when running the application
@@ -280,7 +280,7 @@ FROM ${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG} AS deploy-base
         ln -s /var/cache/apk /etc/apk/cache && \
         # Upgrading ensures that we get the latest packages, but makes the build nondeterministic
         $APK_UPDATE && $APK_UPGRADE && \
-        # apk add --no-progress $RUNTIME_PKGS && \
+        # apk add --no-progress $RUNTIME_PACKAGES && \
         # https://github.com/krallin/tini
         # apk add --no-progress tini && \
         # Make DNS resolution more reliable
