@@ -284,7 +284,7 @@ FROM build-deps-get AS test-image
 
     # Use glob pattern to deal with files which may not exist
     # Must have at least one existing file
-    COPY .formatter.exs coveralls.jso[n] .credo.ex[s] dialyzer-ignor[e] trivy.yam[l] .
+    COPY .formatter.exs coveralls.jso[n] .credo.ex[s] dialyzer-ignor[e] trivy.yam[l] ./
 
     # Non-umbrella
     COPY lib ./lib
@@ -324,9 +324,9 @@ FROM build-deps-get AS deploy-release
     # Compile assets the old way
     # WORKDIR /app/assets
     #
-    # COPY assets/package.json assets/package-lock.json ./
+    # COPY assets/package.json ./
+    # COPY assets/package-lock.json ./
     #
-    # # Cache npm cache directory as type=cache
     # RUN --mount=type=cache,target=~/.npm,sharing=locked \
     #     npm --prefer-offline --no-audit --progress=false --loglevel=error ci
     #
@@ -345,9 +345,18 @@ FROM build-deps-get AS deploy-release
     # COPY assets/yarn.lock assets/yarn.lock
     # RUN yarn --cwd ./assets install --prod
 
-    # Build JS and CS with esbuild
+    # Compile assets with esbuild
     COPY assets ./assets
     COPY priv ./priv
+
+    # WORKDIR "${APP_DIR}/assets"
+    # COPY assets/package.json ./
+    # COPY assets/package-lock.json ./
+    # # COPY assets/tailwind.config.js ./
+
+    # RUN npm install
+
+    # WORKDIR $APP_DIR
 
     RUN mix assets.deploy
     # RUN esbuild default --minify
@@ -413,7 +422,7 @@ FROM ${INSTALL_IMAGE_NAME}:${INSTALL_IMAGE_TAG} AS deploy-install
             locales \
             # Needed by Erlang VM
             libtinfo6 \
-            && \
+        && \
         # curl -sL https://aquasecurity.github.io/trivy-repo/deb/public.key -o /etc/apt/trusted.gpg.d/trivy.asc && \
         # printf "deb https://aquasecurity.github.io/trivy-repo/deb %s main" "$(lsb_release -sc)" | tee -a /etc/apt/sources.list.d/trivy.list && \
         # apt-get update -qq && \
@@ -474,6 +483,8 @@ FROM ${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG} AS deploy-base
     ARG RUNTIME_PACKAGES
     # COPY --from=deploy-install /usr/lib/locale/C.UTF-8 /usr/lib/locale/C.UTF-8
 
+    # Set environment vars used by the app, e.g. SECRET_KEY_BASE, DATABASE_URL.
+    # Maybe set COOKIE and other things.
     ENV LANG=$LANG
 
     # Create OS user and group to run app under
@@ -568,7 +579,6 @@ FROM ${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG} AS deploy-base
         truncate -s 0 /var/log/apt/* && \
         truncate -s 0 /var/log/dpkg.log
 
-
 # Create final app image which gets deployed
 FROM deploy-base AS deploy
     ARG APP_DIR
@@ -590,6 +600,9 @@ FROM deploy-base AS deploy
         # Writable tmp directory for releases
         RELEASE_TMP="/run/${APP_NAME}"
 
+    # The app needs to be able to write to a tmp directory on startup, which by
+    # default is under the release. This can be changed by setting RELEASE_TMP to
+    # /tmp or, more securely, /run/foo
     RUN set -exu && \
         # Create app dirs
         mkdir -p "/run/${APP_NAME}" && \
