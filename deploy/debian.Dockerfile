@@ -231,6 +231,7 @@ FROM build-os-deps AS build-deps-get
 
     # Copy only the minimum files needed for deps, improving caching
     COPY config ./config
+    # COPY .env.default .
     COPY mix.exs .
     COPY mix.lock .
 
@@ -281,6 +282,8 @@ FROM build-deps-get AS test-image
     RUN mix deps.compile
 
     RUN mix dialyzer --plt
+
+    # COPY .env.test .
 
     # Use glob pattern to deal with files which may not exist
     # Must have at least one existing file
