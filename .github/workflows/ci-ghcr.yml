@@ -23,6 +23,9 @@ env:
   PUBLIC_REGISTRY: ""
   AWS_ROLE_TO_ASSUME: arn:aws:iam::770916339360:role/foo-dev-ecr-github-action-role
   AWS_REGION: ap-northeast-1
+  # Tag for release images
+  # IMAGE_TAG: ${{ (github.ref == 'refs/heads/main' && 'staging') || (github.ref == 'refs/heads/qa' && 'qa') }}
+  IMAGE_TAG: latest
   # Docker vars
   DOCKER_BUILDKIT: '1'
   COMPOSE_DOCKER_CLI_BUILD: '1'
@@ -565,7 +568,7 @@ jobs:
 
       - name: Tag GHCR release as latest
         if: github.event_name != 'pull_request'
-        run: docker buildx imagetools create --append ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{github.sha}} --tag ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:latest
+        run: docker buildx imagetools create --append ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{github.sha}} --tag ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{env.IMAGE_TAG}}
 
       - name: Check out source
         uses: actions/checkout@v3
@@ -587,8 +590,8 @@ jobs:
       #     cache-from: type=gha,scope=${{ github.workflow }}
       #     cache-to: type=gha,scope=${{ github.workflow }},mode=max
       #     tags: |
+      #       ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{ env.IMAGE_TAG }}
       #       ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{ github.sha }}
-      #       ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:latest
 
       # ECR does not support tagging without building
       - name: Build final deploy image and push to AWS ECR as latest
@@ -605,7 +608,7 @@ jobs:
           cache-to: type=gha,scope=${{ github.workflow }},mode=max
           # ssh: default
           tags: |
-            ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
             ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
           # secrets: |
           #   "access_token=${{ secrets.DEVOPS_ACCESS_TOKEN }}"
