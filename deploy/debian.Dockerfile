@@ -662,7 +662,8 @@ FROM build-os-deps AS dev
     ARG APP_PORT
     ARG APP_USER
 
-    ARG MIX_ENV
+    ARG MIX_ENV=dev
+
     ARG RUNTIME_PACKAGES
     ARG DEV_PACKAGES
 
