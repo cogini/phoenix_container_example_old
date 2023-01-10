@@ -126,6 +126,15 @@ FROM build-os-deps AS build-deps-get
 
     RUN mix 'do' local.rebar --force, local.hex --force
 
+    # Add private repo for Oban
+    RUN --mount=type=secret,id=oban_license_key \
+        --mount=type=secret,id=oban_key_fingerprint \
+        if test -s /run/secrets/oban_license_key; then \
+            mix hex.repo add oban https://getoban.pro/repo \
+                --fetch-public-key "$(cat /run/secrets/oban_key_fingerprint)" \
+                --auth-key "$(cat /run/secrets/oban_license_key)"; \
+        fi
+
     # Run deps.get with optional authentication to access private repos
     RUN --mount=type=ssh \
         --mount=type=secret,id=access_token \
