@@ -311,7 +311,6 @@ FROM build-deps-get AS test-image
 FROM build-deps-get AS deploy-release
     ARG APP_DIR
     ARG RELEASE
-
     ARG MIX_ENV=prod
 
     WORKDIR $APP_DIR
@@ -352,6 +351,7 @@ FROM build-deps-get AS deploy-release
     COPY assets ./assets
     COPY priv ./priv
 
+    # Install JavaScript deps using npm
     # WORKDIR "${APP_DIR}/assets"
     # COPY assets/package.json ./
     # COPY assets/package-lock.json ./
