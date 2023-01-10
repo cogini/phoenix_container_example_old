@@ -146,6 +146,10 @@ FROM build-os-deps AS build-deps-get
 
     RUN mix esbuild.install --if-missing
 
+    # RUN yarn global add newman
+    # RUN yarn global add newman-reporter-junitfull
+    # RUN yarn global add snyk
+
 # Create base image for tests
 FROM build-deps-get AS test-image
     ARG APP_DIR
@@ -213,7 +217,7 @@ FROM build-deps-get AS deploy-release
     # RUN --mount=type=cache,target=~/.npm,sharing=locked \
     #     npm run deploy
     #
-    # Install assets the really old way
+    # Generate assets the really old way
     # RUN --mount=type=cache,target=~/.npm,sharing=locked \
     #     npm install && \
     #     node node_modules/webpack/bin/webpack.js --mode production
@@ -364,18 +368,19 @@ FROM deploy-base AS deploy
     EXPOSE $APP_PORT
 
     # "bin" is the directory under the unpacked release, and "prod" is the name
-    # of the release
+    # of the release top level script, which should match the RELEASE var.
     ENTRYPOINT ["bin/prod"]
 
     # Run under init to avoid zombie processes
     # https://github.com/krallin/tini
     # ENTRYPOINT ["/sbin/tini", "--", "bin/prod"]
 
+    # Wrapper script which runs e.g. migrations before starting
+    # ENTRYPOINT ["bin/start-docker"]
+
     # Run app in foreground
     CMD ["start"]
 
-    # Wrapper script which runs e.g. migrations before starting
-    # ENTRYPOINT ["bin/start-docker"]
 
 # Copy build artifacts to host
 FROM scratch AS artifacts
