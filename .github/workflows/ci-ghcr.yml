@@ -567,7 +567,6 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Tag GHCR release as latest
-        if: github.event_name != 'pull_request'
         run: docker buildx imagetools create --append ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{github.sha}} --tag ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{env.IMAGE_TAG}}
 
       - name: Check out source
