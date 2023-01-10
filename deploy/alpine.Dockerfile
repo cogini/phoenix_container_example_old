@@ -65,7 +65,7 @@ ARG RELEASE=prod
 # App listen port
 ARG APP_PORT=4000
 
-# Allow additional packages to be easily injected into builds
+# Allow additional packages to be injected into builds
 ARG RUNTIME_PACKAGES=""
 ARG DEV_PACKAGES=""
 
@@ -181,7 +181,6 @@ FROM build-deps-get AS test-image
 FROM build-deps-get AS deploy-release
     ARG APP_DIR
     ARG RELEASE
-
     ARG MIX_ENV=prod
 
     WORKDIR $APP_DIR
@@ -208,7 +207,7 @@ FROM build-deps-get AS deploy-release
     # RUN --mount=type=cache,target=~/.npm,sharing=locked \
     #     npm run deploy
     #
-    # Generate assets the really old way
+    # Install assets the really old way
     # RUN --mount=type=cache,target=~/.npm,sharing=locked \
     #     npm install && \
     #     node node_modules/webpack/bin/webpack.js --mode production
@@ -222,6 +221,7 @@ FROM build-deps-get AS deploy-release
     COPY assets ./assets
     COPY priv ./priv
 
+    # Install JavaScript deps using npm
     # WORKDIR "${APP_DIR}/assets"
     # COPY assets/package.json ./
     # COPY assets/package-lock.json ./
@@ -259,7 +259,6 @@ FROM ${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG} AS deploy-base
 
     ARG APP_GROUP
     ARG APP_GROUP_ID
-    ARG APP_NAME
     ARG APP_USER
     ARG APP_USER_ID
 
