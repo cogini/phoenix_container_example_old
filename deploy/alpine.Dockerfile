@@ -194,7 +194,7 @@ FROM build-deps-get AS deploy-release
     RUN mix deps.compile
 
     # Compile assets the old way
-    # WORKDIR /app/assets
+    # WORKDIR "${APP_DIR}/assets"
     #
     # COPY assets/package.json ./
     # COPY assets/package-lock.json ./
