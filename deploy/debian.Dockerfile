@@ -484,11 +484,13 @@ FROM ${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG} AS deploy-base
     ARG RELEASE
 
     ARG RUNTIME_PACKAGES
+
     # COPY --from=deploy-install /usr/lib/locale/C.UTF-8 /usr/lib/locale/C.UTF-8
 
     # Set environment vars used by the app, e.g. SECRET_KEY_BASE, DATABASE_URL.
     # Maybe set COOKIE and other things.
     ENV LANG=$LANG
+    ENV HOME=$APP_DIR
 
     # Create OS user and group to run app under
     RUN if ! grep -q "$APP_USER" /etc/passwd; \
