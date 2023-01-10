@@ -122,6 +122,8 @@ FROM build-os-deps AS build-deps-get
     COPY mix.exs .
     COPY mix.lock .
 
+    # COPY .env.default ./
+
     RUN mix 'do' local.rebar --force, local.hex --force
 
     # Run deps.get with optional authentication to access private repos
@@ -151,6 +153,8 @@ FROM build-deps-get AS test-image
     ENV MIX_ENV=test
 
     WORKDIR $APP_DIR
+
+    # COPY .env.test .
 
     # Compile deps separately from app, improving Docker caching
     RUN mix deps.compile
@@ -184,6 +188,8 @@ FROM build-deps-get AS deploy-release
     ARG MIX_ENV=prod
 
     WORKDIR $APP_DIR
+
+    # COPY .env.prod .
 
     # This does a partial compile.
     # Doing "mix 'do' compile, assets.deploy" in a single stage is worse
