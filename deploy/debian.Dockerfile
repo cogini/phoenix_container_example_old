@@ -655,11 +655,12 @@ FROM deploy-base AS deploy
 # Dev image which mounts code from local filesystem
 FROM build-os-deps AS dev
     ARG LANG
-    ARG APP_NAME
+
     ARG APP_DIR
-    ARG APP_USER
     ARG APP_GROUP
+    ARG APP_NAME
     ARG APP_PORT
+    ARG APP_USER
 
     ARG MIX_ENV
     ARG RUNTIME_PACKAGES
