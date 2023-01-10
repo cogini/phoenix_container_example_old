@@ -592,7 +592,12 @@ jobs:
       #       ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{ env.IMAGE_TAG }}
       #       ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{ github.sha }}
 
-      # ECR does not support tagging without building
+      # - name: Tag ECR release as latest
+      #   run: |
+      #     export MANIFEST=$(aws ecr batch-get-image --repository-name ${{ env.IMAGE_NAME }} --image-ids imageTag=${{ github.sha }} --output json | jq --raw-output --join-output '.images[0].imageManifest')
+      #     aws ecr put-image --repository-name ${{ env.IMAGE_NAME }} --image-tag ${{ env.IMAGE_TAG }} --image-manifest "$MANIFEST"
+      #     aws ecr describe-images --repository-name ${{ env.IMAGE_NAME }}
+
       - name: Build final deploy image and push to AWS ECR as latest
         uses: docker/build-push-action@v3
         env:
