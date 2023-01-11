@@ -10,6 +10,8 @@ env:
   REGISTRY: ghcr.io/
   # Registry for public images, default is docker.io
   PUBLIC_REGISTRY: ""
+  # Tag for release images
+  IMAGE_TAG: latest
 jobs:
   scan:
     name: Security scan prod image
@@ -49,7 +51,7 @@ jobs:
         # https://github.com/aquasecurity/trivy-action
         # https://github.com/marketplace/actions/aqua-security-trivy#inputs
         with:
-          image-ref: ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{github.sha}}
+          image-ref: ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{env.IMAGE_TAG}}
           # exit-code: '1' # fail build
           # ignore-unfixed: true
           # vuln-type: 'os,library'
@@ -74,7 +76,7 @@ jobs:
         # https://github.com/marketplace/actions/anchore-container-scan
         id: scan-grype
         with:
-          image: ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{github.sha}}
+          image: ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{env.IMAGE_TAG}}
           # severity-cutoff: critical
           fail-build: false
           output-format: table
