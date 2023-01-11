@@ -51,7 +51,7 @@ jobs:
         # https://github.com/marketplace/actions/aqua-security-trivy#inputs
         with:
           image-ref: ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{env.IMAGE_TAG}}
-          # exit-code: '1' # fail build
+          exit-code: '1' # fail build
           # ignore-unfixed: true
           # vuln-type: 'os,library'
           # severity: 'CRITICAL,HIGH'
@@ -77,7 +77,7 @@ jobs:
         with:
           image: ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{env.IMAGE_TAG}}
           # severity-cutoff: critical
-          fail-build: false
+          fail-build: true
           output-format: table
 
       # - name: Upload Grype scan results to GitHub Security tab
