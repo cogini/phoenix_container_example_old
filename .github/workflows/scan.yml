@@ -9,10 +9,6 @@ name: Security scan
 env:
   IMAGE_NAME: foo-app
   IMAGE_OWNER: ${{ github.repository_owner }}
-  # Registry for dev and test images
-  REGISTRY: ghcr.io/
-  # Registry for public images, default is docker.io
-  PUBLIC_REGISTRY: ""
   # Tag for release images
   IMAGE_TAG: latest
 jobs:
