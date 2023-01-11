@@ -4,9 +4,12 @@ on:
 
 name: Security scan
 env:
-  # IMAGE_NAME: ${{ github.repository }}
   IMAGE_NAME: foo-app
   IMAGE_OWNER: ${{ github.repository_owner }}
+  # Registry for dev and test images
+  REGISTRY: ghcr.io/
+  # Registry for public images, default is docker.io
+  PUBLIC_REGISTRY: ""
 jobs:
   scan:
     name: Security scan prod image
@@ -27,9 +30,7 @@ jobs:
 
       # Upload SARIF report files
       security-events: write
-
     steps:
-      # https://github.com/marketplace/actions/docker-login
       - name: Log in to GHCR
         uses: docker/login-action@v2
         with:
@@ -40,28 +41,47 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v3
 
-      - name: Pull scan
-        env:
-          REGISTRY: ghcr.io/
-          PUBLIC_REGISTRY: ""
-        run: |
-          docker compose -f docker-compose.gha.yml pull --quiet scan
+      - name: Pull repos
+        run: echo "deploy" | xargs -n 1 -P 8 docker compose pull
 
-      - name: Security scan image
-        env:
-          REGISTRY: ghcr.io/
-          PUBLIC_REGISTRY: ""
-        run: |
-          mkdir -p ./sarif-reports
-          mkdir -p ./trivy-cache
-          docker compose -f docker-compose.gha.yml run scan trivy fs --no-progress --debug --cache-dir /trivy-cache /
-          # docker compose -f docker-compose.gha.yml run scan trivy fs --format sarif -o /sarif-reports/trivy-deploy.sarif --no-progress --debug --cache-dir /trivy-cache /
+      - name: Scan image with trivy
+        uses: aquasecurity/trivy-action@master
+        # https://github.com/aquasecurity/trivy-action
+        # https://github.com/marketplace/actions/aqua-security-trivy#inputs
+        with:
+          image-ref: ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{github.sha}}
+          # exit-code: '1' # fail build
+          # ignore-unfixed: true
+          # vuln-type: 'os,library'
+          # severity: 'CRITICAL,HIGH'
+          cache-dir: ./.cache
+          # format: 'sarif'
+          # output: './sarif-reports/trivy.sarif'
 
-      # # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning
-      # # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github
       # - name: Upload Trivy scan results to GitHub Security tab
       #   uses: github/codeql-action/upload-sarif@v2
+      #   # Requires GitHub Advanced Security
+      #   # https://docs.github.com/en/get-started/learning-about-github/about-github-advanced-security
+      #   # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning
+      #   # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github
       #   if: always()
       #   with:
       #     sarif_file: './sarif-reports/'
       #     category: trivy
+
+      - name: Scan image with grype
+        uses: anchore/scan-action@v3
+        # https://github.com/marketplace/actions/anchore-container-scan
+        id: scan-grype
+        with:
+          image: ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{github.sha}}
+          # severity-cutoff: critical
+          fail-build: false
+          output-format: table
+
+      # - name: Upload grype scan results to GitHub Security tab
+      #   uses: github/codeql-action/upload-sarif@v2
+      #   if: always()
+      #   with:
+      #     sarif_file: ${{ steps.scan-grype.outputs.sarif }}
+      #     category: grype
