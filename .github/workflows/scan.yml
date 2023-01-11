@@ -1,6 +1,9 @@
 on:
   schedule:
-    - cron: '0 * * * *'
+    # Once a day at midnight
+    - cron: '0 0 * * *'
+    # Once an hour
+    # - cron: '0 * * * *'
 
 name: Security scan
 env:
