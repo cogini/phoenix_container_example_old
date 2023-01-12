@@ -471,12 +471,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Check out source
-        uses: actions/checkout@v3
-
-      - name: Pull repos
-        run: echo "deploy" | xargs -n 1 -P 8 docker compose pull
-
       - name: Scan image with Trivy
         uses: aquasecurity/trivy-action@master
         # https://github.com/aquasecurity/trivy-action
