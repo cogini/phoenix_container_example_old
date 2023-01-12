@@ -477,7 +477,7 @@ jobs:
       - name: Pull repos
         run: echo "deploy" | xargs -n 1 -P 8 docker compose pull
 
-      - name: Scan image with trivy
+      - name: Scan image with Trivy
         uses: aquasecurity/trivy-action@master
         # https://github.com/aquasecurity/trivy-action
         # https://github.com/marketplace/actions/aqua-security-trivy#inputs
@@ -502,7 +502,7 @@ jobs:
       #     sarif_file: './sarif-reports/'
       #     category: trivy
 
-      - name: Scan image with grype
+      - name: Scan image with Grype
         uses: anchore/scan-action@v3
         # https://github.com/marketplace/actions/anchore-container-scan
         id: scan-grype
@@ -512,7 +512,7 @@ jobs:
           fail-build: false
           output-format: table
 
-      # - name: Upload grype scan results to GitHub Security tab
+      # - name: Upload Grype scan results to GitHub Security tab
       #   uses: github/codeql-action/upload-sarif@v2
       #   if: always()
       #   with:
