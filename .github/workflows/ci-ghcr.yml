@@ -445,24 +445,22 @@ jobs:
   scan:
     name: Security scan prod image
     runs-on: ubuntu-latest
-    needs: [build-prod]
-    # permissions: write-all
-    permissions:
-      # Interact with GitHub's OIDC Token endpoint for AWS
-      id-token: write
-      contents: read
+    # permissions:
+    #   # Interact with GitHub's OIDC Token endpoint for AWS
+    #   id-token: write
+    #   contents: read
 
-      # Read from ghcr.io repository
-      packages: read
+    #   # Read from ghcr.io repository
+    #   packages: read
 
-      # Upload JUnit report files
-      # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
-      checks: write
-      pull-requests: write
-      issues: read
+    #   # Upload JUnit report files
+    #   # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
+    #   checks: write
+    #   pull-requests: write
+    #   issues: read
 
-      # Upload SARIF report files
-      security-events: write
+    #   # Upload SARIF report files
+    #   security-events: write
     steps:
       - name: Log in to GHCR
         uses: docker/login-action@v2
