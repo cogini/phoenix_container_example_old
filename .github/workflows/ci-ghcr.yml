@@ -479,7 +479,7 @@ jobs:
           # ignore-unfixed: true
           # vuln-type: 'os,library'
           # severity: 'CRITICAL,HIGH'
-          cache-dir: ./.cache
+          # cache-dir: ./.cache
           # format: 'sarif'
           # output: './sarif-reports/trivy.sarif'
 
