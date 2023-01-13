@@ -154,15 +154,16 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Pull repos
-        run: echo "postgres test" | xargs -n 1 -P 8 docker compose pull
+        # run: echo "postgres test" | xargs -n 1 -P 8 docker compose pull --quiet
+        run: docker compose pull --quiet test
 
       # TODO: Starting services in parallel fails with error
       # "Error response from daemon: network api_default is ambiguous (2 matches found on name)"
       # - name: Start required services
       #   run: echo "postgres redis" | xargs -n 1 -P 8 docker compose up --wait --detach
 
-      - name: Start postgres
-        run: docker compose up --wait --detach postgres
+      # - name: Start postgres
+      #   run: docker compose up --wait --detach postgres
 
       # - name: Start redis
       #   run: docker compose up --wait --detach redis
@@ -174,6 +175,9 @@ jobs:
       #     DD_HOSTNAME: "none"
       #     DD_INSIDE_CI: "true"
       #   run: docker compose up --detach datadog
+
+      - name: Start services
+        run: docker compose up --detach test
 
       - name: Initialize test database
         run: docker compose run test mix do ecto.create, ecto.migrate
