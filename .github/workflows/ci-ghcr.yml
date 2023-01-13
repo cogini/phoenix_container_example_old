@@ -179,6 +179,28 @@ jobs:
       - name: Start services
         run: docker compose up --detach test
 
+      - name: Show docker compose logs
+        if: failure()
+        run: |
+          docker compose logs --timestamps postgres
+          docker compose logs --timestamps test
+          docker compose ps --format json | jq .
+
+      - name: Display health check results
+        if: failure()
+        run: |
+          echo postgres
+          docker inspect --format "{{json .State.Health }}" $(docker compose ps -q postgres) | jq
+          echo redis
+          docker inspect --format "{{json .State.Health }}" $(docker compose ps -q redis) | jq
+
+      - name: Debug env
+        if: failure()
+        run: |
+          docker compose run test env
+          # docker compose run test env PGPASSWORD=postgres /usr/bin/psql -w -h postgres -U postgres -d postgres -c "SELECT 1"
+          # docker compose run test env PGPASSWORD=postgres /usr/lib/postgresql/13/bin/pg_isready -h postgres -p 5432 -d postgres -U postgres
+
       - name: Initialize test database
         run: docker compose run test mix do ecto.create, ecto.migrate
 
