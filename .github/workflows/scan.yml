@@ -15,22 +15,22 @@ jobs:
   scan:
     name: Security scan prod image
     runs-on: ubuntu-latest
-    # permissions:
-    #   # Interact with GitHub's OIDC Token endpoint for AWS
-    #   id-token: write
-    #   contents: read
+    permissions:
+      # Interact with GitHub's OIDC Token endpoint for AWS
+      id-token: write
+      contents: read
 
-    #   # Read from ghcr.io repository
-    #   packages: read
+      # Read from ghcr.io repository
+      packages: read
 
-    #   # Upload JUnit report files
-    #   # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
-    #   checks: write
-    #   pull-requests: write
-    #   issues: read
+      # Upload JUnit report files
+      # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
+      checks: write
+      pull-requests: write
+      issues: read
 
-    #   # Upload SARIF report files
-    #   security-events: write
+      # Upload SARIF report files
+      security-events: write
     steps:
       - name: Log in to GHCR
         uses: docker/login-action@v2
@@ -39,12 +39,13 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Pull image
+        run: docker pull ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{env.IMAGE_TAG}}
+
       - name: Scan image with Trivy
         uses: aquasecurity/trivy-action@master
         # https://github.com/aquasecurity/trivy-action
         # https://github.com/marketplace/actions/aqua-security-trivy#inputs
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           image-ref: ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{env.IMAGE_TAG}}
           exit-code: '1' # fail build
