@@ -17,8 +17,8 @@ services:
       #   - access_token
     environment:
       - DATABASE_DB
-      - DATABASE_HOST=postgres
-      - DB_HOST=postgres
+      - DATABASE_HOST="${DATABASE_HOST:-postgres}"
+      - DB_HOST="${DB_HOST:-postgres}"
       - SECRET_KEY_BASE
     volumes:
       - "./.cache:/var/cache"
