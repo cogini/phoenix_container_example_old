@@ -24,9 +24,9 @@ services:
       - "./.cache:/var/cache"
       - "./junit-reports:/app/_build/test/junit-reports"
       - "./sarif-reports:/sarif-reports"
-    # depends_on:
-    #   postgres:
-    #     condition: service_healthy
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   # Final deploy service
   deploy:
