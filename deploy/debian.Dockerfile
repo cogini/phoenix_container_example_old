@@ -76,6 +76,8 @@ ARG DEV_PACKAGES=""
 # Create build base image with OS dependencies
 FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
     ARG DEBIAN_SNAPSHOT
+    ARG RUNTIME_PACKAGES
+
     ARG LANG
     ENV LANG=$LANG
 
