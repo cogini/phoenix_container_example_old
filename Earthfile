@@ -4,8 +4,6 @@ VERSION --use-cache-command --shell-out-anywhere --use-copy-include-patterns --r
 ARG ELIXIR_VERSION=1.13.4
 # ARG OTP_VERSION=24.3.4
 ARG OTP_VERSION=25.0-rc3
-ARG NODE_VERSION=16.14.1
-# ARG NODE_VERSION=lts
 
 ARG ALPINE_VERSION=3.15.4
 
@@ -17,6 +15,8 @@ ARG ELIXIR_DEBIAN_VERSION=bullseye-20210902-slim
 # ARG DEBIAN_VERSION=buster-slim
 ARG DEBIAN_VERSION=bullseye-slim
 
+ARG NODE_VERSION=16.14.1
+# ARG NODE_VERSION=lts
 # Docker registry for internal images, e.g. 123.dkr.ecr.ap-northeast-1.amazonaws.com/
 # If blank, docker.io will be used. If specified, should have a trailing slash.
 ARG REGISTRY=""
