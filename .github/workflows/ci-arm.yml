@@ -2,6 +2,9 @@
 # Call CodeBuild as a runner to build Arm-CPU image
 name: CI Arm
 on: push
+env:
+  AWS_ROLE_TO_ASSUME: arn:aws:iam::770916339360:role/foo-dev-codebuild-github-action-role
+  AWS_REGION: ap-northeast-1
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -10,9 +13,6 @@ jobs:
       # Needed to interact with GitHub's OIDC Token endpoint for AWS
       id-token: write
       contents: read
-    env:
-      AWS_ROLE_TO_ASSUME: arn:aws:iam::770916339360:role/foo-dev-codebuild-github-action-role
-      AWS_REGION: ap-northeast-1
     steps:
       # - name: Dump event
       #   run: cat "$GITHUB_EVENT_PATH"
