@@ -8,7 +8,6 @@ on: ["push", "pull_request"]
 #     branches: [main]
 #     types: [opened,synchronize,reopened,labeled,unlabeled]
 env:
-  # IMAGE_NAME: ${{ github.repository }}
   IMAGE_NAME: foo-app
   IMAGE_OWNER: ${{ github.repository_owner }}
   AWS_ROLE_TO_ASSUME: arn:aws:iam::770916339360:role/foo-dev-ecr-github-action-role
@@ -33,7 +32,6 @@ jobs:
       checks: write
       pull-requests: write
       issues: read
-
     steps:
       - name: Cancel previous runs
         uses: styfle/cancel-workflow-action@0.11.0
