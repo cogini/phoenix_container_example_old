@@ -635,7 +635,6 @@ FROM prod-base AS prod
     # When using a startup script, unpack release under "/app/current" dir
     # WORKDIR $APP_DIR/current
 
-    # COPY --from=prod-release --chown="$APP_USER:$APP_GROUP" --chmod=774 "/app/_build/${MIX_ENV}/rel/${RELEASE}" ./
     COPY --from=prod-release --chown="$APP_USER:$APP_GROUP" "/app/_build/${MIX_ENV}/rel/${RELEASE}" ./
 
     EXPOSE $APP_PORT
