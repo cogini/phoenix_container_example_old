@@ -31,11 +31,11 @@ ARG REGISTRY=""
 # Public images may be mirrored into the private registry, with e.g. Skopeo
 ARG PUBLIC_REGISTRY=$REGISTRY
 
-ARG BUILD_IMAGE_NAME=${PUBLIC_REGISTRY}hexpm/elixir
-ARG BUILD_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-alpine-${ALPINE_VERSION}
+ARG BUILD_BASE_IMAGE_NAME=${PUBLIC_REGISTRY}hexpm/elixir
+ARG BUILD_BASE_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-alpine-${ALPINE_VERSION}
 
-ARG DEPLOY_IMAGE_NAME=${PUBLIC_REGISTRY}alpine
-ARG DEPLOY_IMAGE_TAG=$ALPINE_VERSION
+ARG PROD_BASE_IMAGE_NAME=${PUBLIC_REGISTRY}alpine
+ARG PROD_BASE_IMAGE_TAG=$ALPINE_VERSION
 
 # App name, used to name directories
 ARG APP_NAME=app
@@ -70,7 +70,7 @@ ARG RUNTIME_PACKAGES=""
 ARG DEV_PACKAGES=""
 
 # Create build base image with OS dependencies
-FROM ${BUILD_IMAGE_NAME}:${BUILD_IMAGE_TAG} AS build-os-deps
+FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
     ARG APK_UPDATE
     ARG APK_UPGRADE
     ARG LANG
@@ -153,8 +153,6 @@ FROM build-os-deps AS build-deps-get
             mix deps.get; \
         fi
 
-    RUN mix esbuild.install --if-missing
-
     # RUN yarn global add newman
     # RUN yarn global add newman-reporter-junitfull
     # RUN yarn global add snyk
@@ -171,6 +169,8 @@ FROM build-deps-get AS test-image
 
     # Compile deps separately from app, improving Docker caching
     RUN mix deps.compile
+
+    RUN mix esbuild.install --if-missing
 
     RUN mix dialyzer --plt
 
@@ -195,7 +195,7 @@ FROM build-deps-get AS test-image
     # RUN mix cmd mix compile --warnings-as-errors
 
 # Create Elixir release
-FROM build-deps-get AS deploy-release
+FROM build-deps-get AS prod-release
     ARG APP_DIR
     ARG RELEASE
     ARG MIX_ENV=prod
@@ -211,6 +211,8 @@ FROM build-deps-get AS deploy-release
 
     # Compile deps separately from application for better caching
     RUN mix deps.compile
+
+    RUN mix esbuild.install --if-missing
 
     # Compile assets the old way
     # WORKDIR "${APP_DIR}/assets"
@@ -271,7 +273,7 @@ FROM build-deps-get AS deploy-release
     RUN mix release "$RELEASE"
 
 # Create base image for deploy, with everything but the code release
-FROM ${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG} AS deploy-base
+FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
     ARG APK_UPDATE
     ARG APK_UPGRADE
     ARG LANG
@@ -319,8 +321,8 @@ FROM ${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG} AS deploy-base
         apk add --no-progress openssl
         # apk add --no-progress curses-libs
 
-# Create final app image which gets deployed
-FROM deploy-base AS deploy
+# Create final prod image which gets deployed
+FROM prod-base AS prod
     ARG APP_DIR
     ARG APP_NAME
     ARG APP_USER
@@ -372,7 +374,7 @@ FROM deploy-base AS deploy
     # When using a startup script, unpack release under "/app/current" dir
     # WORKDIR $APP_DIR/current
 
-    COPY --from=deploy-release --chown="$APP_USER:$APP_GROUP" "/app/_build/${MIX_ENV}/rel/${RELEASE}" ./
+    COPY --from=prod-release --chown="$APP_USER:$APP_GROUP" "/app/_build/${MIX_ENV}/rel/${RELEASE}" ./
 
     EXPOSE $APP_PORT
 
@@ -396,8 +398,8 @@ FROM scratch AS artifacts
     ARG MIX_ENV
     ARG RELEASE
 
-    COPY --from=deploy-release "/app/_build/${MIX_ENV}/rel/${RELEASE}" /release
-    COPY --from=deploy-release /app/priv/static /static
+    COPY --from=prod-release "/app/_build/${MIX_ENV}/rel/${RELEASE}" /release
+    COPY --from=prod-release /app/priv/static /static
 
 # Default target
-FROM deploy
+FROM prod
