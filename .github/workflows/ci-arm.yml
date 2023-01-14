@@ -8,7 +8,6 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-    # runs-on: ubuntu-20.04
     permissions:
       # Needed to interact with GitHub's OIDC Token endpoint for AWS
       id-token: write
