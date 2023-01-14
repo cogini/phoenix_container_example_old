@@ -412,11 +412,11 @@ jobs:
         with:
           driver-opts: network=host
 
-      - name: Build deploy image and push to GHCR
+      - name: Build prod image and push to GHCR
         uses: docker/build-push-action@v3
         with:
           file: ${{ env.DOCKER_FILE }}
-          target: deploy
+          target: prod
           context: .
           builder: ${{ steps.buildx.outputs.name }}
           push: true
@@ -431,13 +431,13 @@ jobs:
           #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
           #   "oban_license_key=${{ secrets.OBAN_LICENSE_KEY }}"
 
-      - name: Build deploy image and push to AWS ECR
+      - name: Build prod image and push to AWS ECR
         uses: docker/build-push-action@v3
         env:
           REGISTRY: "${{ env.ECR_REGISTRY }}/"
         with:
           file: ${{ env.DOCKER_FILE }}
-          target: deploy
+          target: prod
           context: .
           builder: ${{ steps.buildx.outputs.name }}
           push: true
@@ -525,7 +525,7 @@ jobs:
       #     sarif_file: ${{ steps.scan-grype.outputs.sarif }}
       #     category: grype
 
-  deploy:
+  prod:
     name: Deploy final images
     if: github.event_name != 'pull_request'
     # if: contains(github.ref, 'refs/heads/main')
@@ -584,11 +584,11 @@ jobs:
         with:
           driver-opts: network=host
 
-      # - name: Build final deploy image and push to GHCR as latest
+      # - name: Build final prod image and push to GHCR as latest
       #   uses: docker/build-push-action@v3
       #   with:
       #     file: ${{ env.DOCKER_FILE }}
-      #     target: deploy
+      #     target: prod
       #     context: .
       #     builder: ${{ steps.buildx.outputs.name }}
       #     push: true
@@ -604,13 +604,13 @@ jobs:
       #     aws ecr put-image --repository-name ${{ env.IMAGE_NAME }} --image-tag ${{ env.IMAGE_TAG }} --image-manifest "$MANIFEST"
       #     aws ecr describe-images --repository-name ${{ env.IMAGE_NAME }}
 
-      - name: Build final deploy image and push to AWS ECR as latest
+      - name: Build final prod image and push to AWS ECR as latest
         uses: docker/build-push-action@v3
         env:
           REGISTRY: "${{ env.ECR_REGISTRY }}/"
         with:
           file: ${{ env.DOCKER_FILE }}
-          target: deploy
+          target: prod
           context: .
           builder: ${{ steps.buildx.outputs.name }}
           push: true
