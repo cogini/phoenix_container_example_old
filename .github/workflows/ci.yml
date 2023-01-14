@@ -10,8 +10,18 @@ on: ["push", "pull_request"]
 env:
   IMAGE_NAME: foo-app
   IMAGE_OWNER: ${{ github.repository_owner }}
+  # Registry for public images, default is docker.io
+  PUBLIC_REGISTRY: ""
   AWS_ROLE_TO_ASSUME: arn:aws:iam::770916339360:role/foo-dev-ecr-github-action-role
   AWS_REGION: ap-northeast-1
+  # Tag for release images
+  # IMAGE_TAG: ${{ (github.ref == 'refs/heads/main' && 'staging') || (github.ref == 'refs/heads/qa' && 'qa') }}
+  IMAGE_TAG: latest
+  # Docker vars
+  DOCKER_BUILDKIT: '1'
+  COMPOSE_DOCKER_CLI_BUILD: '1'
+  COMPOSE_FILE: docker-compose.gha.yml
+  DOCKER_FILE: deploy/debian.Dockerfile
 jobs:
   docker-build:
     name: Build image and push
@@ -47,14 +57,16 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Log in to Amazon ECR
-        id: login-ecr
+        id: ecr-login
         uses: aws-actions/amazon-ecr-login@v1
 
+      - name: Set vars
+        run: echo "ECR_REGISTRY=${{ steps.ecr-login.outputs.registry }}" >> $GITHUB_ENV
+
       # - name: Log in to ECR
-      #   id: login-ecr
       #   uses: docker/login-action@v2
       #   with:
-      #     registry: ${{ env.REGISTRY_NAME }}
+      #     registry: ${{ env.ECR_REGISTRY }}
       #     username: ${{ secrets.AWS_ACCESS_KEY_ID }}
       #     password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
@@ -76,13 +88,11 @@ jobs:
 
       - name: Get branch name for push
         if: github.event_name != 'pull_request'
-        run: |
-          echo "BRANCH=$(echo ${GITHUB_REF#refs/heads/})" >> $GITHUB_ENV
+        run: echo "BRANCH=$(echo ${GITHUB_REF#refs/heads/})" >> $GITHUB_ENV
 
       - name: Get branch name for pull_request
         if: github.event_name == 'pull_request'
-        run: |
-          echo "BRANCH=$(echo $GITHUB_HEAD_REF | tr '//\\' '.' | cut -c -55)" >> $GITHUB_ENV
+        run: echo "BRANCH=$(echo $GITHUB_HEAD_REF | tr '//\\' '.' | cut -c -55)" >> $GITHUB_ENV
 
       # - name: Configure ssh keys
       #   uses: webfactory/ssh-agent@v0.7.0
@@ -92,15 +102,6 @@ jobs:
       #   with:
       #     ssh-private-key: |
       #       ${{ secrets.SSH_PRIVATE_KEY }}
-
-      # - name: Set up QEMU for multi-platform builds
-      #   id: qemu
-      #   uses: docker/setup-qemu-action@v2
-      #   with:
-      #     platforms: linux/amd64,linux/arm64
-
-      # - name: Display available platforms
-      #   run: echo "${{ steps.qemu.outputs.platforms }}"
 
       - name: Set up Docker buildx
         id: buildx
@@ -113,13 +114,13 @@ jobs:
         env:
           REGISTRY_NAME: localhost:5000
           REGISTRY: localhost:5000/
-          PUBLIC_REGISTRY: "${{ steps.login-ecr.outputs.registry }}/"
+          PUBLIC_REGISTRY: "${{ steps.ecr-login.outputs.registry }}/"
         with:
+          file: ${{ env.DOCKER_FILE }}
+          target: test-image
           context: .
           builder: ${{ steps.buildx.outputs.name }}
-          file: ./deploy/debian.Dockerfile
           push: true
-          target: test-image
           # https://github.com/moby/buildkit#export-cache
           cache-from: type=gha,scope=${{ github.workflow }}-test
           cache-to: type=gha,scope=${{ github.workflow }}-test,mode=max
@@ -130,31 +131,23 @@ jobs:
       - name: Start postgres
         env:
           REGISTRY: ghcr.io/
-          PUBLIC_REGISTRY: ""
-        run: |
-          docker compose -f docker-compose.gha.yml up --wait --detach postgres
+        run: docker compose up --wait --detach postgres
 
       - name: Run tests
         env:
           REGISTRY: localhost:5000/
-          # PUBLIC_REGISTRY: "${{ steps.login-ecr.outputs.registry }}/"
           PUBLIC_REGISTRY: ""
-        run: |
-          docker compose -f docker-compose.gha.yml run test mix test --cover
+        run: docker compose run test mix test --cover
 
       - name: Run quality checks
         env:
           REGISTRY: localhost:5000/
-          PUBLIC_REGISTRY: ""
-        run: |
-          docker compose -f docker-compose.gha.yml run test mix do format --check-formatted, deps.unlock --check-unused, credo, hex.audit, deps.audit, sobelow
+        run: docker compose run test mix do format --check-formatted, deps.unlock --check-unused, credo, hex.audit, deps.audit, sobelow
 
       - name: Run dialyzer
         env:
           REGISTRY: localhost:5000/
-          PUBLIC_REGISTRY: ""
-        run: |
-          docker compose -f docker-compose.gha.yml run test mix dialyzer --no-check --halt-exit-status --format github
+        run: docker compose run test mix dialyzer --no-check --halt-exit-status --format github
 
       - name: Build deploy image and push
         if: github.event_name != 'pull_request'
@@ -164,9 +157,9 @@ jobs:
           REGISTRY: "${{ steps.login-ecr.outputs.registry }}/"
           REGISTRY_NAME: ${{ steps.login-ecr.outputs.registry }}
         with:
+          file: ${{ env.DOCKER_FILE }}
           context: .
           builder: ${{ steps.buildx.outputs.name }}
-          file: ./deploy/debian.Dockerfile
           push: true
           cache-from: type=gha,scope=${{ github.workflow }}
           cache-to: type=gha,scope=${{ github.workflow }},mode=max
@@ -179,9 +172,10 @@ jobs:
         if: github.event_name == 'pull_request'
         uses: docker/build-push-action@v3
         with:
+          file: ${{ env.DOCKER_FILE }}
+          target: prod
           context: .
           builder: ${{ steps.buildx.outputs.name }}
-          file: ./deploy/debian.Dockerfile
           push: true
           cache-from: type=gha,scope=${{ github.workflow }}
           cache-to: type=gha,scope=${{ github.workflow }},mode=max
