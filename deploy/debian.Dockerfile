@@ -266,8 +266,6 @@ FROM build-os-deps AS build-deps-get
             mix deps.get; \
         fi
 
-    RUN mix esbuild.install --if-missing
-
     # RUN yarn global add newman
     # RUN yarn global add newman-reporter-junitfull
     # RUN yarn global add snyk
@@ -284,6 +282,8 @@ FROM build-deps-get AS test-image
 
     # Compile deps separately from app, improving Docker caching
     RUN mix deps.compile
+
+    RUN mix esbuild.install --if-missing
 
     RUN mix dialyzer --plt
 
@@ -326,6 +326,8 @@ FROM build-deps-get AS prod-release
 
     # Compile deps separately from application for better caching
     RUN mix deps.compile
+
+    RUN mix esbuild.install --if-missing
 
     # Compile assets the old way
     # WORKDIR "${APP_DIR}/assets"
