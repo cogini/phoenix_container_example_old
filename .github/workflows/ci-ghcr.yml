@@ -159,8 +159,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Pull repos
-        # run: echo "postgres test" | xargs -n 1 -P 8 docker compose pull --quiet
-        run: docker compose pull --quiet test
+        run: docker compose pull --quiet --include-deps test
 
       # TODO: Starting services in parallel fails with error
       # "Error response from daemon: network api_default is ambiguous (2 matches found on name)"
