@@ -160,17 +160,7 @@ jobs:
 
       - name: Pull repos
         run: docker compose pull --quiet --include-deps test
-
-      # TODO: Starting services in parallel fails with error
-      # "Error response from daemon: network api_default is ambiguous (2 matches found on name)"
-      # - name: Start required services
-      #   run: echo "postgres redis" | xargs -n 1 -P 8 docker compose up --wait --detach
-
-      # - name: Start postgres
-      #   run: docker compose up --wait --detach postgres
-
-      # - name: Start redis
-      #   run: docker compose up --wait --detach redis
+      # run: echo "postgres redis test" | xargs -n 1 -P 8 docker compose up --wait --detach
 
       # - name: Start datadog
       #   env:
@@ -184,14 +174,14 @@ jobs:
         run: docker compose up --detach test
 
       - name: Show docker compose logs
-        if: failure()
+        # if: failure()
         run: |
           docker compose logs --timestamps postgres
           docker compose logs --timestamps test
           docker compose ps --format json | jq .
 
       - name: Display health check results
-        if: failure()
+        # if: failure()
         run: |
           echo postgres
           docker inspect --format "{{json .State.Health }}" $(docker compose ps -q postgres) | jq
@@ -199,7 +189,7 @@ jobs:
           docker inspect --format "{{json .State.Health }}" $(docker compose ps -q redis) | jq
 
       - name: Debug env
-        if: failure()
+        # if: failure()
         run: |
           docker compose run test env
           # docker compose run test env PGPASSWORD=postgres /usr/bin/psql -w -h postgres -U postgres -d postgres -c "SELECT 1"
