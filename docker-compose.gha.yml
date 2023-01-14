@@ -28,12 +28,12 @@ services:
       postgres:
         condition: service_healthy
 
-  # Final deploy service
-  deploy:
+  # Final prod image that is deployed
+  prod:
     image: "${REGISTRY:-docker.io/}${IMAGE_OWNER}/${IMAGE_NAME}:${GITHUB_SHA:-latest}"
     build:
       dockerfile: ${DOCKER_FILE:-deploy/debian.Dockerfile}
-      target: deploy
+      target: prod
       args:
         MIX_ENV: prod
         BUILDKIT_INLINE_CACHE: "1"
