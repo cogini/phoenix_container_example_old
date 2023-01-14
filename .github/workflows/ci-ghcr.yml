@@ -21,6 +21,7 @@ env:
   REGISTRY: ghcr.io/
   # Registry for public images, default is docker.io
   PUBLIC_REGISTRY: ""
+  # Give GitHub Actions access to AWS
   AWS_ROLE_TO_ASSUME: arn:aws:iam::770916339360:role/foo-dev-ecr-github-action-role
   AWS_REGION: ap-northeast-1
   # Tag for release images
@@ -92,6 +93,10 @@ jobs:
       #   with:
       #     ssh-private-key: |
       #       ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Set env vars for builds
+        run: |
+          echo 'DATABASE_HOST=postgres' >> ./.env.test
 
       # - name: Set up QEMU for multi-platform builds
       #   id: qemu
