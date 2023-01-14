@@ -17,6 +17,9 @@ on: push
 env:
   IMAGE_NAME: foo-app
   IMAGE_OWNER: ${{ github.repository_owner }}
+  # Tag for release images
+  # IMAGE_TAG: ${{ (github.ref == 'refs/heads/main' && 'staging') || (github.ref == 'refs/heads/qa' && 'qa') }}
+  IMAGE_TAG: latest
   # Registry for dev and test images
   REGISTRY: ghcr.io/
   # Registry for public images, default is docker.io
@@ -24,9 +27,6 @@ env:
   # Give GitHub Actions access to AWS
   AWS_ROLE_TO_ASSUME: arn:aws:iam::770916339360:role/foo-dev-ecr-github-action-role
   AWS_REGION: ap-northeast-1
-  # Tag for release images
-  # IMAGE_TAG: ${{ (github.ref == 'refs/heads/main' && 'staging') || (github.ref == 'refs/heads/qa' && 'qa') }}
-  IMAGE_TAG: latest
   # Docker vars
   DOCKER_BUILDKIT: '1'
   COMPOSE_DOCKER_CLI_BUILD: '1'
