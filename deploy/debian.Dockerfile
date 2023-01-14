@@ -659,6 +659,7 @@ FROM build-os-deps AS dev
     ARG DEV_PACKAGES
 
     ARG LANG
+    ENV LANG=$LANG
 
     ARG APP_DIR
     ARG APP_GROUP
