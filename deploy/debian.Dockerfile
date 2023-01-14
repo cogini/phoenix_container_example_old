@@ -30,15 +30,17 @@ ARG REGISTRY=""
 # Public images may be mirrored into the private registry, with e.g. Skopeo
 ARG PUBLIC_REGISTRY=$REGISTRY
 
-ARG BUILD_IMAGE_NAME=${PUBLIC_REGISTRY}hexpm/elixir
-ARG BUILD_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-${ELIXIR_DEBIAN_VERSION}
+ARG BUILD_BASE_IMAGE_NAME=${PUBLIC_REGISTRY}hexpm/elixir
+ARG BUILD_BASE_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-${ELIXIR_DEBIAN_VERSION}
 # ARG BUILD_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-bullseye-20221004-slim
 
-ARG DEPLOY_IMAGE_NAME=${PUBLIC_REGISTRY}debian
-ARG DEPLOY_IMAGE_TAG=$DEBIAN_VERSION
+# Base for final prod image
+ARG PROD_BASE_IMAGE_NAME=${PUBLIC_REGISTRY}debian
+ARG PROD_BASE_IMAGE_TAG=$DEBIAN_VERSION
 
-ARG INSTALL_IMAGE_NAME=$DEPLOY_IMAGE_NAME
-ARG INSTALL_IMAGE_TAG=$DEPLOY_IMAGE_TAG
+# Intermediate image for files copied to prod
+ARG INSTALL_BASE_IMAGE_NAME=$PROD_IMAGE_NAME
+ARG INSTALL_BASE_IMAGE_TAG=$PROD_IMAGE_TAG
 
 # App name, used to name directories
 ARG APP_NAME=app
@@ -73,7 +75,7 @@ ARG RUNTIME_PACKAGES=""
 ARG DEV_PACKAGES=""
 
 # Create build base image with OS dependencies
-FROM ${BUILD_IMAGE_NAME}:${BUILD_IMAGE_TAG} AS build-os-deps
+FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
     ARG DEBIAN_SNAPSHOT
     ARG LANG
     ENV LANG=$LANG
@@ -308,7 +310,7 @@ FROM build-deps-get AS test-image
     # COPY Postman ./Postman
 
 # Create Elixir release
-FROM build-deps-get AS deploy-release
+FROM build-deps-get AS prod-release
     ARG APP_DIR
     ARG RELEASE
     ARG MIX_ENV=prod
@@ -383,8 +385,8 @@ FROM build-deps-get AS deploy-release
     COPY rel ./rel
     RUN mix release "$RELEASE"
 
-# Create staging image for binaries which are copied into final deploy image
-FROM ${INSTALL_IMAGE_NAME}:${INSTALL_IMAGE_TAG} AS deploy-install
+# Create staging image for binaries which are copied into final prod image
+FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
     ARG DEBIAN_SNAPSHOT
     # ARG AWS_CLI_VERSION
 
@@ -472,8 +474,8 @@ FROM ${INSTALL_IMAGE_NAME}:${INSTALL_IMAGE_TAG} AS deploy-install
     #     rm -rf ./aws && \
     #     rm awscliv2.zip
 
-# Create base image for deploy, with everything but the code release
-FROM ${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG} AS deploy-base
+# Create base image for prod with everything but the code release
+FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
     ARG DEBIAN_SNAPSHOT
     ARG LANG
 
@@ -487,7 +489,7 @@ FROM ${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG} AS deploy-base
 
     ARG RUNTIME_PACKAGES
 
-    # COPY --from=deploy-install /usr/lib/locale/C.UTF-8 /usr/lib/locale/C.UTF-8
+    # COPY --from=prod-install /usr/lib/locale/C.UTF-8 /usr/lib/locale/C.UTF-8
 
     # Set environment vars used by the app, e.g. SECRET_KEY_BASE, DATABASE_URL.
     # Maybe set COOKIE and other things.
@@ -579,8 +581,8 @@ FROM ${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG} AS deploy-base
         truncate -s 0 /var/log/apt/* && \
         truncate -s 0 /var/log/dpkg.log
 
-# Create final app image which gets deployed
-FROM deploy-base AS deploy
+# Create final prod image which gets deployed
+FROM prod-base AS prod
     ARG APP_DIR
     ARG APP_NAME
     ARG APP_USER
@@ -632,8 +634,8 @@ FROM deploy-base AS deploy
     # When using a startup script, unpack release under "/app/current" dir
     # WORKDIR $APP_DIR/current
 
-    # COPY --from=deploy-release --chown="$APP_USER:$APP_GROUP" --chmod=774 "/app/_build/${MIX_ENV}/rel/${RELEASE}" ./
-    COPY --from=deploy-release --chown="$APP_USER:$APP_GROUP" "/app/_build/${MIX_ENV}/rel/${RELEASE}" ./
+    # COPY --from=prod-release --chown="$APP_USER:$APP_GROUP" --chmod=774 "/app/_build/${MIX_ENV}/rel/${RELEASE}" ./
+    COPY --from=prod-release --chown="$APP_USER:$APP_GROUP" "/app/_build/${MIX_ENV}/rel/${RELEASE}" ./
 
     EXPOSE $APP_PORT
 
@@ -737,8 +739,8 @@ FROM scratch AS artifacts
     ARG MIX_ENV
     ARG RELEASE
 
-    COPY --from=deploy-release "/app/_build/${MIX_ENV}/rel/${RELEASE}" /release
-    COPY --from=deploy-release /app/priv/static /static
+    COPY --from=prod-release "/app/_build/${MIX_ENV}/rel/${RELEASE}" /release
+    COPY --from=prod-release /app/priv/static /static
 
 # Default target
-FROM deploy
+FROM prod
