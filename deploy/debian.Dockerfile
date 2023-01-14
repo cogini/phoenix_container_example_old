@@ -478,6 +478,8 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
 # Create base image for prod with everything but the code release
 FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
     ARG DEBIAN_SNAPSHOT
+    ARG RUNTIME_PACKAGES
+
     ARG LANG
 
     ARG APP_GROUP
@@ -487,8 +489,6 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
 
     ARG MIX_ENV
     ARG RELEASE
-
-    ARG RUNTIME_PACKAGES
 
     # COPY --from=prod-install /usr/lib/locale/C.UTF-8 /usr/lib/locale/C.UTF-8
 
@@ -656,6 +656,8 @@ FROM prod-base AS prod
 
 # Dev image which mounts code from local filesystem
 FROM build-os-deps AS dev
+    ARG DEV_PACKAGES
+
     ARG LANG
 
     ARG APP_DIR
@@ -666,7 +668,6 @@ FROM build-os-deps AS dev
 
     ARG MIX_ENV=dev
 
-    ARG RUNTIME_PACKAGES
     ARG DEV_PACKAGES
 
     # Set environment vars used by the app
@@ -693,7 +694,6 @@ FROM build-os-deps AS dev
             inotify-tools \
             ssh \
             sudo \
-            # $RUNTIME_PACKAGES \
             # $DEV_PACKAGES \
         && \
         # https://www.networkworld.com/article/3453032/cleaning-up-with-apt-get.html
