@@ -1,9 +1,9 @@
 # Build Elixir/Phoenix app
 VERSION --use-cache-command --shell-out-anywhere --use-copy-include-patterns --referenced-save-only 0.6
 
-ARG ELIXIR_VERSION=1.13.4
-# ARG OTP_VERSION=24.3.4
-ARG OTP_VERSION=25.0-rc3
+ARG ELIXIR_VERSION=1.14.2
+# ARG OTP_VERSION=24.3.4.2
+ARG OTP_VERSION=25.2
 
 ARG ALPINE_VERSION=3.15.4
 
