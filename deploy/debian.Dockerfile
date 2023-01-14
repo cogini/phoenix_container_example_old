@@ -602,6 +602,7 @@ FROM prod-base AS prod
         PORT=$APP_PORT \
         PHX_SERVER=true \
         RELEASE=$RELEASE \
+        MIX_ENV=$MIX_ENV \
         # Writable tmp directory for releases
         RELEASE_TMP="/run/${APP_NAME}"
 
