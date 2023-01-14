@@ -17,8 +17,7 @@ services:
       #   - access_token
     environment:
       - DATABASE_DB
-      - DATABASE_HOST="${DATABASE_HOST:-postgres}"
-      - DB_HOST="${DB_HOST:-postgres}"
+      - DATABASE_HOST=${DATABASE_HOST:-postgres}
       - SECRET_KEY_BASE
     volumes:
       - "./.cache:/var/cache"
@@ -71,13 +70,12 @@ services:
     image: "${PUBLIC_REGISTRY:-docker.io/}postgres:14.6-alpine"
     ports:
       - '5432'
-    user: postgres
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=postgres
     volumes:
-      - postgres_data_path:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
       # - ./db/postgres/init.sql:/docker-entrypoint-initdb.d/create_tables.sql
     restart: always
     healthcheck:
@@ -100,7 +98,7 @@ services:
     ports:
       - '3306'
     volumes:
-      - mysql_data_path:/var/lib/mysql
+      - mysql_data:/var/lib/mysql
     # - "./db/mysql/initdb.d:/docker-entrypoint-initdb.d"
     restart: always
     healthcheck:
@@ -212,9 +210,9 @@ services:
     restart: always
 
 volumes:
-  postgres_data_path:
+  postgres_data:
     driver: local
-  mysql_data_path:
+  mysql_data:
     driver: local
 
 # Secrets for builds
