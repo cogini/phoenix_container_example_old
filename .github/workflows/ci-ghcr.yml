@@ -333,7 +333,7 @@ jobs:
     name: Build prod image
     runs-on: ubuntu-latest
     permissions:
-      # Interact with GitHub's OIDC Token endpoint for AWS
+      # Interact with GitHub OIDC Token endpoint for AWS
       id-token: write
       contents: read
 
