@@ -726,7 +726,7 @@ FROM build-os-deps AS dev
 
     RUN mix 'do' local.rebar --force, local.hex --force
 
-    # RUN mix esbuild.install
+    # RUN mix esbuild.install --if-missing
 
     # Instead of copying sources, could use bind mount, e.g.
     # RUN --mount=target=.
