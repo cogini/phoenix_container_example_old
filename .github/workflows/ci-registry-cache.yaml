@@ -1,69 +1,71 @@
 ---
 name: CI registry caching
-on: ["push", "pull_request"]
+on: push
 # on:
 #   push:
 #     branches: [main]
 #   pull_request:
-#     branches: [main]
-#     types: [labeled,synchronize,reopened,unlabeled]
+#     # branches: [main]
+#     types: [opened,synchronize,reopened,labeled,unlabeled]
+env:
+  IMAGE_NAME: foo-app
+  IMAGE_OWNER: ${{ github.repository_owner }}
+  # Tag for release images
+  # IMAGE_TAG: ${{ (github.ref == 'refs/heads/main' && 'staging') || (github.ref == 'refs/heads/qa' && 'qa') }}
+  IMAGE_TAG: latest
+  AWS_ROLE_TO_ASSUME: arn:aws:iam::770916339360:role/foo-dev-ecr-github-action-role
+  AWS_REGION: ap-northeast-1
+  # Docker vars
+  DOCKER_BUILDKIT: '1'
+  COMPOSE_DOCKER_CLI_BUILD: '1'
+  COMPOSE_FILE: docker-compose.gha.yml
+  DOCKER_FILE: deploy/debian.Dockerfile
 jobs:
-  build:
+  build-prod:
+    name: Build prod image
     runs-on: ubuntu-latest
-    # runs-on: ubuntu-20.04
     permissions:
-      # Needed to interact with GitHub's OIDC Token endpoint for AWS
+      # Interact with GitHub OIDC Token endpoint for AWS
       id-token: write
       contents: read
 
-      # JUnit report file upload
+      # Upload JUnit report files
       # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
       checks: write
       pull-requests: write
       issues: read
-
-    env:
-      IMAGE_NAME: foo-app
-      AWS_ROLE: arn:aws:iam::770916339360:role/foo-dev-ecr-github-action-role
-      AWS_REGION: ap-northeast-1
     steps:
-      # - name: Dump event
-      #   run: cat "$GITHUB_EVENT_PATH"
-
-      # https://github.com/aws-actions/configure-aws-credentials
-      # https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1-node16
         with:
-          role-to-assume: ${{ env.AWS_ROLE }}
+          role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ env.AWS_REGION }}
 
       # - name: Display AWS identity
       #   run: aws sts get-caller-identity
 
-      # https://github.com/aws-actions/amazon-ecr-login
-      - name: Login to Amazon ECR
-        id: login-ecr
+      - name: Log in to Amazon ECR
+        id: ecr-login
         uses: aws-actions/amazon-ecr-login@v1
 
-      # - name: Login to ECR
-      #   id: login-ecr
+      - name: Set vars
+        run: echo "ECR_REGISTRY=${{ steps.ecr-login.outputs.registry }}" >> $GITHUB_ENV
+
+      # - name: Log in to ECR
       #   uses: docker/login-action@v2
       #   with:
-      #     registry: ${{ env.REGISTRY_NAME }}
+      #     registry: ${{ env.ECR_REGISTRY }}
       #     username: ${{ secrets.AWS_ACCESS_KEY_ID }}
       #     password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
-      # https://github.com/marketplace/actions/docker-login
-      - name: Login to DockerHub
-        id: login-docker-hub
+      - name: Log in to Docker Hub
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Checkout source
-        uses: actions/checkout@v2
+      - name: Check out source
+        uses: actions/checkout@v3
 
       - name: Set variables
         id: vars
@@ -72,14 +74,22 @@ jobs:
           echo "::set-output name=run_id::${GITHUB_RUN_ID}"
           echo "::set-output name=run_num::${GITHUB_RUN_NUMBER}"
 
-      # - name: Set up QEMU for multi-platform builds
-      #   id: qemu
-      #   uses: docker/setup-qemu-action@v2
-      #   with:
-      #     platforms: linux/amd64,linux/arm64
+      - name: Get branch name for push
+        if: github.event_name != 'pull_request'
+        run: echo "BRANCH=$(echo ${GITHUB_REF#refs/heads/})" >> $GITHUB_ENV
 
-      # - name: Display available platforms
-      #   run: echo "${{ steps.qemu.outputs.platforms }}"
+      - name: Get branch name for pull_request
+        if: github.event_name == 'pull_request'
+        run: echo "BRANCH=$(echo $GITHUB_HEAD_REF | tr '//\\' '.' | cut -c -55)" >> $GITHUB_ENV
+
+      # - name: Configure ssh keys
+      #   uses: webfactory/ssh-agent@v0.7.0
+      #   # https://github.com/marketplace/actions/webfactory-ssh-agent
+      #   # https://docs.github.com/en/developers/overview/managing-deploy-keys#deploy-keys
+      #   # ssh-keygen -t ed25519 -m pem -C "git@github.com:reachfh/api-utils.git" -f api-utils
+      #   with:
+      #     ssh-private-key: |
+      #       ${{ secrets.SSH_PRIVATE_KEY }}
 
       - name: Set up Docker buildx
         id: buildx
@@ -87,19 +97,19 @@ jobs:
         with:
           driver-opts: network=host
 
-      # https://github.com/docker/build-push-action
-      - name: Build Docker image and push
-        id: docker
+      - name: Build prod image and push to AWS ECR
         uses: docker/build-push-action@v3
         env:
-          REGISTRY: "${{ steps.login-ecr.outputs.registry }}/"
+          REGISTRY: "${{ env.ECR_REGISTRY }}/"
         with:
+          file: ${{ env.DOCKER_FILE }}
+          target: prod
           context: .
           builder: ${{ steps.buildx.outputs.name }}
-          file: ./deploy/debian.Dockerfile
-          push: true
-          cache-from: type=registry,ref=${{ env.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:cache
+          push: false
+          cache-from: type=registry,ref=${{env.ECR_REGISTRY}}/${{env.IMAGE_NAME}}:cache
           cache-to: type=inline,mode=max
           tags: |
-            ${{ steps.login-ecr.outputs.registry }}/${{ env.IMAGE_NAME }}:latest
-            ${{ steps.login-ecr.outputs.registry }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+            ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.BRANCH }}-${{ env.GITHUB_SHA_SHORT }}
