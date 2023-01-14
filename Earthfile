@@ -20,7 +20,7 @@ ARG DEBIAN_VERSION=bullseye-slim
 # Docker registry for internal images, e.g. 123.dkr.ecr.ap-northeast-1.amazonaws.com/
 # If blank, docker.io will be used. If specified, should have a trailing slash.
 ARG REGISTRY=""
-# Registry for public base images, e.g. debian or alpine.
+# Registry for public images, e.g. debian, alpine, or postgres.
 # Public images may be mirrored into the private registry, with e.g. Skopeo
 ARG PUBLIC_REGISTRY=$REGISTRY
 
