@@ -1,4 +1,5 @@
 ---
+# Call CodeBuild as a runner to build Arm-CPU image
 name: CI Arm
 on: push
 jobs:
@@ -16,10 +17,10 @@ jobs:
       # - name: Dump event
       #   run: cat "$GITHUB_EVENT_PATH"
 
-      # https://github.com/aws-actions/configure-aws-credentials
-      # https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1-node16
+        # https://github.com/aws-actions/configure-aws-credentials
+        # https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
         with:
           role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ env.AWS_REGION }}
