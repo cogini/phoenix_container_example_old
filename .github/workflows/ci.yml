@@ -149,7 +149,7 @@ jobs:
           REGISTRY: localhost:5000/
         run: docker compose run test mix dialyzer --no-check --halt-exit-status --format github
 
-      - name: Build deploy image and push
+      - name: Build prod image and push
         if: github.event_name != 'pull_request'
         id: docker-push
         uses: docker/build-push-action@v3
@@ -168,7 +168,7 @@ jobs:
             ${{ steps.login-ecr.outputs.registry }}/${{ env.IMAGE_NAME }}:latest
             ${{ steps.login-ecr.outputs.registry }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
 
-      - name: Build deploy image and push
+      - name: Build prod image and push
         if: github.event_name == 'pull_request'
         uses: docker/build-push-action@v3
         with:
