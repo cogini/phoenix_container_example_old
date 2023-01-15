@@ -20,6 +20,7 @@ env:
   # Tag for release images
   # IMAGE_TAG: ${{ (github.ref == 'refs/heads/main' && 'staging') || (github.ref == 'refs/heads/qa' && 'qa') }}
   IMAGE_TAG: latest
+  PROD_OS: debian
   # Registry for dev and test images
   REGISTRY: ghcr.io/
   # Registry for public images, default is docker.io
@@ -42,6 +43,13 @@ jobs:
       packages: write
       # Cancel previous runs
       actions: write
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [debian, alpine]
+    env:
+      DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
+      OS: ${{ matrix.os }}
     steps:
       - name: Dump event
         run: cat "$GITHUB_EVENT_PATH"
@@ -127,7 +135,7 @@ jobs:
           cache-to: type=gha,scope=${{ github.workflow }}-test,mode=max
           # ssh: default
           tags: |
-            ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:test${{github.sha}}
+            ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:test${{ matrix.os }}${{ github.sha }}
           # secrets: |
           #   "access_token=${{ secrets.DEVOPS_ACCESS_TOKEN }}"
           #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
@@ -147,6 +155,18 @@ jobs:
       pull-requests: write
       issues: read
     needs: [build-test]
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [debian, alpine]
+    env:
+      DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
+      OS: ${{ matrix.os }}
+    # strategy:
+    #   fail-fast: false
+    #   matrix:
+    #     ci_node_total: [5]
+    #     ci_node_index: [1, 2, 3, 4, 5]
     steps:
       - name: Log in to GHCR
         uses: docker/login-action@v2
@@ -201,6 +221,7 @@ jobs:
       - name: Run tests
         # run: docker compose run test mix test --cover
         run: docker compose run test mix test
+        # run: docker compose run test env MIX_TEST_PARTITION=${{ matrix.ci_node_index }} mix test --partitions ${{ matrix.ci_node_total }}
 
       - name: Run quality checks
         run: docker compose run test mix do format --check-formatted, deps.unlock --check-unused, credo, hex.audit, deps.audit, sobelow
@@ -236,6 +257,13 @@ jobs:
       checks: write
       pull-requests: write
       issues: read
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [debian, alpine]
+    env:
+      DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
+      OS: ${{ matrix.os }}
     steps:
       - name: Log in to GHCR
         uses: docker/login-action@v2
@@ -279,9 +307,6 @@ jobs:
 
       - name: Checkout source
         uses: actions/checkout@v3
-
-      - name: Pull test
-        run: docker compose pull --quiet test
 
       - name: Scan code with trivy
         uses: aquasecurity/trivy-action@master
@@ -335,6 +360,13 @@ jobs:
       checks: write
       pull-requests: write
       issues: read
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [debian, alpine]
+    env:
+      DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
+      OS: ${{ matrix.os }}
     steps:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1-node16
@@ -416,6 +448,7 @@ jobs:
           tags: |
             ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
             ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.BRANCH }}-${{ env.GITHUB_SHA_SHORT }}
+            ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.OS }}${{ github.sha }}
           # secrets: |
           #   "access_token=${{ secrets.DEVOPS_ACCESS_TOKEN }}"
           #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
@@ -462,6 +495,13 @@ jobs:
 
       # Upload SARIF report files
       security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [debian, alpine]
+    env:
+      DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
+      OS: ${{ matrix.os }}
     steps:
       - name: Log in to GHCR
         uses: docker/login-action@v2
@@ -471,14 +511,14 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Pull image
-        run: docker pull ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{github.sha}}
+        run: docker pull ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{ env.OS }}${{github.sha}}
 
       - name: Scan image with Trivy
         uses: aquasecurity/trivy-action@master
         # https://github.com/aquasecurity/trivy-action
         # https://github.com/marketplace/actions/aqua-security-trivy#inputs
         with:
-          image-ref: ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{github.sha}}
+          image-ref: ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{ env.OS }}${{github.sha}}
           # exit-code: '1' # fail build
           # ignore-unfixed: true
           # vuln-type: 'os,library'
@@ -503,7 +543,7 @@ jobs:
         # https://github.com/marketplace/actions/anchore-container-scan
         id: scan-grype
         with:
-          image: ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{github.sha}}
+          image: ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{ env.OS }}${{github.sha}}
           # severity-cutoff: critical
           fail-build: false
           output-format: table
@@ -563,7 +603,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Tag GHCR release as latest
-        run: docker buildx imagetools create --append ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{github.sha}} --tag ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{env.IMAGE_TAG}}
+        run: docker buildx imagetools create --append ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{env.PROD_OS}}${{github.sha}} --tag ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{env.IMAGE_TAG}}
 
       - name: Check out source
         uses: actions/checkout@v3

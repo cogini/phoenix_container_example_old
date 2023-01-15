@@ -3,7 +3,7 @@ version: "3.9"
 services:
   # Image used to run tests
   test:
-    image: "${REGISTRY:-docker.io/}${IMAGE_OWNER}/${IMAGE_NAME}:test${GITHUB_SHA}"
+    image: "${REGISTRY:-docker.io/}${IMAGE_OWNER}/${IMAGE_NAME}:test${OS}${GITHUB_SHA}"
     build:
       dockerfile: ${DOCKER_FILE:-deploy/debian.Dockerfile}
       target: test-image
@@ -29,7 +29,7 @@ services:
 
   # Final image that is deployed
   prod:
-    image: "${REGISTRY:-docker.io/}${IMAGE_OWNER}/${IMAGE_NAME}:${GITHUB_SHA:-latest}"
+    image: "${REGISTRY:-docker.io/}${IMAGE_OWNER}/${IMAGE_NAME}:${OS}${GITHUB_SHA:-latest}"
     build:
       dockerfile: ${DOCKER_FILE:-deploy/debian.Dockerfile}
       target: prod
