@@ -17,8 +17,8 @@ ARG ALPINE_VERSION=3.15.4
 ARG APK_UPDATE=":"
 ARG APK_UPGRADE=":"
 
-# If a vulnerability is fixed in packages but not yet released in an Alpine base image,
-# then we can run update/upgrade as part of the build.
+# If a vulnerability is fixed in packages but not yet released in an Alpine
+# base image, then we can run update/upgrade as part of the build.
 # ARG APK_UPDATE="apk update"
 # ARG APK_UPGRADE="apk upgrade --update-cache -a"
 
@@ -95,7 +95,7 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         apk add --no-progress nodejs npm && \
         # Get private repos
         apk add --no-progress openssh && \
-        # Tools and libraries to build binary libraries
+        # Build binary libraries
         # apk add --no-progress alpine-sdk && \
         apk add --no-progress git build-base
 
