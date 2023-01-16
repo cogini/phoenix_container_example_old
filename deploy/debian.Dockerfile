@@ -266,10 +266,6 @@ FROM build-os-deps AS build-deps-get
             mix deps.get; \
         fi
 
-    # RUN yarn global add newman
-    # RUN yarn global add newman-reporter-junitfull
-    # RUN yarn global add snyk
-
 # Create base image for tests
 FROM build-deps-get AS test-image
     ARG APP_DIR
@@ -306,6 +302,9 @@ FROM build-deps-get AS test-image
     # For umbrella, using `mix cmd` ensures each app is compiled in
     # isolation https://github.com/elixir-lang/elixir/issues/9407
     # RUN mix cmd mix compile --warnings-as-errors
+
+    # RUN yarn global add newman
+    # RUN yarn global add newman-reporter-junitfull
 
     # COPY Postman ./Postman
 
