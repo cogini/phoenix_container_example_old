@@ -1,8 +1,6 @@
 # Build app
 # Deploy using Alpine
 
-# ARG ELIXIR_VERSION=1.13.4
-# ARG ELIXIR_VERSION=1.14.1
 ARG ELIXIR_VERSION=1.14.2
 
 # ARG OTP_VERSION=23.3.4
@@ -152,10 +150,6 @@ FROM build-os-deps AS build-deps-get
         else \
             mix deps.get; \
         fi
-
-    # RUN yarn global add newman
-    # RUN yarn global add newman-reporter-junitfull
-    # RUN yarn global add snyk
 
 # Create base image for tests
 FROM build-deps-get AS test-image
