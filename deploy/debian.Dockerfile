@@ -15,7 +15,6 @@ ARG ELIXIR_DEBIAN_VERSION=bullseye-20221004-slim
 ARG DEBIAN_VERSION=bullseye-slim
 
 # Use snapshot for consistent dependencies, see https://snapshot.debian.org/
-# Needs to be updated manually
 ARG DEBIAN_SNAPSHOT=20221219
 
 ARG NODE_VERSION=16.14.1
@@ -94,7 +93,7 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
 
     # Configure apt caching for use with BuildKit.
     # The default Debian Docker image has special apt config to clear caches,
-    # but if we are using --mount=type=cache, then we want it.
+    # but if we are using --mount=type=cache, then we want to keep the files.
     # https://github.com/debuerreotype/debuerreotype/blob/master/scripts/debuerreotype-minimizing-config
     RUN set -exu && \
         rm -f /etc/apt/apt.conf.d/docker-clean && \
@@ -492,6 +491,7 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
     ARG MIX_ENV
     ARG RELEASE
 
+    # Copy just the locale file needed
     # COPY --from=prod-install /usr/lib/locale/C.UTF-8 /usr/lib/locale/C.UTF-8
 
     # Set environment vars used by the app, e.g. SECRET_KEY_BASE, DATABASE_URL.
