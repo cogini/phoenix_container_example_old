@@ -676,6 +676,7 @@ FROM build-os-deps AS dev
     # Set environment vars used by the app
     ENV LANG=$LANG \
         HOME=$APP_DIR \
+        MIX_ENV=$MIX_ENV \
         PORT=$APP_PORT \
         PHX_SERVER=true
 
