@@ -1,10 +1,11 @@
 # Docker registry for internal images, e.g. 123.dkr.ecr.ap-northeast-1.amazonaws.com/
 # If blank, docker.io will be used. If specified, should have a trailing slash.
 ARG REGISTRY=""
-# Registry for public base images, e.g. debian or alpine.
+# Registry for public images, e.g. debian, alpine, or postgres.
 # Public images may be mirrored into the private registry, with e.g. Skopeo
 ARG PUBLIC_REGISTRY=$REGISTRY
 
+# Base for final prod image
 # https://github.com/GoogleContainerTools/distroless/blob/main/base/README.md
 ARG DEPLOY_IMAGE_NAME=gcr.io/distroless/base-debian11
 # ARG DEPLOY_IMAGE_TAG=debug-nonroot
@@ -12,6 +13,7 @@ ARG DEPLOY_IMAGE_NAME=gcr.io/distroless/base-debian11
 # debug includes busybox
 ARG DEPLOY_IMAGE_TAG=debug
 
+# Intermediate image for files copied to prod
 ARG INSTALL_IMAGE_NAME=${PUBLIC_REGISTRY}debian
 ARG INSTALL_IMAGE_TAG=bullseye-slim
 
@@ -19,7 +21,7 @@ ARG LANG=C.UTF-8
 
 ARG LINUX_ARCH=aarch64
 
-# Staging image for binaries which are copied into final deploy image
+# Create staging image for files which are copied into final prod image
 FROM ${INSTALL_IMAGE_NAME}:${INSTALL_IMAGE_TAG} AS deploy-install
     # Configure apt caching for use with BuildKit
     # RUN set -exu && \
@@ -27,6 +29,9 @@ FROM ${INSTALL_IMAGE_NAME}:${INSTALL_IMAGE_TAG} AS deploy-install
     #     echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache && \
     #     echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression
 
+    # Configure apt caching for use with BuildKit.
+    # The default Debian Docker image has special config to clear caches.
+    # If we are using --mount=type=cache, then we want it to preserve cached files.
     RUN set -exu && \
         apt-get update -qq && \
         DEBIAN_FRONTEND=noninteractive \
@@ -41,7 +46,6 @@ FROM ${INSTALL_IMAGE_NAME}:${INSTALL_IMAGE_TAG} AS deploy-install
             lsb-release \
             busybox-static \
             locales \
-
             # Needed by Erlang VM
             libtinfo6 \
             && \
@@ -60,6 +64,7 @@ FROM ${INSTALL_IMAGE_NAME}:${INSTALL_IMAGE_TAG} AS deploy-install
 
     # Install AWS CLI v2 from binary package
     # https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html
+    # https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2-linux.html
     # RUN set -ex && \
     #     curl -sSfL "https://awscli.amazonaws.com/awscli-exe-linux-$(uname -m)-${AWS_CLI_VERSION}.zip" -o "awscliv2.zip" && \
     #     unzip -q awscliv2.zip && \
@@ -67,7 +72,7 @@ FROM ${INSTALL_IMAGE_NAME}:${INSTALL_IMAGE_TAG} AS deploy-install
     #     rm -rf ./aws && \
     #     rm awscliv2.zip
 
-# Create base image for deploy, with everything but the code release
+# Create base image for prod with everything but the code release
 FROM ${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG} AS deploy-base
     ARG LANG
     ARG LINUX_ARCH

@@ -386,7 +386,7 @@ FROM build-deps-get AS prod-release
     COPY rel ./rel
     RUN mix release "$RELEASE"
 
-# Create staging image for binaries which are copied into final prod image
+# Create staging image for files which are copied into final prod image
 FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
     ARG DEBIAN_SNAPSHOT
     # ARG AWS_CLI_VERSION
