@@ -1,33 +1,30 @@
 # Build app
 # Deploy using distroless image
-# https://github.com/GoogleContainerTools/distroless
+# See https://github.com/GoogleContainerTools/distroless
 
-ARG ELIXIR_VERSION=1.13.4
-# ARG OTP_VERSION=24.2
+ARG ELIXIR_VERSION=1.14.2
 # ARG OTP_VERSION=24.3.4.2
-ARG OTP_VERSION=25.0.3
-ARG NODE_VERSION=16.14.1
-# ARG NODE_VERSION=lts
-
-ARG AWS_CLI_VERSION=2.0.61
+ARG OTP_VERSION=25.2
 
 # ARG ELIXIR_DEBIAN_VERSION=buster-20210208
-ARG ELIXIR_DEBIAN_VERSION=bullseye-20210902-slim
+# ARG ELIXIR_DEBIAN_VERSION=bullseye-20210902-slim
+ARG ELIXIR_DEBIAN_VERSION=bullseye-20221004-slim
 
 # https://docker.debian.net/
 # https://hub.docker.com/_/debian
 # ARG DEBIAN_VERSION=buster-slim
 ARG DEBIAN_VERSION=bullseye-slim
 
-# Use snapshot for consistent dependencies
-# Need to be updated manually
-# See https://snapshot.debian.org/
-# ARG DEBIAN_SNAPSHOT=20220601
-#
-# RUN set -exu && \
-#     echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/$DEBIAN_SNAPSHOT bullseye main" > /etc/apt/sources.list && \
-#     echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/$DEBIAN_SNAPSHOT bullseye-security main" >> /etc/apt/sources.list && \
-#     echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/$DEBIAN_SNAPSHOT bullseye-updates main" >> /etc/apt/sources.list
+# Use snapshot for consistent dependencies, see https://snapshot.debian.org/
+ARG DEBIAN_SNAPSHOT=20221219
+
+# ARG LINUX_ARCH=aarch64
+ARG LINUX_ARCH=x86_64
+
+ARG NODE_VERSION=16.14.1
+# ARG NODE_VERSION=lts
+
+ARG AWS_CLI_VERSION=2.0.61
 
 # Docker registry for internal images, e.g. 123.dkr.ecr.ap-northeast-1.amazonaws.com/
 # If blank, docker.io will be used. If specified, should have a trailing slash.
@@ -36,18 +33,20 @@ ARG REGISTRY=""
 # Public images may be mirrored into the private registry, with e.g. Skopeo
 ARG PUBLIC_REGISTRY=$REGISTRY
 
-ARG BUILD_IMAGE_NAME=${PUBLIC_REGISTRY}hexpm/elixir
-ARG BUILD_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-${ELIXIR_DEBIAN_VERSION}
+ARG BUILD_BASE_IMAGE_NAME=${PUBLIC_REGISTRY}hexpm/elixir
+ARG BUILD_BASE_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-${ELIXIR_DEBIAN_VERSION}
 
+# Base for final prod image
 # https://github.com/GoogleContainerTools/distroless/blob/main/base/README.md
-ARG DEPLOY_IMAGE_NAME=gcr.io/distroless/base-debian11
-# ARG DEPLOY_IMAGE_TAG=debug-nonroot
-# ARG DEPLOY_IMAGE_TAG=latest
-# debug includes busybox
-ARG DEPLOY_IMAGE_TAG=debug
+ARG PROD_BASE_IMAGE_NAME=gcr.io/distroless/base-debian11
+# ARG PROD_BASE_IMAGE_TAG=debug-nonroot
+# ARG PROD_BASE_IMAGE_TAG=latest
+# debug includes busybox, which we need to run Erlang startup scripts
+ARG PROD_BASE_IMAGE_TAG=debug
 
-ARG INSTALL_IMAGE_NAME=${PUBLIC_REGISTRY}debian
-ARG INSTALL_IMAGE_TAG=bullseye-slim
+# Intermediate image for files copied to prod
+ARG INSTALL_BASE_IMAGE_NAME=${PUBLIC_REGISTRY}debian
+ARG INSTALL_BASE_IMAGE_TAG=bullseye-slim
 
 # App name, used to name directories
 ARG APP_NAME=app
@@ -67,40 +66,32 @@ ARG APP_GROUP_ID=$APP_USER_ID
 
 ARG LANG=C.UTF-8
 
-# Trivy vulnerability scanner
-# Fail for issues of severity = HIGH
-# ARG TRIVY_OPTS="--exit-code 1 --severity HIGH"
-# Fail for issues of severity = CRITICAL
-ARG TRIVY_OPTS="--exit-code 1 --severity CRITICAL"
-# Fail for any issues
-# ARG TRIVY_OPTS="-d --exit-code 1"
-
 # Elixir release env to build
 ARG MIX_ENV=prod
 
 # Name of Elixir release
+# This should match mix.exs releases()
 ARG RELEASE=prod
-# This should match mix.exs, e.g.
-# defp releases do
-#   [
-#     prod: [
-#       include_executables_for: [:unix],
-#     ],
-#   ]
-# end
 
 # App listen port
 ARG APP_PORT=4000
 
+# Allow additional packages to be injected into builds
+ARG RUNTIME_PACKAGES=""
+ARG DEV_PACKAGES=""
+
 # Create build base image with OS dependencies
-FROM ${BUILD_IMAGE_NAME}:${BUILD_IMAGE_TAG} AS build-os-deps
+FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
+    ARG DEBIAN_SNAPSHOT
+    ARG RUNTIME_PACKAGES
+
     ARG LANG
     ENV LANG=$LANG
 
-    ARG APP_USER
     ARG APP_GROUP
-    ARG APP_USER_ID
     ARG APP_GROUP_ID
+    ARG APP_USER
+    ARG APP_USER_ID
 
     # Create OS user and group to run app under
     RUN if ! grep -q "$APP_USER" /etc/passwd; \
@@ -110,12 +101,25 @@ FROM ${BUILD_IMAGE_NAME}:${BUILD_IMAGE_TAG} AS build-os-deps
 
     # Configure apt caching for use with BuildKit.
     # The default Debian Docker image has special apt config to clear caches,
-    # but if we are using --mount=type=cache, then we want it.
+    # but if we are using --mount=type=cache, then we want to keep the files.
     # https://github.com/debuerreotype/debuerreotype/blob/master/scripts/debuerreotype-minimizing-config
     RUN set -exu && \
         rm -f /etc/apt/apt.conf.d/docker-clean && \
         echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache && \
         echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression
+
+    RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
+        --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
+        --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
+        set -exu && \
+        apt-get update -qq && \
+        DEBIAN_FRONTEND=noninteractive \
+        apt-get -y install -y -qq --no-install-recommends ca-certificates
+
+    RUN set -exu && \
+        echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT} bullseye main" > /etc/apt/sources.list && \
+        echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/${DEBIAN_SNAPSHOT} bullseye-security main" >> /etc/apt/sources.list && \
+        echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT} bullseye-updates main" >> /etc/apt/sources.list
 
     # Install tools and libraries to build binary libraries
     RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
@@ -137,6 +141,7 @@ FROM ${BUILD_IMAGE_NAME}:${BUILD_IMAGE_TAG} AS build-os-deps
             jq \
             # software-properties-common \
             lsb-release \
+            openssh-client \
             # Support ssl in container, as opposed to load balancer
             openssl \
             # Install default nodejs
@@ -144,15 +149,33 @@ FROM ${BUILD_IMAGE_NAME}:${BUILD_IMAGE_TAG} AS build-os-deps
             # Install default Postgres
             # libpq-dev \
             # postgresql-client \
-            && \
+            # $RUNTIME_PACKAGES \
+        && \
+        # Install yarn
+        curl -sL --ciphers ECDHE-RSA-AES128-GCM-SHA256 https://dl.yarnpkg.com/debian/pubkey.gpg -o /etc/apt/trusted.gpg.d/yarn.asc && \
+        echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list && \
+        printf "Package: *\nPin: release o=dl.yarnpkg.com\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/yarn.pref && \
+        # Install Trivy
+        # curl -sL https://aquasecurity.github.io/trivy-repo/deb/public.key -o /etc/apt/trusted.gpg.d/trivy.asc && \
+        # printf "deb https://aquasecurity.github.io/trivy-repo/deb %s main" "$(lsb_release -sc)" | tee -a /etc/apt/sources.list.d/trivy.list && \
+        apt-get update -qq && \
+        apt-get -y install -y -qq --no-install-recommends yarn && \
+        # apt-get -y install -y -qq --no-install-recommends trivy && \
+        # curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin && \
         # Install node using n
         # curl -L https://raw.githubusercontent.com/tj/n/master/bin/n -o /usr/local/bin/n && \
         # chmod +x /usr/local/bin/n && \
-        # # Install lts version
+        # # Install lts version of node
         # # n lts && \
-        # # Install specific version
+        # # Install specific version of node
         # n "$NODE_VERSION" && \
         # rm /usr/local/bin/n && \
+        # Install yarn from repo
+        # curl -sL https://dl.yarnpkg.com/debian/pubkey.gpg -o /etc/apt/trusted.gpg.d/yarn.asc && \
+        # echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list && \
+        # echo "Package: *\nPin: release o=dl.yarnpkg.com\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/yarn.pref && \
+        # apt-get update -qq && \
+        # apt-get -y install -y -qq --no-install-recommends yarn && \
         # Install latest Postgres from postgres.org repo
         # curl -sL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /etc/apt/trusted.gpg.d/postgresql-ACCC4CF8.asc && \
         # echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -sc)-pgdg main" | tee /etc/apt/sources.list.d/pgdg.list && \
@@ -220,9 +243,36 @@ FROM build-os-deps AS build-deps-get
     COPY mix.exs .
     COPY mix.lock .
 
-    RUN mix do local.rebar --force, local.hex --force
-    RUN mix deps.get
-    RUN mix esbuild.install
+    # COPY .env.default ./
+
+    RUN mix 'do' local.rebar --force, local.hex --force
+
+    # Add private repo for Oban
+    RUN --mount=type=secret,id=oban_license_key \
+        --mount=type=secret,id=oban_key_fingerprint \
+        if test -s /run/secrets/oban_license_key; then \
+            mix hex.repo add oban https://getoban.pro/repo \
+                --fetch-public-key "$(cat /run/secrets/oban_key_fingerprint)" \
+                --auth-key "$(cat /run/secrets/oban_license_key)"; \
+        fi
+
+    # Run deps.get with optional authentication to access private repos
+    RUN --mount=type=ssh \
+        --mount=type=secret,id=access_token \
+        # Access private repos using ssh identity
+        # https://docs.docker.com/engine/reference/commandline/buildx_build/#ssh
+        # https://stackoverflow.com/questions/73263731/dockerfile-run-mount-type-ssh-doesnt-seem-to-work
+        # Copying a predefined known_hosts file would be more secure, but would need to be maintained
+        if test -n "$SSH_AUTH_SOCK"; then \
+            mkdir -p /etc/ssh && \
+            ssh-keyscan github.com > /etc/ssh/ssh_known_hosts && \
+            mix deps.get; \
+        # Access private repos using access token
+        elif test -s /run/secrets/access_token; then \
+            GIT_ASKPASS=/run/secrets/access_token mix deps.get; \
+        else \
+            mix deps.get; \
+        fi
 
 # Create base image for tests
 FROM build-deps-get AS test-image
@@ -232,14 +282,18 @@ FROM build-deps-get AS test-image
 
     WORKDIR $APP_DIR
 
+    # COPY .env.test .
+
     # Compile deps separately from app, improving Docker caching
-    # RUN mix do local.rebar --force, local.hex --force
     RUN mix deps.compile
 
-    # COPY coveralls.json ./
-    # COPY .credo.exs ./
-    COPY .formatter.exs ./
-    # COPY dialyzer-ignore ./
+    RUN mix esbuild.install --if-missing
+
+    RUN mix dialyzer --plt
+
+    # Use glob pattern to deal with files which may not exist
+    # Must have at least one existing file
+    COPY .formatter.exs coveralls.jso[n] .credo.ex[s] dialyzer-ignor[e] trivy.yam[l] ./
 
     # Non-umbrella
     COPY lib ./lib
@@ -255,31 +309,39 @@ FROM build-deps-get AS test-image
 
     # For umbrella, using `mix cmd` ensures each app is compiled in
     # isolation https://github.com/elixir-lang/elixir/issues/9407
-    #     mix cmd mix compile --warnings-as-errors
+    # RUN mix cmd mix compile --warnings-as-errors
+
+    # RUN yarn global add newman
+    # RUN yarn global add newman-reporter-junitfull
+
+    # COPY Postman ./Postman
 
 # Create Elixir release
-FROM build-deps-get AS deploy-release
+FROM build-deps-get AS prod-release
     ARG APP_DIR
     ARG RELEASE
-
-    ENV MIX_ENV=prod
+    ARG MIX_ENV=prod
 
     WORKDIR $APP_DIR
 
+    # COPY .env.prod .
+
     # This does a partial compile.
-    # Doing "mix do compile, assets.deploy" in a single stage is worse
+    # Doing "mix 'do' compile, assets.deploy" in a single stage is worse
     # because a single line of code changed causes a complete recompile.
     # With the stages separated most of the compilation is cached.
 
     # Compile deps separately from application for better caching
     RUN mix deps.compile
 
+    RUN mix esbuild.install --if-missing
+
     # Compile assets the old way
-    # WORKDIR /app/assets
+    # WORKDIR "${APP_DIR}/assets"
     #
-    # COPY assets/package.json assets/package-lock.json ./
+    # COPY assets/package.json ./
+    # COPY assets/package-lock.json ./
     #
-    # # Cache npm cache directory as type=cache
     # RUN --mount=type=cache,target=~/.npm,sharing=locked \
     #     npm --prefer-offline --no-audit --progress=false --loglevel=error ci
     #
@@ -290,14 +352,31 @@ FROM build-deps-get AS deploy-release
     #
     # Generate assets the really old way
     # RUN --mount=type=cache,target=~/.npm,sharing=locked \
-    #   npm install && \
-    #   node node_modules/webpack/bin/webpack.js --mode production
+    #     npm install && \
+    #     node node_modules/webpack/bin/webpack.js --mode production
 
-    # Build JS and CS with esbuild
+    # Install JavaScript deps using yarn
+    # COPY assets/package.json assets/package.json
+    # COPY assets/yarn.lock assets/yarn.lock
+    # RUN yarn --cwd ./assets install --prod
+
+    # Compile assets with esbuild
     COPY assets ./assets
     COPY priv ./priv
 
+    # Install JavaScript deps using npm
+    # WORKDIR "${APP_DIR}/assets"
+    # COPY assets/package.json ./
+    # COPY assets/package-lock.json ./
+    # # COPY assets/tailwind.config.js ./
+    #
+    # RUN npm install
+    #
+    # WORKDIR $APP_DIR
+
     RUN mix assets.deploy
+    # RUN esbuild default --minify
+    # RUN mix phx.digest
 
     # Non-umbrella
     COPY lib ./lib
@@ -305,14 +384,19 @@ FROM build-deps-get AS deploy-release
     # Umbrella
     # COPY apps ./apps
 
+    # For umbrella, using `mix cmd` ensures each app is compiled in
+    # isolation https://github.com/elixir-lang/elixir/issues/9407
+    # RUN mix cmd mix compile --warnings-as-errors
+
     RUN mix compile --warnings-as-errors
 
     # Build release
     COPY rel ./rel
     RUN mix release "$RELEASE"
 
-# Create staging image for binaries which are copied into final deploy image
-FROM ${INSTALL_IMAGE_NAME}:${INSTALL_IMAGE_TAG} AS deploy-install
+# Create staging image for files which are copied into final prod image
+FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
+    ARG DEBIAN_SNAPSHOT
     # ARG AWS_CLI_VERSION
 
     # Configure apt caching for use with BuildKit.
@@ -322,6 +406,19 @@ FROM ${INSTALL_IMAGE_NAME}:${INSTALL_IMAGE_TAG} AS deploy-install
         rm -f /etc/apt/apt.conf.d/docker-clean && \
         echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache && \
         echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression
+
+    RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
+        --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
+        --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
+        set -exu && \
+        apt-get update -qq && \
+        DEBIAN_FRONTEND=noninteractive \
+        apt-get -y install -y -qq --no-install-recommends ca-certificates
+
+    RUN set -exu && \
+        echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT} bullseye main" > /etc/apt/sources.list && \
+        echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/${DEBIAN_SNAPSHOT} bullseye-security main" >> /etc/apt/sources.list && \
+        echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT} bullseye-updates main" >> /etc/apt/sources.list
 
     RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
@@ -342,13 +439,13 @@ FROM ${INSTALL_IMAGE_NAME}:${INSTALL_IMAGE_TAG} AS deploy-install
             locales \
             # Needed by Erlang VM
             libtinfo6 \
-            debootstrap \
-            schroot \
-            && \
-        curl -sL https://aquasecurity.github.io/trivy-repo/deb/public.key -o /etc/apt/trusted.gpg.d/trivy.asc && \
-        printf "deb https://aquasecurity.github.io/trivy-repo/deb %s main" "$(lsb_release -sc)" | tee -a /etc/apt/sources.list.d/trivy.list && \
-        apt-get update -qq && \
-        apt-get -y install -y -qq --no-install-recommends trivy && \
+            # debootstrap \
+            # schroot \
+        && \
+        # curl -sL https://aquasecurity.github.io/trivy-repo/deb/public.key -o /etc/apt/trusted.gpg.d/trivy.asc && \
+        # printf "deb https://aquasecurity.github.io/trivy-repo/deb %s main" "$(lsb_release -sc)" | tee -a /etc/apt/sources.list.d/trivy.list && \
+        # apt-get update -qq && \
+        # apt-get -y install -y -qq --no-install-recommends trivy && \
         # curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin && \
         # Generate locales specified in /etc/locale.gen
         locale-gen && \
@@ -375,6 +472,8 @@ FROM ${INSTALL_IMAGE_NAME}:${INSTALL_IMAGE_TAG} AS deploy-install
         truncate -s 0 /var/log/apt/* && \
         truncate -s 0 /var/log/dpkg.log
 
+    RUN ls -l /lib
+
     # If LANG=C.UTF-8 is not enough, build full featured locale
     # RUN localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
     # ENV LANG en_US.utf8
@@ -389,117 +488,36 @@ FROM ${INSTALL_IMAGE_NAME}:${INSTALL_IMAGE_TAG} AS deploy-install
     #     rm -rf ./aws && \
     #     rm awscliv2.zip
 
-# Create base image for deploy, with everything but the code release
-FROM ${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG} AS deploy-base
+# Create base image for prod with everything but the code release
+FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
     ARG LANG
-    ARG APP_USER
-    ARG APP_GROUP
-    ARG APP_USER_ID
-    ARG APP_GROUP_ID
+    ARG LINUX_ARCH
 
-    ARG MIX_ENV=prod
-    ARG RELEASE
-
-    # COPY --from=deploy-install /usr/lib/locale/C.UTF-8 /usr/lib/locale/C.UTF-8
+    ARG APP_DIR
 
     ENV LANG=$LANG
 
-    # Create OS user and group to run app under
-    RUN if ! grep -q "$APP_USER" /etc/passwd; \
-        then groupadd -g "$APP_GROUP_ID" "$APP_GROUP" && \
-        useradd -l -u "$APP_USER_ID" -g "$APP_GROUP" -s /usr/sbin/nologin "$APP_USER" && \
-        rm /var/log/lastlog && rm /var/log/faillog; fi
+    # SHLVL=1
+    # SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+    # PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/busybox
 
-    # Configure apt caching for use with BuildKit.
-    # The default Debian Docker image has special config to clear caches.
-    # If we are using --mount=type=cache, then we want it to preserve cached files.
-    RUN set -exu && \
-        rm -f /etc/apt/apt.conf.d/docker-clean && \
-        echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache && \
-        echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression
+    RUN ["/busybox/sh", "-c", "ln -s /busybox/sh /bin/sh"]
 
-    # If LANG=C.UTF-8 is not enough, build full featured locale
-    # RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
-    #     --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
-    #     set -exu && \
-    #       apt-get update -qq && \
-    #       DEBIAN_FRONTEND=noninteractive \
-    #       apt-get -y install -y -qq --no-install-recommends locales && \
-    #       localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8 \
-    #
-    # ENV LANG en_US.utf8
+    COPY --from=prod-install /usr/lib/locale/${LANG} /usr/lib/locale/
 
-    RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
-        --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
-        --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
-        set -exu && \
-        apt-get update -qq && \
-        DEBIAN_FRONTEND=noninteractive \
-        apt-get -y install -y -qq --no-install-recommends \
-            # Enable installation of packages over https
-            # apt-transport-https \
-            # Enable the app to make outbound SSL calls.
-            ca-certificates \
-            # Allow app to listen on HTTPS. May not be needed if handled
-            # outside the application, e.g. in load balancer.
-            openssl \
-            # tini is a minimal init which will reap zombie processes
-            # https://github.com/krallin/tini
-            # tini \
-            # bind-utils \
-            # Needed by Erlang VM
-            libtinfo6 \
-            && \
-        # Remove packages installed temporarily. Removes everything related to
-        # packages, including the configuration files, and packages
-        # automatically installed because a package required them but, with the
-        # other packages removed, are no longer needed.
-        # apt-get purge -y --auto-remove curl && \
-        # https://www.networkworld.com/article/3453032/cleaning-up-with-apt-get.html
-        # https://manpages.ubuntu.com/manpages/jammy/man8/apt-get.8.html
-        # Delete local repository of retrieved package files in /var/cache/apt/archives
-        # This is handled automatically by /etc/apt/apt.conf.d/docker-clean
-        # Use this if not running --mount=type=cache.
-        # apt-get clean && \
-        # Delete info on installed packages. This saves some space, but it can
-        # be useful to have them as a record of what was installed, e.g. for auditing.
-        # rm -rf /var/lib/dpkg && \
-        # Delete debconf data files to save some space
-        # rm -rf /var/cache/debconf && \
-        # Delete index of available files from apt-get update
-        # Use this if not running --mount=type=cache.
-        # rm -rf /var/lib/apt/lists/*
-        # Clear logs of installed packages
-        truncate -s 0 /var/log/apt/* && \
-        truncate -s 0 /var/log/dpkg.log
+    # For Erlang runtime
+    COPY --from=prod-install /lib/${LINUX_ARCH}-linux-gnu/libtinfo.so.6.2 /lib/${LINUX_ARCH}-linux-gnu/
+    RUN ln -s /lib/${LINUX_ARCH}-linux-gnu/libtinfo.so.6.2 /lib/${LINUX_ARCH}-linux-gnu/libtinfo.so.6
 
-# Create deploy image with vulnerability scanners
-FROM deploy-base AS deploy-scan
-    ARG TRIVY_OPTS
-    COPY --from=deploy-install /usr/local/bin/trivy /usr/local/bin/trivy
-    COPY --from=deploy-install /usr/local/share/trivy/templates /usr/local/share/trivy/templates
-    # COPY --from=deploy-install /usr/local/bin/grype /usr/local/bin/grype
-
-    RUN set -exu && \
-        mkdir -p /sarif-reports && \
-        # Succeed for issues of severity = HIGH
-        # trivy filesystem $TRIVY_OPTS --format sarif -o /sarif-reports/trivy.high.sarif --exit-code 0 --severity HIGH --no-progress / && \
-        trivy filesystem $TRIVY_OPTS --exit-code 0 --severity HIGH --no-progress / && \
-        # Fail for issues of severity = CRITICAL
-        # trivy filesystem $TRIVY_OPTS --format sarif -o /sarif-reports/trivy.sarif --exit-code 1 --severity CRITICAL --no-progress /
-        # Fail for any issues
-        # trivy filesystem -d --exit-code 1 --no-progress /
-        trivy filesystem --format sarif -o /sarif-reports/trivy.sarif --no-progress $TRIVY_OPTS --no-progress /
-
-# Create final app image which gets deployed
-FROM deploy-base AS deploy
+# Create final prod image which gets deployed
+FROM prod-base AS prod
     ARG APP_DIR
     ARG APP_NAME
     ARG APP_USER
     ARG APP_GROUP
     ARG APP_PORT
 
-    ARG MIX_ENV=prod
+    ARG MIX_ENV
     ARG RELEASE
 
     # Set environment vars used by the app
@@ -509,10 +527,14 @@ FROM deploy-base AS deploy
         PORT=$APP_PORT \
         PHX_SERVER=true \
         RELEASE=$RELEASE \
+        MIX_ENV=$MIX_ENV \
         # Writable tmp directory for releases
         RELEASE_TMP="/run/${APP_NAME}"
 
-    RUN \
+    # The app needs to be able to write to a tmp directory on startup, which by
+    # default is under the release. This can be changed by setting RELEASE_TMP to
+    # /tmp or, more securely, /run/foo
+    RUN set -exu && \
         # Create app dirs
         mkdir -p "/run/${APP_NAME}" && \
         # Make dirs writable by app
@@ -541,42 +563,49 @@ FROM deploy-base AS deploy
     # When using a startup script, unpack release under "/app/current" dir
     # WORKDIR $APP_DIR/current
 
-    COPY --from=deploy-release --chown="$APP_USER:$APP_GROUP" "/app/_build/${MIX_ENV}/rel/${RELEASE}" ./
+    COPY --from=prod-release --chown="$APP_USER:$APP_GROUP" "/app/_build/${MIX_ENV}/rel/${RELEASE}" ./
 
     EXPOSE $APP_PORT
 
     # "bin" is the directory under the unpacked release, and "prod" is the name
-    # of the release
+    # of the release top level script, which should match the RELEASE var.
     ENTRYPOINT ["bin/prod"]
 
     # Run under init to avoid zombie processes
     # https://github.com/krallin/tini
     # ENTRYPOINT ["/sbin/tini", "--", "bin/prod"]
 
-    # Run app in foreground
-    CMD ["start"]
-
     # Wrapper script which runs e.g. migrations before starting
     # ENTRYPOINT ["bin/start-docker"]
 
+    # Run app in foreground
+    CMD ["start"]
+
 # Dev image which mounts code from local filesystem
 FROM build-os-deps AS dev
-    ARG LANG
-    ARG APP_NAME
-    ARG APP_DIR
-    ARG APP_USER
-    ARG APP_GROUP
-    ARG APP_PORT
+    ARG DEV_PACKAGES
 
-    ARG MIX_ENV
+    ARG LANG
+    ENV LANG=$LANG
+
+    ARG APP_DIR
+    ARG APP_GROUP
+    ARG APP_NAME
+    ARG APP_PORT
+    ARG APP_USER
+
+    ARG MIX_ENV=dev
+
+    ARG DEV_PACKAGES
 
     # Set environment vars used by the app
     ENV LANG=$LANG \
         HOME=$APP_DIR \
+        MIX_ENV=$MIX_ENV \
         PORT=$APP_PORT \
         PHX_SERVER=true
 
-    RUN \
+    RUN set -exu && \
         # Create app dirs
         mkdir -p "/run/${APP_NAME}" && \
         # Make dirs writable by app
@@ -594,9 +623,8 @@ FROM build-os-deps AS dev
             inotify-tools \
             ssh \
             sudo \
-            debootstrap \
-            schroot \
-            && \
+            # $DEV_PACKAGES \
+        && \
         # https://www.networkworld.com/article/3453032/cleaning-up-with-apt-get.html
         # https://manpages.ubuntu.com/manpages/jammy/man8/apt-get.8.html
         # Remove packages installed temporarily. Removes everything related to
@@ -624,9 +652,9 @@ FROM build-os-deps AS dev
 
     WORKDIR $APP_DIR
 
-    RUN mix do local.rebar --force, local.hex --force
+    RUN mix 'do' local.rebar --force, local.hex --force
 
-    # RUN mix esbuild.install
+    # RUN mix esbuild.install --if-missing
 
     # Instead of copying sources, could use bind mount, e.g.
     # RUN --mount=target=.
@@ -641,8 +669,8 @@ FROM scratch AS artifacts
     ARG MIX_ENV
     ARG RELEASE
 
-    COPY --from=deploy-release "/app/_build/${MIX_ENV}/rel/${RELEASE}" /release
-    COPY --from=deploy-release /app/priv/static /static
+    COPY --from=prod-release "/app/_build/${MIX_ENV}/rel/${RELEASE}" /release
+    COPY --from=prod-release /app/priv/static /static
 
 # Default target
-FROM deploy
+FROM prod
