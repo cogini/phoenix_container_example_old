@@ -260,7 +260,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [debian, alpine, distroless]
+        os: [debian, alpine]
     env:
       DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
       OS: ${{ matrix.os }}
