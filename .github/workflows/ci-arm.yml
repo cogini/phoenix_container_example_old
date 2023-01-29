@@ -32,7 +32,7 @@ jobs:
       #   uses: actions/checkout@v2
 
       - name: Run CodeBuild
-        uses: aws-actions/aws-codebuild-run-build@v1
+        uses: aws-actions/aws-codebuild-run-build@v1-node16
         with:
           project-name: "foo-app-github-action-arm"
           buildspec-override: ecs/buildspec-earthly.yml
