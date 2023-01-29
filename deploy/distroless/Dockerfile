@@ -1,3 +1,6 @@
+
+ARG LINUX_ARCH=aarch64
+
 # Docker registry for internal images, e.g. 123.dkr.ecr.ap-northeast-1.amazonaws.com/
 # If blank, docker.io will be used. If specified, should have a trailing slash.
 ARG REGISTRY=""
@@ -19,7 +22,6 @@ ARG INSTALL_BASE_IMAGE_TAG=bullseye-slim
 
 ARG LANG=C.UTF-8
 
-ARG LINUX_ARCH=aarch64
 
 # Create staging image for files which are copied into final prod image
 FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
@@ -126,8 +128,8 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
 
     RUN ["/busybox/sh", "-c", "ln -s /busybox/sh /bin/sh"]
 
-    COPY --from=deploy-install /usr/lib/locale/${LANG} /usr/lib/locale/
+    COPY --from=prod-install /usr/lib/locale/${LANG} /usr/lib/locale/
 
     # For Erlang runtime
-    COPY --from=deploy-install /lib/${LINUX_ARCH}-linux-gnu/libtinfo.so.6.2 /lib/${LINUX_ARCH}-linux-gnu/
+    COPY --from=prod-install /lib/${LINUX_ARCH}-linux-gnu/libtinfo.so.6.2 /lib/${LINUX_ARCH}-linux-gnu/
     RUN ln -s /lib/${LINUX_ARCH}-linux-gnu/libtinfo.so.6.2 /lib/${LINUX_ARCH}-linux-gnu/libtinfo.so.6
