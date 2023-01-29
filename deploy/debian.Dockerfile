@@ -29,6 +29,7 @@ ARG REGISTRY=""
 # Public images may be mirrored into the private registry, with e.g. Skopeo
 ARG PUBLIC_REGISTRY=$REGISTRY
 
+# Base image for build and test
 ARG BUILD_BASE_IMAGE_NAME=${PUBLIC_REGISTRY}hexpm/elixir
 ARG BUILD_BASE_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-${ELIXIR_DEBIAN_VERSION}
 
@@ -595,7 +596,7 @@ FROM prod-base AS prod
     ARG RELEASE
 
     # Set environment vars used by the app
-    # SECRET_KEY_BASE and DATABASE_URL env vars should be set when running the application
+    # SECRET_KEY_BASE and DATABASE_URL env vars should be set when running the application.
     # Maybe set COOKIE and other things
     ENV HOME=$APP_DIR \
         PORT=$APP_PORT \
