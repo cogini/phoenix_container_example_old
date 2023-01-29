@@ -435,7 +435,7 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
             gnupg \
             unzip \
             lsb-release \
-            busybox-static \
+            # busybox-static \
             locales \
             # Needed by Erlang VM
             libtinfo6 \
