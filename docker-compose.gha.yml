@@ -119,7 +119,7 @@ services:
       test: ["CMD", "nc", "-vz", "localhost", "9092"]
       start_period: 1s
       interval: 2s
-      timeout: 5s
+      timeout: 2s
       retries: 20
     # healthcheck:
     #   test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server 127.0.0.1:9092 --topic <TOPIC_NAME> --describe"]
