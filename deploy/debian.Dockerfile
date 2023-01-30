@@ -1,6 +1,9 @@
 # Build app
 # Deploy using Debian
 
+# Specify versions of Erlang, Elixir, and base OS.
+# Choose a combination supported by https://hub.docker.com/r/hexpm/elixir/tags
+
 ARG ELIXIR_VERSION=1.14.3
 # ARG OTP_VERSION=24.3.4.2
 # ARG OTP_VERSION=25.2
@@ -434,6 +437,9 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
             locales \
             # Needed by Erlang VM
             libtinfo6 \
+            # Additional libs
+            libstdc++6 \
+            libgcc-s1 \
         && \
         # curl -sL https://aquasecurity.github.io/trivy-repo/deb/public.key -o /etc/apt/trusted.gpg.d/trivy.asc && \
         # printf "deb https://aquasecurity.github.io/trivy-repo/deb %s main" "$(lsb_release -sc)" | tee -a /etc/apt/sources.list.d/trivy.list && \
@@ -560,8 +566,11 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
             # https://github.com/krallin/tini
             # tini \
             # bind-utils \
-            # Needed by Erlang VM
+            # Minimal libs needed by Erlang VM
             libtinfo6 \
+            # Additional libs
+            libstdc++6 \
+            libgcc-s1 \
             # $RUNTIME_PACKAGES \
         && \
         # Remove packages installed temporarily. Removes everything related to
@@ -599,7 +608,7 @@ FROM prod-base AS prod
     ARG RELEASE
 
     # Set environment vars used by the app
-    # SECRET_KEY_BASE and DATABASE_URL env vars should be set when running the application.
+    # SECRET_KEY_BASE and DATABASE_URL env vars should be set when running the application
     # Maybe set COOKIE and other things
     ENV HOME=$APP_DIR \
         PORT=$APP_PORT \

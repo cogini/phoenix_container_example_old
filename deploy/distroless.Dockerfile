@@ -2,6 +2,9 @@
 # Deploy using distroless image
 # See https://github.com/GoogleContainerTools/distroless
 
+# Specify versions of Erlang, Elixir, and base OS.
+# Choose a combination supported by https://hub.docker.com/r/hexpm/elixir/tags
+
 ARG ELIXIR_VERSION=1.14.3
 # ARG OTP_VERSION=24.3.4.2
 # ARG OTP_VERSION=25.2
@@ -36,6 +39,7 @@ ARG REGISTRY=""
 # Public images may be mirrored into the private registry, with e.g. Skopeo
 ARG PUBLIC_REGISTRY=$REGISTRY
 
+# Base image for build and test
 ARG BUILD_BASE_IMAGE_NAME=${PUBLIC_REGISTRY}hexpm/elixir
 ARG BUILD_BASE_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-${ELIXIR_DEBIAN_VERSION}
 
