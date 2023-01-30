@@ -2,13 +2,15 @@
 # Deploy using distroless image
 # See https://github.com/GoogleContainerTools/distroless
 
-ARG ELIXIR_VERSION=1.14.2
+ARG ELIXIR_VERSION=1.14.3
 # ARG OTP_VERSION=24.3.4.2
-ARG OTP_VERSION=25.2
+# ARG OTP_VERSION=25.2
+ARG OTP_VERSION=25.2.2
 
 # ARG ELIXIR_DEBIAN_VERSION=buster-20210208
 # ARG ELIXIR_DEBIAN_VERSION=bullseye-20210902-slim
-ARG ELIXIR_DEBIAN_VERSION=bullseye-20221004-slim
+# ARG ELIXIR_DEBIAN_VERSION=bullseye-20221004-slim
+ARG ELIXIR_DEBIAN_VERSION=bullseye-20230109-slim
 
 # https://docker.debian.net/
 # https://hub.docker.com/_/debian
@@ -16,7 +18,8 @@ ARG ELIXIR_DEBIAN_VERSION=bullseye-20221004-slim
 ARG DEBIAN_VERSION=bullseye-slim
 
 # Use snapshot for consistent dependencies, see https://snapshot.debian.org/
-ARG DEBIAN_SNAPSHOT=20221219
+# ARG DEBIAN_SNAPSHOT=20221219
+ARG DEBIAN_SNAPSHOT=20230109
 
 # ARG LINUX_ARCH=aarch64
 ARG LINUX_ARCH=x86_64
@@ -439,6 +442,9 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
             locales \
             # Needed by Erlang VM
             libtinfo6 \
+            # Additional libs
+            libstdc++6 \
+            libgcc-s1 \
             # debootstrap \
             # schroot \
         && \
@@ -492,8 +498,6 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
 FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
     ARG LANG
     ARG LINUX_ARCH
-
-    ARG APP_DIR
 
     ENV LANG=$LANG
 
