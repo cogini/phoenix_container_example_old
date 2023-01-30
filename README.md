@@ -553,7 +553,7 @@ docker-compose run test mix ecto.setup
 ```command
 earthly -V -P --build-arg REGISTRY --build-arg REPO_URL --remote-cache="cogini/foo-app:cache" --strict --no-output --push +all
 
-docker buildx build -t distroless-deploy-base -f deploy/distroless/Dockerfile --progress plain --load .
+docker buildx build -t distroless-prod-base -f deploy/distroless/Dockerfile --progress plain --load .
 ```
 
 https://blog.tedivm.com/guides/2021/10/github-actions-push-to-aws-ecr-without-credentials-oidc/
