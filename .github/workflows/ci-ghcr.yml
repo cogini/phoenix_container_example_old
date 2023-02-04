@@ -20,7 +20,9 @@ env:
   # Tag for release images
   # IMAGE_TAG: ${{ (github.ref == 'refs/heads/main' && 'staging') || (github.ref == 'refs/heads/qa' && 'qa') }}
   IMAGE_TAG: latest
+  # OS variant that is deployed
   PROD_OS: debian
+  # OS: debian
   # Registry for dev and test images
   REGISTRY: ghcr.io/
   # Registry for public images, default is docker.io
@@ -28,11 +30,14 @@ env:
   # Give GitHub Actions access to AWS
   AWS_ROLE_TO_ASSUME: arn:aws:iam::770916339360:role/foo-dev-ecr-github-action-role
   AWS_REGION: ap-northeast-1
-  # Docker vars
+  # Docker
   DOCKER_BUILDKIT: '1'
   COMPOSE_DOCKER_CLI_BUILD: '1'
   COMPOSE_FILE: docker-compose.gha.yml
   DOCKER_FILE: deploy/debian.Dockerfile
+  # Datadog
+  # DD_API_KEY: ${{ secrets.ACTIONS_DD_API_KEY }}
+  # DD_ENV: ci
 jobs:
   build-test:
     # Build image used to run tests
@@ -159,14 +164,11 @@ jobs:
       fail-fast: false
       matrix:
         os: [debian, alpine]
+        # ci_node_total: [2]
+        # ci_node_index: [1, 2]
     env:
       DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
       OS: ${{ matrix.os }}
-    # strategy:
-    #   fail-fast: false
-    #   matrix:
-    #     ci_node_total: [5]
-    #     ci_node_index: [1, 2, 3, 4, 5]
     steps:
       - name: Log in to GHCR
         uses: docker/login-action@v2
@@ -179,15 +181,11 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Pull repos
+        # run: echo "postgres redis test" | xargs -n 1 -P 8 docker compose up --wait --detach
         run: docker compose pull --quiet --include-deps test
-      # run: echo "postgres redis test" | xargs -n 1 -P 8 docker compose up --wait --detach
 
       # - name: Start datadog
       #   env:
-      #     DD_API_KEY: ${{ secrets.ACTIONS_DD_API_KEY }}
-      #     DD_ENV: ci
-      #     DD_HOSTNAME: "none"
-      #     DD_INSIDE_CI: "true"
       #   run: docker compose up --detach datadog
 
       - name: Start services
@@ -220,8 +218,8 @@ jobs:
 
       - name: Run tests
         # run: docker compose run test mix test --cover
-        run: docker compose run test mix test
         # run: docker compose run test env MIX_TEST_PARTITION=${{ matrix.ci_node_index }} mix test --partitions ${{ matrix.ci_node_total }}
+        run: docker compose run test mix test
 
       - name: Run quality checks
         run: docker compose run test mix do format --check-formatted, deps.unlock --check-unused, credo, hex.audit, deps.audit, sobelow
@@ -237,9 +235,6 @@ jobs:
       # - name: Upload test results to Datadog
       #   if: always()
       #   continue-on-error: true
-      #   env:
-      #     DD_API_KEY: ${{ secrets.ACTIONS_DD_API_KEY }}
-      #     DD_ENV: ci
       #   run: |
       #     npm install -g @datadog/datadog-ci
       #     datadog-ci junit upload --service api-graphql junit-reports/*.xml
@@ -554,6 +549,17 @@ jobs:
       #   with:
       #     sarif_file: ${{ steps.scan-grype.outputs.sarif }}
       #     category: grype
+
+      # - name: Scan image with snyk
+      #   # if: github.event_name != 'pull_request'
+      #   uses: snyk/actions/docker@master
+      #   continue-on-error: true
+      #   env:
+      #     SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      #   with:
+      #     command: test
+      #     image: ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.OS }}${{ github.sha }}
+      #     args: --file=${{ env.DOCKER_FILE }} --project-name=api
 
   prod:
     name: Deploy prod images
