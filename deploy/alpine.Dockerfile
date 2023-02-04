@@ -1,15 +1,20 @@
 # Build app
 # Deploy using Alpine
 
-ARG ELIXIR_VERSION=1.14.2
+# Specify versions of Erlang, Elixir, and base OS.
+# Choose a combination supported by https://hub.docker.com/r/hexpm/elixir/tags
+
+ARG ELIXIR_VERSION=1.14.3
 
 # ARG OTP_VERSION=23.3.4
 # ARG OTP_VERSION=24.3.4.7
-ARG OTP_VERSION=25.0.4
+# ARG OTP_VERSION=25.0.4
 # ARG OTP_VERSION=25.2
+ARG OTP_VERSION=25.2.2
 
-ARG ALPINE_VERSION=3.15.4
+# ARG ALPINE_VERSION=3.15.4
 # ARG ALPINE_VERSION=3.16.3
+ARG ALPINE_VERSION=3.17.0
 
 # By default, packages come from the APK index for the base Alpine image.
 # Package versions are consistent between builds, and we normally upgrade by
@@ -29,6 +34,7 @@ ARG REGISTRY=""
 # Public images may be mirrored into the private registry, with e.g. Skopeo
 ARG PUBLIC_REGISTRY=$REGISTRY
 
+# Base image for build and test
 ARG BUILD_BASE_IMAGE_NAME=${PUBLIC_REGISTRY}hexpm/elixir
 ARG BUILD_BASE_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-alpine-${ALPINE_VERSION}
 
@@ -71,6 +77,7 @@ ARG DEV_PACKAGES=""
 FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
     ARG APK_UPDATE
     ARG APK_UPGRADE
+
     ARG LANG
     ENV LANG=$LANG
 
@@ -83,8 +90,8 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
     # Create OS user and group to run app under
     # https://wiki.alpinelinux.org/wiki/Setting_up_a_new_user#adduser
     RUN if ! grep -q "$APP_USER" /etc/passwd; \
-        then addgroup -g $APP_GROUP_ID -S "$APP_GROUP" && \
-        adduser -u $APP_USER_ID -S "$APP_USER" -G "$APP_GROUP" -h "$APP_DIR"; fi
+        then addgroup -g "$APP_GROUP_ID" -S "$APP_GROUP" && \
+        adduser -u "$APP_USER_ID" -S "$APP_USER" -G "$APP_GROUP" -h "$APP_DIR"; fi
 
     # See https://wiki.alpinelinux.org/wiki/Local_APK_cache for details
     # on the local cache and need for the symlink
@@ -159,8 +166,6 @@ FROM build-deps-get AS test-image
 
     WORKDIR $APP_DIR
 
-    # COPY .env.test .
-
     # Compile deps separately from app, improving Docker caching
     RUN mix deps.compile
 
@@ -181,6 +186,11 @@ FROM build-deps-get AS test-image
     # Umbrella
     # COPY apps ./apps
     # COPY priv ./priv
+
+    # COPY .env.test ./
+    # RUN set -a && . ./.env.test && set +a \
+    #     env && \
+    #     mix compile --warnings-as-errors
 
     RUN mix compile --warnings-as-errors
 
@@ -266,11 +276,14 @@ FROM build-deps-get AS prod-release
     COPY rel ./rel
     RUN mix release "$RELEASE"
 
-# Create base image for deploy, with everything but the code release
+
+# Create base image for prod with everything but the code release
 FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
     ARG APK_UPDATE
     ARG APK_UPGRADE
+
     ARG LANG
+    ENV LANG=$LANG
 
     ARG APP_GROUP
     ARG APP_GROUP_ID
@@ -284,7 +297,6 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
 
     # Set environment vars used by the app, e.g. SECRET_KEY_BASE, DATABASE_URL.
     # Maybe set COOKIE and other things.
-    ENV LANG=$LANG
     ENV HOME=$APP_DIR
 
     # Create OS user and group to run app under
@@ -310,10 +322,12 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
         # apk add --no-progress bind-tools && \
         # Support outbound TLS connections
         apk add --no-progress ca-certificates && \
-        # Allow app to listen on HTTPS.
-        # May not be needed if HTTPS is handled outside the application, e.g. in load balancer.
-        apk add --no-progress openssl
-        # apk add --no-progress curses-libs
+        # Allow app to listen on HTTPS
+        # May not be needed if HTTPS is handled outside the application, e.g. in load balancer
+        apk add --no-progress openssl && \
+        # Erlang deps
+        apk add --no-progress ncurses-libs libgcc libstdc++
+
 
 # Create final prod image which gets deployed
 FROM prod-base AS prod

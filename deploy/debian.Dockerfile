@@ -87,6 +87,7 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
     ARG LANG
     ENV LANG=$LANG
 
+    ARG APP_DIR
     ARG APP_GROUP
     ARG APP_GROUP_ID
     ARG APP_USER
@@ -281,8 +282,6 @@ FROM build-deps-get AS test-image
 
     WORKDIR $APP_DIR
 
-    # COPY .env.test .
-
     # Compile deps separately from app, improving Docker caching
     RUN mix deps.compile
 
@@ -304,12 +303,18 @@ FROM build-deps-get AS test-image
     # COPY apps ./apps
     # COPY priv ./priv
 
+    # COPY .env.test ./
+    # RUN set -a && . ./.env.test && set +a \
+    #     env && \
+    #     mix compile --warnings-as-errors
+
     RUN mix compile --warnings-as-errors
 
     # For umbrella, using `mix cmd` ensures each app is compiled in
     # isolation https://github.com/elixir-lang/elixir/issues/9407
     # RUN mix cmd mix compile --warnings-as-errors
 
+    # Add test libraries
     # RUN yarn global add newman
     # RUN yarn global add newman-reporter-junitfull
 
@@ -491,6 +496,7 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
     ARG RUNTIME_PACKAGES
 
     ARG LANG
+    ENV LANG=$LANG
 
     ARG APP_GROUP
     ARG APP_GROUP_ID
@@ -505,8 +511,6 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
 
     # Set environment vars used by the app, e.g. SECRET_KEY_BASE, DATABASE_URL.
     # Maybe set COOKIE and other things.
-    ENV LANG=$LANG
-    ENV HOME=$APP_DIR
 
     # Create OS user and group to run app under
     RUN if ! grep -q "$APP_USER" /etc/passwd; \

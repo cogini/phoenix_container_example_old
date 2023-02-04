@@ -6,8 +6,6 @@
 # Choose a combination supported by https://hub.docker.com/r/hexpm/elixir/tags
 
 ARG ELIXIR_VERSION=1.14.3
-# ARG OTP_VERSION=24.3.4.2
-# ARG OTP_VERSION=25.2
 ARG OTP_VERSION=25.2.2
 
 # ARG ELIXIR_DEBIAN_VERSION=buster-20210208
@@ -26,6 +24,7 @@ ARG DEBIAN_SNAPSHOT=20230109
 
 # ARG LINUX_ARCH=aarch64
 ARG LINUX_ARCH=x86_64
+# TARGETPLATFORM linux/amd64 linux/arm64
 
 ARG NODE_VERSION=16.14.1
 # ARG NODE_VERSION=lts
@@ -95,6 +94,7 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
     ARG LANG
     ENV LANG=$LANG
 
+    ARG APP_DIR
     ARG APP_GROUP
     ARG APP_GROUP_ID
     ARG APP_USER
@@ -238,6 +238,7 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         truncate -s 0 /var/log/apt/* && \
         truncate -s 0 /var/log/dpkg.log
 
+
 # Get Elixir deps
 FROM build-os-deps AS build-deps-get
     ARG APP_DIR
@@ -289,8 +290,6 @@ FROM build-deps-get AS test-image
 
     WORKDIR $APP_DIR
 
-    # COPY .env.test .
-
     # Compile deps separately from app, improving Docker caching
     RUN mix deps.compile
 
@@ -312,12 +311,18 @@ FROM build-deps-get AS test-image
     # COPY apps ./apps
     # COPY priv ./priv
 
+    # COPY .env.test ./
+    # RUN set -a && . ./.env.test && set +a \
+    #     env && \
+    #     mix compile --warnings-as-errors
+
     RUN mix compile --warnings-as-errors
 
     # For umbrella, using `mix cmd` ensures each app is compiled in
     # isolation https://github.com/elixir-lang/elixir/issues/9407
     # RUN mix cmd mix compile --warnings-as-errors
 
+    # Add test libraries
     # RUN yarn global add newman
     # RUN yarn global add newman-reporter-junitfull
 
@@ -404,7 +409,8 @@ FROM build-deps-get AS prod-release
 # Create staging image for files which are copied into final prod image
 FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
     ARG DEBIAN_SNAPSHOT
-    # ARG AWS_CLI_VERSION
+    ARG LINUX_ARCH
+    ARG TARGETPLATFORM
 
     # Configure apt caching for use with BuildKit.
     # The default Debian Docker image has special config to clear caches.
@@ -482,40 +488,42 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
         truncate -s 0 /var/log/apt/* && \
         truncate -s 0 /var/log/dpkg.log
 
-    RUN ls -l /lib
-
     # If LANG=C.UTF-8 is not enough, build full featured locale
     # RUN localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
     # ENV LANG en_US.utf8
 
-    # Install AWS CLI v2 from binary package
-    # https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html
-    # https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2-linux.html
-    # RUN set -ex && \
-    #     curl -sSfL "https://awscli.amazonaws.com/awscli-exe-linux-$(uname -m)-${AWS_CLI_VERSION}.zip" -o "awscliv2.zip" && \
-    #     unzip -q awscliv2.zip && \
-    #     ./aws/install && \
-    #     rm -rf ./aws && \
-    #     rm awscliv2.zip
+    RUN ls -l "/lib/$(uname -m)-linux-gnu/"
+    RUN ls -l "/usr/lib/$(uname -m)-linux-gnu/"
 
 # Create base image for prod with everything but the code release
 FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
-    ARG LANG
     ARG LINUX_ARCH
 
+    ARG LANG
     ENV LANG=$LANG
 
+    # These environment vars are set by default
     # SHLVL=1
     # SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
     # PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/busybox
 
     RUN ["/busybox/sh", "-c", "ln -s /busybox/sh /bin/sh"]
 
+    # Copy just the locale file needed
     COPY --from=prod-install /usr/lib/locale/${LANG} /usr/lib/locale/
 
-    # For Erlang runtime
-    COPY --from=prod-install /lib/${LINUX_ARCH}-linux-gnu/libtinfo.so.6.2 /lib/${LINUX_ARCH}-linux-gnu/
-    RUN ln -s /lib/${LINUX_ARCH}-linux-gnu/libtinfo.so.6.2 /lib/${LINUX_ARCH}-linux-gnu/libtinfo.so.6
+    # Add shared libraries needed at runtime
+    COPY --from=prod-install "/lib/${LINUX_ARCH}-linux-gnu/libtinfo.so.6.2" "/lib/${LINUX_ARCH}-linux-gnu/libtinfo.so.6"
+    # RUN ln -s "/lib/$(uname -m)-linux-gnu/libtinfo.so.6.2" "/lib/$(uname -m)-linux-gnu/libtinfo.so.6"
+
+    COPY --from=prod-install "/lib/${LINUX_ARCH}-linux-gnu/libgcc_s.so.1" "/lib/${LINUX_ARCH}-linux-gnu/"
+
+    COPY --from=prod-install "/lib/${LINUX_ARCH}-linux-gnu/libncursesw.so.6.2" "/lib/${LINUX_ARCH}-linux-gnu/libncurses2.so.6"
+    # RUN ln -s "/lib/$(uname -m)-linux-gnu/libncursesw.so.6.2" "/lib/$(uname -m)-linux-gnu/libncursesw.so.6"
+
+    COPY --from=prod-install "/usr/lib/${LINUX_ARCH}-linux-gnu/libstdc++.so.6.0.28" "/usr/lib/${LINUX_ARCH}-linux-gnu/libstdc++.so.6"
+    # RUN ln -s "/usr/lib/$(uname -m)-linux-gnu/libstdc++.so.6.0.28" "/usr/lib/$(uname -m)-linux-gnu/libstdc++.so.6"
+
 
 # Create final prod image which gets deployed
 FROM prod-base AS prod
