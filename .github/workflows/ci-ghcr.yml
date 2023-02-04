@@ -33,7 +33,7 @@ env:
   # Docker
   DOCKER_BUILDKIT: '1'
   COMPOSE_DOCKER_CLI_BUILD: '1'
-  COMPOSE_FILE: docker-compose.gha.yml
+  COMPOSE_FILE: deploy/docker-compose.gha.yml
   DOCKER_FILE: deploy/debian.Dockerfile
   # Datadog
   # DD_API_KEY: ${{ secrets.ACTIONS_DD_API_KEY }}
@@ -136,11 +136,11 @@ jobs:
           builder: ${{ steps.buildx.outputs.name }}
           push: true
           # https://github.com/moby/buildkit#export-cache
-          cache-from: type=gha,scope=${{ github.workflow }}-test
-          cache-to: type=gha,scope=${{ github.workflow }}-test,mode=max
+          cache-from: type=gha,scope=${{ github.workflow }}-test-${{ env.OS }}
+          cache-to: type=gha,scope=${{ github.workflow }}-test-${{ env.OS }},mode=max
           # ssh: default
           tags: |
-            ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:test${{ matrix.os }}${{ github.sha }}
+            ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:test${{ env.OS }}${{ github.sha }}
           # secrets: |
           #   "access_token=${{ secrets.DEVOPS_ACCESS_TOKEN }}"
           #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
@@ -437,13 +437,12 @@ jobs:
           context: .
           builder: ${{ steps.buildx.outputs.name }}
           push: true
-          cache-from: type=gha,scope=${{ github.workflow }}
-          cache-to: type=gha,scope=${{ github.workflow }},mode=max
+          cache-from: type=gha,scope=${{ github.workflow }}-${{ env.OS }}
+          cache-to: type=gha,scope=${{ github.workflow }}-${{ env.OS }},mode=max
           # ssh: default
           tags: |
-            ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-            ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.BRANCH }}-${{ env.GITHUB_SHA_SHORT }}
             ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.OS }}${{ github.sha }}
+            ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.BRANCH }}-${{ env.GITHUB_SHA_SHORT }}
           # secrets: |
           #   "access_token=${{ secrets.DEVOPS_ACCESS_TOKEN }}"
           #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
@@ -459,11 +458,11 @@ jobs:
           context: .
           builder: ${{ steps.buildx.outputs.name }}
           push: true
-          cache-from: type=gha,scope=${{ github.workflow }}
-          cache-to: type=gha,scope=${{ github.workflow }},mode=max
+          cache-from: type=gha,scope=${{ github.workflow }}-${{ env.OS }}
+          cache-to: type=gha,scope=${{ github.workflow }}-${{ env.OS }},mode=max
           # ssh: default
           tags: |
-            ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.OS }}${{ github.sha }}
             ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.BRANCH }}-${{ env.GITHUB_SHA_SHORT }}
           # secrets: |
           #   "access_token=${{ secrets.DEVOPS_ACCESS_TOKEN }}"
@@ -493,7 +492,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [debian, alpine]
+        os: [debian, alpine, distroless]
     env:
       DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
       OS: ${{ matrix.os }}
@@ -506,14 +505,14 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Pull image
-        run: docker pull ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{ env.OS }}${{github.sha}}
+        run: docker pull ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{ env.OS }}${{ github.sha }}
 
       - name: Scan image with Trivy
         uses: aquasecurity/trivy-action@master
         # https://github.com/aquasecurity/trivy-action
         # https://github.com/marketplace/actions/aqua-security-trivy#inputs
         with:
-          image-ref: ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{ env.OS }}${{github.sha}}
+          image-ref: ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{ env.OS }}${{ github.sha }}
           # exit-code: '1' # fail build
           # ignore-unfixed: true
           # vuln-type: 'os,library'
@@ -538,7 +537,7 @@ jobs:
         # https://github.com/marketplace/actions/anchore-container-scan
         id: scan-grype
         with:
-          image: ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{ env.OS }}${{github.sha}}
+          image: ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{ env.OS }}${{ github.sha }}
           # severity-cutoff: critical
           fail-build: false
           output-format: table
@@ -650,8 +649,8 @@ jobs:
           context: .
           builder: ${{ steps.buildx.outputs.name }}
           push: true
-          cache-from: type=gha,scope=${{ github.workflow }}
-          cache-to: type=gha,scope=${{ github.workflow }},mode=max
+          cache-from: type=gha,scope=${{ github.workflow }}-${{ env.PROD_OS }}
+          cache-to: type=gha,scope=${{ github.workflow }}-${{ env.PROD_OS }},mode=max
           # ssh: default
           tags: |
             ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
