@@ -1,19 +1,27 @@
 # Build Elixir/Phoenix app
 VERSION --use-cache-command --shell-out-anywhere --use-copy-include-patterns --referenced-save-only 0.6
 
-ARG ELIXIR_VERSION=1.14.2
-# ARG OTP_VERSION=24.3.4.2
-ARG OTP_VERSION=25.2
+# Specify versions of Erlang, Elixir, and base OS.
+# Choose a combination supported by https://hub.docker.com/r/hexpm/elixir/tags
 
-ARG ALPINE_VERSION=3.15.4
+ARG ELIXIR_VERSION=1.14.3
+ARG OTP_VERSION=25.2.2
+
+ARG ALPINE_VERSION=3.17.0
 
 # ARG ELIXIR_DEBIAN_VERSION=buster-20210208
-ARG ELIXIR_DEBIAN_VERSION=bullseye-20210902-slim
+# ARG ELIXIR_DEBIAN_VERSION=bullseye-20210902-slim
+# ARG ELIXIR_DEBIAN_VERSION=bullseye-20221004-slim
+ARG ELIXIR_DEBIAN_VERSION=bullseye-20230109-slim
 
 # https://docker.debian.net/
 # https://hub.docker.com/_/debian
 # ARG DEBIAN_VERSION=buster-slim
 ARG DEBIAN_VERSION=bullseye-slim
+
+# Use snapshot for consistent dependencies, see https://snapshot.debian.org/
+# ARG DEBIAN_SNAPSHOT=20221219
+ARG DEBIAN_SNAPSHOT=20230109
 
 ARG NODE_VERSION=16.14.1
 # ARG NODE_VERSION=lts
@@ -48,34 +56,37 @@ ARG BASE_OS=debian
 
 FROM ${PUBLIC_REGISTRY}busybox:${BUSYBOX_VERSION}
 IF [ "$BASE_OS" = "alpine" ]
-    ARG BUILD_IMAGE_NAME=${PUBLIC_REGISTRY}hexpm/elixir
-    ARG BUILD_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-alpine-${ALPINE_VERSION}
+    # Base image for build and test
+    ARG BUILD_BASE_IMAGE_NAME=${PUBLIC_REGISTRY}hexpm/elixir
+    ARG BUILD_BASE_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-alpine-${ALPINE_VERSION}
 
-    ARG DEPLOY_IMAGE_NAME=${PUBLIC_REGISTRY}alpine
-    ARG DEPLOY_IMAGE_TAG=$ALPINE_VERSION
+    # Base for final prod image
+    ARG PROD_BASE_IMAGE_NAME=${PUBLIC_REGISTRY}alpine
+    ARG PROD_BASE_IMAGE_TAG=$ALPINE_VERSION
 
     IMPORT ./deploy/alpine AS base
 ELSE IF [ "$BASE_OS" = "debian" ]
     # Build image
-    ARG BUILD_IMAGE_NAME=${PUBLIC_REGISTRY}hexpm/elixir
-    ARG BUILD_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-${ELIXIR_DEBIAN_VERSION}
+    ARG BUILD_BASE_IMAGE_NAME=${PUBLIC_REGISTRY}hexpm/elixir
+    ARG BUILD_BASE_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-${ELIXIR_DEBIAN_VERSION}
 
     # Deploy base image
-    ARG DEPLOY_IMAGE_NAME=${PUBLIC_REGISTRY}debian
-    ARG DEPLOY_IMAGE_TAG=$DEBIAN_VERSION
+    ARG PROD_BASE_IMAGE_NAME=${PUBLIC_REGISTRY}debian
+    ARG PROD_BASE_IMAGE_TAG=$DEBIAN_VERSION
 
     IMPORT ./deploy/debian AS base
 ELSE IF [ "$BASE_OS" = "distroless" ]
-    ARG BUILD_IMAGE_NAME=${PUBLIC_REGISTRY}hexpm/elixir
-    ARG BUILD_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-${ELIXIR_DEBIAN_VERSION}
+    ARG BUILD_BASE_IMAGE_NAME=${PUBLIC_REGISTRY}hexpm/elixir
+    ARG BUILD_BASE_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-${ELIXIR_DEBIAN_VERSION}
 
-    ARG INSTALL_IMAGE_NAME=${PUBLIC_REGISTRY}debian
-    ARG INSTALL_IMAGE_TAG=$DEBIAN_VERSION
+    # Intermediate image for files copied to prod
+    ARG INSTALL_BASE_IMAGE_NAME=${PUBLIC_REGISTRY}debian
+    ARG INSTALL_BASE_IMAGE_TAG=$DEBIAN_VERSION
 
-    ARG DEPLOY_IMAGE_NAME=gcr.io/distroless/base-debian11
-    # ARG DEPLOY_IMAGE_TAG=debug-nonroot
-    # ARG DEPLOY_IMAGE_TAG=latest
-    ARG DEPLOY_IMAGE_TAG=debug
+    ARG PROD_BASE_IMAGE_NAME=gcr.io/distroless/base-debian11
+    # ARG PROD_BASE_IMAGE_TAG=debug-nonroot
+    # ARG PROD_BASE_IMAGE_TAG=latest
+    ARG PROD_BASE_IMAGE_TAG=debug
     # debug includes busybox
 
     IMPORT ./deploy/distroless AS base
@@ -83,22 +94,22 @@ ELSE IF [ "$BASE_OS" = "busybox" ]
     ARG BUILD_IMAGE_NAME=${PUBLIC_REGISTRY}hexpm/elixir
     ARG BUILD_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-${ELIXIR_DEBIAN_VERSION}
 
-    ARG INSTALL_IMAGE_NAME=${PUBLIC_REGISTRY}debian
-    ARG INSTALL_IMAGE_TAG=$DEBIAN_VERSION
+    ARG INSTALL_BASE_IMAGE_NAME=${PUBLIC_REGISTRY}debian
+    ARG INSTALL_BASE_IMAGE_TAG=$DEBIAN_VERSION
 
-    ARG DEPLOY_IMAGE_NAME=${PUBLIC_REGISTRY}busybox
-    ARG DEPLOY_IMAGE_TAG=${BUSYBOX_VERSION}-glibc
+    ARG PROD_BASE_IMAGE_NAME=${PUBLIC_REGISTRY}busybox
+    ARG PROD_BASE_IMAGE_TAG=${BUSYBOX_VERSION}-glibc
 
     IMPORT ./deploy/busybox AS base
 ELSE IF [ "$BASE_OS" = "centos" ]
     ARG BUILD_IMAGE_NAME=${PUBLIC_REGISTRY}centos
     ARG BUILD_IMAGE_TAG=7
 
-    ARG INSTALL_IMAGE_NAME=${PUBLIC_REGISTRY}centos
-    ARG INSTALL_IMAGE_TAG=7
+    ARG INSTALL_BASE_IMAGE_NAME=${PUBLIC_REGISTRY}centos
+    ARG INSTALL_BASE_IMAGE_TAG=7
 
-    ARG DEPLOY_IMAGE_NAME=${PUBLIC_REGISTRY}centos
-    ARG DEPLOY_IMAGE_TAG=7
+    ARG PROD_BASE_IMAGE_NAME=${PUBLIC_REGISTRY}centos
+    ARG PROD_BASE_IMAGE_TAG=7
 
     COPY --dir ./bin ./
     COPY .tool-versions ./
@@ -144,30 +155,19 @@ ARG APP_GROUP_ID=$APP_USER_ID
 
 ARG LANG=C.UTF-8
 
-# ARG http_proxy
-# ARG https_proxy=$http_proxy
-
-# Build cache dirs
-# ARG MIX_HOME=/opt/mix
-# ARG HEX_HOME=/opt/hex
-# ARG XDG_CACHE_HOME=/opt/cache
-
 # Elixir release env to build
 ARG MIX_ENV=prod
 
 # Name of Elixir release
+# This should match mix.exs releases()
 ARG RELEASE=prod
-# This should match mix.exs, e.g.
-# defp releases do
-#   [
-#     prod: [
-#       include_executables_for: [:unix],
-#     ],
-#   ]
-# end
 
 # App listen port
 ARG APP_PORT=4000
+
+# Allow additional packages to be injected into builds
+ARG RUNTIME_PACKAGES=""
+ARG DEV_PACKAGES=""
 
 # The inner buildkit requires Docker hub login to prevent rate-limiting.
 # ARG DOCKERHUB_USER_SECRET
@@ -183,8 +183,7 @@ ARG APP_PORT=4000
 # Main target for CI/CD
 all:
     BUILD +test
-    BUILD +deploy
-    # BUILD +deploy-scan
+    BUILD +prod
 
 # These can also be called individually
 test:
@@ -200,83 +199,63 @@ build-deps-get:
         --REGISTRY=$REGISTRY --PUBLIC_REGISTRY=$PUBLIC_REGISTRY \
         --BUILD_IMAGE_NAME=$BUILD_IMAGE_NAME --BUILD_IMAGE_TAG=$BUILD_IMAGE_TAG \
         --APP_DIR=$APP_DIR --APP_USER=$APP_USER --APP_GROUP=$APP_GROUP
+    ENV HOME=$APP_DIR
 
     WORKDIR $APP_DIR
 
-    # Get Elixir app deps
+    # Copy only the minimum files needed for deps, improving caching
     COPY --dir config ./
     COPY mix.exs mix.lock ./
 
-    # Install build tools and get app deps
-    # RUN --mount=type=cache,id=hex,target=/opt/hex,sharing=locked \
-    #     # --mount=type=cache,id=rebar,target=~/.cache/rebar3,sharing=locked \
-    RUN mix do local.rebar --force, local.hex --force
-    RUN mix deps.get
+    # COPY .env.default ./
 
-    # RUN --mount=type=cache,id=hex,target=/opt/hex,sharing=locked \
-    #    # --mount=type=cache,target=~/.cache/rebar3,sharing=locked \
-    RUN mix esbuild.install
+    RUN mix 'do' local.rebar --force, local.hex --force
+
+    # Add private repo for Oban
+    RUN --mount=type=secret,id=oban_license_key \
+        --mount=type=secret,id=oban_key_fingerprint \
+        if test -s /run/secrets/oban_license_key; then \
+            mix hex.repo add oban https://getoban.pro/repo \
+                --fetch-public-key "$(cat /run/secrets/oban_key_fingerprint)" \
+                --auth-key "$(cat /run/secrets/oban_license_key)"; \
+        fi
+
+    # Run deps.get with optional authentication to access private repos
+    RUN --mount=type=ssh \
+        --mount=type=secret,id=access_token \
+        # Access private repos using ssh identity
+        # https://docs.docker.com/engine/reference/commandline/buildx_build/#ssh
+        # https://stackoverflow.com/questions/73263731/dockerfile-run-mount-type-ssh-doesnt-seem-to-work
+        # Copying a predefined known_hosts file would be more secure, but would need to be maintained
+        if test -n "$SSH_AUTH_SOCK"; then \
+            mkdir -p /etc/ssh && \
+            ssh-keyscan github.com > /etc/ssh/ssh_known_hosts && \
+            mix deps.get; \
+        # Access private repos using access token
+        elif test -s /run/secrets/access_token; then \
+            GIT_ASKPASS=/run/secrets/access_token mix deps.get; \
+        else \
+            mix deps.get; \
+        fi
 
     # SAVE IMAGE --cache-hint
 
-# Base image used for running tests
+# Create base image for tests
 test-image:
     FROM +build-deps-get
 
-    ENV LANG=$LANG
-    ENV HOME=$APP_DIR
     ENV MIX_ENV=test
-
-    # ENV MIX_HOME=$MIX_HOME \
-    #     HEX_HOME=$HEX_HOME \
-    #     XDG_CACHE_HOME=$XDG_CACHE_HOME
 
     WORKDIR $APP_DIR
 
     # Compile deps separately from app, improving Docker caching
-    # RUN --mount=type=cache,id=hex,target=/opt/hex,sharing=locked \
-    #     # --mount=type=cache,id=rebar,target=~/.cache/rebar3,sharing=locked \
-    RUN mix do local.rebar --force, local.hex --force
     RUN mix deps.compile
 
-    COPY --if-exists coveralls.json .formatter.exs .credo.exs dialyzer-ignore ./
+    RUN mix esbuild.install --if-missing
 
-    # Non-umbrella
-    COPY --if-exists --dir lib priv test bin ./
-
-    # Umbrella
-    COPY --if-exists --dir apps priv ./
-
-    # RUN --mount=type=cache,id=hex,target=/opt/hex,sharing=locked \
-    #    # --mount=type=cache,id=rebar,target=~/.cache/rebar3,sharing=locked \
-    RUN mix compile --warnings-as-errors
-
-    # For umbrella, using `mix cmd` ensures each app is compiled in
-    # isolation https://github.com/elixir-lang/elixir/issues/9407
-    # RUN --mount=type=cache,target=~/.hex/packages/hexpm,sharing=locked \
-    #     --mount=type=cache,target=~/.cache/rebar3,sharing=locked \
-    #     mix cmd mix compile --warnings-as-errors
-
-    # SAVE IMAGE --push ${OUTPUT_URL}:test
-    # SAVE IMAGE --cache-hint
-
-# Run Dialyzer on app files
-test-image-dialyzer:
-    FROM +build-deps-get
-
-    ENV LANG=$LANG \
-        HOME=$APP_DIR \
-        MIX_ENV=test
-
-    # ENV MIX_HOME=$MIX_HOME \
-    #     HEX_HOME=$HEX_HOME \
-    #     XDG_CACHE_HOME=$XDG_CACHE_HOME
-
-    WORKDIR $APP_DIR
-
-    # RUN --mount=type=cache,id=hex,target=/opt/hex,sharing=locked \
-    #    # --mount=type=cache,id=rebar,target=~/.cache/rebar3,sharing=locked \
     RUN mix dialyzer --plt
+
+    COPY --if-exists .formatter.exs coveralls.json .credo.exs dialyzer-ignore trivy.yaml ./
 
     # Non-umbrella
     COPY --if-exists --dir lib priv test bin ./
@@ -284,8 +263,25 @@ test-image-dialyzer:
     # Umbrella
     COPY --if-exists --dir apps ./
 
+    # COPY .env.test ./
+    # RUN set -a && . ./.env.test && set +a \
+    #     env && \
+    #     mix compile --warnings-as-errors
+
+    RUN mix compile --warnings-as-errors
+
+    # For umbrella, using `mix cmd` ensures each app is compiled in
+    # isolation https://github.com/elixir-lang/elixir/issues/9407
+    # RUN mix cmd mix compile --warnings-as-errors
+
+    # Add test libraries
+    # RUN yarn global add newman
+    # RUN yarn global add newman-reporter-junitfull
+
+    # COPY Postman ./Postman
+
+    # SAVE IMAGE --push ${OUTPUT_URL}:test
     # SAVE IMAGE --cache-hint
-    # SAVE IMAGE --push ${OUTPUT_URL}:dialyzer
 
 # Create database for tests
 postgres:
@@ -331,49 +327,34 @@ test-dialyzer:
         RUN docker run test-dialyzer mix dialyzer --halt-exit-status
     END
 
-# Build JS and CS assets with Webpack
-# deploy-assets-webpack:
-#     FROM +deploy-deps-compile
-#
-#     WORKDIR $APP_DIR
-#
-#     # WORKDIR /app/assets
-#
-#     COPY assets/package.json assets/package-lock.json ./
-#
-#     RUN --mount=type=cache,target=/root/.npm \
-#         npm --prefer-offline --no-audit --progress=false --loglevel=error ci
-#
-#     COPY assets ./
-#
-#     RUN npm run deploy
-#
-#     SAVE ARTIFACT ../priv /priv
-#     # SAVE IMAGE --cache-hint
-
-deploy-release:
+# Create Elixir release
+prod-release:
     FROM +build-deps-get
 
-    ENV MIX_ENV=prod
+    ARG APP_DIR
+    ARG RELEASE
+    ARG MIX_ENV=prod
 
     WORKDIR $APP_DIR
 
+    # COPY .env.prod .
+
     # This does a partial compile.
-    # Doing "mix do compile, phx.digest, release" in a single stage is worse,
+    # Doing "mix 'do' compile, assets.deploy" in a single stage is worse
     # because a single line of code changed causes a complete recompile.
     # With the stages separated most of the compilation is cached.
 
     # Compile deps separately from application for better caching
-    # RUN --mount=type=cache,id=hex,target=/opt/hex,sharing=locked \
-    #    # --mount=type=cache,id=rebar,target=~/.cache/rebar3,sharing=locked \
     RUN mix deps.compile
 
+    RUN mix esbuild.install --if-missing
+
     # Compile assets the old way
-    # WORKDIR /app/assets
+    # WORKDIR "${APP_DIR}/assets"
     #
-    # COPY assets/package.json assets/package-lock.json ./
+    # COPY assets/package.json ./
+    # COPY assets/package-lock.json ./
     #
-    # # Cache npm cache directory as type=cache
     # RUN --mount=type=cache,target=~/.npm,sharing=locked \
     #     npm --prefer-offline --no-audit --progress=false --loglevel=error ci
     #
@@ -384,16 +365,31 @@ deploy-release:
     #
     # Generate assets the really old way
     # RUN --mount=type=cache,target=~/.npm,sharing=locked \
-    #   npm install && \
-    #   node node_modules/webpack/bin/webpack.js --mode production
+    #     npm install && \
+    #     node node_modules/webpack/bin/webpack.js --mode production
 
-    # Build JS and CS with esbuild
-    COPY --if-exists --dir assets priv ./
-    # mix.exs: "assets.deploy": ["esbuild default --minify", "phx.digest"]
-    # https://hexdocs.pm/phoenix/Mix.Tasks.Phx.Digest.html
-    # RUN --mount=type=cache,id=hex,target=/opt/hex,sharing=locked \
-    #    # --mount=type=cache,id=rebar,target=~/.cache/rebar3,sharing=locked \
+    # Install JavaScript deps using yarn
+    # COPY assets/package.json assets/package.json
+    # COPY assets/yarn.lock assets/yarn.lock
+    # RUN yarn --cwd ./assets install --prod
+
+    # Compile assets with esbuild
+    COPY assets ./assets
+    COPY priv ./priv
+
+    # Install JavaScript deps using npm
+    # WORKDIR "${APP_DIR}/assets"
+    # COPY assets/package.json ./
+    # COPY assets/package-lock.json ./
+    # # COPY assets/tailwind.config.js ./
+    #
+    # RUN npm install
+    #
+    # WORKDIR $APP_DIR
+
     RUN mix assets.deploy
+    # RUN esbuild default --minify
+    # RUN mix phx.digest
 
     # Non-umbrella
     COPY --if-exists --dir lib ./
@@ -401,14 +397,14 @@ deploy-release:
     # Umbrella
     COPY --if-exists --dir apps ./
 
-    # RUN --mount=type=cache,id=hex,target=/opt/hex,sharing=locked \
-    #    # --mount=type=cache,id=rebar,target=~/.cache/rebar3,sharing=locked \
+    # For umbrella, using `mix cmd` ensures each app is compiled in
+    # isolation https://github.com/elixir-lang/elixir/issues/9407
+    # RUN mix cmd mix compile --warnings-as-errors
+
     RUN mix compile --warnings-as-errors
 
     # Build release
     COPY --dir rel ./
-    # RUN --mount=type=cache,id=hex,target=/opt/hex,sharing=locked \
-    #    # --mount=type=cache,id=rebar,target=~/.cache/rebar3,sharing=locked \
     RUN mix release "$RELEASE"
 
     SAVE ARTIFACT "_build/${MIX_ENV}/rel/${RELEASE}" /release
@@ -417,36 +413,40 @@ deploy-release:
 
     # SAVE IMAGE --cache-hint
 
-# Final deploy image
-deploy:
-    FROM base+deploy-base \
+# Create final prod image which gets deployed
+prod:
+    FROM base+prod-base \
         --LANG=$LANG \
         --APP_USER=$APP_USER --APP_GROUP=$APP_GROUP --APP_NAME=$APP_NAME --APP_DIR=$APP_DIR \
         --OUTPUT_URL=$OUTPUT_URL --REGISTRY=$REGISTRY --PUBLIC_REGISTRY=$PUBLIC_REGISTRY \
-        --DEPLOY_IMAGE_NAME=$DEPLOY_IMAGE_NAME --DEPLOY_IMAGE_TAG=$DEPLOY_IMAGE_TAG
+        --PROD_BASE_IMAGE_NAME=$PROD_BASE_IMAGE_NAME --PROD_BASE_IMAGE_TAG=$PROD_BASE_IMAGE_TAG
 
     # Set environment vars used by the app
     # SECRET_KEY_BASE and DATABASE_URL env vars should be set when running the application
-    # maybe set COOKIE and other things
-    ENV LANG=$LANG \
-        HOME=$APP_DIR \
+    # Maybe set COOKIE and other things
+    ENV HOME=$APP_DIR \
         PORT=$APP_PORT \
         PHX_SERVER=true \
         RELEASE=$RELEASE \
+        MIX_ENV=$MIX_ENV \
+        # Writable tmp directory for releases
         RELEASE_TMP="/run/${APP_NAME}"
 
-    # Create dirs writable by app user
-    RUN mkdir -p "/run/${APP_NAME}" && \
+    # The app needs to be able to write to a tmp directory on startup, which by
+    # default is under the release. This can be changed by setting RELEASE_TMP to
+    # /tmp or, more securely, /run/foo
+    RUN set -exu && \
+        # Create app dirs
+        mkdir -p "/run/${APP_NAME}" && \
+        # Make dirs writable by app
         chown -R "${APP_USER}:${APP_GROUP}" \
+            # Needed for RELEASE_TMP
             "/run/${APP_NAME}"
 
     # USER $APP_USER
 
     # Setting WORKDIR after USER makes directory be owned by the user.
     # Setting it before makes it owned by root, which is more secure.
-    # The app needs to be able to write to a tmp directory on startup, which by
-    # default is under the release. This can be changed by setting RELEASE_TMP to
-    # /tmp or, more securely, /run/foo
     WORKDIR $APP_DIR
 
     # When using a startup script, copy to /app/bin
@@ -464,23 +464,24 @@ deploy:
     # When using a startup script, unpack release under "/app/current" dir
     # WORKDIR $APP_DIR/current
 
-    COPY +deploy-release/release ./
+    COPY +prod-release/release ./
 
     EXPOSE $APP_PORT
 
     # "bin" is the directory under the unpacked release, and "prod" is the name
-    # of the release
+    # of the release top level script, which should match the RELEASE var.
     ENTRYPOINT ["bin/prod"]
 
     # Run under init to avoid zombie processes
     # https://github.com/krallin/tini
     # ENTRYPOINT ["/sbin/tini", "--", "bin/prod"]
 
+    # Wrapper script which runs e.g. migrations before starting
+    # ENTRYPOINT ["bin/start-docker"]
+
     # Run app in foreground
     CMD ["start"]
 
-    # Wrapper script which runs e.g. migrations before starting
-    # ENTRYPOINT ["bin/start-docker"]
 
     # SAVE IMAGE --push ${OUTPUT_URL}:${OUTPUT_IMAGE_TAG}
 
@@ -492,23 +493,3 @@ deploy:
     ARG COMMIT_HASH=$(cat git-commit.txt)
 
     SAVE IMAGE --push ${OUTPUT_URL}:${COMMIT_HASH}
-
-# Scan deploy image for security vulnerabilities
-deploy-scan:
-    FROM base+deploy-scan
-
-    RUN \
-        set -ex && \
-        mkdir -p /sarif-reports && \
-        # Succeed for issues of severity = HIGH
-        # trivy filesystem $TRIVY_OPTS --format sarif -o /sarif-reports/trivy.high.sarif --exit-code 0 --severity HIGH --no-progress / && \
-        trivy filesystem $TRIVY_OPTS --exit-code 0 --severity HIGH --no-progress / && \
-        # Fail for issues of severity = CRITICAL
-        # trivy filesystem $TRIVY_OPTS --format sarif -o /sarif-reports/trivy.sarif --exit-code 1 --severity CRITICAL --no-progress /
-        # Fail for any issues
-        # trivy filesystem -d --exit-code 1 --no-progress /
-        trivy filesystem --format sarif -o /sarif-reports/trivy.sarif --no-progress $TRIVY_OPTS --no-progress /
-
-        # grype -vv --fail-on medium dir:/
-
-    SAVE ARTIFACT /sarif-reports /sarif-reports AS LOCAL sarif-reports

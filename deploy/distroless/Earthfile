@@ -2,40 +2,53 @@
 # https://github.com/GoogleContainerTools/distroless
 VERSION --shell-out-anywhere --use-copy-include-patterns --referenced-save-only 0.6
 
-ARG ELIXIR_VERSION=1.13.3
-ARG OTP_VERSION=24.2
-ARG NODE_VERSION=16.14.1
-# ARG NODE_VERSION=lts
+# Specify versions of Erlang, Elixir, and base OS.
+# Choose a combination supported by https://hub.docker.com/r/hexpm/elixir/tags
 
-ARG AWS_CLI_VERSION=2.0.61
+ARG ELIXIR_VERSION=1.14.3
+ARG OTP_VERSION=25.2.2
 
 # ARG ELIXIR_DEBIAN_VERSION=buster-20210208
-ARG ELIXIR_DEBIAN_VERSION=bullseye-20210902-slim
+# ARG ELIXIR_DEBIAN_VERSION=bullseye-20210902-slim
+# ARG ELIXIR_DEBIAN_VERSION=bullseye-20221004-slim
+ARG ELIXIR_DEBIAN_VERSION=bullseye-20230109-slim
 
 # https://docker.debian.net/
 # https://hub.docker.com/_/debian
 # ARG DEBIAN_VERSION=buster-slim
 ARG DEBIAN_VERSION=bullseye-slim
 
+# Use snapshot for consistent dependencies, see https://snapshot.debian.org/
+# ARG DEBIAN_SNAPSHOT=20221219
+ARG DEBIAN_SNAPSHOT=20230109
+
+ARG NODE_VERSION=16.14.1
+# ARG NODE_VERSION=lts
+
+ARG AWS_CLI_VERSION=2.0.61
+
 # Docker registry for internal images, e.g. 123.dkr.ecr.ap-northeast-1.amazonaws.com/
 # If blank, docker.io will be used. If specified, should have a trailing slash.
 ARG REGISTRY=""
-# Registry for public base images, e.g. debian or alpine.
+# Registry for public images, e.g. debian, alpine, or postgres.
 # Public images may be mirrored into the private registry, with e.g. Skopeo
 ARG PUBLIC_REGISTRY=$REGISTRY
 
-ARG BUILD_IMAGE_NAME=${PUBLIC_REGISTRY}hexpm/elixir
-ARG BUILD_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-${ELIXIR_DEBIAN_VERSION}
+# Base image for build and test
+ARG BUILD_BASE_IMAGE_NAME=${PUBLIC_REGISTRY}hexpm/elixir
+ARG BUILD_BASE_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-${ELIXIR_DEBIAN_VERSION}
 
+# Base for final prod image
 # https://github.com/GoogleContainerTools/distroless/blob/main/base/README.md
-ARG DEPLOY_IMAGE_NAME=gcr.io/distroless/base-debian11
-# ARG DEPLOY_IMAGE_TAG=debug-nonroot
-# ARG DEPLOY_IMAGE_TAG=latest
-# debug includes busybox
-ARG DEPLOY_IMAGE_TAG=debug
+ARG PROD_BASE_IMAGE_NAME=gcr.io/distroless/base-debian11
+# ARG PROD_BASE_IMAGE_TAG=debug-nonroot
+# ARG PROD_BASE_IMAGE_TAG=latest
+# debug includes busybox, which we need to run Erlang startup scripts
+ARG PROD_BASE_IMAGE_TAG=debug
 
-ARG INSTALL_IMAGE_NAME=${PUBLIC_REGISTRY}debian
-ARG INSTALL_IMAGE_TAG=bullseye-slim
+# Intermediate image for files copied to prod
+ARG INSTALL_BASE_IMAGE_NAME=${PUBLIC_REGISTRY}debian
+ARG INSTALL_BASE_IMAGE_TAG=bullseye-slim
 
 ARG LANG=C.UTF-8
 
@@ -48,17 +61,36 @@ ARG LINUX_ARCH=$(uname -m)
 
 # Create build base image with OS dependencies
 build-os-deps:
-    FROM ${BUILD_IMAGE_NAME}:${BUILD_IMAGE_TAG}
+    FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG}
     ENV LANG=$LANG
+
+    # Create OS user and group to run app under
+    RUN if ! grep -q "$APP_USER" /etc/passwd; \
+        then groupadd -g "$APP_GROUP_ID" "$APP_GROUP" && \
+        useradd -l -u "$APP_USER_ID" -g "$APP_GROUP" -s /usr/sbin/nologin "$APP_USER" && \
+        rm /var/log/lastlog && rm /var/log/faillog; fi
 
     # Configure apt caching for use with BuildKit.
     # The default Debian Docker image has special apt config to clear caches,
-    # but if we are using --mount=type=cache, then we want it.
+    # but if we are using --mount=type=cache, then we want to keep the files.
     # https://github.com/debuerreotype/debuerreotype/blob/master/scripts/debuerreotype-minimizing-config
     RUN set -exu && \
         rm -f /etc/apt/apt.conf.d/docker-clean && \
         echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache && \
         echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression
+
+    RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
+        --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
+        --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
+        set -exu && \
+        apt-get update -qq && \
+        DEBIAN_FRONTEND=noninteractive \
+        apt-get -y install -y -qq --no-install-recommends ca-certificates
+
+    RUN set -exu && \
+        echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT} bullseye main" > /etc/apt/sources.list && \
+        echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/${DEBIAN_SNAPSHOT} bullseye-security main" >> /etc/apt/sources.list && \
+        echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT} bullseye-updates main" >> /etc/apt/sources.list
 
     # Install tools and libraries to build binary libraries
     RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
@@ -80,22 +112,41 @@ build-os-deps:
             jq \
             # software-properties-common \
             lsb-release \
+            openssh-client \
             # Support ssl in container, as opposed to load balancer
-            # openssl \
+            openssl \
             # Install default nodejs
             nodejs \
             # Install default Postgres
             # libpq-dev \
             # postgresql-client \
-            && \
+            # $RUNTIME_PACKAGES \
+        && \
+        # Install yarn
+        curl -sL --ciphers ECDHE-RSA-AES128-GCM-SHA256 https://dl.yarnpkg.com/debian/pubkey.gpg -o /etc/apt/trusted.gpg.d/yarn.asc && \
+        echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list && \
+        printf "Package: *\nPin: release o=dl.yarnpkg.com\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/yarn.pref && \
+        # Install Trivy
+        # curl -sL https://aquasecurity.github.io/trivy-repo/deb/public.key -o /etc/apt/trusted.gpg.d/trivy.asc && \
+        # printf "deb https://aquasecurity.github.io/trivy-repo/deb %s main" "$(lsb_release -sc)" | tee -a /etc/apt/sources.list.d/trivy.list && \
+        apt-get update -qq && \
+        apt-get -y install -y -qq --no-install-recommends yarn && \
+        # apt-get -y install -y -qq --no-install-recommends trivy && \
+        # curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin && \
         # Install node using n
         # curl -L https://raw.githubusercontent.com/tj/n/master/bin/n -o /usr/local/bin/n && \
         # chmod +x /usr/local/bin/n && \
-        # # Install lts version
+        # # Install lts version of node
         # # n lts && \
-        # # Install specific version
+        # # Install specific version of node
         # n "$NODE_VERSION" && \
         # rm /usr/local/bin/n && \
+        # Install yarn from repo
+        # curl -sL https://dl.yarnpkg.com/debian/pubkey.gpg -o /etc/apt/trusted.gpg.d/yarn.asc && \
+        # echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list && \
+        # echo "Package: *\nPin: release o=dl.yarnpkg.com\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/yarn.pref && \
+        # apt-get update -qq && \
+        # apt-get -y install -y -qq --no-install-recommends yarn && \
         # Install latest Postgres from postgres.org repo
         # curl -sL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /etc/apt/trusted.gpg.d/postgresql-ACCC4CF8.asc && \
         # echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -sc)-pgdg main" | tee /etc/apt/sources.list.d/pgdg.list && \
@@ -153,9 +204,10 @@ build-os-deps:
 
     SAVE IMAGE --cache-hint
 
-# Staging image for binaries which are copied into final deploy image
-deploy-install:
-    FROM ${INSTALL_IMAGE_NAME}:${INSTALL_IMAGE_TAG}
+
+# Create staging image for files which are copied into final prod image
+prod-install:
+    FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG}
 
     # Configure apt caching for use with BuildKit.
     # The default Debian Docker image has special config to clear caches.
@@ -164,6 +216,19 @@ deploy-install:
         rm -f /etc/apt/apt.conf.d/docker-clean && \
         echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache && \
         echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression
+
+    RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
+        --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
+        --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
+        set -exu && \
+        apt-get update -qq && \
+        DEBIAN_FRONTEND=noninteractive \
+        apt-get -y install -y -qq --no-install-recommends ca-certificates
+
+    RUN set -exu && \
+        echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT} bullseye main" > /etc/apt/sources.list && \
+        echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/${DEBIAN_SNAPSHOT} bullseye-security main" >> /etc/apt/sources.list && \
+        echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT} bullseye-updates main" >> /etc/apt/sources.list
 
     RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
@@ -180,15 +245,20 @@ deploy-install:
             gnupg \
             unzip \
             lsb-release \
-            busybox-static \
+            # busybox-static \
             locales \
             # Needed by Erlang VM
             libtinfo6 \
-            && \
-        curl -sL https://aquasecurity.github.io/trivy-repo/deb/public.key -o /etc/apt/trusted.gpg.d/trivy.asc && \
-        printf "deb https://aquasecurity.github.io/trivy-repo/deb %s main" "$(lsb_release -sc)" | tee -a /etc/apt/sources.list.d/trivy.list && \
-        apt-get update -qq && \
-        apt-get -y install -y -qq --no-install-recommends trivy && \
+            # Additional libs
+            libstdc++6 \
+            libgcc-s1 \
+            # debootstrap \
+            # schroot \
+        && \
+        # curl -sL https://aquasecurity.github.io/trivy-repo/deb/public.key -o /etc/apt/trusted.gpg.d/trivy.asc && \
+        # printf "deb https://aquasecurity.github.io/trivy-repo/deb %s main" "$(lsb_release -sc)" | tee -a /etc/apt/sources.list.d/trivy.list && \
+        # apt-get update -qq && \
+        # apt-get -y install -y -qq --no-install-recommends trivy && \
         # curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin && \
         # Generate locales specified in /etc/locale.gen
         locale-gen && \
@@ -242,10 +312,14 @@ deploy-install:
 
     SAVE IMAGE --cache-hint
 
-deploy-base:
-    FROM ${DEPLOY_IMAGE_NAME}:${DEPLOY_IMAGE_TAG}
 
-    # Default env vars
+# Create base image for prod with everything but the code release
+prod-base:
+    FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG}
+
+    ENV LANG=$LANG
+
+    # These environment vars are set by default
     # SHLVL=1
     # SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
     # PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/busybox
@@ -264,7 +338,17 @@ deploy-base:
 
     COPY +deploy-install/C.UTF-8 /usr/lib/locale/C.UTF-8
 
-    ENV LANG=$LANG
+    # Add shared libraries needed at runtime
+    # COPY --from=prod-install "/lib/${LINUX_ARCH}-linux-gnu/libtinfo.so.6.2" "/lib/${LINUX_ARCH}-linux-gnu/libtinfo.so.6"
+    # # RUN ln -s "/lib/$(uname -m)-linux-gnu/libtinfo.so.6.2" "/lib/$(uname -m)-linux-gnu/libtinfo.so.6"
+
+    # COPY --from=prod-install "/lib/${LINUX_ARCH}-linux-gnu/libgcc_s.so.1" "/lib/${LINUX_ARCH}-linux-gnu/"
+
+    # COPY --from=prod-install "/lib/${LINUX_ARCH}-linux-gnu/libncursesw.so.6.2" "/lib/${LINUX_ARCH}-linux-gnu/libncurses2.so.6"
+    # # RUN ln -s "/lib/$(uname -m)-linux-gnu/libncursesw.so.6.2" "/lib/$(uname -m)-linux-gnu/libncursesw.so.6"
+
+    # COPY --from=prod-install "/usr/lib/${LINUX_ARCH}-linux-gnu/libstdc++.so.6.0.28" "/usr/lib/${LINUX_ARCH}-linux-gnu/libstdc++.so.6"
+    # # RUN ln -s "/usr/lib/$(uname -m)-linux-gnu/libstdc++.so.6.0.28" "/usr/lib/$(uname -m)-linux-gnu/libstdc++.so.6"
 
     COPY +deploy-install/libs/libtinfo.so.6 /lib/${LINUX_ARCH}-linux-gnu/
     # RUN ln -s /lib/${LINUX_ARCH}-linux-gnu/libtinfo.so.6.2 /lib/${LINUX_ARCH}-linux-gnu/libtinfo.so.6
