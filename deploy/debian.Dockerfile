@@ -120,6 +120,7 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT} bullseye-updates main" >> /etc/apt/sources.list
 
     # Install tools and libraries to build binary libraries
+    # Not necessary for a minimal Phoenix app, but likely needed
     RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
         --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
@@ -228,6 +229,7 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         # Clear logs of installed packages
         truncate -s 0 /var/log/apt/* && \
         truncate -s 0 /var/log/dpkg.log
+
 
 # Get Elixir deps
 FROM build-os-deps AS build-deps-get
@@ -496,19 +498,11 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
     ARG LANG
     ENV LANG=$LANG
 
+    ARG APP_DIR
     ARG APP_GROUP
     ARG APP_GROUP_ID
     ARG APP_USER
     ARG APP_USER_ID
-
-    ARG MIX_ENV
-    ARG RELEASE
-
-    # Copy just the locale file needed
-    # COPY --from=prod-install /usr/lib/locale/C.UTF-8 /usr/lib/locale/C.UTF-8
-
-    # Set environment vars used by the app, e.g. SECRET_KEY_BASE, DATABASE_URL.
-    # Maybe set COOKIE and other things.
 
     # Create OS user and group to run app under
     RUN if ! grep -q "$APP_USER" /etc/passwd; \
@@ -537,16 +531,8 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
         echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/${DEBIAN_SNAPSHOT} bullseye-security main" >> /etc/apt/sources.list && \
         echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT} bullseye-updates main" >> /etc/apt/sources.list
 
-    # If LANG=C.UTF-8 is not enough, build full featured locale
-    # RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
-    #     --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
-    #     set -exu && \
-    #       apt-get update -qq && \
-    #       DEBIAN_FRONTEND=noninteractive \
-    #       apt-get -y install -y -qq --no-install-recommends locales && \
-    #       localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8 \
-    #
-    # ENV LANG en_US.utf8
+    # Copy just the locale file needed
+    # COPY --from=prod-install /usr/lib/locale/${LANG} /usr/lib/locale/
 
     RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
@@ -597,6 +583,7 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
         # Clear logs of installed packages
         truncate -s 0 /var/log/apt/* && \
         truncate -s 0 /var/log/dpkg.log
+
 
 # Create final prod image which gets deployed
 FROM prod-base AS prod
@@ -669,6 +656,7 @@ FROM prod-base AS prod
 
     # Run app in foreground
     CMD ["start"]
+
 
 # Dev image which mounts code from local filesystem
 FROM build-os-deps AS dev
@@ -752,6 +740,7 @@ FROM build-os-deps AS dev
     EXPOSE $APP_PORT
 
     CMD [ "sleep", "infinity" ]
+
 
 # Copy build artifacts to host
 FROM scratch AS artifacts

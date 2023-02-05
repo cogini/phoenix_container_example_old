@@ -6,7 +6,6 @@
 
 ARG ELIXIR_VERSION=1.14.3
 ARG OTP_VERSION=25.2.2
-
 ARG ALPINE_VERSION=3.17.0
 
 # By default, packages come from the APK index for the base Alpine image.
@@ -31,6 +30,7 @@ ARG PUBLIC_REGISTRY=$REGISTRY
 ARG BUILD_BASE_IMAGE_NAME=${PUBLIC_REGISTRY}hexpm/elixir
 ARG BUILD_BASE_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-alpine-${ALPINE_VERSION}
 
+# Base for final prod image
 ARG PROD_BASE_IMAGE_NAME=${PUBLIC_REGISTRY}alpine
 ARG PROD_BASE_IMAGE_TAG=$ALPINE_VERSION
 
@@ -86,6 +86,8 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         then addgroup -g "$APP_GROUP_ID" -S "$APP_GROUP" && \
         adduser -u "$APP_USER_ID" -S "$APP_USER" -G "$APP_GROUP" -h "$APP_DIR"; fi
 
+    # Install tools and libraries to build binary libraries
+    # Not necessary for a minimal Phoenix app, but likely needed
     # See https://wiki.alpinelinux.org/wiki/Local_APK_cache for details
     # on the local cache and need for the symlink
     RUN --mount=type=cache,id=apk,target=/var/cache/apk,sharing=locked \
@@ -191,6 +193,12 @@ FROM build-deps-get AS test-image
     # isolation https://github.com/elixir-lang/elixir/issues/9407
     # RUN mix cmd mix compile --warnings-as-errors
 
+    # Add test libraries
+    # RUN yarn global add newman
+    # RUN yarn global add newman-reporter-junitfull
+
+    # COPY Postman ./Postman
+
 # Create Elixir release
 FROM build-deps-get AS prod-release
     ARG APP_DIR
@@ -278,19 +286,13 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
     ARG LANG
     ENV LANG=$LANG
 
+    ARG APP_DIR
     ARG APP_GROUP
     ARG APP_GROUP_ID
     ARG APP_USER
     ARG APP_USER_ID
 
-    ARG MIX_ENV
-    ARG RELEASE
-
     ARG RUNTIME_PACKAGES
-
-    # Set environment vars used by the app, e.g. SECRET_KEY_BASE, DATABASE_URL.
-    # Maybe set COOKIE and other things.
-    ENV HOME=$APP_DIR
 
     # Create OS user and group to run app under
     # https://wiki.alpinelinux.org/wiki/Setting_up_a_new_user#adduser

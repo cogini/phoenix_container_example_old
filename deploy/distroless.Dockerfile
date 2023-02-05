@@ -129,6 +129,7 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT} bullseye-updates main" >> /etc/apt/sources.list
 
     # Install tools and libraries to build binary libraries
+    # Not necessary for a minimal Phoenix app, but likely needed
     RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
         --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
@@ -597,6 +598,7 @@ FROM prod-base AS prod
     # Run app in foreground
     CMD ["start"]
 
+
 # Dev image which mounts code from local filesystem
 FROM build-os-deps AS dev
     ARG DEV_PACKAGES
@@ -679,6 +681,7 @@ FROM build-os-deps AS dev
     EXPOSE $APP_PORT
 
     CMD [ "sleep", "infinity" ]
+
 
 # Copy build artifacts to host
 FROM scratch AS artifacts
