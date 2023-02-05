@@ -33,7 +33,7 @@ env:
   # Docker
   DOCKER_BUILDKIT: '1'
   COMPOSE_DOCKER_CLI_BUILD: '1'
-  COMPOSE_FILE: deploy/docker-compose.gha.yml
+  COMPOSE_FILE: docker-compose.gha.yml
   DOCKER_FILE: deploy/debian.Dockerfile
   # Datadog
   # DD_API_KEY: ${{ secrets.ACTIONS_DD_API_KEY }}
