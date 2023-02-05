@@ -490,6 +490,7 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
     #     rm -rf ./aws && \
     #     rm awscliv2.zip
 
+
 # Create base image for prod with everything but the code release
 FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
     ARG DEBIAN_SNAPSHOT

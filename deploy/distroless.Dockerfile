@@ -496,6 +496,7 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
     RUN ls -l "/lib/$(uname -m)-linux-gnu/"
     RUN ls -l "/usr/lib/$(uname -m)-linux-gnu/"
 
+
 # Create base image for prod with everything but the code release
 FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
     ARG LINUX_ARCH
