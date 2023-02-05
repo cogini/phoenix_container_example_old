@@ -5,8 +5,6 @@
 # Choose a combination supported by https://hub.docker.com/r/hexpm/elixir/tags
 
 ARG ELIXIR_VERSION=1.14.3
-# ARG OTP_VERSION=24.3.4.2
-# ARG OTP_VERSION=25.2
 ARG OTP_VERSION=25.2.2
 
 # ARG ELIXIR_DEBIAN_VERSION=buster-20210208
