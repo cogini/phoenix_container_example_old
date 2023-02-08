@@ -40,7 +40,7 @@ ARG BUILD_BASE_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-${ELIXIR
 
 # Base for final prod image
 # https://github.com/GoogleContainerTools/distroless/blob/main/base/README.md
-ARG PROD_BASE_IMAGE_NAME=gcr.io/distroless/base-debian11
+ARG PROD_BASE_IMAGE_NAME=gcr.io/distroless/cc-debian11
 # ARG PROD_BASE_IMAGE_TAG=debug-nonroot
 # ARG PROD_BASE_IMAGE_TAG=latest
 # debug includes busybox, which we need to run Erlang startup scripts
@@ -507,20 +507,21 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
 
     RUN ["/busybox/sh", "-c", "ln -s /busybox/sh /bin/sh"]
 
-    # Copy just the locale file needed
+    # Copy just the locale file used
     COPY --from=prod-install /usr/lib/locale/${LANG} /usr/lib/locale/
 
-    # Add shared libraries needed at runtime
+    # Copy shared libraries needed at runtime
+
+    # libtinfo6
     COPY --from=prod-install "/lib/${LINUX_ARCH}-linux-gnu/libtinfo.so.6.2" "/lib/${LINUX_ARCH}-linux-gnu/libtinfo.so.6"
-    # RUN ln -s "/lib/$(uname -m)-linux-gnu/libtinfo.so.6.2" "/lib/$(uname -m)-linux-gnu/libtinfo.so.6"
-
-    COPY --from=prod-install "/lib/${LINUX_ARCH}-linux-gnu/libgcc_s.so.1" "/lib/${LINUX_ARCH}-linux-gnu/"
-
+    # libncurses6
     COPY --from=prod-install "/lib/${LINUX_ARCH}-linux-gnu/libncursesw.so.6.2" "/lib/${LINUX_ARCH}-linux-gnu/libncurses2.so.6"
-    # RUN ln -s "/lib/$(uname -m)-linux-gnu/libncursesw.so.6.2" "/lib/$(uname -m)-linux-gnu/libncursesw.so.6"
 
-    COPY --from=prod-install "/usr/lib/${LINUX_ARCH}-linux-gnu/libstdc++.so.6.0.28" "/usr/lib/${LINUX_ARCH}-linux-gnu/libstdc++.so.6"
-    # RUN ln -s "/usr/lib/$(uname -m)-linux-gnu/libstdc++.so.6.0.28" "/usr/lib/$(uname -m)-linux-gnu/libstdc++.so.6"
+    # Part of distroless/cc image
+    # libgcc-s1
+    # COPY --from=prod-install "/lib/${LINUX_ARCH}-linux-gnu/libgcc_s.so.1" "/lib/${LINUX_ARCH}-linux-gnu/"
+    # libstdc++6
+    # COPY --from=prod-install "/usr/lib/${LINUX_ARCH}-linux-gnu/libstdc++.so.6.0.28" "/usr/lib/${LINUX_ARCH}-linux-gnu/libstdc++.so.6"
 
 
 # Create final prod image which gets deployed
