@@ -238,7 +238,7 @@ jobs:
       #   continue-on-error: true
       #   run: |
       #     npm install -g @datadog/datadog-ci
-      #     datadog-ci junit upload --service api-graphql junit-reports/*.xml
+      #     datadog-ci junit upload --service api-graphql junit-reports/
 
   test-dialyzer:
     name: Run dialyzer
