@@ -31,6 +31,13 @@ jobs:
 
       # Upload SARIF report files
       security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [debian, alpine, distroless]
+    env:
+      DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
+      OS: ${{ matrix.os }}
     steps:
       - name: Log in to GHCR
         uses: docker/login-action@v2
