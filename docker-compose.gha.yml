@@ -106,6 +106,12 @@ services:
       - DD_DOGSTATSD_NON_LOCAL_TRAFFIC=true
     restart: always
 
+  grype:
+    image: "${PUBLIC_REGISTRY:-docker.io/}anchore/grype"
+    volumes:
+      - "./.cache:/var/cache"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+
   kafka:
     image: 'bitnami/kafka:2'
     ports:
@@ -219,6 +225,13 @@ services:
       timeout: 5s
       interval: 5s
       retries: 5
+
+  trivy:
+    # image: "${PUBLIC_REGISTRY:-docker.io/}aquasec/trivy"
+    image: ghcr.io/aquasecurity/trivy
+    volumes:
+      - "./.cache:/var/cache"
+      - "/var/run/docker.sock:/var/run/docker.sock"
 
   zookeeper:
     image: 'bitnami/zookeeper:3'
