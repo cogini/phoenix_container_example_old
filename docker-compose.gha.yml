@@ -168,7 +168,7 @@ services:
     # image: "${PUBLIC_REGISTRY:-docker.io/}postman/newman"
     image: "${REGISTRY:-docker.io/}${IMAGE_OWNER}/newman"
     build:
-      dockerfile: newman.Dockerfile
+      dockerfile: deploy/newman.Dockerfile
       args:
         BUILDKIT_INLINE_CACHE: "1"
         REGISTRY: ${REGISTRY:-docker.io/}
