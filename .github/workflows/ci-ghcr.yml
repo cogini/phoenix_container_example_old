@@ -312,7 +312,12 @@ jobs:
         with:
           scan-type: 'fs'
           scan-ref: '.'
-          trivy-config: trivy.yaml
+          # ignore-unfixed: true
+          # severity: 'CRITICAL'
+          # trivy-config: trivy.yaml
+          # format: 'table'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
 
       - name: Upload trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v2
@@ -322,7 +327,7 @@ jobs:
         # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github
         if: always()
         with:
-          sarif_file: './sarif-reports/'
+          sarif_file: 'trivy-results.sarif'
           category: trivy
 
       - name: Scan code with grype
@@ -331,7 +336,8 @@ jobs:
         id: scan-grype
         with:
           path: .
-          output-format: table
+          # output-format: table
+          output-format: 'sarif'
           fail-build: false
           # severity-cutoff: critical
 
