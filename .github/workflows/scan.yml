@@ -47,14 +47,14 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Pull image
-        run: docker pull ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{env.IMAGE_TAG}}
+        run: docker pull ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{ env.OS }}${{ env.IMAGE_VER }}
 
       - name: Scan image with Trivy
         uses: aquasecurity/trivy-action@master
         # https://github.com/aquasecurity/trivy-action
         # https://github.com/marketplace/actions/aqua-security-trivy#inputs
         with:
-          image-ref: ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{env.IMAGE_TAG}}
+          image-ref: ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{ env.OS }}${{ env.IMAGE_VER }}
           exit-code: '1' # fail build
           # ignore-unfixed: true
           # vuln-type: 'os,library'
@@ -79,7 +79,7 @@ jobs:
         # https://github.com/marketplace/actions/anchore-container-scan
         id: scan-grype
         with:
-          image: ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{env.IMAGE_TAG}}
+          image: ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{ env.OS }}${{ env.IMAGE_VER }}
           # severity-cutoff: critical
           fail-build: true
           output-format: table
@@ -88,5 +88,7 @@ jobs:
       #   uses: github/codeql-action/upload-sarif@v2
       #   if: always()
       #   with:
-      #     sarif_file: ${{ steps.scan-grype.outputs.sarif }}
-      #     category: grype
+      #     command: test
+      #     image: ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.OS }}${{ env.IMAGE_VER }}
+      #     args: --file=${{ env.DOCKER_FILE }} --project-name=api
+
