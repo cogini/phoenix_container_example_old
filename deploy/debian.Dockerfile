@@ -6,19 +6,14 @@
 
 ARG ELIXIR_VERSION=1.14.3
 ARG OTP_VERSION=25.2.2
-
-# ARG ELIXIR_DEBIAN_VERSION=buster-20210208
-# ARG ELIXIR_DEBIAN_VERSION=bullseye-20210902-slim
-# ARG ELIXIR_DEBIAN_VERSION=bullseye-20221004-slim
 ARG ELIXIR_DEBIAN_VERSION=bullseye-20230109-slim
 
 # https://docker.debian.net/
 # https://hub.docker.com/_/debian
-# ARG DEBIAN_VERSION=buster-slim
 ARG DEBIAN_VERSION=bullseye-slim
 
 # Use snapshot for consistent dependencies, see https://snapshot.debian.org/
-# ARG DEBIAN_SNAPSHOT=20221219
+# Needs to be updated manually
 ARG DEBIAN_SNAPSHOT=20230109
 
 ARG NODE_VERSION=16.14.1
@@ -273,6 +268,7 @@ FROM build-os-deps AS build-deps-get
         else \
             mix deps.get; \
         fi
+
 
 # Create base image for tests
 FROM build-deps-get AS test-image
