@@ -1,5 +1,7 @@
 ---
-name: CI
+# Build and run tests in containers.
+# Push images to GitHub Container Registry (GHCR) and AWS ECR.
+name: CI ghcr.io
 on: push
 # on:
 #   push:
@@ -19,6 +21,10 @@ env:
   # IMAGE_TAG: ${{ (github.ref == 'refs/heads/main' && 'staging') || (github.ref == 'refs/heads/qa' && 'qa') }}
   IMAGE_TAG: latest
   IMAGE_VER: ${{ github.sha }}
+  # OS variant that is deployed
+  PROD_OS: distroless
+  # OS variant if test matrix is not used
+  OS: debian
   # Registry for dev and test images
   REGISTRY: ghcr.io/
   # Registry for public images, default is docker.io
@@ -26,35 +32,346 @@ env:
   # Give GitHub Actions access to AWS
   AWS_ROLE_TO_ASSUME: arn:aws:iam::770916339360:role/foo-dev-ecr-github-action-role
   AWS_REGION: ap-northeast-1
+  # Datadog
+  # DD_API_KEY: ${{ secrets.ACTIONS_DD_API_KEY }}
+  # DD_ENV: ci
+  # DD_TAGS: "environment:ci"
+  # Docker
   DOCKER_BUILDKIT: '1'
   COMPOSE_DOCKER_CLI_BUILD: '1'
   COMPOSE_FILE: docker-compose.gha.yml
   DOCKER_FILE: deploy/debian.Dockerfile
 jobs:
-  build-prod:
-    name: Build prod image and push
+  build-test:
+    # Build image used to run tests
+    name: Build test image
     runs-on: ubuntu-latest
-    services:
-      registry:
-        image: registry:2
-        ports:
-          - 5000:5000
     permissions:
-      # Interact with GitHub OIDC Token endpoint for AWS
-      id-token: write
+      # Push to ghcr.io repository
+      packages: write
+      # Cancel previous runs
+      actions: write
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [debian, alpine]
+    env:
+      DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
+      OS: ${{ matrix.os }}
+    steps:
+      - name: Dump event
+        run: cat "$GITHUB_EVENT_PATH"
+
+      - name: Cancel previous runs in progress
+        uses: styfle/cancel-workflow-action@0.11.0
+        with:
+          access_token: ${{ github.token }}
+
+      - name: Check out source
+        uses: actions/checkout@v3
+
+      - name: Set variables
+        id: vars
+        run: |
+          echo "GITHUB_SHA_SHORT=$(echo $GITHUB_SHA | cut -c 1-7)" >> $GITHUB_ENV
+          echo "run_id=${GITHUB_RUN_ID}" >> $GITHUB_OUTPUT
+          echo "run_num=${GITHUB_RUN_NUMBER}" >> $GITHUB_OUTPUT
+
+      - name: Get branch name for main
+        if: github.event_name != 'pull_request'
+        run: echo "BRANCH=$(echo ${GITHUB_REF#refs/heads/})" >> $GITHUB_ENV
+
+      - name: Get branch name for pull_request
+        if: github.event_name == 'pull_request'
+        run: echo "BRANCH=$(echo $GITHUB_HEAD_REF | tr '//\\' '.' | cut -c -55)" >> $GITHUB_ENV
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v2
+        # https://github.com/marketplace/actions/docker-login
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Pull public images without rate limits
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # - name: Configure ssh keys
+      #   uses: webfactory/ssh-agent@v0.7.0
+      #   # Configure machine key or deploy keys to access private repos from build
+      #   # https://github.com/marketplace/actions/webfactory-ssh-agent
+      #   # https://docs.github.com/en/developers/overview/managing-deploy-keys#deploy-keys
+      #   # ssh-keygen -t ed25519 -m pem -C "git@github.com:reachfh/api-utils.git" -f api-utils
+      #   with:
+      #     ssh-private-key: |
+      #       ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Set env vars for builds
+        run: |
+          echo 'DATABASE_HOST=postgres' >> ./.env.test
+
+      # - name: Set up QEMU for multi-platform builds
+      #   id: qemu
+      #   uses: docker/setup-qemu-action@v2
+      #   with:
+      #     platforms: linux/amd64,linux/arm64
+
+      # - name: Display available platforms
+      #   run: echo "${{ steps.qemu.outputs.platforms }}"
+
+      - name: Set up Docker buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v2
+        with:
+          driver-opts: network=host
+
+      - name: Build test image and push to GHCR
+        uses: docker/build-push-action@v3
+        # https://github.com/docker/build-push-action
+        with:
+          file: ${{ env.DOCKER_FILE }}
+          target: test-image
+          context: .
+          builder: ${{ steps.buildx.outputs.name }}
+          push: true
+          # https://github.com/moby/buildkit#export-cache
+          cache-from: type=gha,scope=${{ github.workflow }}-test-${{ env.OS }}
+          cache-to: type=gha,scope=${{ github.workflow }}-test-${{ env.OS }},mode=max
+          # ssh: default
+          tags: |
+            ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:test${{ env.OS }}${{ env.IMAGE_VER }}
+          # secrets: |
+          #   "access_token=${{ secrets.DEVOPS_ACCESS_TOKEN }}"
+          #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
+          #   "oban_license_key=${{ secrets.OBAN_LICENSE_KEY }}"
+
+  test:
+    name: Run tests
+    runs-on: ubuntu-latest
+    # permissions: write-all
+    permissions:
+      # Read from ghcr.io repository
+      packages: read
+
+      # Upload JUnit report files
+      # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
       contents: read
+      checks: write
+      pull-requests: write
+      issues: read
+    needs: [build-test]
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [debian, alpine]
+        # ci_node_total: [2]
+        # ci_node_index: [1, 2]
+    env:
+      DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
+      OS: ${{ matrix.os }}
+    steps:
+      - name: Log in to GHCR
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check out source
+        uses: actions/checkout@v3
+
+      - name: Pull repos
+        run: |
+          docker compose pull --quiet --include-deps test
+          docker images --no-trunc
+
+      - name: Start services
+        run: docker compose up --detach test
+
+      - name: Show docker logs
+        if: failure()
+        run: |
+          docker compose logs --timestamps postgres
+          docker compose logs --timestamps test
+          docker compose ps --format json | jq .
+
+      - name: Display health check results
+        if: failure()
+        run: |
+          echo postgres
+          docker inspect --format "{{json .State.Health }}" $(docker compose ps -q postgres) | jq
+          echo redis
+          docker inspect --format "{{json .State.Health }}" $(docker compose ps -q redis) | jq
+
+      - name: Debug env
+        if: failure()
+        run: |
+          docker compose run test env
+          # docker compose run test env PGPASSWORD=postgres /usr/bin/psql -w -h postgres -U postgres -d postgres -c "SELECT 1"
+          # docker compose run test env PGPASSWORD=postgres /usr/lib/postgresql/13/bin/pg_isready -h postgres -p 5432 -d postgres -U postgres
+
+      - name: Initialize test database
+        run: docker compose run test mix do ecto.create, ecto.migrate
+
+      - name: Run tests
+        # run: docker compose run test mix test --cover
+        # run: docker compose run test env MIX_TEST_PARTITION=${{ matrix.ci_node_index }} mix test --partitions ${{ matrix.ci_node_total }}
+        run: docker compose run test mix test
+
+      - name: Run quality checks
+        run: docker compose run test mix do format --check-formatted, deps.unlock --check-unused, credo --all, hex.audit, deps.audit, sobelow
+
+      - name: Publish unit test results to GitHub
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        # Run even if tests fail
+        if: always()
+        with:
+          # Volume mounted from local filesystem into build
+          junit_files: junit-reports/*.xml
+
+      # - name: Upload test results to Datadog
+      #   if: always()
+      #   continue-on-error: true
+      #   run: |
+      #     npm install -g @datadog/datadog-ci
+      #     datadog-ci junit upload --service api-graphql junit-reports/
+
+  test-dialyzer:
+    name: Run dialyzer
+    runs-on: ubuntu-latest
+    needs: [build-test]
+    permissions:
+      # Read from ghcr.io repository
+      packages: read
 
       # Upload JUnit report files
       # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
       checks: write
       pull-requests: write
       issues: read
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [debian, alpine]
+    env:
+      DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
+      OS: ${{ matrix.os }}
     steps:
-      - name: Cancel previous runs in progress
-        uses: styfle/cancel-workflow-action@0.11.0
+      - name: Log in to GHCR
+        uses: docker/login-action@v2
         with:
-          access_token: ${{ github.token }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Check out source
+        uses: actions/checkout@v3
+
+      - name: Pull repos
+        run: |
+          docker compose pull --quiet test
+          docker images --no-trunc
+
+      - name: Run dialyzer
+        run: docker compose run test mix dialyzer --no-check --format github
+
+  test-scan:
+    name: Security scan code
+    runs-on: ubuntu-latest
+    needs: [build-test]
+    permissions:
+      # Read from ghcr.io repository
+      packages: read
+
+      # Upload JUnit report files
+      # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
+      checks: write
+      pull-requests: write
+      issues: read
+
+      # Upload SARIF report files
+      security-events: write
+    steps:
+      - name: Log in to GHCR
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Checkout source
+        uses: actions/checkout@v3
+
+      - name: Scan code with trivy
+        uses: aquasecurity/trivy-action@master
+        # https://github.com/marketplace/actions/aqua-security-trivy
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          # ignore-unfixed: true
+          # severity: 'CRITICAL'
+          # trivy-config: trivy.yaml
+          # format: 'table'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        # Requires GitHub Advanced Security
+        # https://docs.github.com/en/get-started/learning-about-github/about-github-advanced-security
+        # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning
+        # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+          category: trivy
+
+      - name: Scan code with grype
+        uses: anchore/scan-action@v3
+        # https://github.com/marketplace/actions/anchore-container-scan
+        id: scan-grype
+        with:
+          path: .
+          # output-format: table
+          output-format: 'sarif'
+          fail-build: false
+          # severity-cutoff: critical
+
+      - name: Upload grype scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: ${{ steps.scan-grype.outputs.sarif }}
+          category: grype
+
+  build-prod:
+    name: Build prod image
+    runs-on: ubuntu-latest
+    permissions:
+      # Interact with GitHub OIDC Token endpoint for AWS
+      id-token: write
+      contents: read
+
+      # Push to ghcr.io repository
+      packages: write
+
+      # Upload JUnit report files
+      # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
+      checks: write
+      pull-requests: write
+      issues: read
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [debian, alpine, distroless]
+    env:
+      DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
+      OS: ${{ matrix.os }}
+    steps:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1-node16
         # https://github.com/aws-actions/configure-aws-credentials
@@ -76,6 +393,13 @@ jobs:
       #     registry: ${{ env.ECR_REGISTRY }}
       #     username: ${{ secrets.AWS_ACCESS_KEY_ID }}
       #     password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
@@ -116,57 +440,26 @@ jobs:
         with:
           driver-opts: network=host
 
-      - name: Build test image
+      - name: Build prod image and push to GHCR
         uses: docker/build-push-action@v3
-        env:
-          REGISTRY_NAME: localhost:5000
-          REGISTRY: localhost:5000/
         with:
           file: ${{ env.DOCKER_FILE }}
-          target: test-image
+          target: prod
           context: .
           builder: ${{ steps.buildx.outputs.name }}
           push: true
-          # https://github.com/moby/buildkit#export-cache
-          cache-from: type=gha,scope=${{ github.workflow }}-test
-          cache-to: type=gha,scope=${{ github.workflow }}-test,mode=max
+          cache-from: type=gha,scope=${{ github.workflow }}-${{ env.OS }}
+          cache-to: type=gha,scope=${{ github.workflow }}-${{ env.OS }},mode=max
           # ssh: default
           tags: |
-            localhost:5000/${{ env.IMAGE_OWNER}}/${{ env.IMAGE_NAME }}:test-${{ env.IMAGE_VER }}
+            ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.OS }}${{ env.IMAGE_VER }}
+            ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.BRANCH }}-${{ env.GITHUB_SHA_SHORT }}
           # secrets: |
           #   "access_token=${{ secrets.DEVOPS_ACCESS_TOKEN }}"
           #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
           #   "oban_license_key=${{ secrets.OBAN_LICENSE_KEY }}"
 
-      - name: Start postgres
-        env:
-          REGISTRY: ghcr.io/
-        run: docker compose up --wait --detach postgres
-
-      - name: Run tests
-        env:
-          REGISTRY: localhost:5000/
-        run: docker compose run test mix test --cover
-
-      - name: Publish unit test results to GitHub
-        uses: EnricoMi/publish-unit-test-result-action@v2
-        # Run even if tests fail
-        if: always()
-        with:
-          # Volume mounted from local filesystem into build
-          junit_files: junit-reports/*.xml
-
-      - name: Run quality checks
-        env:
-          REGISTRY: localhost:5000/
-        run: docker compose run test mix do format --check-formatted, deps.unlock --check-unused, credo, hex.audit, deps.audit, sobelow
-
-      - name: Run dialyzer
-        env:
-          REGISTRY: localhost:5000/
-        run: docker compose run test mix dialyzer --no-check --halt-exit-status --format github
-
-      - name: Build prod image and push
+      - name: Build prod image and push to AWS ECR
         uses: docker/build-push-action@v3
         env:
           REGISTRY: "${{ env.ECR_REGISTRY }}/"
@@ -175,11 +468,207 @@ jobs:
           target: prod
           context: .
           builder: ${{ steps.buildx.outputs.name }}
-          push: false
-          cache-from: type=gha,scope=${{ github.workflow }}
-          cache-to: type=gha,scope=${{ github.workflow }},mode=max
+          push: true
+          cache-from: type=gha,scope=${{ github.workflow }}-${{ env.OS }}
+          cache-to: type=gha,scope=${{ github.workflow }}-${{ env.OS }},mode=max
           # ssh: default
-          # ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.BRANCH }}-${{ env.GITHUB_SHA_SHORT }}
+          tags: |
+            ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.OS }}${{ env.IMAGE_VER }}
+            ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.BRANCH }}-${{ env.GITHUB_SHA_SHORT }}
+          # secrets: |
+          #   "access_token=${{ secrets.DEVOPS_ACCESS_TOKEN }}"
+          #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
+          #   "oban_license_key=${{ secrets.OBAN_LICENSE_KEY }}"
+
+  scan:
+    name: Security scan prod image
+    runs-on: ubuntu-latest
+    needs: [build-prod]
+    permissions:
+      # Interact with GitHub's OIDC Token endpoint for AWS
+      id-token: write
+      contents: read
+
+      # Read from ghcr.io repository
+      packages: read
+
+      # Upload JUnit report files
+      # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
+      checks: write
+      pull-requests: write
+      issues: read
+
+      # Upload SARIF report files
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [debian, alpine, distroless]
+    env:
+      DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
+      OS: ${{ matrix.os }}
+    steps:
+      - name: Log in to GHCR
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull image
+        run: docker pull ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{ env.OS }}${{ env.IMAGE_VER }}
+
+      - name: Scan image with Trivy
+        uses: aquasecurity/trivy-action@master
+        # https://github.com/aquasecurity/trivy-action
+        # https://github.com/marketplace/actions/aqua-security-trivy#inputs
+        with:
+          image-ref: ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{ env.OS }}${{ env.IMAGE_VER }}
+          # exit-code: '1' # fail build
+          # ignore-unfixed: true
+          # vuln-type: 'os,library'
+          # severity: 'CRITICAL,HIGH'
+          # cache-dir: /var/cache
+          format: 'sarif'
+          output: 'trivy.sarif'
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        # Requires GitHub Advanced Security
+        # https://docs.github.com/en/get-started/learning-about-github/about-github-advanced-security
+        # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning
+        # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github
+        if: always()
+        with:
+          sarif_file: 'trivy.sarif'
+          category: trivy
+
+      - name: Scan image with Grype
+        uses: anchore/scan-action@v3
+        # https://github.com/marketplace/actions/anchore-container-scan
+        id: scan-grype
+        with:
+          image: ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{ env.OS }}${{ env.IMAGE_VER }}
+          # severity-cutoff: critical
+          fail-build: false
+          output-format: 'sarif'
+          # output-format: table
+
+      - name: Upload Grype scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: ${{ steps.scan-grype.outputs.sarif }}
+          category: grype
+
+      # - name: Scan image with snyk
+      #   # if: github.event_name != 'pull_request'
+      #   uses: snyk/actions/docker@master
+      #   continue-on-error: true
+      #   env:
+      #     SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      #   with:
+      #     command: test
+      #     image: ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.OS }}${{ env.IMAGE_VER }}
+      #     args: --file=${{ env.DOCKER_FILE }} --project-name=api
+
+  prod:
+    name: Deploy prod images
+    if: github.event_name != 'pull_request'
+    # if: contains(github.ref, 'refs/heads/main')
+    runs-on: ubuntu-latest
+    needs: [build-prod, test]
+    permissions:
+      # Interact with GitHub's OIDC Token endpoint for AWS
+      id-token: write
+      contents: read
+
+      # Push to ghcr.io repository
+      packages: write
+
+      # Upload JUnit report files
+      # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
+      checks: write
+      pull-requests: write
+      issues: read
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1-node16
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Log in to Amazon ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Set vars
+        run: echo "ECR_REGISTRY=${{ steps.ecr-login.outputs.registry }}" >> $GITHUB_ENV
+
+      # - name: Log in to ECR
+      #   uses: docker/login-action@v2
+      #   with:
+      #     registry: ${{ env.ECR_REGISTRY }}
+      #     username: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      #     password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Tag GHCR release as latest
+        run: |
+          docker buildx imagetools create \
+            --append ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{env.PROD_OS}}${{env.IMAGE_VER}} \
+            --tag ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{env.IMAGE_TAG}}
+
+      - name: Check out source
+        uses: actions/checkout@v3
+
+      - name: Set up Docker buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v2
+        with:
+          driver-opts: network=host
+
+      # - name: Build final prod image and push to GHCR as latest
+      #   uses: docker/build-push-action@v3
+      #   with:
+      #     file: ${{ env.DOCKER_FILE }}
+      #     target: prod
+      #     context: .
+      #     builder: ${{ steps.buildx.outputs.name }}
+      #     push: true
+      #     cache-from: type=gha,scope=${{ github.workflow }}
+      #     cache-to: type=gha,scope=${{ github.workflow }},mode=max
+      #     tags: |
+      #       ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{ env.IMAGE_TAG }}
+      #       ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{ env.IMAGE_VER }}
+
+      # - name: Tag ECR release as latest
+      #   run: |
+      #     export MANIFEST=$(aws ecr batch-get-image --repository-name ${{ env.IMAGE_NAME }} \
+      #       --image-ids imageTag=${{ env.IMAGE_VER }} --output json | jq --raw-output --join-output '.images[0].imageManifest')
+      #     aws ecr put-image --repository-name ${{ env.IMAGE_NAME }} \
+      #       --image-tag ${{ env.IMAGE_TAG }} --image-manifest "$MANIFEST"
+      #     aws ecr describe-images --repository-name ${{ env.IMAGE_NAME }}
+
+      - name: Build final prod image and push to AWS ECR as latest
+        uses: docker/build-push-action@v3
+        env:
+          REGISTRY: "${{ env.ECR_REGISTRY }}/"
+        with:
+          file: ${{ env.DOCKER_FILE }}
+          target: prod
+          context: .
+          builder: ${{ steps.buildx.outputs.name }}
+          push: true
+          cache-from: type=gha,scope=${{ github.workflow }}-${{ env.PROD_OS }}
+          cache-to: type=gha,scope=${{ github.workflow }}-${{ env.PROD_OS }},mode=max
+          # ssh: default
           tags: |
             ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
             ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_VER }}
@@ -187,3 +676,34 @@ jobs:
           #   "access_token=${{ secrets.DEVOPS_ACCESS_TOKEN }}"
           #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
           #   "oban_license_key=${{ secrets.OBAN_LICENSE_KEY }}"
+
+  # container-test:
+  #   runs-on: ubuntu-latest
+  #   needs: [build-test]
+  #   permissions: write-all
+  #   container:
+  #     image: ghcr.io/cogini/foo-app:test
+  #     volumes:
+  #       - /junit-reports:/junit-reports
+  #     credentials:
+  #       username: ${{ github.actor }}
+  #       password: ${{ secrets.GITHUB_TOKEN }}
+  #   steps:
+  #     - name: Run pwd
+  #       run: pwd
+  #     - name: Run ls
+  #       run: ls
+  #     - name: Run mix test
+  #       run: mix do format --check-formatted, credo, deps.audit, sobelow
+
+  # https://docs.github.com/en/actions/using-jobs/running-jobs-in-a-container
+  # container-test-job:
+  #   runs-on: ubuntu-latest
+  #   needs: [build-scan]
+  #   container:
+  #     image: ghcr.io/${{ github.repository_owner }}/foo-app:scan
+  #     volumes:
+  #       - /sarif-reports:/sarif-reports
+  #   steps:
+  #     - name: Trivy scan fs
+  #       run: trivy fs --no-progress /

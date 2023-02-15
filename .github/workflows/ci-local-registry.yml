@@ -1,0 +1,189 @@
+---
+name: CI
+on: push
+# on:
+#   push:
+#     branches: [main]
+#     paths-ignore:
+#       - 'README.md'
+#       - '.github/**'
+#       - '.vscode'
+#       - '.gitignore'
+#   pull_request:
+#     # branches: [main]
+#     types: [opened,synchronize,reopened,labeled,unlabeled]
+env:
+  IMAGE_NAME: foo-app
+  IMAGE_OWNER: ${{ github.repository_owner }}
+  # Tag for release images
+  # IMAGE_TAG: ${{ (github.ref == 'refs/heads/main' && 'staging') || (github.ref == 'refs/heads/qa' && 'qa') }}
+  IMAGE_TAG: latest
+  IMAGE_VER: ${{ github.sha }}
+  # Registry for dev and test images
+  REGISTRY: ghcr.io/
+  # Registry for public images, default is docker.io
+  PUBLIC_REGISTRY: ""
+  # Give GitHub Actions access to AWS
+  AWS_ROLE_TO_ASSUME: arn:aws:iam::770916339360:role/foo-dev-ecr-github-action-role
+  AWS_REGION: ap-northeast-1
+  DOCKER_BUILDKIT: '1'
+  COMPOSE_DOCKER_CLI_BUILD: '1'
+  COMPOSE_FILE: docker-compose.gha.yml
+  DOCKER_FILE: deploy/debian.Dockerfile
+jobs:
+  build-prod:
+    name: Build prod image and push
+    runs-on: ubuntu-latest
+    services:
+      registry:
+        image: registry:2
+        ports:
+          - 5000:5000
+    permissions:
+      # Interact with GitHub OIDC Token endpoint for AWS
+      id-token: write
+      contents: read
+
+      # Upload JUnit report files
+      # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
+      checks: write
+      pull-requests: write
+      issues: read
+    steps:
+      - name: Cancel previous runs in progress
+        uses: styfle/cancel-workflow-action@0.11.0
+        with:
+          access_token: ${{ github.token }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1-node16
+        # https://github.com/aws-actions/configure-aws-credentials
+        # https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Log in to Amazon ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Set vars
+        run: echo "ECR_REGISTRY=${{ steps.ecr-login.outputs.registry }}" >> $GITHUB_ENV
+
+      # - name: Log in to ECR
+      #   uses: docker/login-action@v2
+      #   with:
+      #     registry: ${{ env.ECR_REGISTRY }}
+      #     username: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      #     password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Check out source
+        uses: actions/checkout@v3
+
+      - name: Set variables
+        id: vars
+        run: |
+          echo "GITHUB_SHA_SHORT=$(echo $GITHUB_SHA | cut -c 1-7)" >> $GITHUB_ENV
+          echo "run_id=${GITHUB_RUN_ID}" >> $GITHUB_OUTPUT
+          echo "run_num=${GITHUB_RUN_NUMBER}" >> $GITHUB_OUTPUT
+
+      - name: Get branch name for push
+        if: github.event_name != 'pull_request'
+        run: echo "BRANCH=$(echo ${GITHUB_REF#refs/heads/})" >> $GITHUB_ENV
+
+      - name: Get branch name for pull_request
+        if: github.event_name == 'pull_request'
+        run: echo "BRANCH=$(echo $GITHUB_HEAD_REF | tr '//\\' '.' | cut -c -55)" >> $GITHUB_ENV
+
+      # - name: Configure ssh keys
+      #   uses: webfactory/ssh-agent@v0.7.0
+      #   # https://github.com/marketplace/actions/webfactory-ssh-agent
+      #   # https://docs.github.com/en/developers/overview/managing-deploy-keys#deploy-keys
+      #   # ssh-keygen -t ed25519 -m pem -C "git@github.com:reachfh/api-utils.git" -f api-utils
+      #   with:
+      #     ssh-private-key: |
+      #       ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Set up Docker buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v2
+        with:
+          driver-opts: network=host
+
+      - name: Build test image
+        uses: docker/build-push-action@v3
+        env:
+          REGISTRY_NAME: localhost:5000
+          REGISTRY: localhost:5000/
+        with:
+          file: ${{ env.DOCKER_FILE }}
+          target: test-image
+          context: .
+          builder: ${{ steps.buildx.outputs.name }}
+          push: true
+          # https://github.com/moby/buildkit#export-cache
+          cache-from: type=gha,scope=${{ github.workflow }}-test
+          cache-to: type=gha,scope=${{ github.workflow }}-test,mode=max
+          # ssh: default
+          tags: |
+            localhost:5000/${{ env.IMAGE_OWNER}}/${{ env.IMAGE_NAME }}:test-${{ env.IMAGE_VER }}
+          # secrets: |
+          #   "access_token=${{ secrets.DEVOPS_ACCESS_TOKEN }}"
+          #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
+          #   "oban_license_key=${{ secrets.OBAN_LICENSE_KEY }}"
+
+      - name: Start postgres
+        env:
+          REGISTRY: ghcr.io/
+        run: docker compose up --wait --detach postgres
+
+      - name: Run tests
+        env:
+          REGISTRY: localhost:5000/
+        run: docker compose run test mix test --cover
+
+      - name: Publish unit test results to GitHub
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        # Run even if tests fail
+        if: always()
+        with:
+          # Volume mounted from local filesystem into build
+          junit_files: junit-reports/*.xml
+
+      - name: Run quality checks
+        env:
+          REGISTRY: localhost:5000/
+        run: docker compose run test mix do format --check-formatted, deps.unlock --check-unused, credo, hex.audit, deps.audit, sobelow
+
+      - name: Run dialyzer
+        env:
+          REGISTRY: localhost:5000/
+        run: docker compose run test mix dialyzer --no-check --halt-exit-status --format github
+
+      - name: Build prod image and push
+        uses: docker/build-push-action@v3
+        env:
+          REGISTRY: "${{ env.ECR_REGISTRY }}/"
+        with:
+          file: ${{ env.DOCKER_FILE }}
+          target: prod
+          context: .
+          builder: ${{ steps.buildx.outputs.name }}
+          push: false
+          cache-from: type=gha,scope=${{ github.workflow }}
+          cache-to: type=gha,scope=${{ github.workflow }},mode=max
+          # ssh: default
+          # ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.BRANCH }}-${{ env.GITHUB_SHA_SHORT }}
+          tags: |
+            ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+            ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_VER }}
+          # secrets: |
+          #   "access_token=${{ secrets.DEVOPS_ACCESS_TOKEN }}"
+          #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
+          #   "oban_license_key=${{ secrets.OBAN_LICENSE_KEY }}"
