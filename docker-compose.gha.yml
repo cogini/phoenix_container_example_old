@@ -27,15 +27,15 @@ services:
       postgres:
         condition: service_healthy
 
-  # Final image that is deployed
+  # Final deploy image
   prod:
     image: "${REGISTRY:-docker.io/}${IMAGE_OWNER}/${IMAGE_NAME}:${OS}${IMAGE_VER:-latest}"
     build:
       dockerfile: ${DOCKER_FILE:-deploy/debian.Dockerfile}
       target: prod
       args:
-        MIX_ENV: prod
         BUILDKIT_INLINE_CACHE: "1"
+        MIX_ENV: prod
         REGISTRY: ${REGISTRY:-docker.io/}
       # secrets:
       #   - oban_license_key
