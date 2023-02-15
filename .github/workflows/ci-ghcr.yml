@@ -20,6 +20,7 @@ env:
   # Tag for release images
   # IMAGE_TAG: ${{ (github.ref == 'refs/heads/main' && 'staging') || (github.ref == 'refs/heads/qa' && 'qa') }}
   IMAGE_TAG: latest
+  IMAGE_VER: ${{ github.sha }}
   # OS variant that is deployed
   PROD_OS: debian
   # OS: debian
