@@ -18,7 +18,7 @@ services:
     environment:
       - DATABASE_DB
       - DATABASE_HOST=${DATABASE_HOST:-postgres}
-      - SECRET_KEY_BASE
+      - SECRET_KEY_BASE=${SECRET_KEY_BASE:-0cSFk8v5IsZIIGCjY+X66l5xULUl/2mczI4Eqf7slpyns5nBkhegDn6YH9th+5D2}
     volumes:
       - "./.cache:/var/cache"
       - "./junit-reports:/app/_build/test/junit-reports"
@@ -43,8 +43,8 @@ services:
       #   - access_token
       context: .
     environment:
-      - DATABASE_URL: ${DATABASE_URL:-ecto://postgres:postgres@postgres:5432/postgres}
-      - SECRET_KEY_BASE: ${SECRET_KEY_BASE:-0cSFk8v5IsZIIGCjY+X66l5xULUl/2mczI4Eqf7slpyns5nBkhegDn6YH9th+5D2}
+      - DATABASE_URL=${DATABASE_URL:-ecto://postgres:postgres@postgres:5432/postgres}
+      - SECRET_KEY_BASE=${SECRET_KEY_BASE:-0cSFk8v5IsZIIGCjY+X66l5xULUl/2mczI4Eqf7slpyns5nBkhegDn6YH9th+5D2}
     ports:
       - '4000:4000'
     # healthcheck:
