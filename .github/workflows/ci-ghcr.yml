@@ -312,7 +312,7 @@ jobs:
         with:
           scan-type: 'fs'
           scan-ref: '.'
-          # trivy-config: trivy.yaml
+          trivy-config: trivy.yaml
 
       - name: Upload trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v2
