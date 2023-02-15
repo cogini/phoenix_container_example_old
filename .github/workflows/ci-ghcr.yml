@@ -159,6 +159,7 @@ jobs:
 
       # Upload JUnit report files
       # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
+      contents: read
       checks: write
       pull-requests: write
       issues: read
