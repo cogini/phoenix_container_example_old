@@ -73,8 +73,8 @@ jobs:
         id: vars
         run: |
           echo "GITHUB_SHA_SHORT=$(echo $GITHUB_SHA | cut -c 1-7)" >> $GITHUB_ENV
-          echo "::set-output name=run_id::${GITHUB_RUN_ID}"
-          echo "::set-output name=run_num::${GITHUB_RUN_NUMBER}"
+          echo "run_id=${GITHUB_RUN_ID}" >> $GITHUB_OUTPUT
+          echo "run_num=${GITHUB_RUN_NUMBER}" >> $GITHUB_OUTPUT
 
       - name: Get branch name for main
         if: github.event_name != 'pull_request'
@@ -405,8 +405,8 @@ jobs:
         id: vars
         run: |
           echo "GITHUB_SHA_SHORT=$(echo $GITHUB_SHA | cut -c 1-7)" >> $GITHUB_ENV
-          echo "::set-output name=run_id::${GITHUB_RUN_ID}"
-          echo "::set-output name=run_num::${GITHUB_RUN_NUMBER}"
+          echo "run_id=${GITHUB_RUN_ID}" >> $GITHUB_OUTPUT
+          echo "run_num=${GITHUB_RUN_NUMBER}" >> $GITHUB_OUTPUT
 
       - name: Get branch name for push
         if: github.event_name != 'pull_request'
