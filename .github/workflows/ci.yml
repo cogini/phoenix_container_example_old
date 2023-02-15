@@ -2,12 +2,17 @@
 # Build and run tests in containers.
 # Push images to GitHub Container Registry (GHCR) and AWS ECR.
 name: CI
-on: ["push", "pull_request"]
+on: push
 # on:
 #   push:
 #     branches: [main]
+#     paths-ignore:
+#       - 'README.md'
+#       - '.github/**'
+#       - '.vscode'
+#       - '.gitignore'
 #   pull_request:
-#     branches: [main]
+#     # branches: [main]
 #     types: [opened,synchronize,reopened,labeled,unlabeled]
 env:
   IMAGE_NAME: foo-app
@@ -37,15 +42,14 @@ env:
   COMPOSE_FILE: docker-compose.gha.yml
   DOCKER_FILE: deploy/debian.Dockerfile
 jobs:
-  docker-build:
-    name: Build image and push
+  build-prod:
+    name: Build prod image and push
     runs-on: ubuntu-latest
     services:
       registry:
         image: registry:2
         ports:
           - 5000:5000
-
     permissions:
       # Interact with GitHub OIDC Token endpoint for AWS
       id-token: write
@@ -57,7 +61,7 @@ jobs:
       pull-requests: write
       issues: read
     steps:
-      - name: Cancel previous runs
+      - name: Cancel previous runs in progress
         uses: styfle/cancel-workflow-action@0.11.0
         with:
           access_token: ${{ github.token }}
@@ -97,8 +101,8 @@ jobs:
         id: vars
         run: |
           echo "GITHUB_SHA_SHORT=$(echo $GITHUB_SHA | cut -c 1-7)" >> $GITHUB_ENV
-          echo "::set-output name=run_id::${GITHUB_RUN_ID}"
-          echo "::set-output name=run_num::${GITHUB_RUN_NUMBER}"
+          echo "run_id=${GITHUB_RUN_ID}" >> $GITHUB_OUTPUT
+          echo "run_num=${GITHUB_RUN_NUMBER}" >> $GITHUB_OUTPUT
 
       - name: Get branch name for push
         if: github.event_name != 'pull_request'
@@ -141,6 +145,10 @@ jobs:
           # ssh: default
           tags: |
             localhost:5000/${{ env.IMAGE_OWNER}}/${{ env.IMAGE_NAME }}:test
+          # secrets: |
+          #   "access_token=${{ secrets.DEVOPS_ACCESS_TOKEN }}"
+          #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
+          #   "oban_license_key=${{ secrets.OBAN_LICENSE_KEY }}"
 
       - name: Start postgres
         env:
@@ -165,13 +173,12 @@ jobs:
 
       - name: Build prod image and push
         if: github.event_name != 'pull_request'
-        id: docker-push
         uses: docker/build-push-action@v3
         env:
-          REGISTRY: "${{ steps.login-ecr.outputs.registry }}/"
-          REGISTRY_NAME: ${{ steps.login-ecr.outputs.registry }}
+          REGISTRY: "${{ env.ECR_REGISTRY }}/"
         with:
           file: ${{ env.DOCKER_FILE }}
+          target: prod
           context: .
           builder: ${{ steps.buildx.outputs.name }}
           push: true
@@ -179,8 +186,12 @@ jobs:
           cache-to: type=gha,scope=${{ github.workflow }},mode=max
           # ssh: default
           tags: |
-            ${{ steps.login-ecr.outputs.registry }}/${{ env.IMAGE_NAME }}:latest
-            ${{ steps.login-ecr.outputs.registry }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_VER }}
+            ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+          # secrets: |
+          #   "access_token=${{ secrets.DEVOPS_ACCESS_TOKEN }}"
+          #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
+          #   "oban_license_key=${{ secrets.OBAN_LICENSE_KEY }}"
 
       - name: Build prod image and push
         if: github.event_name == 'pull_request'
@@ -193,8 +204,13 @@ jobs:
           push: true
           cache-from: type=gha,scope=${{ github.workflow }}
           cache-to: type=gha,scope=${{ github.workflow }},mode=max
+          # ssh: default
           tags: |
-            ${{ steps.login-ecr.outputs.registry }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+          # secrets: |
+          #   "access_token=${{ secrets.DEVOPS_ACCESS_TOKEN }}"
+          #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
+          #   "oban_license_key=${{ secrets.OBAN_LICENSE_KEY }}"
 
       - name: Publish unit test results to GitHub
         uses: EnricoMi/publish-unit-test-result-action@v2
