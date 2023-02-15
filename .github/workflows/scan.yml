@@ -10,7 +10,14 @@ env:
   IMAGE_NAME: foo-app
   IMAGE_OWNER: ${{ github.repository_owner }}
   # Tag for release images
+  # IMAGE_TAG: ${{ (github.ref == 'refs/heads/main' && 'staging') || (github.ref == 'refs/heads/qa' && 'qa') }}
   IMAGE_TAG: latest
+  IMAGE_VER: ${{ github.sha }}
+  # OS variant that is deployed
+  PROD_OS: distroless
+  # OS variant if test matrix is not used
+  OS: debian
+  DOCKER_FILE: deploy/debian.Dockerfile
 jobs:
   scan:
     name: Security scan prod image
