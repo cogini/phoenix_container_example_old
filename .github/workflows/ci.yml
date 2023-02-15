@@ -366,11 +366,8 @@ jobs:
       # Push to ghcr.io repository
       packages: write
 
-      # Upload JUnit report files
-      # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
-      checks: write
-      pull-requests: write
-      issues: read
+      # Cancel previous runs
+      actions: write
     strategy:
       fail-fast: false
       matrix:
@@ -498,6 +495,8 @@ jobs:
     permissions:
       # Push to ghcr.io repository
       packages: write
+      # Cancel previous runs
+      actions: write
     steps:
       - name: Cancel previous runs
         uses: styfle/cancel-workflow-action@0.11.0
