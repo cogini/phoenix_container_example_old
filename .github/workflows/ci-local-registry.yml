@@ -1,5 +1,8 @@
 ---
 name: CI local registry
+# Build test image and store to registry on build instance
+# Build prod image and push to AWS ECR
+# Use GHA caching
 on: push
 # on:
 #   push:
@@ -19,13 +22,22 @@ env:
   # IMAGE_TAG: ${{ (github.ref == 'refs/heads/main' && 'staging') || (github.ref == 'refs/heads/qa' && 'qa') }}
   IMAGE_TAG: latest
   IMAGE_VER: ${{ github.sha }}
-  # Registry for dev and test images
-  REGISTRY: ghcr.io/
+  # OS variant that is deployed
+  PROD_OS: distroless
+  # OS variant if test matrix is not used
+  OS: debian
+  # Registry for test images
+  REGISTRY: localhost:5000/
   # Registry for public images, default is docker.io
   PUBLIC_REGISTRY: ""
   # Give GitHub Actions access to AWS
   AWS_ROLE_TO_ASSUME: arn:aws:iam::770916339360:role/foo-dev-ecr-github-action-role
   AWS_REGION: ap-northeast-1
+  # Datadog
+  # DD_API_KEY: ${{ secrets.ACTIONS_DD_API_KEY }}
+  # DD_ENV: ci
+  # DD_TAGS: "environment:ci"
+  # Docker
   DOCKER_BUILDKIT: '1'
   COMPOSE_DOCKER_CLI_BUILD: '1'
   COMPOSE_FILE: docker-compose.gha.yml
@@ -116,57 +128,46 @@ jobs:
         with:
           driver-opts: network=host
 
-      - name: Build test image
+      - name: Build test image and push to local registry
         uses: docker/build-push-action@v3
-        env:
-          REGISTRY_NAME: localhost:5000
-          REGISTRY: localhost:5000/
         with:
           file: ${{ env.DOCKER_FILE }}
           target: test-image
           context: .
           builder: ${{ steps.buildx.outputs.name }}
           push: true
-          # https://github.com/moby/buildkit#export-cache
-          cache-from: type=gha,scope=${{ github.workflow }}-test
-          cache-to: type=gha,scope=${{ github.workflow }}-test,mode=max
+          cache-from: type=gha,scope=${{ github.workflow }}-test-${{ env.OS }}
+          cache-to: type=gha,scope=${{ github.workflow }}-test-${{ env.OS }},mode=max
           # ssh: default
           tags: |
-            localhost:5000/${{ env.IMAGE_OWNER}}/${{ env.IMAGE_NAME }}:test-${{ env.IMAGE_VER }}
+            localhost:5000/${{ env.IMAGE_OWNER}}/${{ env.IMAGE_NAME }}:test${{ env.OS }}${{ env.IMAGE_VER }}
           # secrets: |
           #   "access_token=${{ secrets.DEVOPS_ACCESS_TOKEN }}"
           #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
           #   "oban_license_key=${{ secrets.OBAN_LICENSE_KEY }}"
 
-      - name: Start postgres
-        env:
-          REGISTRY: ghcr.io/
-        run: docker compose up --wait --detach postgres
+      - name: Start services
+        run: docker compose up --detach test
 
       - name: Run tests
-        env:
-          REGISTRY: localhost:5000/
-        run: docker compose run test mix test --cover
+        # run: docker compose run test mix test --cover
+        run: docker compose run test mix test
 
       - name: Publish unit test results to GitHub
         uses: EnricoMi/publish-unit-test-result-action@v2
         # Run even if tests fail
         if: always()
         with:
-          # Volume mounted from local filesystem into build
+          # Volume mounted from local filesystem into build by docker compose
           junit_files: junit-reports/*.xml
 
       - name: Run quality checks
-        env:
-          REGISTRY: localhost:5000/
-        run: docker compose run test mix do format --check-formatted, deps.unlock --check-unused, credo, hex.audit, deps.audit, sobelow
+        run: docker compose run test mix do format --check-formatted, deps.unlock --check-unused, credo --all, hex.audit, deps.audit, sobelow
 
       - name: Run dialyzer
-        env:
-          REGISTRY: localhost:5000/
-        run: docker compose run test mix dialyzer --no-check --halt-exit-status --format github
+        run: docker compose run test mix dialyzer --no-check --format github
 
-      - name: Build prod image and push
+      - name: Build final prod image and push to AWS ECR as latest
         uses: docker/build-push-action@v3
         env:
           REGISTRY: "${{ env.ECR_REGISTRY }}/"
@@ -176,13 +177,13 @@ jobs:
           context: .
           builder: ${{ steps.buildx.outputs.name }}
           push: false
-          cache-from: type=gha,scope=${{ github.workflow }}
-          cache-to: type=gha,scope=${{ github.workflow }},mode=max
+          cache-from: type=gha,scope=${{ github.workflow }}-${{ env.PROD_OS }}
+          cache-to: type=gha,scope=${{ github.workflow }}-${{ env.PROD_OS }},mode=max
           # ssh: default
-          # ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.BRANCH }}-${{ env.GITHUB_SHA_SHORT }}
           tags: |
             ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
             ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_VER }}
+            ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.BRANCH }}-${{ env.GITHUB_SHA_SHORT }}
           # secrets: |
           #   "access_token=${{ secrets.DEVOPS_ACCESS_TOKEN }}"
           #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"

@@ -1,5 +1,7 @@
 ---
 name: CI registry caching
+# Build prod image and push to AWS ECR
+# Uses registry caching
 on: push
 # on:
 #   push:
@@ -19,18 +21,27 @@ env:
   # IMAGE_TAG: ${{ (github.ref == 'refs/heads/main' && 'staging') || (github.ref == 'refs/heads/qa' && 'qa') }}
   IMAGE_TAG: latest
   IMAGE_VER: ${{ github.sha }}
+  # OS variant that is deployed
+  PROD_OS: distroless
+  # OS variant if test matrix is not used
+  OS: debian
   # Registry for public images, default is docker.io
   PUBLIC_REGISTRY: ""
   # Give GitHub Actions access to AWS
   AWS_ROLE_TO_ASSUME: arn:aws:iam::770916339360:role/foo-dev-ecr-github-action-role
   AWS_REGION: ap-northeast-1
+  # Datadog
+  # DD_API_KEY: ${{ secrets.ACTIONS_DD_API_KEY }}
+  # DD_ENV: ci
+  # DD_TAGS: "environment:ci"
+  # Docker
   DOCKER_BUILDKIT: '1'
   COMPOSE_DOCKER_CLI_BUILD: '1'
   COMPOSE_FILE: docker-compose.gha.yml
   DOCKER_FILE: deploy/debian.Dockerfile
 jobs:
   build-prod:
-    name: Build prod image
+    name: Build prod image and push
     runs-on: ubuntu-latest
     permissions:
       # Interact with GitHub OIDC Token endpoint for AWS
@@ -109,7 +120,7 @@ jobs:
         with:
           driver-opts: network=host
 
-      - name: Build prod image and push to AWS ECR
+      - name: Build final prod image and push to AWS ECR as latest
         uses: docker/build-push-action@v3
         env:
           REGISTRY: "${{ env.ECR_REGISTRY }}/"
@@ -121,7 +132,6 @@ jobs:
           push: false
           cache-from: type=registry,ref=${{env.ECR_REGISTRY}}/${{env.IMAGE_NAME}}:cache
           cache-to: type=inline,mode=max
-          # ssh: default
           # ssh: default
           tags: |
             ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}

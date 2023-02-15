@@ -1,10 +1,14 @@
 ---
-# Build and run tests in containers
-# Stores test and prod images to GitHub Container Registry (GHCR)
-# Pushes prod to AWS ECR
-# Runs tests and quality checks on test image
-# Runs security scans on code and prod images
 name: CI
+# Build and run tests in containers
+# Store test and prod images to GitHub Container Registry (GHCR)
+# Build prod image and push to AWS ECR
+# Run tests and quality checks on test image
+# Run security scans on code and prod images
+# Run tasks in parallel
+# Use GHA caching
+# Use test matrix to build Alpine, Debian, and Distroless images
+# Use test matrix to run tests in parallel
 on: push
 # on:
 #   push:
@@ -643,11 +647,11 @@ jobs:
       #     context: .
       #     builder: ${{ steps.buildx.outputs.name }}
       #     push: true
-      #     cache-from: type=gha,scope=${{ github.workflow }}
-      #     cache-to: type=gha,scope=${{ github.workflow }},mode=max
+      #     cache-from: type=gha,scope=${{ github.workflow }}-${{ env.OS }}
+      #     cache-to: type=gha,scope=${{ github.workflow }}-${{ env.OS }},mode=max
       #     tags: |
-      #       ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{ env.IMAGE_TAG }}
       #       ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{ env.IMAGE_VER }}
+      #       ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{ env.IMAGE_TAG }}
 
       # - name: Tag ECR release as latest
       #   run: |
@@ -673,6 +677,7 @@ jobs:
           tags: |
             ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
             ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_VER }}
+            ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.BRANCH }}-${{ env.GITHUB_SHA_SHORT }}
           # secrets: |
           #   "access_token=${{ secrets.DEVOPS_ACCESS_TOKEN }}"
           #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
