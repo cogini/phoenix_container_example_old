@@ -1,4 +1,6 @@
 ---
+# Build and run tests in containers.
+# Push images to GitHub Container Registry (GHCR) and AWS ECR.
 name: CI
 on: ["push", "pull_request"]
 # on:
@@ -10,14 +12,26 @@ on: ["push", "pull_request"]
 env:
   IMAGE_NAME: foo-app
   IMAGE_OWNER: ${{ github.repository_owner }}
-  # Registry for public images, default is docker.io
-  PUBLIC_REGISTRY: ""
-  AWS_ROLE_TO_ASSUME: arn:aws:iam::770916339360:role/foo-dev-ecr-github-action-role
-  AWS_REGION: ap-northeast-1
   # Tag for release images
   # IMAGE_TAG: ${{ (github.ref == 'refs/heads/main' && 'staging') || (github.ref == 'refs/heads/qa' && 'qa') }}
   IMAGE_TAG: latest
-  # Docker vars
+  IMAGE_VER: ${{ github.sha }}
+  # OS variant that is deployed
+  PROD_OS: distroless
+  # OS variant if test matrix is not used
+  OS: debian
+  # Registry for dev and test images
+  REGISTRY: ghcr.io/
+  # Registry for public images, default is docker.io
+  PUBLIC_REGISTRY: ""
+  # Give GitHub Actions access to AWS
+  AWS_ROLE_TO_ASSUME: arn:aws:iam::770916339360:role/foo-dev-ecr-github-action-role
+  AWS_REGION: ap-northeast-1
+  # Datadog
+  # DD_API_KEY: ${{ secrets.ACTIONS_DD_API_KEY }}
+  # DD_ENV: ci
+  # DD_TAGS: "environment:ci"
+  # Docker
   DOCKER_BUILDKIT: '1'
   COMPOSE_DOCKER_CLI_BUILD: '1'
   COMPOSE_FILE: docker-compose.gha.yml
