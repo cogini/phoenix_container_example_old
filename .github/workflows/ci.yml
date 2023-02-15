@@ -588,7 +588,7 @@ jobs:
           docker compose logs --timestamps postgres
           echo prod
           docker inspect --format "{{json .State.Health }}" $(docker compose ps -q prod) | jq
-          echo router
+          echo postgres
           docker inspect --format "{{json .State.Health }}" $(docker compose ps -q postgres) | jq
           docker compose ps --format json | jq .
 
