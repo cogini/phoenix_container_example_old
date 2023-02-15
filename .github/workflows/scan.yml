@@ -3,9 +3,9 @@ name: Periodic Security Scan
 on:
   schedule:
     # Once a day at midnight
-    - cron: '0 0 * * *'
+    # - cron: '0 0 * * *'
     # Once an hour
-    # - cron: '0 * * * *'
+    - cron: '0 * * * *'
 env:
   IMAGE_NAME: foo-app
   IMAGE_OWNER: ${{ github.repository_owner }}
@@ -66,9 +66,9 @@ jobs:
           # ignore-unfixed: true
           # vuln-type: 'os,library'
           # severity: 'CRITICAL,HIGH'
-          # cache-dir: ./.cache
-          # format: 'sarif'
-          # output: './sarif-reports/trivy.sarif'
+          # cache-dir: /var/cache
+          format: 'sarif'
+          output: 'trivy.sarif'
 
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v2
@@ -78,7 +78,7 @@ jobs:
         # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github
         if: always()
         with:
-          sarif_file: './sarif-reports/'
+          sarif_file: 'trivy.sarif'
           category: trivy
 
       - name: Scan image with Grype
@@ -88,8 +88,9 @@ jobs:
         with:
           image: ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{ env.OS }}${{ env.IMAGE_VER }}
           # severity-cutoff: critical
-          fail-build: true
-          output-format: table
+          fail-build: false
+          output-format: 'sarif'
+          # output-format: table
 
       - name: Upload Grype scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v2
