@@ -605,7 +605,7 @@ jobs:
           docker compose run prod eval 'AbsintheFederationExample.Release.run_seeds()'
 
       - name: Run health check
-        run: curl -v http://localhost:#{{env.APP_PORT}}/healthz
+        run: curl -v http://localhost:${{ env.APP_PORT }}/healthz
 
       - name: Run API tests
         env:
