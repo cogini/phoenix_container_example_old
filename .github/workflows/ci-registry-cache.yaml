@@ -4,6 +4,11 @@ on: push
 # on:
 #   push:
 #     branches: [main]
+#     paths-ignore:
+#       - 'README.md'
+#       - '.github/**'
+#       - '.vscode'
+#       - '.gitignore'
 #   pull_request:
 #     # branches: [main]
 #     types: [opened,synchronize,reopened,labeled,unlabeled]
@@ -13,9 +18,14 @@ env:
   # Tag for release images
   # IMAGE_TAG: ${{ (github.ref == 'refs/heads/main' && 'staging') || (github.ref == 'refs/heads/qa' && 'qa') }}
   IMAGE_TAG: latest
+  IMAGE_VER: ${{ github.sha }}
   AWS_ROLE_TO_ASSUME: arn:aws:iam::770916339360:role/foo-dev-ecr-github-action-role
   AWS_REGION: ap-northeast-1
-  # Docker vars
+  # Datadog
+  # DD_API_KEY: ${{ secrets.ACTIONS_DD_API_KEY }}
+  # DD_ENV: ci
+  # DD_TAGS: "environment:ci"
+  # Docker
   DOCKER_BUILDKIT: '1'
   COMPOSE_DOCKER_CLI_BUILD: '1'
   COMPOSE_FILE: docker-compose.gha.yml
@@ -40,9 +50,6 @@ jobs:
         with:
           role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ env.AWS_REGION }}
-
-      # - name: Display AWS identity
-      #   run: aws sts get-caller-identity
 
       - name: Log in to Amazon ECR
         id: ecr-login
@@ -71,8 +78,8 @@ jobs:
         id: vars
         run: |
           echo "GITHUB_SHA_SHORT=$(echo $GITHUB_SHA | cut -c 1-7)" >> $GITHUB_ENV
-          echo "::set-output name=run_id::${GITHUB_RUN_ID}"
-          echo "::set-output name=run_num::${GITHUB_RUN_NUMBER}"
+          echo "run_id=${GITHUB_RUN_ID}" >> $GITHUB_OUTPUT
+          echo "run_num=${GITHUB_RUN_NUMBER}" >> $GITHUB_OUTPUT
 
       - name: Get branch name for push
         if: github.event_name != 'pull_request'
@@ -109,7 +116,13 @@ jobs:
           push: false
           cache-from: type=registry,ref=${{env.ECR_REGISTRY}}/${{env.IMAGE_NAME}}:cache
           cache-to: type=inline,mode=max
+          # ssh: default
+          # ssh: default
           tags: |
             ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
-            ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_VER }}
             ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.BRANCH }}-${{ env.GITHUB_SHA_SHORT }}
+          # secrets: |
+          #   "access_token=${{ secrets.DEVOPS_ACCESS_TOKEN }}"
+          #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
+          #   "oban_license_key=${{ secrets.OBAN_LICENSE_KEY }}"
