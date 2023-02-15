@@ -1,6 +1,4 @@
 ---
-# Build and run tests in containers.
-# Push images to GitHub Container Registry (GHCR) and AWS ECR.
 name: CI
 on: push
 # on:
@@ -21,10 +19,6 @@ env:
   # IMAGE_TAG: ${{ (github.ref == 'refs/heads/main' && 'staging') || (github.ref == 'refs/heads/qa' && 'qa') }}
   IMAGE_TAG: latest
   IMAGE_VER: ${{ github.sha }}
-  # OS variant that is deployed
-  PROD_OS: distroless
-  # OS variant if test matrix is not used
-  OS: debian
   # Registry for dev and test images
   REGISTRY: ghcr.io/
   # Registry for public images, default is docker.io
@@ -32,11 +26,6 @@ env:
   # Give GitHub Actions access to AWS
   AWS_ROLE_TO_ASSUME: arn:aws:iam::770916339360:role/foo-dev-ecr-github-action-role
   AWS_REGION: ap-northeast-1
-  # Datadog
-  # DD_API_KEY: ${{ secrets.ACTIONS_DD_API_KEY }}
-  # DD_ENV: ci
-  # DD_TAGS: "environment:ci"
-  # Docker
   DOCKER_BUILDKIT: '1'
   COMPOSE_DOCKER_CLI_BUILD: '1'
   COMPOSE_FILE: docker-compose.gha.yml
@@ -132,7 +121,6 @@ jobs:
         env:
           REGISTRY_NAME: localhost:5000
           REGISTRY: localhost:5000/
-          PUBLIC_REGISTRY: "${{ steps.ecr-login.outputs.registry }}/"
         with:
           file: ${{ env.DOCKER_FILE }}
           target: test-image
@@ -144,7 +132,7 @@ jobs:
           cache-to: type=gha,scope=${{ github.workflow }}-test,mode=max
           # ssh: default
           tags: |
-            localhost:5000/${{ env.IMAGE_OWNER}}/${{ env.IMAGE_NAME }}:test
+            localhost:5000/${{ env.IMAGE_OWNER}}/${{ env.IMAGE_NAME }}:test-${{ env.IMAGE_VER }}
           # secrets: |
           #   "access_token=${{ secrets.DEVOPS_ACCESS_TOKEN }}"
           #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
@@ -158,8 +146,15 @@ jobs:
       - name: Run tests
         env:
           REGISTRY: localhost:5000/
-          PUBLIC_REGISTRY: ""
         run: docker compose run test mix test --cover
+
+      - name: Publish unit test results to GitHub
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        # Run even if tests fail
+        if: always()
+        with:
+          # Volume mounted from local filesystem into build
+          junit_files: junit-reports/*.xml
 
       - name: Run quality checks
         env:
@@ -172,7 +167,6 @@ jobs:
         run: docker compose run test mix dialyzer --no-check --halt-exit-status --format github
 
       - name: Build prod image and push
-        if: github.event_name != 'pull_request'
         uses: docker/build-push-action@v3
         env:
           REGISTRY: "${{ env.ECR_REGISTRY }}/"
@@ -181,41 +175,15 @@ jobs:
           target: prod
           context: .
           builder: ${{ steps.buildx.outputs.name }}
-          push: true
+          push: false
           cache-from: type=gha,scope=${{ github.workflow }}
           cache-to: type=gha,scope=${{ github.workflow }},mode=max
           # ssh: default
+          # ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.BRANCH }}-${{ env.GITHUB_SHA_SHORT }}
           tags: |
+            ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
             ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_VER }}
-            ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
           # secrets: |
           #   "access_token=${{ secrets.DEVOPS_ACCESS_TOKEN }}"
           #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
           #   "oban_license_key=${{ secrets.OBAN_LICENSE_KEY }}"
-
-      - name: Build prod image and push
-        if: github.event_name == 'pull_request'
-        uses: docker/build-push-action@v3
-        with:
-          file: ${{ env.DOCKER_FILE }}
-          target: prod
-          context: .
-          builder: ${{ steps.buildx.outputs.name }}
-          push: true
-          cache-from: type=gha,scope=${{ github.workflow }}
-          cache-to: type=gha,scope=${{ github.workflow }},mode=max
-          # ssh: default
-          tags: |
-            ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
-          # secrets: |
-          #   "access_token=${{ secrets.DEVOPS_ACCESS_TOKEN }}"
-          #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
-          #   "oban_license_key=${{ secrets.OBAN_LICENSE_KEY }}"
-
-      - name: Publish unit test results to GitHub
-        uses: EnricoMi/publish-unit-test-result-action@v2
-        # Run even if tests fail
-        if: always()
-        with:
-          # Volume mounted from local filesystem into build
-          junit_files: junit-reports/*.xml

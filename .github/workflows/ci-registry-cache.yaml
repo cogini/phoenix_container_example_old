@@ -19,13 +19,11 @@ env:
   # IMAGE_TAG: ${{ (github.ref == 'refs/heads/main' && 'staging') || (github.ref == 'refs/heads/qa' && 'qa') }}
   IMAGE_TAG: latest
   IMAGE_VER: ${{ github.sha }}
+  # Registry for public images, default is docker.io
+  PUBLIC_REGISTRY: ""
+  # Give GitHub Actions access to AWS
   AWS_ROLE_TO_ASSUME: arn:aws:iam::770916339360:role/foo-dev-ecr-github-action-role
   AWS_REGION: ap-northeast-1
-  # Datadog
-  # DD_API_KEY: ${{ secrets.ACTIONS_DD_API_KEY }}
-  # DD_ENV: ci
-  # DD_TAGS: "environment:ci"
-  # Docker
   DOCKER_BUILDKIT: '1'
   COMPOSE_DOCKER_CLI_BUILD: '1'
   COMPOSE_FILE: docker-compose.gha.yml
@@ -45,8 +43,15 @@ jobs:
       pull-requests: write
       issues: read
     steps:
+      - name: Cancel previous runs in progress
+        uses: styfle/cancel-workflow-action@0.11.0
+        with:
+          access_token: ${{ github.token }}
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1-node16
+        # https://github.com/aws-actions/configure-aws-credentials
+        # https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
         with:
           role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ env.AWS_REGION }}
