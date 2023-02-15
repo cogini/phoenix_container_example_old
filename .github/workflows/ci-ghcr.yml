@@ -271,8 +271,10 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v3
 
-      - name: Pull test
-        run: docker compose pull --quiet test
+      - name: Pull repos
+        run: |
+          docker compose pull --quiet test
+          docker images --no-trunc
 
       - name: Run dialyzer
         run: docker compose run test mix dialyzer --no-check --format github
