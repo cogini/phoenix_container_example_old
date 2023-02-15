@@ -571,7 +571,7 @@ jobs:
       #   with:
       #     command: test
       #     image: ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.OS }}${{ env.IMAGE_VER }}
-      #     args: --file=${{ env.DOCKER_FILE }} --project-name=foo
+      #     args: --file=${{ env.DOCKER_FILE }} --project-name=api
 
   prod:
     name: Deploy prod images
