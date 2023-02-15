@@ -39,6 +39,8 @@ env:
   # Give GitHub Actions access to AWS
   AWS_ROLE_TO_ASSUME: arn:aws:iam::770916339360:role/foo-dev-ecr-github-action-role
   AWS_REGION: ap-northeast-1
+  # Health check port for app
+  APP_PORT: 4000
   # Datadog
   # DD_API_KEY: ${{ secrets.ACTIONS_DD_API_KEY }}
   # DD_ENV: ci
@@ -485,6 +487,141 @@ jobs:
           #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
           #   "oban_license_key=${{ secrets.OBAN_LICENSE_KEY }}"
 
+  build-newman:
+    name: Build newman image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cancel previous runs
+        uses: styfle/cancel-workflow-action@0.11.0
+        with:
+          access_token: ${{ github.token }}
+
+      - name: Check out source
+        uses: actions/checkout@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Pull public images without rate limits
+      # - name: Log in to Docker Hub
+      #   uses: docker/login-action@v2
+      #   with:
+      #     username: ${{ secrets.DOCKERHUB_USERNAME }}
+      #     password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Set up Docker buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v2
+        with:
+          driver-opts: network=host
+
+      - name: Build newman image
+        uses: docker/build-push-action@v3
+        with:
+          file: deploy/newman.Dockerfile
+          context: .
+          builder: ${{ steps.buildx.outputs.name }}
+          push: true
+          cache-from: type=gha,scope=${{ github.workflow }}-newman
+          cache-to: type=gha,scope=${{ github.workflow }}-newman,mode=max
+          tags: |
+            ghcr.io/${{ env.IMAGE_OWNER }}/newman:latest
+
+  test-prod:
+    name: Run external API tests
+    runs-on: ubuntu-latest
+    needs: [build-prod, build-newman]
+    permissions:
+      # Read from ghcr.io repository
+      packages: read
+
+      # Upload JUnit report files
+      # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
+      contents: read
+      issues: read
+      checks: write
+      pull-requests: write
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [debian, alpine, distroless]
+    env:
+      DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
+      OS: ${{ matrix.os }}
+    steps:
+      - name: Log in to GHCR
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check out source
+        uses: actions/checkout@v3
+
+      - name: Pull repos
+        # run: echo "newman postgres router prod" | xargs -n 1 -P 8 docker compose pull --quiet
+        # docker images --no-trunc
+        run: |
+          docker compose pull --quiet --include-deps prod
+          docker compose pull --quiet newman
+
+      - name: Start services
+        run: docker compose up --wait --detach prod
+
+      - name: Display logs
+        if: failure()
+        run: |
+          docker compose logs --timestamps prod
+          docker compose logs --timestamps postgres
+          echo prod
+          docker inspect --format "{{json .State.Health }}" $(docker compose ps -q prod) | jq
+          echo router
+          docker inspect --format "{{json .State.Health }}" $(docker compose ps -q postgres) | jq
+          docker compose ps --format json | jq .
+
+      # - name: Debug env
+      #   if: failure()
+      #   run: |
+      #     docker compose run --entrypoint /bin/bash prod env
+      #     docker compose run --entrypoint /bin/bash prod env PGPASSWORD=postgres /usr/bin/psql -w -h postgres -U postgres -d postgres -c "SELECT 1"
+      #     # docker compose run --entrypoint /bin/bash prod pg_isready -h postgres -p 5432 -d postgres -U postgres
+
+      - name: Initialize database
+        run: |
+          docker compose run prod eval 'AbsintheFederationExample.Release.create_repos()'
+          docker compose run prod eval 'AbsintheFederationExample.Release.migrate()'
+          docker compose run prod eval 'AbsintheFederationExample.Release.run_seeds()'
+
+      - name: Run health check
+        run: curl -v http://localhost:#{{env.APP_PORT}}/healthz
+
+      - name: Run API tests
+        env:
+          NEWMAN_ARGS: "--verbose -r cli,junitfull --reporter-junitfull-export /junit-reports/newman.xml -e ci.json"
+          # NEWMAN_ARGS: "--verbose -r cli,junit --reporter-junit-export /junit-reports/newman.xml -e ci.json"
+        # https://hub.docker.com/r/postman/newman/
+        run: docker compose run newman run ${{env.NEWMAN_ARGS}} Queries.postman_collection.json
+
+      - name: Display logs
+        if: failure()
+        run: |
+          docker compose logs --timestamps prod
+          docker compose logs --timestamps newman
+
+      - name: Publish unit test results to GitHub
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        # Run even if tests fail
+        if: always()
+        with:
+          # Volume mounted from local filesystem into build
+          junit_files: ./junit-reports/*.xml
+          check_name: "External API Tests"
+
   scan:
     name: Security scan prod image
     runs-on: ubuntu-latest
@@ -582,7 +719,7 @@ jobs:
     if: github.event_name != 'pull_request'
     # if: contains(github.ref, 'refs/heads/main')
     runs-on: ubuntu-latest
-    needs: [build-prod, test]
+    needs: [build-prod, test-prod, test]
     permissions:
       # Interact with GitHub's OIDC Token endpoint for AWS
       id-token: write
