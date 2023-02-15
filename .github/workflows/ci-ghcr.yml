@@ -32,14 +32,15 @@ env:
   # Give GitHub Actions access to AWS
   AWS_ROLE_TO_ASSUME: arn:aws:iam::770916339360:role/foo-dev-ecr-github-action-role
   AWS_REGION: ap-northeast-1
+  # Datadog
+  # DD_API_KEY: ${{ secrets.ACTIONS_DD_API_KEY }}
+  # DD_ENV: ci
+  # DD_TAGS: "environment:ci"
   # Docker
   DOCKER_BUILDKIT: '1'
   COMPOSE_DOCKER_CLI_BUILD: '1'
   COMPOSE_FILE: docker-compose.gha.yml
   DOCKER_FILE: deploy/debian.Dockerfile
-  # Datadog
-  # DD_API_KEY: ${{ secrets.ACTIONS_DD_API_KEY }}
-  # DD_ENV: ci
 jobs:
   build-test:
     # Build image used to run tests
