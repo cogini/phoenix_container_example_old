@@ -327,10 +327,9 @@ FROM build-deps-get AS prod-release
 
     # COPY .env.prod .
 
-    # This does a partial compile.
+    # Compile deps separately from application for better caching.
     # Doing "mix 'do' compile, assets.deploy" in a single stage is worse
     # because a single line of code changed causes a complete recompile.
-    # With the stages separated most of the compilation is cached.
 
     # RUN set -a && . ./.env.prod && set +a && \
     #     env && \
@@ -536,7 +535,7 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
         echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/${DEBIAN_SNAPSHOT} bullseye-security main" >> /etc/apt/sources.list && \
         echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT} bullseye-updates main" >> /etc/apt/sources.list
 
-    # Copy just the locale file needed
+    # Copy just the locale file used
     # COPY --from=prod-install /usr/lib/locale/${LANG} /usr/lib/locale/
 
     RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
@@ -601,9 +600,8 @@ FROM prod-base AS prod
     ARG MIX_ENV
     ARG RELEASE
 
-    # Set environment vars used by the app
-    # SECRET_KEY_BASE and DATABASE_URL env vars should be set when running the application
-    # Maybe set COOKIE and other things
+    # Set environment vars that do not change. Secrets like SECRET_KEY_BASE and
+    # environment-specific config such as DATABASE_URL should be set at runtime.
     ENV HOME=$APP_DIR \
         PORT=$APP_PORT \
         PHX_SERVER=true \
