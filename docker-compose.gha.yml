@@ -43,9 +43,8 @@ services:
       #   - access_token
       context: .
     environment:
-      - DATABASE_URL=ecto://postgres:postgres@postgres:5432/app_prod
-      # - PORT=4000
-      - SECRET_KEY_BASE='0cSFk8v5IsZIIGCjY+X66l5xULUl/2mczI4Eqf7slpyns5nBkhegDn6YH9th+5D2'
+      - DATABASE_URL: ${DATABASE_URL:-ecto://postgres:postgres@postgres:5432/postgres}
+      - SECRET_KEY_BASE: ${SECRET_KEY_BASE:-0cSFk8v5IsZIIGCjY+X66l5xULUl/2mczI4Eqf7slpyns5nBkhegDn6YH9th+5D2}
     ports:
       - '4000:4000'
     # healthcheck:
