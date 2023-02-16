@@ -6,19 +6,14 @@ VERSION --shell-out-anywhere --use-copy-include-patterns --referenced-save-only 
 
 ARG ELIXIR_VERSION=1.14.3
 ARG OTP_VERSION=25.2.2
-
-# ARG ELIXIR_DEBIAN_VERSION=buster-20210208
-# ARG ELIXIR_DEBIAN_VERSION=bullseye-20210902-slim
-# ARG ELIXIR_DEBIAN_VERSION=bullseye-20221004-slim
 ARG ELIXIR_DEBIAN_VERSION=bullseye-20230109-slim
 
 # https://docker.debian.net/
 # https://hub.docker.com/_/debian
-# ARG DEBIAN_VERSION=buster-slim
 ARG DEBIAN_VERSION=bullseye-slim
 
 # Use snapshot for consistent dependencies, see https://snapshot.debian.org/
-# ARG DEBIAN_SNAPSHOT=20221219
+# Needs to be updated manually
 ARG DEBIAN_SNAPSHOT=20230109
 
 ARG NODE_VERSION=16.14.1
@@ -306,6 +301,7 @@ prod-install:
 # Create base image for prod with everything but the code release
 prod-base:
     FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG}
+
     ENV LANG=$LANG
 
     COPY +prod-install/C.UTF-8 /usr/lib/locale/C.UTF-8
@@ -337,7 +333,7 @@ prod-base:
         echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/${DEBIAN_SNAPSHOT} bullseye-security main" >> /etc/apt/sources.list && \
         echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT} bullseye-updates main" >> /etc/apt/sources.list
 
-    # Copy just the locale file needed
+    # Copy just the locale file used
     # COPY --from=prod-install /usr/lib/locale/${LANG} /usr/lib/locale/
 
     RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
@@ -393,12 +389,12 @@ prod-base:
     SAVE IMAGE --cache-hint
 
 
-# Scan deploy image for security vulnerabilities
-deploy-scan:
-    FROM +deploy-base
+# Scan prod image for security vulnerabilities
+prod-scan:
+    FROM +prod-base
 
     COPY +prod-install/trivy/bin/trivy /usr/local/bin/trivy
     COPY +prod-install/trivy/share/templates /usr/local/share/trivy/templates
-    # COPY +deploy-install/grype /usr/local/bin/grype
+    # COPY +prod-install/grype /usr/local/bin/grype
 
     SAVE IMAGE --cache-hint

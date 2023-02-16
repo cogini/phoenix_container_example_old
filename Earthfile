@@ -6,21 +6,15 @@ VERSION --use-cache-command --shell-out-anywhere --use-copy-include-patterns --r
 
 ARG ELIXIR_VERSION=1.14.3
 ARG OTP_VERSION=25.2.2
-
 ARG ALPINE_VERSION=3.17.0
-
-# ARG ELIXIR_DEBIAN_VERSION=buster-20210208
-# ARG ELIXIR_DEBIAN_VERSION=bullseye-20210902-slim
-# ARG ELIXIR_DEBIAN_VERSION=bullseye-20221004-slim
 ARG ELIXIR_DEBIAN_VERSION=bullseye-20230109-slim
 
 # https://docker.debian.net/
 # https://hub.docker.com/_/debian
-# ARG DEBIAN_VERSION=buster-slim
 ARG DEBIAN_VERSION=bullseye-slim
 
 # Use snapshot for consistent dependencies, see https://snapshot.debian.org/
-# ARG DEBIAN_SNAPSHOT=20221219
+# Needs to be updated manually
 ARG DEBIAN_SNAPSHOT=20230109
 
 ARG NODE_VERSION=16.14.1
@@ -248,6 +242,8 @@ test-image:
 
     WORKDIR $APP_DIR
 
+    # COPY .env.test ./
+
     # Compile deps separately from app, improving Docker caching
     RUN mix deps.compile
 
@@ -263,8 +259,7 @@ test-image:
     # Umbrella
     COPY --if-exists --dir apps ./
 
-    # COPY .env.test ./
-    # RUN set -a && . ./.env.test && set +a \
+    # RUN set -a && . ./.env.test && set +a && \
     #     env && \
     #     mix compile --warnings-as-errors
 
@@ -339,12 +334,14 @@ prod-release:
 
     # COPY .env.prod .
 
-    # This does a partial compile.
+    # Compile deps separately from application for better caching.
     # Doing "mix 'do' compile, assets.deploy" in a single stage is worse
     # because a single line of code changed causes a complete recompile.
-    # With the stages separated most of the compilation is cached.
 
-    # Compile deps separately from application for better caching
+    # RUN set -a && . ./.env.prod && set +a && \
+    #     env && \
+    #     mix deps.compile
+
     RUN mix deps.compile
 
     RUN mix esbuild.install --if-missing
@@ -401,6 +398,10 @@ prod-release:
     # isolation https://github.com/elixir-lang/elixir/issues/9407
     # RUN mix cmd mix compile --warnings-as-errors
 
+    # RUN set -a && . ./.env.prod && set +a && \
+    #     env && \
+    #     mix compile --verbose --warnings-as-errors
+
     RUN mix compile --warnings-as-errors
 
     # Build release
@@ -421,9 +422,8 @@ prod:
         --OUTPUT_URL=$OUTPUT_URL --REGISTRY=$REGISTRY --PUBLIC_REGISTRY=$PUBLIC_REGISTRY \
         --PROD_BASE_IMAGE_NAME=$PROD_BASE_IMAGE_NAME --PROD_BASE_IMAGE_TAG=$PROD_BASE_IMAGE_TAG
 
-    # Set environment vars used by the app
-    # SECRET_KEY_BASE and DATABASE_URL env vars should be set when running the application
-    # Maybe set COOKIE and other things
+    # Set environment vars that do not change. Secrets like SECRET_KEY_BASE and
+    # environment-specific config such as DATABASE_URL should be set at runtime.
     ENV HOME=$APP_DIR \
         PORT=$APP_PORT \
         PHX_SERVER=true \

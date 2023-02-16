@@ -34,6 +34,7 @@ ARG BUILD_BASE_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-alpine-${ALPINE
 ARG PROD_BASE_IMAGE_NAME=${PUBLIC_REGISTRY}alpine
 ARG PROD_BASE_IMAGE_TAG=$ALPINE_VERSION
 
+# Intermediate image for files copied to prod
 ARG INSTALL_BASE_IMAGE_NAME=$PROD_BASE_IMAGE_NAME
 ARG INSTALL_BASE_IMAGE_TAG=$PROD_BASE_IMAGE_TAG
 
@@ -97,6 +98,7 @@ build-os-deps:
 
     SAVE IMAGE --cache-hint
 
+
 # Create base image for prod with everything but the code release
 prod-base:
     FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG}
@@ -135,9 +137,9 @@ prod-base:
     SAVE IMAGE --cache-hint
 
 
-# Scan image for security vulnerabilities
-deploy-scan:
-    FROM +deploy
+# Scan prod image for security vulnerabilities
+prod-scan:
+    FROM +prod
 
     USER root
 
