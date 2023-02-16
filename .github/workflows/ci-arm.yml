@@ -1,21 +1,30 @@
 ---
-# Call CodeBuild as a runner to build Arm-CPU image
 name: CI Arm
+# Call CodeBuild as a runner to build Arm-CPU image
 on: push
+# on:
+#   push:
+#     branches: [main]
+#     paths-ignore:
+#       - 'README.md'
+#       - '.github/**'
+#       - '.vscode'
+#       - '.gitignore'
+#   pull_request:
+#     # branches: [main]
+#     types: [opened,synchronize,reopened,labeled,unlabeled]
 env:
   AWS_ROLE_TO_ASSUME: arn:aws:iam::770916339360:role/foo-dev-codebuild-github-action-role
   AWS_REGION: ap-northeast-1
 jobs:
-  build:
+  build-prod:
+    name: Build prod image
     runs-on: ubuntu-latest
     permissions:
-      # Needed to interact with GitHub's OIDC Token endpoint for AWS
+      # Interact with GitHub OIDC Token endpoint for AWS
       id-token: write
       contents: read
     steps:
-      # - name: Dump event
-      #   run: cat "$GITHUB_EVENT_PATH"
-
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1-node16
         # https://github.com/aws-actions/configure-aws-credentials
@@ -24,10 +33,7 @@ jobs:
           role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ env.AWS_REGION }}
 
-      # - name: Display AWS identity
-      #   run: aws sts get-caller-identity
-
-      # We don't need to check out source, just run codebuild
+      # We don't need to check out source, just run CodeBuild
       # - name: Checkout
       #   uses: actions/checkout@v2
 
