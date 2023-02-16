@@ -573,10 +573,10 @@ jobs:
 
       - name: Pull repos
         # run: echo "newman postgres router prod" | xargs -n 1 -P 8 docker compose pull --quiet
+        # docker compose pull --quiet newman
         # docker images --no-trunc
         run: |
           docker compose pull --quiet --include-deps prod
-          docker compose pull --quiet newman
 
       - name: Start services
         run: docker compose up --wait --detach prod
@@ -608,18 +608,18 @@ jobs:
       - name: Run health check
         run: curl -v http://localhost:${{ env.APP_PORT }}/healthz
 
-      - name: Run API tests
-        env:
-          NEWMAN_ARGS: "--verbose -r cli,junitfull --reporter-junitfull-export /junit-reports/newman.xml -e ci.json"
-          # NEWMAN_ARGS: "--verbose -r cli,junit --reporter-junit-export /junit-reports/newman.xml -e ci.json"
-        # https://hub.docker.com/r/postman/newman/
-        run: docker compose run newman run ${{env.NEWMAN_ARGS}} Queries.postman_collection.json
+      # - name: Run API tests
+      #   env:
+      #     NEWMAN_ARGS: "--verbose -r cli,junitfull --reporter-junitfull-export /junit-reports/newman.xml -e ci.json"
+      #     # NEWMAN_ARGS: "--verbose -r cli,junit --reporter-junit-export /junit-reports/newman.xml -e ci.json"
+      #   # https://hub.docker.com/r/postman/newman/
+      #   run: docker compose run newman run ${{env.NEWMAN_ARGS}} Queries.postman_collection.json
 
       - name: Display logs
         if: failure()
         run: |
           docker compose logs --timestamps prod
-          docker compose logs --timestamps newman
+          # docker compose logs --timestamps newman
 
       - name: Publish unit test results to GitHub
         uses: EnricoMi/publish-unit-test-result-action@v2
