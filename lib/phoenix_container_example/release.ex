@@ -2,7 +2,7 @@ defmodule PhoenixContainerExample.Release do
   @moduledoc """
   Execute release tasks when run in production without Mix installed.
   """
-  @app :absinthe_federation_example
+  @app :phoenix_container_example
 
   alias PhoenixContainerExample.Health
 
