@@ -33,7 +33,7 @@ jobs:
           role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ env.AWS_REGION }}
 
-      # We don't need to check out source, just run CodeBuild
+      # No need to check out source
       # - name: Checkout
       #   uses: actions/checkout@v2
 
@@ -41,7 +41,7 @@ jobs:
         uses: aws-actions/aws-codebuild-run-build@v1
         with:
           project-name: "foo-app-github-action-arm"
-          buildspec-override: ecs/buildspec-earthly.yml
+          buildspec-override: ecs/buildspec.yml
           env-vars-for-codebuild: |
             custom,
             requester,
