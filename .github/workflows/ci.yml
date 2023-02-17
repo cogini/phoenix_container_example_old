@@ -601,9 +601,9 @@ jobs:
 
       - name: Initialize database
         run: |
-          docker compose run prod eval 'AbsintheFederationExample.Release.create_repos()'
-          docker compose run prod eval 'AbsintheFederationExample.Release.migrate()'
-          docker compose run prod eval 'AbsintheFederationExample.Release.run_seeds()'
+          docker compose run prod eval 'PhoenixContainerExample.Release.create_repos()'
+          docker compose run prod eval 'PhoenixContainerExample.Release.migrate()'
+          docker compose run prod eval 'PhoenixContainerExample.Release.run_seeds()'
 
       - name: Run health check
         run: curl -v http://localhost:${{ env.APP_PORT }}/healthz
