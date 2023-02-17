@@ -451,15 +451,12 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
             gnupg \
             unzip \
             lsb-release \
-            # busybox-static \
             locales \
             # Needed by Erlang VM
             libtinfo6 \
             # Additional libs
             libstdc++6 \
             libgcc-s1 \
-            # debootstrap \
-            # schroot \
         && \
         # curl -sL https://aquasecurity.github.io/trivy-repo/deb/public.key -o /etc/apt/trusted.gpg.d/trivy.asc && \
         # printf "deb https://aquasecurity.github.io/trivy-repo/deb %s main" "$(lsb_release -sc)" | tee -a /etc/apt/sources.list.d/trivy.list && \
