@@ -235,7 +235,6 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         truncate -s 0 /var/log/apt/* && \
         truncate -s 0 /var/log/dpkg.log
 
-
 # Get Elixir deps
 FROM build-os-deps AS build-deps-get
     ARG APP_DIR
