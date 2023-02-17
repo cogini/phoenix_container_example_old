@@ -23,8 +23,9 @@ ARG NODE_VERSION=16.14.1
 # If blank, docker.io will be used. If specified, should have a trailing slash.
 ARG REGISTRY=""
 # Registry for public images, e.g. debian, alpine, or postgres.
+ARG PUBLIC_REGISTRY=""
 # Public images may be mirrored into the private registry, with e.g. Skopeo
-ARG PUBLIC_REGISTRY=$REGISTRY
+# ARG PUBLIC_REGISTRY=$REGISTRY
 
 # Docker-in-Docker host image, used to run tests
 ARG DIND_IMAGE_NAME=${PUBLIC_REGISTRY}earthly/dind
