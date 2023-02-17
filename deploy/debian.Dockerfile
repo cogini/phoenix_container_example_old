@@ -25,8 +25,9 @@ ARG AWS_CLI_VERSION=2.0.61
 # If blank, docker.io will be used. If specified, should have a trailing slash.
 ARG REGISTRY=""
 # Registry for public images, e.g. debian, alpine, or postgres.
+ARG PUBLIC_REGISTRY=""
 # Public images may be mirrored into the private registry, with e.g. Skopeo
-ARG PUBLIC_REGISTRY=$REGISTRY
+# ARG PUBLIC_REGISTRY=$REGISTRY
 
 # Base image for build and test
 ARG BUILD_BASE_IMAGE_NAME=${PUBLIC_REGISTRY}hexpm/elixir
@@ -225,7 +226,6 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         truncate -s 0 /var/log/apt/* && \
         truncate -s 0 /var/log/dpkg.log
 
-
 # Get Elixir deps
 FROM build-os-deps AS build-deps-get
     ARG APP_DIR
@@ -268,7 +268,6 @@ FROM build-os-deps AS build-deps-get
         else \
             mix deps.get; \
         fi
-
 
 # Create base image for tests
 FROM build-deps-get AS test-image
@@ -660,7 +659,6 @@ FROM prod-base AS prod
     # Run app in foreground
     CMD ["start"]
 
-
 # Dev image which mounts code from local filesystem
 FROM build-os-deps AS dev
     ARG DEV_PACKAGES
@@ -743,7 +741,6 @@ FROM build-os-deps AS dev
     EXPOSE $APP_PORT
 
     CMD [ "sleep", "infinity" ]
-
 
 # Copy build artifacts to host
 FROM scratch AS artifacts
