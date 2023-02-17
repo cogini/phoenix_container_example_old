@@ -182,6 +182,11 @@ services:
   # https://geshan.com.np/blog/2021/12/docker-postgres/
   postgres:
     image: "${PUBLIC_REGISTRY:-docker.io/}postgres:14.6-alpine"
+    # build:
+    #   context: .
+    #   dockerfile: deploy/postgres.Dockerfile
+    #   args:
+    #     REGISTRY: ${REGISTRY:-docker.io/}
     ports:
       - '5432'
     user: postgres
@@ -224,6 +229,20 @@ services:
       timeout: 5s
       interval: 5s
       retries: 5
+
+  newman:
+    # image: "${PUBLIC_REGISTRY:-docker.io/}postman/newman"
+    image: "${REGISTRY:-docker.io/}${IMAGE_OWNER}/newman"
+    build:
+      dockerfile: newman.Dockerfile
+      args:
+        BUILDKIT_INLINE_CACHE: "1"
+        REGISTRY: ${REGISTRY:-docker.io/}
+      context: .
+    volumes:
+      # Mount Postman files into default location
+      - "./postman:/etc/newman"
+      - "./junit-reports:/junit-reports"
 
   trivy:
     # image: "${PUBLIC_REGISTRY:-docker.io/}aquasec/trivy"
