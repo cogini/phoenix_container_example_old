@@ -231,20 +231,6 @@ services:
       interval: 5s
       retries: 5
 
-  newman:
-    # image: "${PUBLIC_REGISTRY:-docker.io/}postman/newman"
-    image: "${REGISTRY:-docker.io/}${IMAGE_OWNER}/newman"
-    build:
-      dockerfile: newman.Dockerfile
-      args:
-        BUILDKIT_INLINE_CACHE: "1"
-        REGISTRY: ${REGISTRY:-docker.io/}
-      context: .
-    volumes:
-      # Mount Postman files into default location
-      - "./postman:/etc/newman"
-      - "./junit-reports:/junit-reports"
-
   trivy:
     # image: "${PUBLIC_REGISTRY:-docker.io/}aquasec/trivy"
     image: ghcr.io/aquasecurity/trivy
