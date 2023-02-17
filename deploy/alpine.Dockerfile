@@ -23,8 +23,9 @@ ARG APK_UPGRADE=":"
 # If blank, docker.io will be used. If specified, should have a trailing slash.
 ARG REGISTRY=""
 # Registry for public images, e.g. debian, alpine, or postgres.
+ARG PUBLIC_REGISTRY=""
 # Public images may be mirrored into the private registry, with e.g. Skopeo
-ARG PUBLIC_REGISTRY=$REGISTRY
+# ARG PUBLIC_REGISTRY=$REGISTRY
 
 # Base image for build and test
 ARG BUILD_BASE_IMAGE_NAME=${PUBLIC_REGISTRY}hexpm/elixir
