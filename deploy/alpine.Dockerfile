@@ -211,10 +211,9 @@ FROM build-deps-get AS prod-release
 
     # COPY .env.prod .
 
-    # This does a partial compile.
+    # Compile deps separately from application for better caching.
     # Doing "mix 'do' compile, assets.deploy" in a single stage is worse
     # because a single line of code changed causes a complete recompile.
-    # With the stages separated most of the compilation is cached.
 
     # RUN set -a && . ./.env.prod && set +a && \
     #     env && \
@@ -344,9 +343,8 @@ FROM prod-base AS prod
     ARG MIX_ENV
     ARG RELEASE
 
-    # Set environment vars used by the app
-    # SECRET_KEY_BASE and DATABASE_URL env vars should be set when running the application
-    # Maybe set COOKIE and other things
+    # Set environment vars that do not change. Secrets like SECRET_KEY_BASE and
+    # environment-specific config such as DATABASE_URL should be set at runtime.
     ENV HOME=$APP_DIR \
         PORT=$APP_PORT \
         PHX_SERVER=true \
