@@ -129,13 +129,13 @@ phases:
       # - docker buildx bake -f docker-bake.hcl ci
 
       # Build app container for tests
-      - docker compose build test
+      - docker-compose build test
 
       # Run tests
-      - docker compose up --detach test
-      - docker compose run test mix test
-      - docker compose run test mix do format --check-formatted, deps.unlock --check-unused, credo --all, hex.audit, deps.audit, sobelow
-      - docker compose run test mix dialyzer --no-check
+      - docker-compose up --detach test
+      - docker-compose run test mix test
+      - docker-compose run test mix do format --check-formatted, deps.unlock --check-unused, credo --all, hex.audit, deps.audit, sobelow
+      - docker-compose run test mix dialyzer --no-check
 
       # Build and push final deploy container
       # - $TEMPLATE_DIR/build.sh
@@ -151,10 +151,10 @@ phases:
       # - CACHE_TYPE=registry $TEMPLATE_DIR/build.sh
 
       # Build final image
-      - docker compose build prod
+      - docker-compose build prod
 
       # Scan for security vulnerabilities
-      # - docker compose build vuln
+      # - docker-compose build vuln
       # - docker buildx bake -f docker-bake.hcl vuln
 
       # Push final image to container registry
