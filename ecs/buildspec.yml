@@ -20,6 +20,8 @@ env:
     TASKDEF: ecs/taskdef-otel.json
     CPU_ARCH: ARM64
     # CPU_ARCH: X86_64
+    COMPOSE_FILE: docker-compose.yml
+    DOCKER_FILE: deploy/debian.Dockerfile
   parameter-store:
     DOCKERHUB_USERNAME: /cogini/foo/dev/creds/dockerhub_username
     DOCKERHUB_TOKEN: /cogini/foo/dev/creds/dockerhub_token
@@ -28,6 +30,8 @@ phases:
     # runtime-versions:
     #   docker: 19
     commands:
+      - apt-get install jq
+
       - export REGISTRY_NAME="$(dirname $REPO_URL)"
       - export REGISTRY="${REGISTRY_NAME}/"
 
@@ -73,13 +77,12 @@ phases:
       # - cat /etc/lsb-release
       # - python3 --version
       # - aws --version
-      # - docker-compose --version
+      # - docker compose --version
 
       - docker info
       - docker system df -v
       - docker df -v
       - df -k
-
       - docker --version
       - uname -s
       - uname -m
@@ -123,15 +126,16 @@ phases:
       #
       # - docker-compose push app
 
-      - docker buildx bake -f docker-bake.hcl ci
+      # - docker buildx bake -f docker-bake.hcl ci
 
       # Build app container for tests
-      # - docker-compose build test
+      - docker compose build test
 
       # Run tests
-      - docker-compose up test
-      - docker-compose run test mix test
-      - docker-compose run test mix do credo, deps.audit, sobelow
+      - docker compose up --detach test
+      - docker compose run test mix test
+      - docker compose run test mix do format --check-formatted, deps.unlock --check-unused, credo --all, hex.audit, deps.audit, sobelow
+      - docker compose run test mix dialyzer --no-check
 
       # Build and push final deploy container
       # - $TEMPLATE_DIR/build.sh
@@ -147,15 +151,15 @@ phases:
       # - CACHE_TYPE=registry $TEMPLATE_DIR/build.sh
 
       # Build final image
-      # - docker-compose build app
+      - docker compose build prod
 
       # Scan for security vulnerabilities
-      # - docker-compose build vuln
-      - docker buildx bake -f docker-bake.hcl vuln
+      # - docker compose build vuln
+      # - docker buildx bake -f docker-bake.hcl vuln
 
       # Push final image to container registry
-      # - docker-compose push app
-      - docker buildx bake -f docker-bake.hcl --push app
+      - docker-compose push prod
+      # - docker buildx bake -f docker-bake.hcl --push app
 
       # Write image definition files
       # https://docs.aws.amazon.com/codepipeline/latest/userguide/file-reference.html
