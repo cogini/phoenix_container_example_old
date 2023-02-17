@@ -11,11 +11,10 @@ ARG ELIXIR_DEBIAN_VERSION=bullseye-20230109-slim
 
 # https://docker.debian.net/
 # https://hub.docker.com/_/debian
-# ARG DEBIAN_VERSION=buster-slim
 ARG DEBIAN_VERSION=bullseye-slim
 
 # Use snapshot for consistent dependencies, see https://snapshot.debian.org/
-# ARG DEBIAN_SNAPSHOT=20221219
+# Needs to be updated manually
 ARG DEBIAN_SNAPSHOT=20230109
 
 # ARG LINUX_ARCH=aarch64
