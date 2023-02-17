@@ -290,6 +290,7 @@ FROM build-deps-get AS prod-release
 FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
     ARG APK_UPDATE
     ARG APK_UPGRADE
+    ARG RUNTIME_PACKAGES
 
     ARG LANG
     ENV LANG=$LANG
@@ -299,8 +300,6 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
     ARG APP_GROUP_ID
     ARG APP_USER
     ARG APP_USER_ID
-
-    ARG RUNTIME_PACKAGES
 
     # Create OS user and group to run app under
     # https://wiki.alpinelinux.org/wiki/Setting_up_a_new_user#adduser
