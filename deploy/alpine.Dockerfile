@@ -162,6 +162,8 @@ FROM build-deps-get AS test-image
 
     WORKDIR $APP_DIR
 
+    # COPY .env.test ./
+
     # Compile deps separately from app, improving Docker caching
     RUN mix deps.compile
 
@@ -183,8 +185,7 @@ FROM build-deps-get AS test-image
     # COPY apps ./apps
     # COPY priv ./priv
 
-    # COPY .env.test ./
-    # RUN set -a && . ./.env.test && set +a \
+    # RUN set -a && . ./.env.test && set +a && \
     #     env && \
     #     mix compile --warnings-as-errors
 
@@ -215,7 +216,10 @@ FROM build-deps-get AS prod-release
     # because a single line of code changed causes a complete recompile.
     # With the stages separated most of the compilation is cached.
 
-    # Compile deps separately from application for better caching
+    # RUN set -a && . ./.env.prod && set +a && \
+    #     env && \
+    #     mix deps.compile
+
     RUN mix deps.compile
 
     RUN mix esbuild.install --if-missing
@@ -271,6 +275,10 @@ FROM build-deps-get AS prod-release
     # For umbrella, using `mix cmd` ensures each app is compiled in
     # isolation https://github.com/elixir-lang/elixir/issues/9407
     # RUN mix cmd mix compile --warnings-as-errors
+
+    # RUN set -a && . ./.env.prod && set +a && \
+    #     env && \
+    #     mix compile --verbose --warnings-as-errors
 
     RUN mix compile --warnings-as-errors
 
