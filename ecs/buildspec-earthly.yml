@@ -28,6 +28,8 @@ env:
 phases:
   install:
     commands:
+      - apt-get install jq
+
       - export REGISTRY_NAME="$(dirname $REPO_URL)"
       - export REGISTRY="${REGISTRY_NAME}/"
 
@@ -66,6 +68,9 @@ phases:
       - docker system df -v
       - docker df -v
       - df -k
+      - docker --version
+      - uname -s
+      - uname -m
 
       # Configure earthly
       - earthly config global.cache_size_mb 30000
@@ -74,13 +79,7 @@ phases:
       - earthly config global.disable_log_sharing true
       # - cat ~/.earthly/config.yml
       - earthly bootstrap
-
       - earthly --version
-      - docker --version
-      - uname -s
-      - uname -m
-
-      - apt-get install jq
 
   pre_build:
     commands:
