@@ -598,7 +598,6 @@ FROM prod-base AS prod
     # Run app in foreground
     CMD ["start"]
 
-
 # Dev image which mounts code from local filesystem
 FROM build-os-deps AS dev
     ARG DEV_PACKAGES
@@ -681,7 +680,6 @@ FROM build-os-deps AS dev
     EXPOSE $APP_PORT
 
     CMD [ "sleep", "infinity" ]
-
 
 # Copy build artifacts to host
 FROM scratch AS artifacts
