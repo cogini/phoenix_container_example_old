@@ -15,6 +15,9 @@
 !mix.exs
 !mix.lock
 
+# Build environment
+!.env.*
+
 !.credo.exs
 !.formatter.exs
 !coveralls.json
