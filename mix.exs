@@ -71,7 +71,6 @@ defmodule PhoenixContainerExample.MixProject do
       {:ecto_sql, "~> 3.6"},
       {:esbuild, "~> 0.4", runtime: Mix.env() == :dev},
       {:excoveralls, "~> 0.14", only: [:dev, :test], runtime: false},
-      {:flatlog, "~> 0.1.2", only: :dev},
       {:floki, ">= 0.30.0", only: :test},
       {:gettext, "~> 0.18"},
       {:jason, "~> 1.2"},
@@ -114,6 +113,7 @@ defmodule PhoenixContainerExample.MixProject do
       # "assets.deploy": ["yarn --cwd assets deploy", "phx.digest"],
       quality: [
         "format --check-formatted",
+        # mix deps.clean --unlock --unused
         "deps.unlock --check-unused",
         "credo",
         "hex.audit",
