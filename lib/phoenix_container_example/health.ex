@@ -28,9 +28,9 @@ defmodule PhoenixContainerExample.Health do
     # Return error if there are available migrations which have not been executed.
     # This supports deployment to AWS ECS using the following strategy:
     # https://engineering.instawork.com/elegant-database-migrations-on-ecs-74f3487da99f
-    # 
+    #
     # Note that by default Elixir migrations lock the database migration table, so
-    # they will only run from a single instance. 
+    # they will only run from a single instance.
     migrations =
       @repos
       |> Enum.map(&Ecto.Migrator.migrations/1)
