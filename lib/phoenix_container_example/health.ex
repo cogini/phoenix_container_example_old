@@ -25,6 +25,9 @@ defmodule PhoenixContainerExample.Health do
           | {:error, {status_code :: non_neg_integer(), reason :: binary()}}
           | {:error, reason :: binary()}
   def startup do
+    # Check if there are migrations which have not been executed
+    # This supports deployment to AWS ECS
+    # https://engineering.instawork.com/elegant-database-migrations-on-ecs-74f3487da99f
     migrations =
       @repos
       |> Enum.map(&Ecto.Migrator.migrations/1)
