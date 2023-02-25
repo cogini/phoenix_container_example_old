@@ -5,11 +5,11 @@ app using containers.
   for parallel [multistage builds](https://docs.docker.com/develop/develop-images/multistage-build/)
   and caching of OS files and language packages. Multistage builds compile
   dependencies separately from app code, speeding rebuilds and reducing final
-  image size.  Caching of packages reduces size of container
-  layers and allows sharing of data betwen container targets.
+  image size.  Caching of packages reduces size of container layers and allows
+  sharing of data betwen container targets.
 
 * Supports Alpine and Debian, using [hexpm/elixir](https://hub.docker.com/r/hexpm/elixir)
-  base images.
+  base images. Supports Google [Distroless](https://github.com/GoogleContainerTools/distroless).
 
 * Uses Erlang releases for the final image, resulting in an image size of
   less than 20MB (5.6 MB Alpine OS files, 1.3 MB TLS libraries, 12 MB Erlang VM + app).
@@ -18,6 +18,12 @@ app using containers.
   limits and ensure consistent builds.
 
 * Supports development in a Docker container with Visual Studio Code.
+
+* Supports a full-featured CI with Github Actions, running static code analysis
+  and security scanners in parallel.
+
+* Supports container-based testing, running tests against the production build
+  using Postman/Newman, with containerized builds of Postgres, MySQL, Redis, etc.
 
 * Supports building for multiple architectures, e.g. AWS
   [Gravaton](https://aws.amazon.com/ec2/graviton/) Arm processor.
@@ -60,14 +66,14 @@ a database.
   aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $REGISTRY
 
   # Build all images (dev, test and app prod, local Postgres db)
-  docker-compose build
+  docker compose build
 
   # Run tests, talking to db in container
-  docker-compose up test
-  docker-compose run test mix test
+  docker compose up test
+  docker compose run test mix test
 
   # Push final app image to repo REPO_URL
-  docker-compose push app
+  docker compose push app
   ```
 
 You can also run the docker build commands directly, which give more control
@@ -82,10 +88,10 @@ To run the prod app locally, talking to the db container:
 
   ```shell
   # Create prod db schema via test stage
-  DATABASE_DB=app docker-compose run test mix ecto.create
+  DATABASE_DB=app docker compose run test mix ecto.create
 
   export SECRET_KEY_BASE="JBGplDAEnheX84quhVw2xvqWMFGDdn0v4Ye/GR649KH2+8ezr0fAeQ3kNbtbrY4U"
-  DATABASE_DB=app docker-compose up app
+  DATABASE_DB=app docker compose up app
 
   # Make request to app running in Docker
   curl -v http://localhost:4000/
@@ -95,16 +101,16 @@ To develop the app in a container:
 
   ```shell
   # Start dev instance
-  docker-compose up dev
+  docker compose up dev
 
   # Create dev db schema by running mix
-  docker-compose run dev mix ecto.create
+  docker compose run dev mix ecto.create
 
   # Make request to app running in Docker
   curl -v http://localhost:4000/
 
   # Open a shell on the running dev environment
-  docker-compose run dev bash
+  docker compose run dev bash
   ```
 
 ## Building for multiple platforms
@@ -117,7 +123,7 @@ packages for Arm. The key in any case is getting caching optimized.
   docker buildx imagetools inspect $REPO_URL
   ```
 
-It can also be configured in `docker-compose.yml`.
+It can also be configured in `docker compose.yml`.
 
 ## Environment vars
 
@@ -156,7 +162,7 @@ To use the mirror registry, set the `REGISTRY` env variable:
 
 ```shell
 export REGISTRY=1234567890.dkr.ecr.ap-northeast-1.amazonaws.com/
-docker-compose build
+docker compose build
 ```
 
 ## skopeo
@@ -348,11 +354,11 @@ Visual Studio Code has support for developing in a Docker container.
 
 See [.devcontainer/devcontainer.json](.devcontainer/devcontainer.json).
 
-It uses the `docker-compose.yml` plus an `.env` file to set environment
+It uses the `docker compose.yml` plus an `.env` file to set environment
 variables.
 
 The default `.env` file is picked up from the root of the project, but you can
-use `env_file` in `docker-compose.yml` file to specify an alternate location.
+use `env_file` in `docker compose.yml` file to specify an alternate location.
 
 `.env`
 
@@ -437,8 +443,8 @@ It includes:
 ```shell
 aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $REGISTRY
 
-docker-compose build codebuild
-docker-compose push codebuild
+docker compose build codebuild
+docker compose push codebuild
 ```
 
 Same thing, built with Earthly:
@@ -547,7 +553,7 @@ Allow db configuration to be overridden by env vars:
 
 ```command
 createuser --createdb --encrypted --pwprompt postgres
-docker-compose run test mix ecto.setup
+docker compose run test mix ecto.setup
 ```
 
 ```command
@@ -559,6 +565,6 @@ docker buildx build -t distroless-prod-base -f deploy/distroless/Dockerfile --pr
 https://blog.tedivm.com/guides/2021/10/github-actions-push-to-aws-ecr-without-credentials-oidc/
 
 ```command
-docker-compose -f docker-compose.gha.yml --env-file .envrc build scan
-docker-compose -f docker-compose.gha.yml run scan trivy filesystem /
+docker compose -f docker-compose.gha.yml --env-file .envrc build scan
+docker compose -f docker-compose.gha.yml run scan trivy filesystem /
 ```
