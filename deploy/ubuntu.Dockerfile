@@ -1,22 +1,24 @@
 # Build app
-# Deploy using Debian
+# Deploy using Ubuntu
 
-ARG OS=debian
+ARG OS=ubuntu
 
 # Specify versions of Erlang, Elixir, and base OS.
 # Choose a combination supported by https://hub.docker.com/r/hexpm/elixir/tags
 
 ARG ELIXIR_VER=1.14.3
-ARG OTP_VER=25.2.2
-ARG BUILD_OS_VER=${OS}-bullseye-20230109-slim
+ARG OTP_VER=25.2.3
+# ARG BUILD_OS_VER=ubuntu-jammy-20230126
+ARG BUILD_OS_VER=ubuntu-jammy-20221130
 
-# https://docker.debian.net/
-# https://hub.docker.com/_/debian
-ARG PROD_OS_VER=bullseye-slim
+# https://hub.docker.com/_/ubuntu
+# ARG PROD_OS_VER=jammy-20230126
+ARG PROD_OS_VER=jammy-20221130
 
 # Use snapshot for consistent dependencies, see https://snapshot.debian.org/
 # Needs to be updated manually
-ARG SNAPSHOT_VER=20230109
+# ARG SNAPSHOT_VER=20230109
+ARG SNAPSHOT_VER=""
 
 ARG NODE_VER=16.14.1
 # ARG NODE_VER=lts

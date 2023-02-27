@@ -62,7 +62,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [debian, alpine]
+        os: [debian, ubuntu, alpine]
     env:
       DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
       OS: ${{ matrix.os }}
@@ -174,7 +174,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [debian, alpine]
+        os: [debian, ubuntu, alpine]
         # ci_node_total: [2]
         # ci_node_index: [1, 2]
     env:
@@ -263,7 +263,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [debian, alpine]
+        os: [debian, ubuntu, alpine]
     env:
       DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
       OS: ${{ matrix.os }}
@@ -371,7 +371,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [debian, alpine, distroless]
+        os: [debian, ubuntu, alpine, distroless]
     env:
       DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
       OS: ${{ matrix.os }}
@@ -556,7 +556,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [debian, alpine, distroless]
+        os: [debian, ubuntu, alpine, distroless]
     env:
       DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
       OS: ${{ matrix.os }}
@@ -653,7 +653,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [debian, alpine, distroless]
+        os: [debian, ubuntu, alpine, distroless]
     env:
       DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
       OS: ${{ matrix.os }}

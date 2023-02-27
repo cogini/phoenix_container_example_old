@@ -5,26 +5,26 @@
 # Specify versions of Erlang, Elixir, and base OS.
 # Choose a combination supported by https://hub.docker.com/r/hexpm/elixir/tags
 
-ARG ELIXIR_VERSION=1.14.3
-ARG OTP_VERSION=25.2.2
-ARG ELIXIR_DEBIAN_VERSION=bullseye-20230109-slim
+ARG ELIXIR_VER=1.14.3
+ARG OTP_VER=25.2.2
+ARG BUILD_OS_VER=debian-bullseye-20230109-slim
 
 # https://docker.debian.net/
 # https://hub.docker.com/_/debian
-ARG DEBIAN_VERSION=bullseye-slim
+ARG PROD_OS_VER=bullseye-slim
 
 # Use snapshot for consistent dependencies, see https://snapshot.debian.org/
 # Needs to be updated manually
-ARG DEBIAN_SNAPSHOT=20230109
+ARG SNAPSHOT_VER=20230109
 
 # ARG LINUX_ARCH=aarch64
 ARG LINUX_ARCH=x86_64
 # TARGETPLATFORM linux/amd64 linux/arm64
 
-ARG NODE_VERSION=16.14.1
-# ARG NODE_VERSION=lts
+ARG NODE_VER=16.14.1
+# ARG NODE_VER=lts
 
-ARG AWS_CLI_VERSION=2.0.61
+ARG AWS_CLI_VER=2.0.61
 
 # Docker registry for internal images, e.g. 123.dkr.ecr.ap-northeast-1.amazonaws.com/
 # If blank, docker.io will be used. If specified, should have a trailing slash.
@@ -36,7 +36,7 @@ ARG PUBLIC_REGISTRY=""
 
 # Base image for build and test
 ARG BUILD_BASE_IMAGE_NAME=${PUBLIC_REGISTRY}hexpm/elixir
-ARG BUILD_BASE_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-${ELIXIR_DEBIAN_VERSION}
+ARG BUILD_BASE_IMAGE_TAG=${ELIXIR_VER}-erlang-${OTP_VER}-${BUILD_OS_VER}
 
 # Base for final prod image
 # https://github.com/GoogleContainerTools/distroless/blob/main/base/README.md
@@ -48,7 +48,7 @@ ARG PROD_BASE_IMAGE_TAG=debug
 
 # Intermediate image for files copied to prod
 ARG INSTALL_BASE_IMAGE_NAME=${PUBLIC_REGISTRY}debian
-ARG INSTALL_BASE_IMAGE_TAG=bullseye-slim
+ARG INSTALL_BASE_IMAGE_TAG=${PROD_OS_VER}
 
 # App name, used to name directories
 ARG APP_NAME=app
@@ -84,7 +84,7 @@ ARG DEV_PACKAGES=""
 
 # Create build base image with OS dependencies
 FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
-    ARG DEBIAN_SNAPSHOT
+    ARG SNAPSHOT_VER
     ARG RUNTIME_PACKAGES
 
     ARG LANG
@@ -119,10 +119,11 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         DEBIAN_FRONTEND=noninteractive \
         apt-get -y install -y -qq --no-install-recommends ca-certificates
 
-    RUN set -exu && \
-        echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT} bullseye main" > /etc/apt/sources.list && \
-        echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/${DEBIAN_SNAPSHOT} bullseye-security main" >> /etc/apt/sources.list && \
-        echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT} bullseye-updates main" >> /etc/apt/sources.list
+    RUN if test -n "$SNAPSHOT_VER" ; then \
+            echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_VER} bullseye main" > /etc/apt/sources.list && \
+            echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/${SNAPSHOT_VER} bullseye-security main" >> /etc/apt/sources.list && \
+            echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_VER} bullseye-updates main" >> /etc/apt/sources.list; \
+        fi
 
     # Install tools and libraries to build binary libraries
     # Not necessary for a minimal Phoenix app, but likely needed
@@ -172,7 +173,7 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         # # Install lts version of node
         # # n lts && \
         # # Install specific version of node
-        # n "$NODE_VERSION" && \
+        # n "$NODE_VER" && \
         # rm /usr/local/bin/n && \
         # Install yarn from repo
         # curl -sL https://dl.yarnpkg.com/debian/pubkey.gpg -o /etc/apt/trusted.gpg.d/yarn.asc && \
@@ -411,7 +412,7 @@ FROM build-deps-get AS prod-release
 
 # Create staging image for files which are copied into final prod image
 FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
-    ARG DEBIAN_SNAPSHOT
+    ARG SNAPSHOT_VER
     ARG LINUX_ARCH
     ARG TARGETPLATFORM
 
@@ -431,10 +432,11 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
         DEBIAN_FRONTEND=noninteractive \
         apt-get -y install -y -qq --no-install-recommends ca-certificates
 
-    RUN set -exu && \
-        echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT} bullseye main" > /etc/apt/sources.list && \
-        echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/${DEBIAN_SNAPSHOT} bullseye-security main" >> /etc/apt/sources.list && \
-        echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT} bullseye-updates main" >> /etc/apt/sources.list
+    RUN if test -n "$SNAPSHOT_VER" ; then \
+            echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_VER} bullseye main" > /etc/apt/sources.list && \
+            echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/${SNAPSHOT_VER} bullseye-security main" >> /etc/apt/sources.list && \
+            echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_VER} bullseye-updates main" >> /etc/apt/sources.list; \
+        fi
 
     RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
@@ -525,7 +527,6 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
     # COPY --from=prod-install "/lib/${LINUX_ARCH}-linux-gnu/libgcc_s.so.1" "/lib/${LINUX_ARCH}-linux-gnu/"
     # libstdc++6
     # COPY --from=prod-install "/usr/lib/${LINUX_ARCH}-linux-gnu/libstdc++.so.6.0.28" "/usr/lib/${LINUX_ARCH}-linux-gnu/libstdc++.so.6"
-
 
 # Create final prod image which gets deployed
 FROM prod-base AS prod

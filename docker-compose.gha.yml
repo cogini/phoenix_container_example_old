@@ -10,6 +10,7 @@ services:
       args:
         BUILDKIT_INLINE_CACHE: "1"
         REGISTRY: ${REGISTRY:-docker.io/}
+        OS: ${OS:-debian}
       context: .
       # secrets:
       #   - oban_license_key
@@ -37,6 +38,7 @@ services:
         BUILDKIT_INLINE_CACHE: "1"
         MIX_ENV: prod
         REGISTRY: ${REGISTRY:-docker.io/}
+        OS: ${OS:-debian}
       # secrets:
       #   - oban_license_key
       #   - oban_key_fingerprint
