@@ -1,29 +1,29 @@
 This is a full featured example of building and deploying an Elixir / Phoenix
 app using containers.
 
-* Uses Docker [BuildKit](https://github.com/moby/buildkit)
-  for parallel [multistage builds](https://docs.docker.com/develop/develop-images/multistage-build/)
-  and caching of OS files and language packages. Multistage builds compile
-  dependencies separately from app code, speeding rebuilds and reducing final
-  image size.  Caching of packages reduces size of container layers and allows
-  sharing of data betwen container targets.
-
-* Supports Alpine and Debian, using [hexpm/elixir](https://hub.docker.com/r/hexpm/elixir)
+* Supports Debian, Ubuntu, and Alpine using [hexpm/elixir](https://hub.docker.com/r/hexpm/elixir)
   base images. Supports Google [Distroless](https://github.com/GoogleContainerTools/distroless).
 
 * Uses Erlang releases for the final image, resulting in an image size of
   less than 20MB (5.6 MB Alpine OS files, 1.3 MB TLS libraries, 12 MB Erlang VM + app).
 
-* Supports mirroring base images from Docker Hub to AWS ECR to avoid rate
-  limits and ensure consistent builds.
-
-* Supports development in a Docker container with Visual Studio Code.
+* Uses Docker [BuildKit](https://github.com/moby/buildkit)
+  for [multistage builds](https://docs.docker.com/develop/develop-images/multistage-build/)
+  and caching of OS files and language packages. Multistage builds compile
+  dependencies separately from app code, speeding rebuilds and reducing final
+  image size. Caching of packages reduces size of container layers and allows
+  sharing of data betwen container targets.
 
 * Supports a full-featured CI with Github Actions, running static code analysis
   and security scanners in parallel.
 
 * Supports container-based testing, running tests against the production build
   using Postman/Newman, with containerized builds of Postgres, MySQL, Redis, etc.
+
+* Supports development in a Docker container with Visual Studio Code.
+
+* Supports mirroring base images from Docker Hub to AWS ECR to avoid rate
+  limits and ensure consistent builds.
 
 * Supports building for multiple architectures, e.g. AWS
   [Gravaton](https://aws.amazon.com/ec2/graviton/) Arm processor.
@@ -568,3 +568,6 @@ https://blog.tedivm.com/guides/2021/10/github-actions-push-to-aws-ecr-without-cr
 docker compose -f docker-compose.gha.yml --env-file .envrc build scan
 docker compose -f docker-compose.gha.yml run scan trivy filesystem /
 ```
+
+https://canonical.com/blog/craft-custom-chiselled-ubuntu-distroless
+https://github.com/canonical/chisel
