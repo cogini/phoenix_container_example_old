@@ -20,6 +20,10 @@ if System.get_env("PHX_SERVER") do
   config :phoenix_container_example, PhoenixContainerExampleWeb.Endpoint, server: true
 end
 
+config :logger,
+  level: String.to_existing_atom(System.get_env("LOG_LEVEL") || "info"),
+  metadata: :all
+
 if config_env() == :prod do
   database_url =
     System.get_env("DATABASE_URL") ||
