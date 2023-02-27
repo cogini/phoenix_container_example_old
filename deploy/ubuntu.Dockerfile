@@ -1,7 +1,7 @@
 # Build app
 # Deploy using Ubuntu
 
-ARG OS=ubuntu
+ARG BASE_OS=debian
 
 # Specify versions of Erlang, Elixir, and base OS.
 # Choose a combination supported by https://hub.docker.com/r/hexpm/elixir/tags
@@ -9,7 +9,7 @@ ARG OS=ubuntu
 ARG ELIXIR_VER=1.14.3
 ARG OTP_VER=25.2.3
 # ARG BUILD_OS_VER=ubuntu-jammy-20230126
-ARG BUILD_OS_VER=ubuntu-jammy-20221130
+ARG BUILD_OS_VER=jammy-20221130
 
 # https://hub.docker.com/_/ubuntu
 # ARG PROD_OS_VER=jammy-20230126
@@ -35,10 +35,10 @@ ARG PUBLIC_REGISTRY=""
 
 # Base image for build and test
 ARG BUILD_BASE_IMAGE_NAME=${PUBLIC_REGISTRY}hexpm/elixir
-ARG BUILD_BASE_IMAGE_TAG=${ELIXIR_VER}-erlang-${OTP_VER}-${BUILD_OS_VER}
+ARG BUILD_BASE_IMAGE_TAG=${ELIXIR_VER}-erlang-${OTP_VER}-${BASE_OS}-${BUILD_OS_VER}
 
 # Base for final prod image
-ARG PROD_BASE_IMAGE_NAME=${PUBLIC_REGISTRY}${OS}
+ARG PROD_BASE_IMAGE_NAME=${PUBLIC_REGISTRY}${BASE_OS}
 ARG PROD_BASE_IMAGE_TAG=$PROD_OS_VER
 
 # Intermediate image for files copied to prod
