@@ -66,6 +66,66 @@ services:
       postgres:
         condition: service_healthy
 
+  # Development image
+  dev:
+    image: ${REGISTRY:-docker.io/}${IMAGE_OWNER}/${IMAGE_NAME}:dev
+    build:
+      dockerfile: ${DOCKER_FILE:-deploy/debian.Dockerfile}
+      target: dev
+      args:
+        BUILDKIT_INLINE_CACHE: "1"
+        MIX_ENV: dev
+        REGISTRY: ${REGISTRY:-docker.io/}
+      context: .
+      # secrets:
+      #   - oban_license_key
+      #   - oban_key_fingerprint
+      #   - access_token
+    # VSCode devcontainer needs something running
+    # command: /bin/sh -c "while sleep 1000; do :; done"
+    environment:
+      - MIX_ENV=dev
+      - SECRET_KEY_BASE
+      - DATABASE_URL
+      - DATABASE_HOST=${DATABASE_HOST:-postgres}
+      - DATABASE_DB
+    ports:
+      - '4000:4000'
+    stdin_open: true
+    tty: true
+    cap_add:
+      - CAP_SYS_ADMIN
+    volumes:
+      - ".:/app:delegated"
+      # - 'nfsmount:/app'
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # AWS CodeBuild custom build image
+  codebuild:
+    image: "${REGISTRY:-docker.io/}foo-app-ecs-build:latest"
+    # Custom build image for AWS CodeBuild
+    # build:
+    #   context: .
+    #   dockerfile: deploy/codebuild.Dockerfile
+    #   args:
+    #     BUILDKIT_INLINE_CACHE: "1"
+    #     REGISTRY: ${REGISTRY:-docker.io/}
+    environment:
+      - REPO_URL
+      - TASKDEF=ecs/taskdef-otel.json
+      # - EARTHLY_BUILDKIT_CACHE_SIZE_MB=30000
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
+      - AWS_DEFAULT_REGION
+      - DOCKERHUB_USERNAME
+      - DOCKERHUB_TOKEN
+    read_only: false
+    privileged: true
+    volumes:
+      - ".:/app:delegated"
+
   # https://docs.datadoghq.com/getting_started/agent/
   # https://github.com/DataDog/datadog-agent/blob/main/pkg/config/config_template.yaml
   datadog:
@@ -107,70 +167,6 @@ services:
       - DD_DOGSTATSD_TAG_CARDINALITY=high
       - DD_DOGSTATSD_NON_LOCAL_TRAFFIC=true
     restart: always
-
-  # Development image
-  dev:
-    image: ${REGISTRY:-docker.io/}${IMAGE_OWNER}/${IMAGE_NAME}:dev
-    build:
-      dockerfile: ${DOCKER_FILE:-deploy/debian.Dockerfile}
-      target: dev
-      args:
-        BUILDKIT_INLINE_CACHE: "1"
-        MIX_ENV: dev
-        REGISTRY: ${REGISTRY:-docker.io/}
-      context: .
-      dockerfile: deploy/debian.Dockerfile
-    # command: /bin/bash -c /app/bin/app-start-dev
-    # command: /app/bin/app-start-dev
-    # command: /bin/sh -c "/app/_build/prod/rel/app/bin/app foreground"
-
-    # VSCode devcontainer needs something running
-    # command: ["tail", "-f", "/dev/null"]
-    command: ["sleep", "infinity"]
-    # command: /bin/sh -c "while sleep 1000; do :; done"
-    # command: mix phx.server
-    environment:
-      - MIX_ENV=dev
-      - SECRET_KEY_BASE
-      - DATABASE_URL
-      - DATABASE_HOST=postgres
-      - DATABASE_DB
-    ports:
-      - '4000:4000'
-    stdin_open: true
-    tty: true
-    cap_add:
-      - CAP_SYS_ADMIN
-    volumes:
-      - ".:/app:delegated"
-      # - 'nfsmount:/app'
-    depends_on:
-      postgres:
-        condition: service_healthy
-
-  # AWS CodeBuild custom build image
-  codebuild:
-    image: "${REGISTRY:-docker.io/}foo-app-ecs-build:latest"
-    # Custom build image for AWS CodeBuild
-    # build:
-    #   context: .
-    #   dockerfile: deploy/codebuild.Dockerfile
-    #   args:
-    #     BUILDKIT_INLINE_CACHE: "1"
-    #     REGISTRY: ${REGISTRY:-docker.io/}
-    environment:
-      - REPO_URL
-      - TASKDEF=ecs/taskdef-otel.json
-      # - EARTHLY_BUILDKIT_CACHE_SIZE_MB=30000
-      - AWS_ACCESS_KEY_ID
-      - AWS_SECRET_ACCESS_KEY
-      - AWS_DEFAULT_REGION
-      - DOCKERHUB_USERNAME
-      - DOCKERHUB_TOKEN
-    read_only: false
-    privileged: true
-    volumes:
-      - ".:/app:delegated"
 
   grype:
     image: "${PUBLIC_REGISTRY:-docker.io/}anchore/grype"
