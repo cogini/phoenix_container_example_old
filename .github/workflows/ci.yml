@@ -792,8 +792,8 @@ jobs:
       #     context: .
       #     builder: ${{ steps.buildx.outputs.name }}
       #     push: true
-      #     cache-from: type=gha,scope=${{ github.workflow }}-${{ env.OS }}
-      #     cache-to: type=gha,scope=${{ github.workflow }}-${{ env.OS }},mode=max
+      #     cache-from: type=gha,scope=${{ github.workflow }}-${{ env.PROD_OS }}
+      #     cache-to: type=gha,scope=${{ github.workflow }}-${{ env.PROD_OS }},mode=max
       #     tags: |
       #       ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{ env.IMAGE_VER }}
       #       ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{ env.IMAGE_TAG }}
