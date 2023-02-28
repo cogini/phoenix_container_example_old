@@ -112,6 +112,7 @@ services:
   dev:
     image: ${REGISTRY:-docker.io/}${IMAGE_OWNER}/${IMAGE_NAME}:dev
     build:
+      dockerfile: ${DOCKER_FILE:-deploy/debian.Dockerfile}
       target: dev
       args:
         BUILDKIT_INLINE_CACHE: "1"
