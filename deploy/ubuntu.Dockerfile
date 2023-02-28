@@ -1,7 +1,7 @@
 # Build app
 # Deploy using Ubuntu
 
-ARG BASE_OS=debian
+ARG BASE_OS=ubuntu
 
 # Specify versions of Erlang, Elixir, and base OS.
 # Choose a combination supported by https://hub.docker.com/r/hexpm/elixir/tags
