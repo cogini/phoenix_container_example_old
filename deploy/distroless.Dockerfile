@@ -8,8 +8,8 @@ ARG BASE_OS=debian
 # Choose a combination supported by https://hub.docker.com/r/hexpm/elixir/tags
 
 ARG ELIXIR_VER=1.14.3
-ARG OTP_VER=25.2.2
-ARG BUILD_OS_VER=bullseye-20230109-slim
+ARG OTP_VER=25.2.3
+ARG BUILD_OS_VER=bullseye-20230202-slim
 
 # https://docker.debian.net/
 # https://hub.docker.com/_/debian
@@ -17,7 +17,7 @@ ARG PROD_OS_VER=bullseye-slim
 
 # Use snapshot for consistent dependencies, see https://snapshot.debian.org/
 # Needs to be updated manually
-ARG SNAPSHOT_VER=20230109
+ARG SNAPSHOT_VER=20230202
 
 # ARG LINUX_ARCH=aarch64
 ARG LINUX_ARCH=x86_64
