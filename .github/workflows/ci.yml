@@ -28,10 +28,10 @@ env:
   # IMAGE_TAG: ${{ (github.ref == 'refs/heads/main' && 'staging') || (github.ref == 'refs/heads/qa' && 'qa') }}
   IMAGE_TAG: latest
   IMAGE_VER: ${{ github.sha }}
-  # OS variant that is deployed
-  PROD_OS: distroless
-  # OS variant if test matrix is not used
-  OS: debian
+  # Variant that is deployed
+  PROD_VAR: 1.14.3-erlang-25.2.3-distroless-bullseye-20230202-slim
+  # Variant if test matrix is not used
+  VAR: debian
   # Registry for test images
   REGISTRY: ghcr.io/
   # Registry for public images, default is docker.io
@@ -62,10 +62,48 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [debian, ubuntu, alpine]
+        os: [alpine, debian, ubuntu]
+        elixir: [1.14.3]
+        include:
+          - os: alpine
+            otp: 24.3.4.6
+            build_os_ver: '3.15.6'
+            prod_os_ver: '3.15.6'
+          - os: alpine
+            otp: 25.2.3
+            build_os_ver: '3.17.0'
+            prod_os_ver: '3.17.0'
+          - os: debian
+            build_os_ver: bullseye-20230109-slim
+            prod_os_ver: bullseye-slim
+            snapshot_ver: '20230109'
+            otp: 24.3.4.9
+          - os: debian
+            build_os_ver: bullseye-20230109-slim
+            prod_os_ver: bullseye-slim
+            snapshot_ver: '20230109'
+            otp: 25.2.3
+          - os: debian
+            build_os_ver: bullseye-20230202-slim
+            prod_os_ver: bullseye-slim
+            snapshot_ver: '20230202'
+            otp: 24.3.4.9
+          - os: debian
+            build_os_ver: bullseye-20230202-slim
+            prod_os_ver: bullseye-slim
+            snapshot_ver: '20230202'
+            otp: 25.2.3
+          - os: ubuntu
+            build_os_ver: jammy-20221130
+            prod_os_ver: jammy-20221130
+            otp: 24.3.4.9
+          - os: ubuntu
+            build_os_ver: jammy-20221130
+            prod_os_ver: jammy-20221130
+            otp: 25.2.3
     env:
       DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
-      OS: ${{ matrix.os }}
+      VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
     steps:
       - name: Dump event
         run: cat "$GITHUB_EVENT_PATH"
@@ -142,15 +180,20 @@ jobs:
         with:
           file: ${{ env.DOCKER_FILE }}
           target: test-image
+          build-args: |
+            ELIXIR_VER=${{ matrix.elixir }}
+            OTP_VER=${{ matrix.otp }}
+            BUILD_OS_VER=${{ matrix.build_os_ver }}
+            PROD_OS_VER=${{ matrix.prod_os_ver }}
           context: .
           builder: ${{ steps.buildx.outputs.name }}
           push: true
           # https://github.com/moby/buildkit#export-cache
-          cache-from: type=gha,scope=${{ github.workflow }}-test-${{ env.OS }}
-          cache-to: type=gha,scope=${{ github.workflow }}-test-${{ env.OS }},mode=max
+          cache-from: type=gha,scope=${{ github.workflow }}-test-${{ env.VAR }}
+          cache-to: type=gha,scope=${{ github.workflow }}-test-${{ env.VAR }},mode=max
           # ssh: default
           tags: |
-            ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:test${{ env.OS }}${{ env.IMAGE_VER }}
+            ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:test${{ env.VAR }}${{ env.IMAGE_VER }}
           # secrets: |
           #   "access_token=${{ secrets.DEVOPS_ACCESS_TOKEN }}"
           #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
@@ -174,12 +217,50 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [debian, ubuntu, alpine]
-        # ci_node_total: [2]
-        # ci_node_index: [1, 2]
+        os: [alpine, debian, ubuntu]
+        elixir: [1.14.3]
+        include:
+          - os: alpine
+            otp: 24.3.4.6
+            build_os_ver: '3.15.6'
+            prod_os_ver: '3.15.6'
+          - os: alpine
+            otp: 25.2.3
+            build_os_ver: '3.17.0'
+            prod_os_ver: '3.17.0'
+          - os: debian
+            build_os_ver: bullseye-20230109-slim
+            prod_os_ver: bullseye-slim
+            snapshot_ver: '20230109'
+            otp: 24.3.4.9
+          - os: debian
+            build_os_ver: bullseye-20230109-slim
+            prod_os_ver: bullseye-slim
+            snapshot_ver: '20230109'
+            otp: 25.2.3
+          - os: debian
+            build_os_ver: bullseye-20230202-slim
+            prod_os_ver: bullseye-slim
+            snapshot_ver: '20230202'
+            otp: 24.3.4.9
+          - os: debian
+            build_os_ver: bullseye-20230202-slim
+            prod_os_ver: bullseye-slim
+            snapshot_ver: '20230202'
+            otp: 25.2.3
+          - os: ubuntu
+            build_os_ver: jammy-20221130
+            prod_os_ver: jammy-20221130
+            otp: 24.3.4.9
+          - os: ubuntu
+            build_os_ver: jammy-20221130
+            prod_os_ver: jammy-20221130
+            otp: 25.2.3
+      # ci_node_total: [2]
+      # ci_node_index: [1, 2]
     env:
       DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
-      OS: ${{ matrix.os }}
+      VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
     steps:
       - name: Log in to GHCR
         uses: docker/login-action@v2
@@ -263,10 +344,48 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [debian, ubuntu, alpine]
+        os: [alpine, debian, ubuntu]
+        elixir: [1.14.3]
+        include:
+          - os: alpine
+            otp: 24.3.4.6
+            build_os_ver: '3.15.6'
+            prod_os_ver: '3.15.6'
+          - os: alpine
+            otp: 25.2.3
+            build_os_ver: '3.17.0'
+            prod_os_ver: '3.17.0'
+          - os: debian
+            build_os_ver: bullseye-20230109-slim
+            prod_os_ver: bullseye-slim
+            snapshot_ver: '20230109'
+            otp: 24.3.4.9
+          - os: debian
+            build_os_ver: bullseye-20230109-slim
+            prod_os_ver: bullseye-slim
+            snapshot_ver: '20230109'
+            otp: 25.2.3
+          - os: debian
+            build_os_ver: bullseye-20230202-slim
+            prod_os_ver: bullseye-slim
+            snapshot_ver: '20230202'
+            otp: 24.3.4.9
+          - os: debian
+            build_os_ver: bullseye-20230202-slim
+            prod_os_ver: bullseye-slim
+            snapshot_ver: '20230202'
+            otp: 25.2.3
+          - os: ubuntu
+            build_os_ver: jammy-20221130
+            prod_os_ver: jammy-20221130
+            otp: 24.3.4.9
+          - os: ubuntu
+            build_os_ver: jammy-20221130
+            prod_os_ver: jammy-20221130
+            otp: 25.2.3
     env:
       DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
-      OS: ${{ matrix.os }}
+      VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
     steps:
       - name: Log in to GHCR
         uses: docker/login-action@v2
@@ -371,10 +490,53 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [debian, ubuntu, alpine, distroless]
+        os: [alpine, debian, distroless, ubuntu]
+        elixir: [1.14.3]
+        include:
+          - os: alpine
+            otp: 24.3.4.6
+            build_os_ver: '3.15.6'
+            prod_os_ver: '3.15.6'
+          - os: alpine
+            otp: 25.2.3
+            build_os_ver: '3.17.0'
+            prod_os_ver: '3.17.0'
+          - os: debian
+            build_os_ver: bullseye-20230109-slim
+            prod_os_ver: bullseye-slim
+            snapshot_ver: '20230109'
+            otp: 24.3.4.9
+          - os: debian
+            build_os_ver: bullseye-20230109-slim
+            prod_os_ver: bullseye-slim
+            snapshot_ver: '20230109'
+            otp: 25.2.3
+          - os: debian
+            build_os_ver: bullseye-20230202-slim
+            prod_os_ver: bullseye-slim
+            snapshot_ver: '20230202'
+            otp: 24.3.4.9
+          - os: debian
+            build_os_ver: bullseye-20230202-slim
+            prod_os_ver: bullseye-slim
+            snapshot_ver: '20230202'
+            otp: 25.2.3
+          - os: distroless
+            build_os_ver: bullseye-20230202-slim
+            prod_os_ver: bullseye-slim
+            snapshot_ver: ''
+            otp: 25.2.3
+          - os: ubuntu
+            build_os_ver: jammy-20221130
+            prod_os_ver: jammy-20221130
+            otp: 24.3.4.9
+          - os: ubuntu
+            build_os_ver: jammy-20221130
+            prod_os_ver: jammy-20221130
+            otp: 25.2.3
     env:
       DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
-      OS: ${{ matrix.os }}
+      VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
     steps:
       - name: Cancel previous runs
         uses: styfle/cancel-workflow-action@0.11.0
@@ -454,14 +616,19 @@ jobs:
         with:
           file: ${{ env.DOCKER_FILE }}
           target: prod
+          build-args: |
+            ELIXIR_VER=${{ matrix.elixir }}
+            OTP_VER=${{ matrix.otp }}
+            BUILD_OS_VER=${{ matrix.build_os_ver }}
+            PROD_OS_VER=${{ matrix.prod_os_ver }}
           context: .
           builder: ${{ steps.buildx.outputs.name }}
           push: true
-          cache-from: type=gha,scope=${{ github.workflow }}-${{ env.OS }}
-          cache-to: type=gha,scope=${{ github.workflow }}-${{ env.OS }},mode=max
+          cache-from: type=gha,scope=${{ github.workflow }}-${{ env.VAR }}
+          cache-to: type=gha,scope=${{ github.workflow }}-${{ env.VAR }},mode=max
           # ssh: default
           tags: |
-            ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.OS }}${{ env.IMAGE_VER }}
+            ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.VAR }}${{ env.IMAGE_VER }}
             ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.BRANCH }}-${{ env.GITHUB_SHA_SHORT }}
           # secrets: |
           #   "access_token=${{ secrets.DEVOPS_ACCESS_TOKEN }}"
@@ -478,11 +645,11 @@ jobs:
           context: .
           builder: ${{ steps.buildx.outputs.name }}
           push: true
-          cache-from: type=gha,scope=${{ github.workflow }}-${{ env.OS }}
-          cache-to: type=gha,scope=${{ github.workflow }}-${{ env.OS }},mode=max
+          cache-from: type=gha,scope=${{ github.workflow }}-${{ env.VAR }}
+          cache-to: type=gha,scope=${{ github.workflow }}-${{ env.VAR }},mode=max
           # ssh: default
           tags: |
-            ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.OS }}${{ env.IMAGE_VER }}
+            ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.VAR }}${{ env.IMAGE_VER }}
             ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.BRANCH }}-${{ env.GITHUB_SHA_SHORT }}
           # secrets: |
           #   "access_token=${{ secrets.DEVOPS_ACCESS_TOKEN }}"
@@ -556,10 +723,53 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [debian, ubuntu, alpine, distroless]
+        os: [alpine, debian, distroless, ubuntu]
+        elixir: [1.14.3]
+        include:
+          - os: alpine
+            otp: 24.3.4.6
+            build_os_ver: '3.15.6'
+            prod_os_ver: '3.15.6'
+          - os: alpine
+            otp: 25.2.3
+            build_os_ver: '3.17.0'
+            prod_os_ver: '3.17.0'
+          - os: debian
+            build_os_ver: bullseye-20230109-slim
+            prod_os_ver: bullseye-slim
+            snapshot_ver: '20230109'
+            otp: 24.3.4.9
+          - os: debian
+            build_os_ver: bullseye-20230109-slim
+            prod_os_ver: bullseye-slim
+            snapshot_ver: '20230109'
+            otp: 25.2.3
+          - os: debian
+            build_os_ver: bullseye-20230202-slim
+            prod_os_ver: bullseye-slim
+            snapshot_ver: '20230202'
+            otp: 24.3.4.9
+          - os: debian
+            build_os_ver: bullseye-20230202-slim
+            prod_os_ver: bullseye-slim
+            snapshot_ver: '20230202'
+            otp: 25.2.3
+          - os: distroless
+            build_os_ver: bullseye-20230202-slim
+            prod_os_ver: bullseye-slim
+            snapshot_ver: ''
+            otp: 25.2.3
+          - os: ubuntu
+            build_os_ver: jammy-20221130
+            prod_os_ver: jammy-20221130
+            otp: 24.3.4.9
+          - os: ubuntu
+            build_os_ver: jammy-20221130
+            prod_os_ver: jammy-20221130
+            otp: 25.2.3
     env:
       DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
-      OS: ${{ matrix.os }}
+      VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
     steps:
       - name: Log in to GHCR
         uses: docker/login-action@v2
@@ -653,10 +863,53 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [debian, ubuntu, alpine, distroless]
+        os: [alpine, debian, distroless, ubuntu]
+        elixir: [1.14.3]
+        include:
+          - os: alpine
+            otp: 24.3.4.6
+            build_os_ver: '3.15.6'
+            prod_os_ver: '3.15.6'
+          - os: alpine
+            otp: 25.2.3
+            build_os_ver: '3.17.0'
+            prod_os_ver: '3.17.0'
+          - os: debian
+            build_os_ver: bullseye-20230109-slim
+            prod_os_ver: bullseye-slim
+            snapshot_ver: '20230109'
+            otp: 24.3.4.9
+          - os: debian
+            build_os_ver: bullseye-20230109-slim
+            prod_os_ver: bullseye-slim
+            snapshot_ver: '20230109'
+            otp: 25.2.3
+          - os: debian
+            build_os_ver: bullseye-20230202-slim
+            prod_os_ver: bullseye-slim
+            snapshot_ver: '20230202'
+            otp: 24.3.4.9
+          - os: debian
+            build_os_ver: bullseye-20230202-slim
+            prod_os_ver: bullseye-slim
+            snapshot_ver: '20230202'
+            otp: 25.2.3
+          - os: distroless
+            build_os_ver: bullseye-20230202-slim
+            prod_os_ver: bullseye-slim
+            snapshot_ver: ''
+            otp: 25.2.3
+          - os: ubuntu
+            build_os_ver: jammy-20221130
+            prod_os_ver: jammy-20221130
+            otp: 24.3.4.9
+          - os: ubuntu
+            build_os_ver: jammy-20221130
+            prod_os_ver: jammy-20221130
+            otp: 25.2.3
     env:
       DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
-      OS: ${{ matrix.os }}
+      VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
     steps:
       - name: Log in to GHCR
         uses: docker/login-action@v2
@@ -666,14 +919,14 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Pull image
-        run: docker pull ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{ env.OS }}${{ env.IMAGE_VER }}
+        run: docker pull ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{ env.VAR }}${{ env.IMAGE_VER }}
 
       - name: Scan image with Trivy
         uses: aquasecurity/trivy-action@master
         # https://github.com/aquasecurity/trivy-action
         # https://github.com/marketplace/actions/aqua-security-trivy#inputs
         with:
-          image-ref: ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{ env.OS }}${{ env.IMAGE_VER }}
+          image-ref: ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{ env.VAR }}${{ env.IMAGE_VER }}
           # exit-code: '1' # fail build
           # ignore-unfixed: true
           # vuln-type: 'os,library'
@@ -698,7 +951,7 @@ jobs:
         # https://github.com/marketplace/actions/anchore-container-scan
         id: scan-grype
         with:
-          image: ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{ env.OS }}${{ env.IMAGE_VER }}
+          image: ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{ env.VAR }}${{ env.IMAGE_VER }}
           # severity-cutoff: critical
           fail-build: false
           output-format: 'sarif'
@@ -719,7 +972,7 @@ jobs:
       #     SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
       #   with:
       #     command: test
-      #     image: ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.OS }}${{ env.IMAGE_VER }}
+      #     image: ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.VAR }}${{ env.IMAGE_VER }}
       #     args: --file=${{ env.DOCKER_FILE }} --project-name=api
 
   prod:
@@ -772,7 +1025,7 @@ jobs:
       - name: Tag GHCR release as latest
         run: |
           docker buildx imagetools create \
-            --append ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{env.PROD_OS}}${{env.IMAGE_VER}} \
+            --append ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{env.PROD_VAR}}${{env.IMAGE_VER}} \
             --tag ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{env.IMAGE_TAG}}
 
       - name: Check out source
@@ -792,8 +1045,8 @@ jobs:
       #     context: .
       #     builder: ${{ steps.buildx.outputs.name }}
       #     push: true
-      #     cache-from: type=gha,scope=${{ github.workflow }}-${{ env.PROD_OS }}
-      #     cache-to: type=gha,scope=${{ github.workflow }}-${{ env.PROD_OS }},mode=max
+      #     cache-from: type=gha,scope=${{ github.workflow }}-${{ env.PROD_VAR }}
+      #     cache-to: type=gha,scope=${{ github.workflow }}-${{ env.PROD_VAR }},mode=max
       #     tags: |
       #       ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{ env.IMAGE_VER }}
       #       ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{ env.IMAGE_TAG }}
@@ -816,8 +1069,8 @@ jobs:
           context: .
           builder: ${{ steps.buildx.outputs.name }}
           push: true
-          cache-from: type=gha,scope=${{ github.workflow }}-${{ env.PROD_OS }}
-          cache-to: type=gha,scope=${{ github.workflow }}-${{ env.PROD_OS }},mode=max
+          cache-from: type=gha,scope=${{ github.workflow }}-${{ env.PROD_VAR }}
+          cache-to: type=gha,scope=${{ github.workflow }}-${{ env.PROD_VAR }},mode=max
           # ssh: default
           tags: |
             ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}

@@ -3,14 +3,13 @@ version: "3.9"
 services:
   # Image used to run tests
   test:
-    image: "${REGISTRY:-docker.io/}${IMAGE_OWNER}/${IMAGE_NAME}:test${OS}${IMAGE_VER:-latest}"
+    image: "${REGISTRY:-docker.io/}${IMAGE_OWNER}/${IMAGE_NAME}:test${VAR}${IMAGE_VER:-latest}"
     build:
       dockerfile: ${DOCKER_FILE:-deploy/debian.Dockerfile}
       target: test-image
       args:
         BUILDKIT_INLINE_CACHE: "1"
         REGISTRY: ${REGISTRY:-docker.io/}
-        BASE_OS: ${OS:-debian}
       context: .
       # secrets:
       #   - oban_license_key
@@ -30,7 +29,7 @@ services:
 
   # Final deploy image
   prod:
-    image: "${REGISTRY:-docker.io/}${IMAGE_OWNER}/${IMAGE_NAME}:${OS}${IMAGE_VER:-latest}"
+    image: "${REGISTRY:-docker.io/}${IMAGE_OWNER}/${IMAGE_NAME}:${VAR}${IMAGE_VER:-latest}"
     build:
       dockerfile: ${DOCKER_FILE:-deploy/debian.Dockerfile}
       target: prod
@@ -38,7 +37,6 @@ services:
         BUILDKIT_INLINE_CACHE: "1"
         MIX_ENV: prod
         REGISTRY: ${REGISTRY:-docker.io/}
-        BASE_OS: ${OS:-debian}
       # secrets:
       #   - oban_license_key
       #   - oban_key_fingerprint
@@ -74,21 +72,20 @@ services:
       target: dev
       args:
         BUILDKIT_INLINE_CACHE: "1"
-        MIX_ENV: dev
         REGISTRY: ${REGISTRY:-docker.io/}
+        PUBLIC_REGISTRY: ${PUBLIC_REGISTRY:-docker.io/}
       context: .
       # secrets:
       #   - oban_license_key
       #   - oban_key_fingerprint
       #   - access_token
     # VSCode devcontainer needs something running
-    # command: /bin/sh -c "while sleep 1000; do :; done"
+    command: /bin/sh -c "while sleep 1000; do :; done"
     environment:
-      - MIX_ENV=dev
-      - SECRET_KEY_BASE
-      - DATABASE_URL
-      - DATABASE_HOST=${DATABASE_HOST:-postgres}
       - DATABASE_DB
+      - DATABASE_HOST=${DATABASE_HOST:-postgres}
+      - DATABASE_URL
+      - SECRET_KEY_BASE=${SECRET_KEY_BASE:-0cSFk8v5IsZIIGCjY+X66l5xULUl/2mczI4Eqf7slpyns5nBkhegDn6YH9th+5D2}
     ports:
       - '4000:4000'
     stdin_open: true
