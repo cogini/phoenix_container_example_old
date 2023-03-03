@@ -729,6 +729,8 @@ FROM build-os-deps AS dev
         truncate -s 0 /var/log/apt/* && \
         truncate -s 0 /var/log/dpkg.log
 
+    RUN chsh --shell /bin/bash "$APP_USER"
+
     USER $APP_USER
 
     WORKDIR $APP_DIR
