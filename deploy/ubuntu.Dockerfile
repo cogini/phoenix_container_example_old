@@ -8,7 +8,6 @@ ARG BASE_OS=ubuntu
 
 ARG ELIXIR_VER=1.14.3
 ARG OTP_VER=25.2.3
-# ARG BUILD_OS_VER=ubuntu-jammy-20230126
 ARG BUILD_OS_VER=jammy-20221130
 
 # https://hub.docker.com/_/ubuntu
@@ -17,7 +16,6 @@ ARG PROD_OS_VER=jammy-20221130
 
 # Use snapshot for consistent dependencies, see https://snapshot.debian.org/
 # Needs to be updated manually
-# ARG SNAPSHOT_VER=20230109
 ARG SNAPSHOT_VER=""
 
 ARG NODE_VER=16.14.1
