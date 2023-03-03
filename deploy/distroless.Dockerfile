@@ -49,7 +49,7 @@ ARG PROD_BASE_IMAGE_NAME=gcr.io/distroless/cc-debian11
 ARG PROD_BASE_IMAGE_TAG=debug
 
 # Intermediate image for files copied to prod
-ARG INSTALL_BASE_IMAGE_NAME=${PUBLIC_REGISTRY}debian
+ARG INSTALL_BASE_IMAGE_NAME=${PUBLIC_REGISTRY}${BASE_OS}
 ARG INSTALL_BASE_IMAGE_TAG=${PROD_OS_VER}
 
 # App name, used to name directories
