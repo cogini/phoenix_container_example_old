@@ -676,14 +676,11 @@ FROM build-os-deps AS dev
     ARG APP_PORT
     ARG APP_USER
 
-    ARG MIX_ENV=dev
-
     ARG DEV_PACKAGES
 
     # Set environment vars used by the app
     ENV LANG=$LANG \
         HOME=$APP_DIR \
-        MIX_ENV=$MIX_ENV \
         PORT=$APP_PORT \
         PHX_SERVER=true
 
