@@ -7,7 +7,7 @@ ARG BASE_OS=alpine
 # Choose a combination supported by https://hub.docker.com/r/hexpm/elixir/tags
 
 ARG ELIXIR_VER=1.14.3
-ARG OTP_VER=25.2.2
+ARG OTP_VER=25.2.3
 ARG BUILD_OS_VER=3.17.0
 
 # https://hub.docker.com/_/alpine
