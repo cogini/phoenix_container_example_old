@@ -4,21 +4,21 @@ VERSION --use-cache-command --shell-out-anywhere --use-copy-include-patterns --r
 # Specify versions of Erlang, Elixir, and base OS.
 # Choose a combination supported by https://hub.docker.com/r/hexpm/elixir/tags
 
-ARG ELIXIR_VERSION=1.14.3
-ARG OTP_VERSION=25.2.2
-ARG ALPINE_VERSION=3.17.0
-ARG ELIXIR_DEBIAN_VERSION=bullseye-20230109-slim
+ARG ELIXIR_VER=1.14.3
+ARG OTP_VER=25.2.2
+ARG ALPINE_VER=3.17.0
+ARG ELIXIR_DEBIAN_VER=bullseye-20230109-slim
 
 # https://docker.debian.net/
 # https://hub.docker.com/_/debian
-ARG DEBIAN_VERSION=bullseye-slim
+ARG DEBIAN_VER=bullseye-slim
 
 # Use snapshot for consistent dependencies, see https://snapshot.debian.org/
 # Needs to be updated manually
-ARG DEBIAN_SNAPSHOT=20230109
+ARG SNAPSHOT_VER=20230109
 
-ARG NODE_VERSION=16.14.1
-# ARG NODE_VERSION=lts
+ARG NODE_VER=16.14.1
+# ARG NODE_VER=lts
 # Docker registry for internal images, e.g. 123.dkr.ecr.ap-northeast-1.amazonaws.com/
 # If blank, docker.io will be used. If specified, should have a trailing slash.
 ARG REGISTRY=""
@@ -31,7 +31,7 @@ ARG PUBLIC_REGISTRY=""
 ARG DIND_IMAGE_NAME=${PUBLIC_REGISTRY}earthly/dind
 ARG DIND_IMAGE_TAG=alpine
 
-ARG BUSYBOX_VERSION=1.34.1
+ARG BUSYBOX_VER=1.34.1
 
 ARG POSTGRES_IMAGE_NAME=${PUBLIC_REGISTRY}postgres
 ARG POSTGRES_IMAGE_TAG=14.3-alpine
@@ -49,34 +49,34 @@ ARG BASE_OS=debian
 # ARG BASE_OS=centos
 # ARG BASE_OS=busybox
 
-FROM ${PUBLIC_REGISTRY}busybox:${BUSYBOX_VERSION}
+FROM ${PUBLIC_REGISTRY}busybox:${BUSYBOX_VER}
 IF [ "$BASE_OS" = "alpine" ]
     # Base image for build and test
     ARG BUILD_BASE_IMAGE_NAME=${PUBLIC_REGISTRY}hexpm/elixir
-    ARG BUILD_BASE_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-alpine-${ALPINE_VERSION}
+    ARG BUILD_BASE_IMAGE_TAG=${ELIXIR_VER}-erlang-${OTP_VER}-alpine-${ALPINE_VER}
 
     # Base for final prod image
     ARG PROD_BASE_IMAGE_NAME=${PUBLIC_REGISTRY}alpine
-    ARG PROD_BASE_IMAGE_TAG=$ALPINE_VERSION
+    ARG PROD_BASE_IMAGE_TAG=$ALPINE_VER
 
     IMPORT ./deploy/alpine AS base
 ELSE IF [ "$BASE_OS" = "debian" ]
     # Build image
     ARG BUILD_BASE_IMAGE_NAME=${PUBLIC_REGISTRY}hexpm/elixir
-    ARG BUILD_BASE_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-${ELIXIR_DEBIAN_VERSION}
+    ARG BUILD_BASE_IMAGE_TAG=${ELIXIR_VER}-erlang-${OTP_VER}-debian-${ELIXIR_DEBIAN_VER}
 
     # Deploy base image
     ARG PROD_BASE_IMAGE_NAME=${PUBLIC_REGISTRY}debian
-    ARG PROD_BASE_IMAGE_TAG=$DEBIAN_VERSION
+    ARG PROD_BASE_IMAGE_TAG=$DEBIAN_VER
 
     IMPORT ./deploy/debian AS base
 ELSE IF [ "$BASE_OS" = "distroless" ]
     ARG BUILD_BASE_IMAGE_NAME=${PUBLIC_REGISTRY}hexpm/elixir
-    ARG BUILD_BASE_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-${ELIXIR_DEBIAN_VERSION}
+    ARG BUILD_BASE_IMAGE_TAG=${ELIXIR_VER}-erlang-${OTP_VER}-debian-${ELIXIR_DEBIAN_VER}
 
     # Intermediate image for files copied to prod
     ARG INSTALL_BASE_IMAGE_NAME=${PUBLIC_REGISTRY}debian
-    ARG INSTALL_BASE_IMAGE_TAG=$DEBIAN_VERSION
+    ARG INSTALL_BASE_IMAGE_TAG=$DEBIAN_VER
 
     ARG PROD_BASE_IMAGE_NAME=gcr.io/distroless/base-debian11
     # ARG PROD_BASE_IMAGE_TAG=debug-nonroot
@@ -87,13 +87,13 @@ ELSE IF [ "$BASE_OS" = "distroless" ]
     IMPORT ./deploy/distroless AS base
 ELSE IF [ "$BASE_OS" = "busybox" ]
     ARG BUILD_IMAGE_NAME=${PUBLIC_REGISTRY}hexpm/elixir
-    ARG BUILD_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-${ELIXIR_DEBIAN_VERSION}
+    ARG BUILD_IMAGE_TAG=${ELIXIR_VER}-erlang-${OTP_VER}-debian-${ELIXIR_DEBIAN_VER}
 
     ARG INSTALL_BASE_IMAGE_NAME=${PUBLIC_REGISTRY}debian
-    ARG INSTALL_BASE_IMAGE_TAG=$DEBIAN_VERSION
+    ARG INSTALL_BASE_IMAGE_TAG=$DEBIAN_VER
 
     ARG PROD_BASE_IMAGE_NAME=${PUBLIC_REGISTRY}busybox
-    ARG PROD_BASE_IMAGE_TAG=${BUSYBOX_VERSION}-glibc
+    ARG PROD_BASE_IMAGE_TAG=${BUSYBOX_VER}-glibc
 
     IMPORT ./deploy/busybox AS base
 ELSE IF [ "$BASE_OS" = "centos" ]
