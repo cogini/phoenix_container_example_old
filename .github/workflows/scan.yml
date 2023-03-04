@@ -13,10 +13,10 @@ env:
   # IMAGE_TAG: ${{ (github.ref == 'refs/heads/main' && 'staging') || (github.ref == 'refs/heads/qa' && 'qa') }}
   IMAGE_TAG: latest
   IMAGE_VER: ${{ github.sha }}
-  # OS variant that is deployed
-  PROD_OS: distroless
-  # OS variant if test matrix is not used
-  OS: debian
+  # Variant that is deployed
+  PROD_VAR: 1.14.3-erlang-25.2.3-distroless-bullseye-20230202-slim
+  # Variant if test matrix is not used
+  VAR: debian
   DOCKER_FILE: deploy/debian.Dockerfile
 jobs:
   scan:
@@ -41,10 +41,53 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [debian, alpine, distroless]
+        os: [alpine, debian, distroless, ubuntu]
+        elixir: [1.14.3]
+        include:
+          - os: alpine
+            otp: 24.3.4.6
+            build_os_ver: '3.15.6'
+            prod_os_ver: '3.15.6'
+          - os: alpine
+            otp: 25.2.3
+            build_os_ver: '3.17.0'
+            prod_os_ver: '3.17.0'
+          - os: debian
+            build_os_ver: bullseye-20230109-slim
+            prod_os_ver: bullseye-slim
+            snapshot_ver: '20230109'
+            otp: 24.3.4.9
+          - os: debian
+            build_os_ver: bullseye-20230109-slim
+            prod_os_ver: bullseye-slim
+            snapshot_ver: '20230109'
+            otp: 25.2.3
+          - os: debian
+            build_os_ver: bullseye-20230202-slim
+            prod_os_ver: bullseye-slim
+            snapshot_ver: '20230202'
+            otp: 24.3.4.9
+          - os: debian
+            build_os_ver: bullseye-20230202-slim
+            prod_os_ver: bullseye-slim
+            snapshot_ver: '20230202'
+            otp: 25.2.3
+          - os: distroless
+            build_os_ver: bullseye-20230202-slim
+            prod_os_ver: bullseye-slim
+            snapshot_ver: ''
+            otp: 25.2.3
+          - os: ubuntu
+            build_os_ver: jammy-20221130
+            prod_os_ver: jammy-20221130
+            otp: 24.3.4.9
+          - os: ubuntu
+            build_os_ver: jammy-20221130
+            prod_os_ver: jammy-20221130
+            otp: 25.2.3
     env:
       DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
-      OS: ${{ matrix.os }}
+      VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
     steps:
       - name: Log in to GHCR
         uses: docker/login-action@v2
@@ -54,15 +97,15 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Pull image
-        run: docker pull ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{ env.OS }}${{ env.IMAGE_VER }}
+        run: docker pull ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{ env.VAR }}${{ env.IMAGE_VER }}
 
       - name: Scan image with Trivy
         uses: aquasecurity/trivy-action@master
         # https://github.com/aquasecurity/trivy-action
         # https://github.com/marketplace/actions/aqua-security-trivy#inputs
         with:
-          image-ref: ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{ env.OS }}${{ env.IMAGE_VER }}
-          exit-code: '1' # fail build
+          image-ref: ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{ env.VAR }}${{ env.IMAGE_VER }}
+          # exit-code: '1' # fail build
           # ignore-unfixed: true
           # vuln-type: 'os,library'
           # severity: 'CRITICAL,HIGH'
@@ -86,7 +129,7 @@ jobs:
         # https://github.com/marketplace/actions/anchore-container-scan
         id: scan-grype
         with:
-          image: ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{ env.OS }}${{ env.IMAGE_VER }}
+          image: ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{ env.VAR }}${{ env.IMAGE_VER }}
           # severity-cutoff: critical
           fail-build: false
           output-format: 'sarif'
@@ -107,6 +150,6 @@ jobs:
       #     SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
       #   with:
       #     command: test
-      #     image: ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.OS }}${{ env.IMAGE_VER }}
+      #     image: ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.VAR }}${{ env.IMAGE_VER }}
       #     args: --file=${{ env.DOCKER_FILE }} --project-name=api
 
