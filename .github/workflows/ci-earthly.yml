@@ -106,7 +106,7 @@ jobs:
       - name: Build with Earthly
         env:
           REGISTRY: "${{ env.ECR_REGISTRY }}/"
-          REGISTRY_NAME: ${{ steps.login-ecr.outputs.registry }}
+          REGISTRY_NAME: ${{ env.ECR_REGISTRY }}
           PUBLIC_REGISTRY: ""
         # run: earthly --ci --push +build
         # run: earthly -P -V +all
