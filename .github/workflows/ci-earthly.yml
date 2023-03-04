@@ -36,7 +36,7 @@ jobs:
       pull-requests: write
       issues: read
     steps:
-      - name: Cancel previous runs
+      - name: Cancel previous runs in progress
         uses: styfle/cancel-workflow-action@0.11.0
         with:
           access_token: ${{ github.token }}
@@ -86,7 +86,7 @@ jobs:
           echo "run_id=${GITHUB_RUN_ID}" >> $GITHUB_OUTPUT
           echo "run_num=${GITHUB_RUN_NUMBER}" >> $GITHUB_OUTPUT
 
-      - name: Put back the git branch into git (Earthly uses it for tagging)
+      - name: Put git branch back into git (Earthly uses it for tagging)
         run: |
           branch=""
           if [ -n "$GITHUB_HEAD_REF" ]; then
