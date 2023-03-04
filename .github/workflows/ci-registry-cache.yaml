@@ -21,10 +21,10 @@ env:
   # IMAGE_TAG: ${{ (github.ref == 'refs/heads/main' && 'staging') || (github.ref == 'refs/heads/qa' && 'qa') }}
   IMAGE_TAG: latest
   IMAGE_VER: ${{ github.sha }}
-  # OS variant that is deployed
-  PROD_OS: distroless
-  # OS variant if test matrix is not used
-  OS: debian
+  # Variant that is deployed
+  PROD_VAR: debian
+  # Variant if test matrix is not used
+  VAR: debian
   # Registry for public images, default is docker.io
   PUBLIC_REGISTRY: ""
   # Give GitHub Actions access to AWS
