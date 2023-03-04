@@ -4,22 +4,22 @@ VERSION --shell-out-anywhere --use-copy-include-patterns --referenced-save-only 
 # Specify versions of Erlang, Elixir, and base OS.
 # Choose a combination supported by https://hub.docker.com/r/hexpm/elixir/tags
 
-ARG ELIXIR_VERSION=1.14.3
-ARG OTP_VERSION=25.2.2
-ARG ELIXIR_DEBIAN_VERSION=bullseye-20230109-slim
+ARG ELIXIR_VER=1.14.3
+ARG OTP_VER=25.2.2
+ARG ELIXIR_DEBIAN_VER=bullseye-20230109-slim
 
 # https://docker.debian.net/
 # https://hub.docker.com/_/debian
-ARG DEBIAN_VERSION=bullseye-slim
+ARG DEBIAN_VER=bullseye-slim
 
 # Use snapshot for consistent dependencies, see https://snapshot.debian.org/
 # Needs to be updated manually
-ARG DEBIAN_SNAPSHOT=20230109
+ARG SNAPSHOT_VER=20230109
 
-ARG NODE_VERSION=16.14.1
-# ARG NODE_VERSION=lts
+ARG NODE_VER=16.14.1
+# ARG NODE_VER=lts
 
-ARG AWS_CLI_VERSION=2.0.61
+ARG AWS_CLI_VER=2.0.61
 
 # Docker registry for internal images, e.g. 123.dkr.ecr.ap-northeast-1.amazonaws.com/
 # If blank, docker.io will be used. If specified, should have a trailing slash.
@@ -30,11 +30,11 @@ ARG PUBLIC_REGISTRY=$REGISTRY
 
 # Base image for build and test
 ARG BUILD_BASE_IMAGE_NAME=${PUBLIC_REGISTRY}hexpm/elixir
-ARG BUILD_BASE_IMAGE_TAG=${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-${ELIXIR_DEBIAN_VERSION}
+ARG BUILD_BASE_IMAGE_TAG=${ELIXIR_VER}-erlang-${OTP_VER}-debian-${ELIXIR_DEBIAN_VER}
 
 # Base for final prod image
 ARG PROD_BASE_IMAGE_NAME=${PUBLIC_REGISTRY}debian
-ARG PROD_BASE_IMAGE_TAG=$DEBIAN_VERSION
+ARG PROD_BASE_IMAGE_TAG=$DEBIAN_VER
 
 # Intermediate image for files copied to prod
 ARG INSTALL_BASE_IMAGE_NAME=$PROD_BASE_IMAGE_NAME
@@ -80,9 +80,9 @@ build-os-deps:
         apt-get -y install -y -qq --no-install-recommends ca-certificates
 
     RUN set -exu && \
-        echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT} bullseye main" > /etc/apt/sources.list && \
-        echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/${DEBIAN_SNAPSHOT} bullseye-security main" >> /etc/apt/sources.list && \
-        echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT} bullseye-updates main" >> /etc/apt/sources.list
+        echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_VER} bullseye main" > /etc/apt/sources.list && \
+        echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/${SNAPSHOT_VER} bullseye-security main" >> /etc/apt/sources.list && \
+        echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_VER} bullseye-updates main" >> /etc/apt/sources.list
 
     # Install tools and libraries to build binary libraries
     # Not necessary for a minimal Phoenix app, but likely needed
@@ -132,7 +132,7 @@ build-os-deps:
         # # Install lts version of node
         # # n lts && \
         # # Install specific version of node
-        # n "$NODE_VERSION" && \
+        # n "$NODE_VER" && \
         # rm /usr/local/bin/n && \
         # Install yarn from repo
         # curl -sL https://dl.yarnpkg.com/debian/pubkey.gpg -o /etc/apt/trusted.gpg.d/yarn.asc && \
@@ -219,9 +219,9 @@ prod-install:
         apt-get -y install -y -qq --no-install-recommends ca-certificates
 
     RUN set -exu && \
-        echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT} bullseye main" > /etc/apt/sources.list && \
-        echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/${DEBIAN_SNAPSHOT} bullseye-security main" >> /etc/apt/sources.list && \
-        echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT} bullseye-updates main" >> /etc/apt/sources.list
+        echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_VER} bullseye main" > /etc/apt/sources.list && \
+        echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/${SNAPSHOT_VER} bullseye-security main" >> /etc/apt/sources.list && \
+        echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_VER} bullseye-updates main" >> /etc/apt/sources.list
 
     RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
@@ -283,7 +283,7 @@ prod-install:
     # https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html
     # https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2-linux.html
     # RUN set -ex && \
-    #     curl -sSfL "https://awscli.amazonaws.com/awscli-exe-linux-$(uname -m)-${AWS_CLI_VERSION}.zip" -o "awscliv2.zip" && \
+    #     curl -sSfL "https://awscli.amazonaws.com/awscli-exe-linux-$(uname -m)-${AWS_CLI_VER}.zip" -o "awscliv2.zip" && \
     #     unzip -q awscliv2.zip && \
     #     ./aws/install && \
     #     rm -rf ./aws && \
@@ -329,9 +329,9 @@ prod-base:
         apt-get -y install -y -qq --no-install-recommends ca-certificates
 
     RUN set -exu && \
-        echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT} bullseye main" > /etc/apt/sources.list && \
-        echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/${DEBIAN_SNAPSHOT} bullseye-security main" >> /etc/apt/sources.list && \
-        echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT} bullseye-updates main" >> /etc/apt/sources.list
+        echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_VER} bullseye main" > /etc/apt/sources.list && \
+        echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/${SNAPSHOT_VER} bullseye-security main" >> /etc/apt/sources.list && \
+        echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_VER} bullseye-updates main" >> /etc/apt/sources.list
 
     # Copy just the locale file used
     # COPY --from=prod-install /usr/lib/locale/${LANG} /usr/lib/locale/
