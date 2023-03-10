@@ -2,7 +2,8 @@ This is a full featured example of building and deploying an Elixir / Phoenix
 app using containers.
 
 * Supports Debian, Ubuntu, and Alpine using [hexpm/elixir](https://hub.docker.com/r/hexpm/elixir)
-  base images. Supports Google [Distroless](https://github.com/GoogleContainerTools/distroless).
+  base images. Supports Google [Distroless](https://github.com/GoogleContainerTools/distroless)
+  and Ubuntu [Chisel](https://github.com/canonical/chisel) to build small distribution images.
 
 * Uses Erlang releases for the final image, resulting in an image size of
   less than 20MB (5.6 MB Alpine OS files, 1.3 MB TLS libraries, 12 MB Erlang VM + app).
@@ -428,6 +429,30 @@ pretty bleeding edge right now, though. It works with Docker Hub, but there are
 incompatibilities e.g. between docker and AWS ECR.
 See https://github.com/aws/containers-roadmap/issues/876 and https://github.com/aws/containers-roadmap/issues/505
 The registry needs to have a fast/close network connection, or it can be quite slow.
+
+## Chisel
+
+Chisel is a tool to create distroless images by copying the necessary parts of
+Debian packages into a `scratch` image. It's still early days for Chisel, but I
+like the approach a lot. It automates the janky part of manually adding
+libraries to a Google Distroless image.
+
+See https://ubuntu.com/blog/craft-custom-chiselled-ubuntu-distroless
+
+They don't yet have formal releases, so you need to build the `chisel` tool
+from source.
+
+* Check out the [Chisel source](https://github.com/canonical/chisel) locally
+* Copy `deploy/chisel.Dockerfile` to the chisel source dir
+* Build an image and push it to your repo
+
+```command
+docker build -t cogini/chisel .
+docker push cogini/chisel
+```
+
+https://github.com/canonical/chisel-releases/tree/ubuntu-22.04/slices
+
 
 ## AWS CodeBuild
 
