@@ -415,8 +415,6 @@ FROM build-deps-get AS prod-release
 # Create staging image for files which are copied into final prod image
 FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
     ARG SNAPSHOT_VER
-    ARG LINUX_ARCH
-    ARG TARGETPLATFORM
 
     # Configure apt caching for use with BuildKit.
     # The default Debian Docker image has special config to clear caches.
@@ -614,14 +612,11 @@ FROM build-os-deps AS dev
     ARG APP_PORT
     ARG APP_USER
 
-    ARG MIX_ENV=dev
-
     ARG DEV_PACKAGES
 
     # Set environment vars used by the app
     ENV LANG=$LANG \
         HOME=$APP_DIR \
-        MIX_ENV=$MIX_ENV \
         PORT=$APP_PORT \
         PHX_SERVER=true
 
@@ -668,6 +663,8 @@ FROM build-os-deps AS dev
         truncate -s 0 /var/log/apt/* && \
         truncate -s 0 /var/log/dpkg.log
 
+    RUN chsh --shell /bin/bash "$APP_USER"
+
     USER $APP_USER
 
     WORKDIR $APP_DIR
@@ -675,14 +672,6 @@ FROM build-os-deps AS dev
     RUN mix 'do' local.rebar --force, local.hex --force
 
     # RUN mix esbuild.install --if-missing
-
-    # Instead of copying sources, could use bind mount, e.g.
-    # RUN --mount=target=.
-    # see https://adoptingerlang.org/docs/production/docker/#efficient-caching
-
-    EXPOSE $APP_PORT
-
-    CMD [ "sleep", "infinity" ]
 
 # Copy build artifacts to host
 FROM scratch AS artifacts

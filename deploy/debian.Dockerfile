@@ -737,14 +737,6 @@ FROM build-os-deps AS dev
 
     # RUN mix esbuild.install --if-missing
 
-    # Instead of copying sources, could use bind mount, e.g.
-    # RUN --mount=target=.
-    # see https://adoptingerlang.org/docs/production/docker/#efficient-caching
-
-    EXPOSE $APP_PORT
-
-    CMD [ "sleep", "infinity" ]
-
 # Copy build artifacts to host
 FROM scratch AS artifacts
     ARG MIX_ENV
