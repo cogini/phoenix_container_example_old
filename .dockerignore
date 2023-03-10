@@ -24,5 +24,7 @@
 !dialyzer-ignore
 !trivy.yaml
 
+!deploy/chisel/release
+
 # Add files
 !LICENSE
