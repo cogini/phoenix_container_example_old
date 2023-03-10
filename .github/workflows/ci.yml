@@ -490,7 +490,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [alpine, debian, distroless, ubuntu]
+        os: [alpine, chiseled, debian, distroless, ubuntu]
         elixir: [1.14.3]
         include:
           - os: alpine
@@ -501,6 +501,10 @@ jobs:
             otp: 25.2.3
             build_os_ver: '3.17.0'
             prod_os_ver: '3.17.0'
+          - os: chiseled
+            build_os_ver: jammy-20221130
+            prod_os_ver: jammy-20221130
+            otp: 25.2.3
           - os: debian
             build_os_ver: bullseye-20230109-slim
             prod_os_ver: bullseye-slim
@@ -742,7 +746,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [alpine, debian, distroless, ubuntu]
+        os: [alpine, chiseled, debian, distroless, ubuntu]
         elixir: [1.14.3]
         include:
           - os: alpine
@@ -753,6 +757,10 @@ jobs:
             otp: 25.2.3
             build_os_ver: '3.17.0'
             prod_os_ver: '3.17.0'
+          - os: chiseled
+            build_os_ver: jammy-20221130
+            prod_os_ver: jammy-20221130
+            otp: 25.2.3
           - os: debian
             build_os_ver: bullseye-20230109-slim
             prod_os_ver: bullseye-slim
@@ -882,7 +890,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [alpine, debian, distroless, ubuntu]
+        os: [alpine, chiseled, debian, distroless, ubuntu]
         elixir: [1.14.3]
         include:
           - os: alpine
@@ -893,6 +901,10 @@ jobs:
             otp: 25.2.3
             build_os_ver: '3.17.0'
             prod_os_ver: '3.17.0'
+          - os: chiseled
+            build_os_ver: jammy-20221130
+            prod_os_ver: jammy-20221130
+            otp: 25.2.3
           - os: debian
             build_os_ver: bullseye-20230109-slim
             prod_os_ver: bullseye-slim
