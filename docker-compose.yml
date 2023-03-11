@@ -80,7 +80,7 @@ services:
       #   - oban_key_fingerprint
       #   - access_token
     # VSCode devcontainer needs something running
-    command: /bin/sh -c "while sleep 1000; do :; done"
+    # command: /bin/sh -c "while sleep 1000; do :; done"
     environment:
       - DATABASE_DB
       - DATABASE_HOST=${DATABASE_HOST:-postgres}
