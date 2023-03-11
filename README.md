@@ -446,13 +446,16 @@ from source.
 * Copy `deploy/chisel.Dockerfile` to the chisel source dir
 * Build an image and push it to your repo
 
+This builds for Arm and Intel architectures:
+
 ```command
-docker build -t cogini/chisel .
-docker push cogini/chisel
+docker buildx create --name mybuilder --use
+docker buildx build --builder mybuilder -t cogini/chisel --platform linux/arm64/v8,linux/amd64 --push .
 ```
 
-https://github.com/canonical/chisel-releases/tree/ubuntu-22.04/slices
-
+Specs for the slices are stored in `deploy/chisel/release`. They come from
+[the upstream repo](https://github.com/canonical/chisel-releases/tree/ubuntu-22.04/slices),
+with the addition of some missing things. 
 
 ## AWS CodeBuild
 
@@ -593,6 +596,3 @@ https://blog.tedivm.com/guides/2021/10/github-actions-push-to-aws-ecr-without-cr
 docker compose -f docker-compose.gha.yml --env-file .envrc build scan
 docker compose -f docker-compose.gha.yml run scan trivy filesystem /
 ```
-
-https://canonical.com/blog/craft-custom-chiselled-ubuntu-distroless
-https://github.com/canonical/chisel
