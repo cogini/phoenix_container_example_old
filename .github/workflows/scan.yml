@@ -117,6 +117,9 @@ jobs:
           format: 'sarif'
           output: 'trivy.sarif'
 
+      - name: Display scan results
+        run: cat trivy.sarif | jq .
+
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v2
         # Requires GitHub Advanced Security
@@ -138,6 +141,9 @@ jobs:
           fail-build: false
           output-format: 'sarif'
           # output-format: table
+
+      - name: Display scan results
+        run: cat ${{ steps.scan-grype.outputs.sarif }} | jq .
 
       - name: Upload Grype scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v2

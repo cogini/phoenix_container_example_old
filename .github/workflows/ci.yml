@@ -445,6 +445,9 @@ jobs:
           format: 'sarif'
           output: 'trivy-results.sarif'
 
+      - name: Display scan results
+        run: cat trivy-results.sarif | jq .
+
       - name: Upload trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v2
         # Requires GitHub Advanced Security
@@ -466,6 +469,9 @@ jobs:
           output-format: 'sarif'
           fail-build: false
           # severity-cutoff: critical
+
+      - name: Display scan results
+        run: cat ${{ steps.scan-grype.outputs.sarif }} | jq .
 
       - name: Upload grype scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v2
@@ -966,6 +972,9 @@ jobs:
           format: 'sarif'
           output: 'trivy.sarif'
 
+      - name: Display scan results
+        run: cat trivy.sarif | jq .
+
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v2
         # Requires GitHub Advanced Security
@@ -987,6 +996,9 @@ jobs:
           fail-build: false
           output-format: 'sarif'
           # output-format: table
+
+      - name: Display scan results
+        run: cat ${{ steps.scan-grype.outputs.sarif }} | jq .
 
       - name: Upload Grype scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v2
@@ -1135,6 +1147,71 @@ jobs:
           #   "access_token=${{ secrets.DEVOPS_ACCESS_TOKEN }}"
           #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
           #   "oban_license_key=${{ secrets.OBAN_LICENSE_KEY }}"
+
+  # deploy:
+  #   name: Deploy using AWS CodeDeploy
+  #   needs: [prod]
+  #   permissions:
+  #     # Interact with GitHub OIDC Token endpoint for AWS
+  #     id-token: write
+  #     contents: read
+  #   steps:
+  #     - name: Configure AWS credentials
+  #       uses: aws-actions/configure-aws-credentials@v1-node16
+  #       with:
+  #         role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
+  #         aws-region: ${{ env.AWS_REGION }}
+  #
+  #     - name: Log in to Amazon ECR
+  #       id: ecr-login
+  #       uses: aws-actions/amazon-ecr-login@v1
+  #
+  #     - name: Set vars
+  #       run: echo "ECR_REGISTRY=${{ steps.ecr-login.outputs.registry }}" >> $GITHUB_ENV
+  #
+  #     - name: Check out source
+  #       uses: actions/checkout@v3
+  #
+  #     - name: Create task definition
+  #       # env:
+  #       #   CONTAINER_NAME:
+  #       #   PORT:
+  #       #   # Depends on ENV, e,g, prod, staging
+  #       #   IMAGE_URI:
+  #       #   # Depends on AWS deploy env
+  #       #   TASK_ROLE_ARN:
+  #       #   EXECUTION_ROLE_ARN:
+  #       #   CPU:
+  #       #   MEMORY:
+  #       #   CPU_ARCH:
+  #       #   CONFIG_S3_PREFIX:
+  #       #   CONFIG_S3_BUCKET:
+  #       #   AWSLOGS_GROUP:
+  #       #   AWSLOGS_REGION:
+  #       #   AWSLOGS_STREAM_PREFIX:
+  #       #   AWS_REGION:
+  #       #   AWS_ACCOUNT_ID:
+  #       run: jq --null-input -f ecs/gha/taskdef.json.jq | tee ecs/taskdef.json
+  #
+  #     - name: Register task definition
+  #       # env:
+  #       #   CONTAINER_NAME:
+  #       #   PORT:
+  #       #   CODEDEPLOY_APP_NAME:
+  #       #   CODEDEPLOY_APP_GROUP_NAME:
+  #       run: |
+  #         export TASKDEF_APP_ARN=$(aws ecs register-task-definition --cli-input-json file://ecs/taskdef.json --region $AWS_REGION --output text --query 'taskDefinition.taskDefinitionArn')
+  #         echo "$TASKDEF_APP_ARN"
+  #         jq --null-input -f ecs/gha/revision.json.jq | tee ecs/revision.json
+  #         aws deploy create-deployment \
+  #           --application-name $CODEDEPLOY_APP_NAME \
+  #           --deployment-config-name CodeDeployDefault.ECSAllAtOnce \
+  #           --deployment-group-name $CODEDEPLOY_APP_GROUP_NAME \
+  #           --description "ECS" \
+  #           --revision ecs/revision.json \
+  #           --output text \
+  #           --query '[deploymentId]'
+
 
   # container-test:
   #   runs-on: ubuntu-latest
