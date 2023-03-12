@@ -64,5 +64,10 @@ npm-debug.log
 # Editor temp files
 *.swp
 
+# OS files when mounting dev container
+/.bash_history
+/.dotnet
+/.ssh
+
 # macOS junk
 .DS_Store
