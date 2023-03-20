@@ -75,7 +75,7 @@ defmodule PhoenixContainerExample.MixProject do
       {:gettext, "~> 0.18"},
       {:jason, "~> 1.2"},
       {:junit_formatter, "~> 3.3", only: [:dev, :test], runtime: false},
-      {:logger_formatter_json, github: "reachfh/logger_formatter_json"},
+      {:logger_formatter_json, "~> 0.7.0"},
       {:mix_audit, "~> 2.0", only: [:dev, :test], runtime: false},
       {:observer_cli, "~> 1.7"},
       # opentelemetry_exporter needs to be before the other
