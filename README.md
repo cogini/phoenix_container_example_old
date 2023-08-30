@@ -445,7 +445,7 @@ docker buildx build --builder mybuilder -t cogini/chisel --platform linux/arm64/
 
 Specs for the slices are stored in `deploy/chisel/release`. They come from
 [the upstream repo](https://github.com/canonical/chisel-releases/tree/ubuntu-22.04/slices),
-with the addition of some missing things. 
+with the addition of some missing things.
 
 ## AWS CodeBuild
 
