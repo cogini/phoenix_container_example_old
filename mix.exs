@@ -29,7 +29,9 @@ defmodule PhoenixContainerExample.MixProject do
         "coveralls.html": :test,
         "coveralls.lcov": :test,
         quality: :test,
-        "quality.ci": :test
+        "quality.ci": :test,
+        "assets.deploy": :prod,
+        deploy: :prod
       ],
       default_release: :prod,
       releases: releases(),
