@@ -411,6 +411,7 @@ FROM build-deps-get AS prod-release
 FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
     ARG LANG
     ARG SNAPSHOT_VER
+    ARG RUNTIME_PACKAGES
     # ARG AWS_CLI_VER
 
     # Configure apt caching for use with BuildKit.
@@ -456,6 +457,7 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
             libstdc++6 \
             libgcc-s1 \
             locales \
+            # $RUNTIME_PACKAGES \
         && \
         # curl -sL https://aquasecurity.github.io/trivy-repo/deb/public.key -o /etc/apt/trusted.gpg.d/trivy.asc && \
         # printf "deb https://aquasecurity.github.io/trivy-repo/deb %s main" "$(lsb_release -sc)" | tee -a /etc/apt/sources.list.d/trivy.list && \
