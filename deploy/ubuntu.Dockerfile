@@ -60,6 +60,7 @@ ARG APP_USER_ID=65532
 ARG APP_GROUP_ID=$APP_USER_ID
 
 ARG LANG=C.UTF-8
+# ARG LANG=en_US.UTF-8
 
 # Elixir release env to build
 ARG MIX_ENV=prod
@@ -79,9 +80,6 @@ ARG DEV_PACKAGES=""
 FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
     ARG SNAPSHOT_VER
     ARG RUNTIME_PACKAGES
-
-    ARG LANG
-    ENV LANG=$LANG
 
     ARG APP_DIR
     ARG APP_GROUP
@@ -138,6 +136,7 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
             gnupg-agent \
             jq \
             # software-properties-common \
+            locales \
             lsb-release \
             openssh-client \
             # Support ssl in container, as opposed to load balancer
@@ -149,6 +148,7 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
             # postgresql-client \
             # $RUNTIME_PACKAGES \
         && \
+        locale-gen && \
         # Install yarn
         curl -sL --ciphers ECDHE-RSA-AES128-GCM-SHA256 https://dl.yarnpkg.com/debian/pubkey.gpg -o /etc/apt/trusted.gpg.d/yarn.asc && \
         echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list && \
@@ -405,6 +405,7 @@ FROM build-deps-get AS prod-release
 
 # Create staging image for files which are copied into final prod image
 FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
+    ARG LANG
     ARG SNAPSHOT_VER
     # ARG AWS_CLI_VER
 
@@ -445,12 +446,12 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
             gnupg \
             unzip \
             lsb-release \
-            locales \
             # Needed by Erlang VM
             libtinfo6 \
             # Additional libs
             libstdc++6 \
             libgcc-s1 \
+            locales \
         && \
         # curl -sL https://aquasecurity.github.io/trivy-repo/deb/public.key -o /etc/apt/trusted.gpg.d/trivy.asc && \
         # printf "deb https://aquasecurity.github.io/trivy-repo/deb %s main" "$(lsb_release -sc)" | tee -a /etc/apt/sources.list.d/trivy.list && \
@@ -458,7 +459,10 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
         # apt-get -y install -y -qq --no-install-recommends trivy && \
         # curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin && \
         # Generate locales specified in /etc/locale.gen
+        # If LANG=C.UTF-8 is not enough, build full featured locale
+        # sed -i "/${LANG}/s/^# //g" /etc/locale.gen && \
         locale-gen && \
+        # localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias /usr/lib/locale/${LANG} && \
         # Remove packages installed temporarily. Removes everything related to
         # packages, including the configuration files, and packages
         # automatically installed because a package required them but, with the
@@ -482,10 +486,6 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
         truncate -s 0 /var/log/apt/* && \
         truncate -s 0 /var/log/dpkg.log
 
-    # If LANG=C.UTF-8 is not enough, build full featured locale
-    # RUN localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
-    # ENV LANG en_US.utf8
-
     # Install AWS CLI v2 from binary package
     # https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html
     # https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2-linux.html
@@ -496,14 +496,12 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
     #     rm -rf ./aws && \
     #     rm awscliv2.zip
 
-
 # Create base image for prod with everything but the code release
 FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
     ARG SNAPSHOT_VER
     ARG RUNTIME_PACKAGES
 
     ARG LANG
-    ENV LANG=$LANG
 
     ARG APP_DIR
     ARG APP_GROUP
@@ -668,7 +666,6 @@ FROM build-os-deps AS dev
     ARG DEV_PACKAGES
 
     ARG LANG
-    ENV LANG=$LANG
 
     ARG APP_DIR
     ARG APP_GROUP
@@ -704,6 +701,7 @@ FROM build-os-deps AS dev
             sudo \
             # $DEV_PACKAGES \
         && \
+        # localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias /usr/lib/locale/${LANG} && \
         # https://www.networkworld.com/article/3453032/cleaning-up-with-apt-get.html
         # https://manpages.ubuntu.com/manpages/jammy/man8/apt-get.8.html
         # Remove packages installed temporarily. Removes everything related to
