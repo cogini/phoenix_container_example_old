@@ -457,6 +457,7 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
             libstdc++6 \
             libgcc-s1 \
             locales \
+            # openssl \
             # $RUNTIME_PACKAGES \
         && \
         # curl -sL https://aquasecurity.github.io/trivy-repo/deb/public.key -o /etc/apt/trusted.gpg.d/trivy.asc && \
@@ -559,9 +560,6 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
             ca-certificates \
             # Run health checks
             curl \
-            # Allow app to listen on HTTPS. May not be needed if handled
-            # outside the application, e.g. in load balancer.
-            openssl \
             # tini is a minimal init which will reap zombie processes
             # https://github.com/krallin/tini
             # tini \
@@ -571,6 +569,9 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
             # Additional libs
             libstdc++6 \
             libgcc-s1 \
+            # Allow app to listen on HTTPS. May not be needed if handled
+            # outside the application, e.g. in load balancer.
+            # openssl \
             # $RUNTIME_PACKAGES \
         && \
         # Remove packages installed temporarily. Removes everything related to
