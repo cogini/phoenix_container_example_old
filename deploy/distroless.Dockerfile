@@ -26,8 +26,6 @@ ARG LINUX_ARCH=x86_64
 ARG NODE_VER=16.14.1
 # ARG NODE_VER=lts
 
-ARG AWS_CLI_VER=2.0.61
-
 # Docker registry for internal images, e.g. 123.dkr.ecr.ap-northeast-1.amazonaws.com/
 # If blank, docker.io will be used. If specified, should have a trailing slash.
 ARG REGISTRY=""
