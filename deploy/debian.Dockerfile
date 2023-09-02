@@ -453,6 +453,7 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
             libstdc++6 \
             libgcc-s1 \
             locales \
+            # openssl \
             # $RUNTIME_PACKAGES \
         && \
         # curl -sL https://aquasecurity.github.io/trivy-repo/deb/public.key -o /etc/apt/trusted.gpg.d/trivy.asc && \
