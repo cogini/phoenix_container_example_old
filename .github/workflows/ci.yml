@@ -37,6 +37,7 @@ env:
   # Registry for public images, default is docker.io
   PUBLIC_REGISTRY: ""
   # Give GitHub Actions access to AWS
+  AWS_ACCOUNT_ID: "770916339360"
   AWS_ROLE_TO_ASSUME: arn:aws:iam::770916339360:role/foo-dev-ecr-github-action-role
   AWS_REGION: ap-northeast-1
   # Health check port for app
@@ -50,6 +51,7 @@ env:
   COMPOSE_DOCKER_CLI_BUILD: '1'
   COMPOSE_FILE: docker-compose.gha.yml
   DOCKER_FILE: deploy/debian.Dockerfile
+  TASKDEF=ecs/taskdef-otel.json
 jobs:
   build-test:
     name: Build test image
@@ -1148,30 +1150,92 @@ jobs:
           #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
           #   "oban_license_key=${{ secrets.OBAN_LICENSE_KEY }}"
 
-  # deploy:
-  #   name: Deploy using AWS CodeDeploy
-  #   needs: [prod]
-  #   permissions:
-  #     # Interact with GitHub OIDC Token endpoint for AWS
-  #     id-token: write
-  #     contents: read
-  #   steps:
-  #     - name: Configure AWS credentials
-  #       uses: aws-actions/configure-aws-credentials@v1-node16
-  #       with:
-  #         role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
-  #         aws-region: ${{ env.AWS_REGION }}
-  #
-  #     - name: Log in to Amazon ECR
-  #       id: ecr-login
-  #       uses: aws-actions/amazon-ecr-login@v1
-  #
-  #     - name: Set vars
-  #       run: echo "ECR_REGISTRY=${{ steps.ecr-login.outputs.registry }}" >> $GITHUB_ENV
-  #
-  #     - name: Check out source
-  #       uses: actions/checkout@v3
-  #
+  deploy:
+    name: Deploy using AWS CodeDeploy
+    needs: [prod]
+    permissions:
+      # Interact with GitHub OIDC Token endpoint for AWS
+      id-token: write
+      contents: read
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1-node16
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Log in to Amazon ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Set vars
+        run: echo "ECR_REGISTRY=${{ steps.ecr-login.outputs.registry }}" >> $GITHUB_ENV
+
+      - name: Check out source
+        uses: actions/checkout@v3
+
+      # https://docs.aws.amazon.com/codedeploy/latest/userguide/reference-appspec-file-structure-resources.html
+      - name: Generate appspec.yml
+        env:
+          CONTAINER_NAME: "foo-app"
+          PORT: "4000"
+        run: sed -i -e "s!<NAME>!${CONTAINER_NAME}!g" -e "s!<PORT>!${PORT}!g" ecs/appspec.yml
+
+      - name: Generate task-defintion.json
+        env:
+          CONTAINER_NAME: "foo-app"
+          PORT: "4000"
+          AWSLOGS_GROUP: "/ecs/foo-app"
+          AWSLOGS_STREAM_PREFIX: "foo-app"
+          CONFIG_S3_BUCKET: = dependency.s3.outputs.buckets["config"].id
+          CONFIG_S3_PREFIX: "app-ecs"
+          # FARGATE supported values
+          # CPU value       Memory value (MiB)
+          # 256 (.25 vCPU)  512 (0.5 GB), 1024 (1 GB), 2048 (2 GB)
+          # 512 (.5 vCPU)   1024 (1 GB), 2048 (2 GB), 3072 (3 GB), 4096 (4 GB)
+          # 1024 (1 vCPU)   2048 (2 GB), 3072 (3 GB), 4096 (4 GB), 5120 (5 GB), 6144 (6 GB), 7168 (7 GB), 8192 (8 GB)
+          # 2048 (2 vCPU)   Between 4096 (4 GB) and 16384 (16 GB) in increments of 1024 (1 GB)
+          # 4096 (4 vCPU)   Between 8192 (8 GB) and 30720 (30 GB) in increments of 1024 (1 GB)
+          CPU: 256
+          MEMORY: 512
+          CPU_ARCH: ARM64
+          TASK_ROLE_ARN: "arn:aws:iam::770916339360:role/foo-app-20200227055150076000000001"
+          EXECUTUION_ROLE_ARN: "arn:aws:iam::770916339360:role/foo-ecs-task-execution-role"
+          CONFIG_S3_PREFIX: "app-ecs"
+          CONFIG_S3_BUCKET: "cogini-foo-dev-app-config"
+        run: |
+          sed -i -e "s!<AWS_ACCOUNT_ID>!${AWS_ACCOUNT_ID}!g" $TASKDEF
+          sed -i -e "s!<AWS_REGION>!${AWS_REGION}!g" $TASKDEF
+          sed -i -e "s!<AWSLOGS_GROUP>!${AWSLOGS_GROUP}!g" $TASKDEF
+          sed -i -e "s!<AWSLOGS_REGION>!${AWS_REGION}!g" $TASKDEF
+          sed -i -e "s!<AWSLOGS_STREAM_PREFIX>!${AWSLOGS_STREAM_PREFIX}!g" $TASKDEF
+          sed -i -e "s!<NAME>!${CONTAINER_NAME}!g" -e "s!<PORT>!${PORT}!g" $TASKDEF
+          sed -i -e "s!<CPU>!${CPU}!g" -e "s!<MEMORY>!${MEMORY}!g" $TASKDEF
+          sed -i -e "s!<CPU_ARCH>!${CPU_ARCH}!g" $TASKDEF
+          sed -i -e "s!<TASK_ROLE_ARN>!${TASK_ROLE_ARN}!g" $TASKDEF
+          sed -i -e "s!<EXECUTION_ROLE_ARN>!${EXECUTION_ROLE_ARN}!g" $TASKDEF
+          sed -i -e "s!<CONFIG_S3_BUCKET>!${CONFIG_S3_BUCKET}!g" -e "s!<CONFIG_S3_PREFIX>!${CONFIG_S3_PREFIX}!g" $TASKDEF
+          cat $TASKDEF
+
+      - name: Fill in the new image ID in the Amazon ECS task definition
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: ${{ env.TASKDEF }}
+          container-name: "foo-app"
+          image: ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+
+      - name: Deploy to Amazon ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: task-definition.json
+          service: foo-app
+          cluster: foo
+          wait-for-service-stability: true
+          codedeploy-appspec: ecs/appspec.yml
+          codedeploy-application: foo-app
+          codedeploy-deployment-group: foo-app
+
   #     - name: Create task definition
   #       # env:
   #       #   CONTAINER_NAME:
