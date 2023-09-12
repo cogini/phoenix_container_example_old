@@ -54,7 +54,7 @@ env:
   COMPOSE_DOCKER_CLI_BUILD: '1'
   COMPOSE_FILE: docker-compose.gha.yml
   DOCKER_FILE: deploy/debian.Dockerfile
-  TASKDEF=ecs/taskdef-otel.json
+  TASKDEF: ecs/taskdef-otel.json
 jobs:
   build-test:
     name: Build test image
