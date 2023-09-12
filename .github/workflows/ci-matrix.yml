@@ -34,9 +34,9 @@ env:
   PROD_OS_VER: bullseye-slim
   BASE_OS: "debian"
   # Variant if test matrix is not used
-  VAR: ${{ env.ELIXIR_VER }}-erlang-${{ env.OTP_VER }}-${{ env.BASE_OS }}-${{ env.BUILD_OS_VER }}
+  VAR: '1.14-3-erlang-25.2.3-debian-bullseye-20230202-slim'
   # Variant that is deployed
-  PROD_VAR: ${{ env.VAR }}
+  PROD_VAR: '1.14-3-erlang-25.2.3-debian-bullseye-20230202-slim'
   # Registry for test images
   REGISTRY: ghcr.io/
   # Registry for public images, default is docker.io
