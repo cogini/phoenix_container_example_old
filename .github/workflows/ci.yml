@@ -1,5 +1,5 @@
 ---
-name: CI Matrix
+name: CI
 # Build and run tests in containers
 # Store test and prod images to GitHub Container Registry (GHCR)
 # Build prod image and push to AWS ECR
@@ -7,8 +7,6 @@ name: CI Matrix
 # Run security scans on code and prod images
 # Run tasks in parallel
 # Use GHA caching
-# Use test matrix to build Alpine, Debian, and Distroless images
-# Use test matrix to run tests in parallel
 on: push
 # on:
 #   push:
@@ -66,51 +64,6 @@ jobs:
       packages: write
       # Cancel previous runs
       actions: write
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [alpine, debian, ubuntu]
-        elixir: [1.14.3]
-        include:
-          - os: alpine
-            otp: 24.3.4.6
-            build_os_ver: '3.15.6'
-            prod_os_ver: '3.15.6'
-          - os: alpine
-            otp: 25.2.3
-            build_os_ver: '3.17.0'
-            prod_os_ver: '3.17.0'
-          - os: debian
-            build_os_ver: bullseye-20230109-slim
-            prod_os_ver: bullseye-slim
-            snapshot_ver: '20230109'
-            otp: 24.3.4.9
-          - os: debian
-            build_os_ver: bullseye-20230109-slim
-            prod_os_ver: bullseye-slim
-            snapshot_ver: '20230109'
-            otp: 25.2.3
-          - os: debian
-            build_os_ver: bullseye-20230202-slim
-            prod_os_ver: bullseye-slim
-            snapshot_ver: '20230202'
-            otp: 24.3.4.9
-          - os: debian
-            build_os_ver: bullseye-20230202-slim
-            prod_os_ver: bullseye-slim
-            snapshot_ver: '20230202'
-            otp: 25.2.3
-          - os: ubuntu
-            build_os_ver: jammy-20221130
-            prod_os_ver: jammy-20221130
-            otp: 24.3.4.9
-          - os: ubuntu
-            build_os_ver: jammy-20221130
-            prod_os_ver: jammy-20221130
-            otp: 25.2.3
-    env:
-      DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
-      VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
     steps:
       - name: Dump event
         run: cat "$GITHUB_EVENT_PATH"
@@ -188,10 +141,10 @@ jobs:
           file: ${{ env.DOCKER_FILE }}
           target: test-image
           build-args: |
-            ELIXIR_VER=${{ matrix.elixir }}
-            OTP_VER=${{ matrix.otp }}
-            BUILD_OS_VER=${{ matrix.build_os_ver }}
-            PROD_OS_VER=${{ matrix.prod_os_ver }}
+            ELIXIR_VER=${{ env.ELIXIR_VER }}
+            OTP_VER=${{ env.OTP_VER }}
+            BUILD_OS_VER=${{ env.BUILD_OS_VER }}
+            PROD_OS_VER=${{ env.PROD_OS_VER }}
           context: .
           builder: ${{ steps.buildx.outputs.name }}
           push: true
@@ -221,53 +174,6 @@ jobs:
       pull-requests: write
       issues: read
     needs: [build-test]
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [alpine, debian, ubuntu]
-        elixir: [1.14.3]
-        include:
-          - os: alpine
-            otp: 24.3.4.6
-            build_os_ver: '3.15.6'
-            prod_os_ver: '3.15.6'
-          - os: alpine
-            otp: 25.2.3
-            build_os_ver: '3.17.0'
-            prod_os_ver: '3.17.0'
-          - os: debian
-            build_os_ver: bullseye-20230109-slim
-            prod_os_ver: bullseye-slim
-            snapshot_ver: '20230109'
-            otp: 24.3.4.9
-          - os: debian
-            build_os_ver: bullseye-20230109-slim
-            prod_os_ver: bullseye-slim
-            snapshot_ver: '20230109'
-            otp: 25.2.3
-          - os: debian
-            build_os_ver: bullseye-20230202-slim
-            prod_os_ver: bullseye-slim
-            snapshot_ver: '20230202'
-            otp: 24.3.4.9
-          - os: debian
-            build_os_ver: bullseye-20230202-slim
-            prod_os_ver: bullseye-slim
-            snapshot_ver: '20230202'
-            otp: 25.2.3
-          - os: ubuntu
-            build_os_ver: jammy-20221130
-            prod_os_ver: jammy-20221130
-            otp: 24.3.4.9
-          - os: ubuntu
-            build_os_ver: jammy-20221130
-            prod_os_ver: jammy-20221130
-            otp: 25.2.3
-      # ci_node_total: [2]
-      # ci_node_index: [1, 2]
-    env:
-      DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
-      VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
     steps:
       - name: Log in to GHCR
         uses: docker/login-action@v2
@@ -348,51 +254,6 @@ jobs:
       checks: write
       pull-requests: write
       issues: read
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [alpine, debian, ubuntu]
-        elixir: [1.14.3]
-        include:
-          - os: alpine
-            otp: 24.3.4.6
-            build_os_ver: '3.15.6'
-            prod_os_ver: '3.15.6'
-          - os: alpine
-            otp: 25.2.3
-            build_os_ver: '3.17.0'
-            prod_os_ver: '3.17.0'
-          - os: debian
-            build_os_ver: bullseye-20230109-slim
-            prod_os_ver: bullseye-slim
-            snapshot_ver: '20230109'
-            otp: 24.3.4.9
-          - os: debian
-            build_os_ver: bullseye-20230109-slim
-            prod_os_ver: bullseye-slim
-            snapshot_ver: '20230109'
-            otp: 25.2.3
-          - os: debian
-            build_os_ver: bullseye-20230202-slim
-            prod_os_ver: bullseye-slim
-            snapshot_ver: '20230202'
-            otp: 24.3.4.9
-          - os: debian
-            build_os_ver: bullseye-20230202-slim
-            prod_os_ver: bullseye-slim
-            snapshot_ver: '20230202'
-            otp: 25.2.3
-          - os: ubuntu
-            build_os_ver: jammy-20221130
-            prod_os_ver: jammy-20221130
-            otp: 24.3.4.9
-          - os: ubuntu
-            build_os_ver: jammy-20221130
-            prod_os_ver: jammy-20221130
-            otp: 25.2.3
-    env:
-      DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
-      VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
     steps:
       - name: Log in to GHCR
         uses: docker/login-action@v2
@@ -500,60 +361,6 @@ jobs:
 
       # Cancel previous runs
       actions: write
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [alpine, chiseled, debian, distroless, ubuntu]
-        elixir: [1.14.3]
-        include:
-          - os: alpine
-            otp: 24.3.4.6
-            build_os_ver: '3.15.6'
-            prod_os_ver: '3.15.6'
-          - os: alpine
-            otp: 25.2.3
-            build_os_ver: '3.17.0'
-            prod_os_ver: '3.17.0'
-          - os: chiseled
-            build_os_ver: jammy-20221130
-            prod_os_ver: jammy-20221130
-            otp: 25.2.3
-          - os: debian
-            build_os_ver: bullseye-20230109-slim
-            prod_os_ver: bullseye-slim
-            snapshot_ver: '20230109'
-            otp: 24.3.4.9
-          - os: debian
-            build_os_ver: bullseye-20230109-slim
-            prod_os_ver: bullseye-slim
-            snapshot_ver: '20230109'
-            otp: 25.2.3
-          - os: debian
-            build_os_ver: bullseye-20230202-slim
-            prod_os_ver: bullseye-slim
-            snapshot_ver: '20230202'
-            otp: 24.3.4.9
-          - os: debian
-            build_os_ver: bullseye-20230202-slim
-            prod_os_ver: bullseye-slim
-            snapshot_ver: '20230202'
-            otp: 25.2.3
-          - os: distroless
-            build_os_ver: bullseye-20230202-slim
-            prod_os_ver: bullseye-slim
-            snapshot_ver: ''
-            otp: 25.2.3
-          - os: ubuntu
-            build_os_ver: jammy-20221130
-            prod_os_ver: jammy-20221130
-            otp: 24.3.4.9
-          - os: ubuntu
-            build_os_ver: jammy-20221130
-            prod_os_ver: jammy-20221130
-            otp: 25.2.3
-    env:
-      DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
-      VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
     steps:
       - name: Cancel previous runs in progress
         uses: styfle/cancel-workflow-action@0.11.0
@@ -756,60 +563,6 @@ jobs:
       issues: read
       checks: write
       pull-requests: write
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [alpine, chiseled, debian, distroless, ubuntu]
-        elixir: [1.14.3]
-        include:
-          - os: alpine
-            otp: 24.3.4.6
-            build_os_ver: '3.15.6'
-            prod_os_ver: '3.15.6'
-          - os: alpine
-            otp: 25.2.3
-            build_os_ver: '3.17.0'
-            prod_os_ver: '3.17.0'
-          - os: chiseled
-            build_os_ver: jammy-20221130
-            prod_os_ver: jammy-20221130
-            otp: 25.2.3
-          - os: debian
-            build_os_ver: bullseye-20230109-slim
-            prod_os_ver: bullseye-slim
-            snapshot_ver: '20230109'
-            otp: 24.3.4.9
-          - os: debian
-            build_os_ver: bullseye-20230109-slim
-            prod_os_ver: bullseye-slim
-            snapshot_ver: '20230109'
-            otp: 25.2.3
-          - os: debian
-            build_os_ver: bullseye-20230202-slim
-            prod_os_ver: bullseye-slim
-            snapshot_ver: '20230202'
-            otp: 24.3.4.9
-          - os: debian
-            build_os_ver: bullseye-20230202-slim
-            prod_os_ver: bullseye-slim
-            snapshot_ver: '20230202'
-            otp: 25.2.3
-          - os: distroless
-            build_os_ver: bullseye-20230202-slim
-            prod_os_ver: bullseye-slim
-            snapshot_ver: ''
-            otp: 25.2.3
-          - os: ubuntu
-            build_os_ver: jammy-20221130
-            prod_os_ver: jammy-20221130
-            otp: 24.3.4.9
-          - os: ubuntu
-            build_os_ver: jammy-20221130
-            prod_os_ver: jammy-20221130
-            otp: 25.2.3
-    env:
-      DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
-      VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
     steps:
       - name: Log in to GHCR
         uses: docker/login-action@v2
@@ -900,60 +653,6 @@ jobs:
 
       # Upload SARIF report files
       security-events: write
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [alpine, chiseled, debian, distroless, ubuntu]
-        elixir: [1.14.3]
-        include:
-          - os: alpine
-            otp: 24.3.4.6
-            build_os_ver: '3.15.6'
-            prod_os_ver: '3.15.6'
-          - os: alpine
-            otp: 25.2.3
-            build_os_ver: '3.17.0'
-            prod_os_ver: '3.17.0'
-          - os: chiseled
-            build_os_ver: jammy-20221130
-            prod_os_ver: jammy-20221130
-            otp: 25.2.3
-          - os: debian
-            build_os_ver: bullseye-20230109-slim
-            prod_os_ver: bullseye-slim
-            snapshot_ver: '20230109'
-            otp: 24.3.4.9
-          - os: debian
-            build_os_ver: bullseye-20230109-slim
-            prod_os_ver: bullseye-slim
-            snapshot_ver: '20230109'
-            otp: 25.2.3
-          - os: debian
-            build_os_ver: bullseye-20230202-slim
-            prod_os_ver: bullseye-slim
-            snapshot_ver: '20230202'
-            otp: 24.3.4.9
-          - os: debian
-            build_os_ver: bullseye-20230202-slim
-            prod_os_ver: bullseye-slim
-            snapshot_ver: '20230202'
-            otp: 25.2.3
-          - os: distroless
-            build_os_ver: bullseye-20230202-slim
-            prod_os_ver: bullseye-slim
-            snapshot_ver: ''
-            otp: 25.2.3
-          - os: ubuntu
-            build_os_ver: jammy-20221130
-            prod_os_ver: jammy-20221130
-            otp: 24.3.4.9
-          - os: ubuntu
-            build_os_ver: jammy-20221130
-            prod_os_ver: jammy-20221130
-            otp: 25.2.3
-    env:
-      DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
-      VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
     steps:
       - name: Log in to GHCR
         uses: docker/login-action@v2
@@ -1241,72 +940,3 @@ jobs:
           codedeploy-application: foo-app
           codedeploy-deployment-group: foo-app
 
-  #     - name: Create task definition
-  #       # env:
-  #       #   # Depends on ENV, e,g, prod, staging
-  #       #   IMAGE_URI:
-  #       #   # Depends on AWS deploy env
-  #       run: jq --null-input -f ecs/gha/taskdef.json.jq | tee ecs/taskdef.json
-  #
-  #     - name: Register task definition
-  #       # env:
-  #       #   CONTAINER_NAME:
-  #       #   PORT:
-  #       #   CODEDEPLOY_APP_NAME:
-  #       #   CODEDEPLOY_APP_GROUP_NAME:
-  #       run: |
-  #         export TASKDEF_APP_ARN=$(aws ecs register-task-definition --cli-input-json file://ecs/taskdef.json --region $AWS_REGION --output text --query 'taskDefinition.taskDefinitionArn')
-  #         echo "$TASKDEF_APP_ARN"
-  #         jq --null-input -f ecs/gha/revision.json.jq | tee ecs/revision.json
-  #         aws deploy create-deployment \
-  #           --application-name $CODEDEPLOY_APP_NAME \
-  #           --deployment-config-name CodeDeployDefault.ECSAllAtOnce \
-  #           --deployment-group-name $CODEDEPLOY_APP_GROUP_NAME \
-  #           --description "ECS" \
-  #           --revision ecs/revision.json \
-  #           --output text \
-  #           --query '[deploymentId]'
-  #
-  # Deploy using `aws ecs update-service`
-  # https://github.com/aws/aws-sdk/issues/406
-  # ECR_IMAGE="${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.VAR }}${{ env.IMAGE_VER }}"
-  # Get current task definition
-  # TASK_DEFINITION=$(aws ecs describe-task-definition --task-definition "$TASK_FAMILY" --region "$AWS_DEFAULT_REGION")
-  # Add new ECR image address to old template and remove unneeded attributes
-  # NEW_TASK_DEFINTIION=$(echo $TASK_DEFINITION | jq --arg IMAGE "$ECR_IMAGE" '.taskDefinition | .containerDefinitions[0].image = $IMAGE | del(.taskDefinitionArn) | del(.revision) | del(.status) | del(.requiresAttributes) | del(.compatibilities)')
-  # Register new task definition
-  # NEW_TASK_INFO=$(aws ecs register-task-definition --region "$AWS_DEFAULT_REGION" --cli-input-json "$NEW_TASK_DEFINTIION")
-  # Get new revision
-  # NEW_REVISION=$(echo $NEW_TASK_INFO | jq '.taskDefinition.revision')
-  # aws ecs update-service --cluster ${ECS_CLUSTER} --service ${SERVICE_NAME} --task-definition ${TASK_FAMILY}:${NEW_REVISION}```
-
-  # container-test:
-  #   runs-on: ubuntu-latest
-  #   needs: [build-test]
-  #   permissions: write-all
-  #   container:
-  #     image: ghcr.io/cogini/foo-app:test
-  #     volumes:
-  #       - /junit-reports:/junit-reports
-  #     credentials:
-  #       username: ${{ github.actor }}
-  #       password: ${{ secrets.GITHUB_TOKEN }}
-  #   steps:
-  #     - name: Run pwd
-  #       run: pwd
-  #     - name: Run ls
-  #       run: ls
-  #     - name: Run mix test
-  #       run: mix do format --check-formatted, credo, deps.audit, sobelow
-
-  # https://docs.github.com/en/actions/using-jobs/running-jobs-in-a-container
-  # container-test-job:
-  #   runs-on: ubuntu-latest
-  #   needs: [build-scan]
-  #   container:
-  #     image: ghcr.io/${{ github.repository_owner }}/foo-app:scan
-  #     volumes:
-  #       - /sarif-reports:/sarif-reports
-  #   steps:
-  #     - name: Trivy scan fs
-  #       run: trivy fs --no-progress /
