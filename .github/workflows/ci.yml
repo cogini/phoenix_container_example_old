@@ -1213,6 +1213,7 @@ jobs:
   #           --query '[deploymentId]'
 
   # Deploy using `aws ecs update-service`
+  # https://github.com/aws/aws-sdk/issues/406
   # ECR_IMAGE="${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.VAR }}${{ env.IMAGE_VER }}"
   # Get current task definition
   # TASK_DEFINITION=$(aws ecs describe-task-definition --task-definition "$TASK_FAMILY" --region "$AWS_DEFAULT_REGION")
