@@ -60,12 +60,12 @@ env:
 jobs:
   build-test:
     name: Build test image
-    runs-on: ubuntu-latest
     permissions:
       # Push to ghcr.io repository
       packages: write
       # Cancel previous runs
       actions: write
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
@@ -208,7 +208,6 @@ jobs:
 
   test:
     name: Run tests
-    runs-on: ubuntu-latest
     # permissions: write-all
     permissions:
       # Read from ghcr.io repository
@@ -221,6 +220,7 @@ jobs:
       pull-requests: write
       issues: read
     needs: [build-test]
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
@@ -337,7 +337,6 @@ jobs:
 
   test-dialyzer:
     name: Run dialyzer
-    runs-on: ubuntu-latest
     needs: [build-test]
     permissions:
       # Read from ghcr.io repository
@@ -348,6 +347,7 @@ jobs:
       checks: write
       pull-requests: write
       issues: read
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
@@ -414,7 +414,6 @@ jobs:
 
   test-scan:
     name: Security scan code
-    runs-on: ubuntu-latest
     needs: [build-test]
     permissions:
       # Read from ghcr.io repository
@@ -428,6 +427,7 @@ jobs:
 
       # Upload SARIF report files
       security-events: write
+    runs-on: ubuntu-latest
     steps:
       - name: Log in to GHCR
         uses: docker/login-action@v2
@@ -489,7 +489,6 @@ jobs:
 
   build-prod:
     name: Build prod image
-    runs-on: ubuntu-latest
     permissions:
       # Interact with GitHub OIDC Token endpoint for AWS
       id-token: write
@@ -500,6 +499,7 @@ jobs:
 
       # Cancel previous runs
       actions: write
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
@@ -694,12 +694,12 @@ jobs:
 
   # build-newman:
   #   name: Build newman image
-  #   runs-on: ubuntu-latest
   #   permissions:
   #     # Push to ghcr.io repository
   #     packages: write
   #     # Cancel previous runs
   #     actions: write
+  #   runs-on: ubuntu-latest
   #   steps:
   #     - name: Cancel previous runs
   #       uses: styfle/cancel-workflow-action@0.11.0
@@ -743,7 +743,6 @@ jobs:
 
   test-prod:
     name: Run external API tests
-    runs-on: ubuntu-latest
     # needs: [build-prod, build-newman]
     needs: [build-prod]
     permissions:
@@ -756,6 +755,7 @@ jobs:
       issues: read
       checks: write
       pull-requests: write
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
@@ -882,7 +882,6 @@ jobs:
 
   scan:
     name: Security scan prod image
-    runs-on: ubuntu-latest
     needs: [build-prod]
     permissions:
       # Interact with GitHub OIDC Token endpoint for AWS
@@ -900,6 +899,7 @@ jobs:
 
       # Upload SARIF report files
       security-events: write
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
@@ -1029,7 +1029,6 @@ jobs:
     name: Deploy prod images
     if: github.event_name != 'pull_request'
     # if: contains(github.ref, 'refs/heads/main')
-    runs-on: ubuntu-latest
     needs: [build-prod, test-prod, test]
     permissions:
       # Interact with GitHub OIDC Token endpoint for AWS
@@ -1044,6 +1043,7 @@ jobs:
       checks: write
       pull-requests: write
       issues: read
+    runs-on: ubuntu-latest
     steps:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1-node16
@@ -1162,6 +1162,7 @@ jobs:
       # Interact with GitHub OIDC Token endpoint for AWS
       id-token: write
       contents: read
+    runs-on: ubuntu-latest
     steps:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1-node16
@@ -1279,9 +1280,9 @@ jobs:
   # aws ecs update-service --cluster ${ECS_CLUSTER} --service ${SERVICE_NAME} --task-definition ${TASK_FAMILY}:${NEW_REVISION}```
 
   # container-test:
-  #   runs-on: ubuntu-latest
   #   needs: [build-test]
   #   permissions: write-all
+  #   runs-on: ubuntu-latest
   #   container:
   #     image: ghcr.io/cogini/foo-app:test
   #     volumes:
@@ -1299,8 +1300,8 @@ jobs:
 
   # https://docs.github.com/en/actions/using-jobs/running-jobs-in-a-container
   # container-test-job:
-  #   runs-on: ubuntu-latest
   #   needs: [build-scan]
+  #   runs-on: ubuntu-latest
   #   container:
   #     image: ghcr.io/${{ github.repository_owner }}/foo-app:scan
   #     volumes:

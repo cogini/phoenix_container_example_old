@@ -58,12 +58,12 @@ env:
 jobs:
   build-test:
     name: Build test image
-    runs-on: ubuntu-latest
     permissions:
       # Push to ghcr.io repository
       packages: write
       # Cancel previous runs
       actions: write
+    runs-on: ubuntu-latest
     steps:
       - name: Dump event
         run: cat "$GITHUB_EVENT_PATH"
@@ -161,7 +161,6 @@ jobs:
 
   test:
     name: Run tests
-    runs-on: ubuntu-latest
     # permissions: write-all
     permissions:
       # Read from ghcr.io repository
@@ -174,6 +173,7 @@ jobs:
       pull-requests: write
       issues: read
     needs: [build-test]
+    runs-on: ubuntu-latest
     steps:
       - name: Log in to GHCR
         uses: docker/login-action@v2
@@ -243,7 +243,6 @@ jobs:
 
   test-dialyzer:
     name: Run dialyzer
-    runs-on: ubuntu-latest
     needs: [build-test]
     permissions:
       # Read from ghcr.io repository
@@ -254,6 +253,7 @@ jobs:
       checks: write
       pull-requests: write
       issues: read
+    runs-on: ubuntu-latest
     steps:
       - name: Log in to GHCR
         uses: docker/login-action@v2
@@ -275,7 +275,6 @@ jobs:
 
   test-scan:
     name: Security scan code
-    runs-on: ubuntu-latest
     needs: [build-test]
     permissions:
       # Read from ghcr.io repository
@@ -289,6 +288,7 @@ jobs:
 
       # Upload SARIF report files
       security-events: write
+    runs-on: ubuntu-latest
     steps:
       - name: Log in to GHCR
         uses: docker/login-action@v2
@@ -350,7 +350,6 @@ jobs:
 
   build-prod:
     name: Build prod image
-    runs-on: ubuntu-latest
     permissions:
       # Interact with GitHub OIDC Token endpoint for AWS
       id-token: write
@@ -361,6 +360,7 @@ jobs:
 
       # Cancel previous runs
       actions: write
+    runs-on: ubuntu-latest
     steps:
       - name: Cancel previous runs in progress
         uses: styfle/cancel-workflow-action@0.11.0
@@ -501,12 +501,12 @@ jobs:
 
   # build-newman:
   #   name: Build newman image
-  #   runs-on: ubuntu-latest
   #   permissions:
   #     # Push to ghcr.io repository
   #     packages: write
   #     # Cancel previous runs
   #     actions: write
+  #   runs-on: ubuntu-latest
   #   steps:
   #     - name: Cancel previous runs
   #       uses: styfle/cancel-workflow-action@0.11.0
@@ -550,7 +550,6 @@ jobs:
 
   test-prod:
     name: Run external API tests
-    runs-on: ubuntu-latest
     # needs: [build-prod, build-newman]
     needs: [build-prod]
     permissions:
@@ -563,6 +562,7 @@ jobs:
       issues: read
       checks: write
       pull-requests: write
+    runs-on: ubuntu-latest
     steps:
       - name: Log in to GHCR
         uses: docker/login-action@v2
@@ -635,7 +635,6 @@ jobs:
 
   scan:
     name: Security scan prod image
-    runs-on: ubuntu-latest
     needs: [build-prod]
     permissions:
       # Interact with GitHub OIDC Token endpoint for AWS
@@ -653,6 +652,7 @@ jobs:
 
       # Upload SARIF report files
       security-events: write
+    runs-on: ubuntu-latest
     steps:
       - name: Log in to GHCR
         uses: docker/login-action@v2
@@ -728,7 +728,6 @@ jobs:
     name: Deploy prod images
     if: github.event_name != 'pull_request'
     # if: contains(github.ref, 'refs/heads/main')
-    runs-on: ubuntu-latest
     needs: [build-prod, test-prod, test]
     permissions:
       # Interact with GitHub OIDC Token endpoint for AWS
@@ -743,6 +742,7 @@ jobs:
       checks: write
       pull-requests: write
       issues: read
+    runs-on: ubuntu-latest
     steps:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1-node16
@@ -861,6 +861,7 @@ jobs:
       # Interact with GitHub OIDC Token endpoint for AWS
       id-token: write
       contents: read
+    runs-on: ubuntu-latest
     steps:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1-node16
@@ -937,4 +938,3 @@ jobs:
           codedeploy-appspec: ecs/appspec.yml
           codedeploy-application: foo-app
           codedeploy-deployment-group: foo-app
-
