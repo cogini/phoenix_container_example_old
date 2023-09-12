@@ -32,7 +32,7 @@ env:
   PROD_OS_VER: bullseye-slim
   BASE_OS: "debian"
   # Variant if test matrix is not used
-  VAR: ${{ env.ELIXIR_VER }}-erlang-${{ env.OTP_VER }}-${{ env.BASE_OS }}-${{ matrix.build_os_ver }}
+  VAR: ${{ env.ELIXIR_VER }}-erlang-${{ env.OTP_VER }}-${{ env.BASE_OS }}-${{ env.BUILD_OS_VER }}
   # Variant that is deployed
   PROD_VAR: ${{ env.VAR }}
   # Registry for test images
