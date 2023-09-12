@@ -30,7 +30,7 @@ env:
   OTP_VER: 25.2.3
   BUILD_OS_VER: bullseye-20230202-slim
   PROD_OS_VER: bullseye-slim
-  BASE_OS="debian"
+  BASE_OS: "debian"
   # Variant if test matrix is not used
   VAR: ${{ env.ELIXIR_VER }}-erlang-${{ env.OTP_VER }}-${{ env.BASE_OS }}-${{ matrix.build_os_ver }}
   # Variant that is deployed
