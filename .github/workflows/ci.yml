@@ -1238,23 +1238,9 @@ jobs:
 
   #     - name: Create task definition
   #       # env:
-  #       #   CONTAINER_NAME:
-  #       #   PORT:
   #       #   # Depends on ENV, e,g, prod, staging
   #       #   IMAGE_URI:
   #       #   # Depends on AWS deploy env
-  #       #   TASK_ROLE_ARN:
-  #       #   EXECUTION_ROLE_ARN:
-  #       #   CPU:
-  #       #   MEMORY:
-  #       #   CPU_ARCH:
-  #       #   CONFIG_S3_PREFIX:
-  #       #   CONFIG_S3_BUCKET:
-  #       #   AWSLOGS_GROUP:
-  #       #   AWSLOGS_REGION:
-  #       #   AWSLOGS_STREAM_PREFIX:
-  #       #   AWS_REGION:
-  #       #   AWS_ACCOUNT_ID:
   #       run: jq --null-input -f ecs/gha/taskdef.json.jq | tee ecs/taskdef.json
   #
   #     - name: Register task definition
