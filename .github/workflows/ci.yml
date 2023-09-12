@@ -1,5 +1,5 @@
 ---
-name: CI
+name: CI Matrix
 # Build and run tests in containers
 # Store test and prod images to GitHub Container Registry (GHCR)
 # Build prod image and push to AWS ECR
@@ -28,10 +28,15 @@ env:
   # IMAGE_TAG: ${{ (github.ref == 'refs/heads/main' && 'staging') || (github.ref == 'refs/heads/qa' && 'qa') }}
   IMAGE_TAG: latest
   IMAGE_VER: ${{ github.sha }}
-  # Variant that is deployed
-  PROD_VAR: 1.14.3-erlang-25.2.3-distroless-bullseye-20230202-slim
+  ELIXIR_VER: 1.14-3
+  OTP_VER: 25.2.3
+  BUILD_OS_VER: bullseye-20230202-slim
+  PROD_OS_VER: bullseye-slim
+  BASE_OS="debian"
   # Variant if test matrix is not used
-  VAR: debian
+  VAR: ${{ env.ELIXIR_VER }}-erlang-${{ env.OTP_VER }}-${{ env.BASE_OS }}-${{ matrix.build_os_ver }}
+  # Variant that is deployed
+  PROD_VAR: ${{ env.VAR }}
   # Registry for test images
   REGISTRY: ghcr.io/
   # Registry for public images, default is docker.io
@@ -1261,7 +1266,7 @@ jobs:
   #           --revision ecs/revision.json \
   #           --output text \
   #           --query '[deploymentId]'
-
+  #
   # Deploy using `aws ecs update-service`
   # https://github.com/aws/aws-sdk/issues/406
   # ECR_IMAGE="${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.VAR }}${{ env.IMAGE_VER }}"
