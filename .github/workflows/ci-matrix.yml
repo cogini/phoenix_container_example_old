@@ -1188,12 +1188,11 @@ jobs:
 
       - name: Generate task-defintion.json
         env:
-          CONTAINER_NAME: "foo-app"
-          PORT: "4000"
           AWSLOGS_GROUP: "/ecs/foo-app"
           AWSLOGS_STREAM_PREFIX: "foo-app"
-          CONFIG_S3_BUCKET: = dependency.s3.outputs.buckets["config"].id
+          CONFIG_S3_BUCKET: "cogini-foo-dev-app-config"
           CONFIG_S3_PREFIX: "app-ecs"
+          CONTAINER_NAME: "foo-app"
           # FARGATE supported values
           # CPU value       Memory value (MiB)
           # 256 (.25 vCPU)  512 (0.5 GB), 1024 (1 GB), 2048 (2 GB)
@@ -1202,12 +1201,11 @@ jobs:
           # 2048 (2 vCPU)   Between 4096 (4 GB) and 16384 (16 GB) in increments of 1024 (1 GB)
           # 4096 (4 vCPU)   Between 8192 (8 GB) and 30720 (30 GB) in increments of 1024 (1 GB)
           CPU: 256
-          MEMORY: 512
           CPU_ARCH: ARM64
-          TASK_ROLE_ARN: "arn:aws:iam::770916339360:role/foo-app-20200227055150076000000001"
           EXECUTUION_ROLE_ARN: "arn:aws:iam::770916339360:role/foo-ecs-task-execution-role"
-          CONFIG_S3_PREFIX: "app-ecs"
-          CONFIG_S3_BUCKET: "cogini-foo-dev-app-config"
+          MEMORY: 512
+          PORT: "4000"
+          TASK_ROLE_ARN: "arn:aws:iam::770916339360:role/foo-app-20200227055150076000000001"
         run: |
           sed -i -e "s!<AWS_ACCOUNT_ID>!${AWS_ACCOUNT_ID}!g" $TASKDEF
           sed -i -e "s!<AWS_REGION>!${AWS_REGION}!g" $TASKDEF
