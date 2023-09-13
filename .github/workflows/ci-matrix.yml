@@ -28,15 +28,15 @@ env:
   # IMAGE_TAG: ${{ (github.ref == 'refs/heads/main' && 'staging') || (github.ref == 'refs/heads/qa' && 'qa') }}
   IMAGE_TAG: latest
   IMAGE_VER: ${{ github.sha }}
-  ELIXIR_VER: 1.14-3
+  ELIXIR_VER: 1.14.3
   OTP_VER: 25.2.3
   BUILD_OS_VER: bullseye-20230202-slim
   PROD_OS_VER: bullseye-slim
   BASE_OS: "debian"
   # Variant if test matrix is not used
-  VAR: '1.14-3-erlang-25.2.3-debian-bullseye-20230202-slim'
+  VAR: '1.14.3-erlang-25.2.3-debian-bullseye-20230202-slim'
   # Variant that is deployed
-  PROD_VAR: '1.14-3-erlang-25.2.3-debian-bullseye-20230202-slim'
+  PROD_VAR: '1.14.3-erlang-25.2.3-debian-bullseye-20230202-slim'
   # Registry for test images
   REGISTRY: ghcr.io/
   # Registry for public images, default is docker.io
