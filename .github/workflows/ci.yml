@@ -880,13 +880,13 @@ jobs:
         uses: actions/checkout@v3
 
       # https://docs.aws.amazon.com/codedeploy/latest/userguide/reference-appspec-file-structure-resources.html
-      - name: Generate appspec.yml
+      - name: Generate CodeDeploy appspec.yml
         env:
           CONTAINER_NAME: "foo-app"
           PORT: "4000"
         run: sed -i -e "s!<NAME>!${CONTAINER_NAME}!g" -e "s!<PORT>!${PORT}!g" ecs/appspec.yml
 
-      - name: Generate task-defintion.json
+      - name: Generate ECS task-defintion.json
         env:
           AWSLOGS_GROUP: "/ecs/foo-app"
           AWSLOGS_STREAM_PREFIX: "foo-app"
@@ -921,7 +921,7 @@ jobs:
           sed -i -e "s!<CONFIG_S3_BUCKET>!${CONFIG_S3_BUCKET}!g" -e "s!<CONFIG_S3_PREFIX>!${CONFIG_S3_PREFIX}!g" $TASKDEF
           cat $TASKDEF
 
-      - name: Fill in the new image ID in the Amazon ECS task definition
+      - name: Put new image ID in ECS task definition
         id: task-def
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
