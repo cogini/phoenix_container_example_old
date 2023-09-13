@@ -43,7 +43,7 @@ env:
   PUBLIC_REGISTRY: ""
   # Give GitHub Actions access to AWS
   AWS_ACCOUNT_ID: "770916339360"
-  AWS_ROLE_TO_ASSUME: arn:aws:iam::770916339360:role/foo-dev-ecr-github-action-role
+  AWS_ROLE_TO_ASSUME: arn:aws:iam::770916339360:role/cogini-foo-dev-app-github-action
   AWS_REGION: ap-northeast-1
   # Health check port for app
   APP_PORT: 4000
