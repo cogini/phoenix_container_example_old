@@ -1233,12 +1233,12 @@ jobs:
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
-          service: foo-app
           cluster: foo
+          service: foo-app
           wait-for-service-stability: true
           codedeploy-appspec: ecs/appspec.yml
-          codedeploy-application: foo-app
-          codedeploy-deployment-group: foo-app
+          codedeploy-application: foo-app-ecs
+          codedeploy-deployment-group: foo-app-ecs
 
   #     - name: Create task definition
   #       # env:
