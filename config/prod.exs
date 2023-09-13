@@ -1,5 +1,9 @@
 import Config
 
+config :logger,
+  level: String.to_atom(System.get_env("LOG_LEVEL") || "info"),
+  metadata: :all
+
 # For production, don't forget to configure the url host
 # to something meaningful, Phoenix uses this information
 # when generating URLs.
@@ -11,10 +15,6 @@ import Config
 # before starting your production server.
 config :phoenix_container_example, PhoenixContainerExampleWeb.Endpoint,
   cache_static_manifest: "priv/static/cache_manifest.json"
-
-config :logger,
-  level: String.to_atom(System.get_env("LOG_LEVEL") || "info"),
-  metadata: :all
 
 # ## SSL Support
 #

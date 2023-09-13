@@ -20,6 +20,30 @@ if System.get_env("PHX_SERVER") do
   config :phoenix_container_example, PhoenixContainerExampleWeb.Endpoint, server: true
 end
 
+if System.get_env("RELEASE_MODE") do
+  config :kernel, :logger, [
+    {:handler, :default, :logger_std_h,
+     %{
+       formatter:
+         {:logger_formatter_json,
+          %{
+            names: :datadog
+            # template: [
+            #   :msg,
+            #   :time,
+            #   :level,
+            #   :file,
+            #   :line,
+            #   :mfa,
+            #   :pid,
+            #   :trace_id,
+            #   :span_id
+            # ]
+          }}
+     }}
+  ]
+end
+
 config :logger,
   level: String.to_existing_atom(System.get_env("LOG_LEVEL") || "info"),
   metadata: :all
