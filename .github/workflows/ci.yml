@@ -20,12 +20,15 @@ on: push
 #     # branches: [main]
 #     types: [opened,synchronize,reopened,labeled,unlabeled]
 env:
+  # Name of image
   IMAGE_NAME: foo-app
+  # Name of org in Docker repository
   IMAGE_OWNER: ${{ github.repository_owner }}
   # Tag for release images
   # IMAGE_TAG: ${{ (github.ref == 'refs/heads/main' && 'staging') || (github.ref == 'refs/heads/qa' && 'qa') }}
   IMAGE_TAG: latest
   IMAGE_VER: ${{ github.sha }}
+  # Docker build args
   ELIXIR_VER: 1.14.3
   OTP_VER: 25.2.3
   BUILD_OS_VER: bullseye-20230202-slim
