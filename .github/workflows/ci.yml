@@ -902,7 +902,7 @@ jobs:
           # 4096 (4 vCPU)   Between 8192 (8 GB) and 30720 (30 GB) in increments of 1024 (1 GB)
           CPU: 256
           CPU_ARCH: ARM64
-          EXECUTUION_ROLE_ARN: "arn:aws:iam::770916339360:role/foo-ecs-task-execution-role"
+          EXECUTION_ROLE_ARN: "arn:aws:iam::770916339360:role/foo-ecs-task-execution-role"
           MEMORY: 512
           PORT: "4000"
           TASK_ROLE_ARN: "arn:aws:iam::770916339360:role/foo-app-20200227055150076000000001"
