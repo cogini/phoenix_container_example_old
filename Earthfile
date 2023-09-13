@@ -1,5 +1,6 @@
 # Build Elixir/Phoenix app
-VERSION --use-cache-command --shell-out-anywhere --use-copy-include-patterns --referenced-save-only 0.6
+# VERSION --use-cache-command --shell-out-anywhere --use-copy-include-patterns --referenced-save-only 0.7
+VERSION 0.7
 
 # Specify versions of Erlang, Elixir, and base OS.
 # Choose a combination supported by https://hub.docker.com/r/hexpm/elixir/tags
