@@ -1026,7 +1026,7 @@ jobs:
       #     args: --file=${{ env.DOCKER_FILE }} --project-name=api
 
   prod:
-    name: Deploy prod images
+    name: Push prod images
     if: github.event_name != 'pull_request'
     # if: contains(github.ref, 'refs/heads/main')
     needs: [build-prod, test-prod, test]
@@ -1156,7 +1156,7 @@ jobs:
           #   "oban_license_key=${{ secrets.OBAN_LICENSE_KEY }}"
 
   deploy:
-    name: Deploy using AWS CodeDeploy
+    name: Deploy to ECS
     needs: [prod]
     permissions:
       # Interact with GitHub OIDC Token endpoint for AWS
