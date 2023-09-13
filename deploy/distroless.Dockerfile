@@ -17,7 +17,8 @@ ARG PROD_OS_VER=bullseye-slim
 
 # Use snapshot for consistent dependencies, see https://snapshot.debian.org/
 # Needs to be updated manually
-ARG SNAPSHOT_VER=20230202
+# ARG SNAPSHOT_VER=20230202
+ARG SNAPSHOT_VER=""
 
 # ARG LINUX_ARCH=aarch64
 ARG LINUX_ARCH=x86_64
@@ -499,11 +500,9 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
         truncate -s 0 /var/log/apt/* && \
         truncate -s 0 /var/log/dpkg.log
 
-    # If LANG=C.UTF-8 is not enough, build full featured locale
-    # RUN localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
-    # ENV LANG en_US.utf8
-
+    RUN ls -l "/lib/"
     RUN ls -l "/lib/$(uname -m)-linux-gnu/"
+    RUN ls -l "/usr/lib/"
     RUN ls -l "/usr/lib/$(uname -m)-linux-gnu/"
 
 
