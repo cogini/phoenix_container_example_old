@@ -906,6 +906,7 @@ jobs:
           MEMORY: 512
           PORT: "4000"
           TASK_ROLE_ARN: "arn:aws:iam::770916339360:role/foo-app-20200227055150076000000001"
+        # run: jq --null-input -f ecs/gha/taskdef.json.jq | tee ecs/taskdef.json
         run: |
           sed -i -e "s!<AWS_ACCOUNT_ID>!${AWS_ACCOUNT_ID}!g" $TASKDEF
           sed -i -e "s!<AWS_REGION>!${AWS_REGION}!g" $TASKDEF
