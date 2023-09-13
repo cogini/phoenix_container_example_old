@@ -68,8 +68,8 @@ jobs:
       actions: write
     runs-on: ubuntu-latest
     steps:
-      - name: Dump event
-        run: cat "$GITHUB_EVENT_PATH"
+      # - name: Dump event
+      #   run: cat "$GITHUB_EVENT_PATH"
 
       - name: Cancel previous runs in progress
         uses: styfle/cancel-workflow-action@0.11.0
