@@ -9,13 +9,13 @@ config :logger, :console,
   metadata: [:mfa, :request_id, :trace_id, :span_id]
   # metadata: :all
 
-config :phoenix_container_example, :logger, [
-  {:handler, :default, :logger_std_h,
-   %{
-     formatter:
-       {:logger_formatter_json, %{}}
-   }}
-]
+# config :phoenix_container_example, :logger, [
+#   {:handler, :default, :logger_std_h,
+#    %{
+#      formatter:
+#        {:logger_formatter_json, %{}}
+#    }}
+# ]
 
 # For production, don't forget to configure the url host
 # to something meaningful, Phoenix uses this information
