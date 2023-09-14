@@ -129,7 +129,7 @@
             },
             "startTimeout": 30,
             "stopTimeout": 30,
-            "readonlyRootFilesystem": false
+            "volumesFrom": []
         }
     ]
 }
