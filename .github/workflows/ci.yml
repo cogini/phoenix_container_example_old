@@ -29,15 +29,15 @@ env:
   IMAGE_TAG: latest
   IMAGE_VER: ${{ github.sha }}
   # Docker build args
-  ELIXIR_VER: 1.14.3
-  OTP_VER: 25.2.3
-  BUILD_OS_VER: bullseye-20230202-slim
+  ELIXIR_VER: 1.15.5
+  OTP_VER: 26.0.2
+  BUILD_OS_VER: bullseye-20230612-slim
   PROD_OS_VER: bullseye-slim
   BASE_OS: "debian"
   # Variant if test matrix is not used
-  VAR: '1.14.3-erlang-25.2.3-debian-bullseye-20230202-slim'
+  VAR: '1.15.5-erlang-26.0.2-debian-bullseye-20230612-slim'
   # Variant that is deployed
-  PROD_VAR: '1.14.3-erlang-25.2.3-debian-bullseye-20230202-slim'
+  PROD_VAR: '1.15.5-erlang-26.0.2-debian-bullseye-20230612-slim'
   # Registry for test images
   REGISTRY: ghcr.io/
   # Registry for public images, default is docker.io

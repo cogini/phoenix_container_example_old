@@ -22,28 +22,32 @@ on: push
 #     # branches: [main]
 #     types: [opened,synchronize,reopened,labeled,unlabeled]
 env:
+  # Name of image
   IMAGE_NAME: foo-app
+  # Name of org in Docker repository
   IMAGE_OWNER: ${{ github.repository_owner }}
   # Tag for release images
   # IMAGE_TAG: ${{ (github.ref == 'refs/heads/main' && 'staging') || (github.ref == 'refs/heads/qa' && 'qa') }}
   IMAGE_TAG: latest
   IMAGE_VER: ${{ github.sha }}
-  ELIXIR_VER: 1.14.3
-  OTP_VER: 25.2.3
-  BUILD_OS_VER: bullseye-20230202-slim
+  # Docker build args
+  ELIXIR_VER: 1.15.5
+  OTP_VER: 26.0.2
+  BUILD_OS_VER: bullseye-20230612-slim
   PROD_OS_VER: bullseye-slim
   BASE_OS: "debian"
   # Variant if test matrix is not used
-  VAR: '1.14.3-erlang-25.2.3-debian-bullseye-20230202-slim'
+  VAR: '1.15.5-erlang-26.0.2-debian-bullseye-20230612-slim'
   # Variant that is deployed
-  PROD_VAR: '1.14.3-erlang-25.2.3-debian-bullseye-20230202-slim'
+  PROD_VAR: '1.15.5-erlang-26.0.2-debian-bullseye-20230612-slim'
   # Registry for test images
   REGISTRY: ghcr.io/
   # Registry for public images, default is docker.io
   PUBLIC_REGISTRY: ""
   # Give GitHub Actions access to AWS
-  AWS_ACCOUNT_ID: "770916339360"
-  AWS_ROLE_TO_ASSUME: arn:aws:iam::770916339360:role/cogini-foo-dev-app-github-action
+  AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+  # AWS_ROLE_TO_ASSUME: arn:aws:iam::XXX:role/cogini-foo-dev-app-github-action
+  AWS_ROLE_TO_ASSUME: ${{ secrets.AWS_ROLE_TO_ASSUME }}
   AWS_REGION: ap-northeast-1
   # Health check port for app
   APP_PORT: 4000
@@ -81,9 +85,9 @@ jobs:
             build_os_ver: '3.17.0'
             prod_os_ver: '3.17.0'
           - os: debian
-            build_os_ver: bullseye-20230202-slim
+            build_os_ver: bullseye-20230612-slim
             prod_os_ver: bullseye-slim
-            snapshot_ver: 20230202
+            snapshot_ver: 20230612
             otp: 26.0.2
           - os: debian
             build_os_ver: bullseye-20230109-slim
@@ -117,8 +121,8 @@ jobs:
       DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
       VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
     steps:
-      - name: Dump event
-        run: cat "$GITHUB_EVENT_PATH"
+      # - name: Dump event
+      #   run: cat "$GITHUB_EVENT_PATH"
 
       - name: Cancel previous runs in progress
         uses: styfle/cancel-workflow-action@0.11.0
@@ -230,7 +234,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [alpine, debian, ubuntu]
-        elixir: [1.14.3]
+        elixir: [1.15.5, 1.14.3]
         include:
           - os: alpine
             otp: 24.3.4.6
@@ -240,6 +244,11 @@ jobs:
             otp: 25.2.3
             build_os_ver: '3.17.0'
             prod_os_ver: '3.17.0'
+          - os: debian
+            build_os_ver: bullseye-20230612-slim
+            prod_os_ver: bullseye-slim
+            snapshot_ver: 20230612
+            otp: 26.0.2
           - os: debian
             build_os_ver: bullseye-20230109-slim
             prod_os_ver: bullseye-slim
@@ -357,7 +366,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [alpine, debian, ubuntu]
-        elixir: [1.14.3]
+        elixir: [1.15.5, 1.14.3]
         include:
           - os: alpine
             otp: 24.3.4.6
@@ -367,6 +376,11 @@ jobs:
             otp: 25.2.3
             build_os_ver: '3.17.0'
             prod_os_ver: '3.17.0'
+          - os: debian
+            build_os_ver: bullseye-20230612-slim
+            prod_os_ver: bullseye-slim
+            snapshot_ver: 20230612
+            otp: 26.0.2
           - os: debian
             build_os_ver: bullseye-20230109-slim
             prod_os_ver: bullseye-slim
@@ -509,7 +523,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [alpine, chiseled, debian, distroless, ubuntu]
-        elixir: [1.14.3]
+        elixir: [1.15.5, 1.14.3]
         include:
           - os: alpine
             otp: 24.3.4.6
@@ -523,6 +537,11 @@ jobs:
             build_os_ver: jammy-20221130
             prod_os_ver: jammy-20221130
             otp: 25.2.3
+          - os: debian
+            build_os_ver: bullseye-20230612-slim
+            prod_os_ver: bullseye-slim
+            snapshot_ver: 20230612
+            otp: 26.0.2
           - os: debian
             build_os_ver: bullseye-20230109-slim
             prod_os_ver: bullseye-slim
@@ -566,7 +585,7 @@ jobs:
           access_token: ${{ github.token }}
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@v4
         # https://github.com/aws-actions/configure-aws-credentials
         # https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
         with:
@@ -765,7 +784,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [alpine, chiseled, debian, distroless, ubuntu]
-        elixir: [1.14.3]
+        elixir: [1.15.5, 1.14.3]
         include:
           - os: alpine
             otp: 24.3.4.6
@@ -779,6 +798,11 @@ jobs:
             build_os_ver: jammy-20221130
             prod_os_ver: jammy-20221130
             otp: 25.2.3
+          - os: debian
+            build_os_ver: bullseye-20230612-slim
+            prod_os_ver: bullseye-slim
+            snapshot_ver: 20230612
+            otp: 26.0.2
           - os: debian
             build_os_ver: bullseye-20230109-slim
             prod_os_ver: bullseye-slim
@@ -909,7 +933,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [alpine, chiseled, debian, distroless, ubuntu]
-        elixir: [1.14.3]
+        elixir: [1.15.5, 1.14.3]
         include:
           - os: alpine
             otp: 24.3.4.6
@@ -923,6 +947,11 @@ jobs:
             build_os_ver: jammy-20221130
             prod_os_ver: jammy-20221130
             otp: 25.2.3
+          - os: debian
+            build_os_ver: bullseye-20230612-slim
+            prod_os_ver: bullseye-slim
+            snapshot_ver: 20230612
+            otp: 26.0.2
           - os: debian
             build_os_ver: bullseye-20230109-slim
             prod_os_ver: bullseye-slim
@@ -1051,7 +1080,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1-node16
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ env.AWS_REGION }}
@@ -1170,7 +1199,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1-node16
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ env.AWS_REGION }}
