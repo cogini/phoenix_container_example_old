@@ -1,8 +1,21 @@
 import Config
 
 config :logger,
-  level: String.to_atom(System.get_env("LOG_LEVEL") || "info"),
+  level: :info,
   metadata: :all
+
+config :logger, :console,
+  format: "$metadata[$level] $message\n",
+  metadata: [:mfa, :request_id, :trace_id, :span_id]
+  # metadata: :all
+
+config :phoenix_container_example, :logger, [
+  {:handler, :default, :logger_std_h,
+   %{
+     formatter:
+       {:logger_formatter_json, %{}}
+   }}
+]
 
 # For production, don't forget to configure the url host
 # to something meaningful, Phoenix uses this information

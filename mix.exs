@@ -50,6 +50,7 @@ defmodule PhoenixContainerExample.MixProject do
 
   defp extra_applications(:dev), do: [:tools]
   defp extra_applications(:test), do: [:tools]
+  defp extra_applications(:prod), do: [:logger_formatter_json]
   defp extra_applications(_), do: []
 
   defp elixirc_paths(:dev), do: ["lib", "test/support"]
@@ -59,6 +60,7 @@ defmodule PhoenixContainerExample.MixProject do
   defp releases do
     [
       prod: [
+        reboot_system_after_config: true,
         include_executables_for: [:unix]
         # Don't need to tar if we are just going to copy it
         # steps: [:assemble, :tar]
@@ -73,6 +75,7 @@ defmodule PhoenixContainerExample.MixProject do
       {:ecto_sql, "~> 3.6"},
       {:esbuild, "~> 0.4", runtime: Mix.env() == :dev},
       {:excoveralls, "~> 0.14", only: [:dev, :test], runtime: false},
+      {:flatlog, "~> 0.1.2"},
       {:floki, ">= 0.30.0", only: :test},
       {:gettext, "~> 0.18"},
       {:jason, "~> 1.2"},
