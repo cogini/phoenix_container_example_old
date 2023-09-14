@@ -1,4 +1,4 @@
-erlang 25.0.3
-elixir 1.13.4-otp-25
+erlang 26.0.2
+elixir 1.15.5-otp-26
 nodejs lts
 yarn 1.22.17

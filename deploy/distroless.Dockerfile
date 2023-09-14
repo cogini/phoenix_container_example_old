@@ -7,8 +7,8 @@ ARG BASE_OS=debian
 # Specify versions of Erlang, Elixir, and base OS.
 # Choose a combination supported by https://hub.docker.com/r/hexpm/elixir/tags
 
-ARG ELIXIR_VER=1.14.3
-ARG OTP_VER=25.2.3
+ARG ELIXIR_VER=1.15.5
+ARG OTP_VER=26.0.2
 ARG BUILD_OS_VER=bullseye-20230202-slim
 
 # https://docker.debian.net/
@@ -17,15 +17,15 @@ ARG PROD_OS_VER=bullseye-slim
 
 # Use snapshot for consistent dependencies, see https://snapshot.debian.org/
 # Needs to be updated manually
-# ARG SNAPSHOT_VER=20230202
+# ARG SNAPSHOT_VER=20230612
 ARG SNAPSHOT_VER=""
 
 # ARG LINUX_ARCH=aarch64
 ARG LINUX_ARCH=x86_64
 # TARGETPLATFORM linux/amd64 linux/arm64
 
-ARG NODE_VER=16.14.1
-# ARG NODE_VER=lts
+# ARG NODE_VER=16.14.1
+ARG NODE_VER=lts
 
 # Docker registry for internal images, e.g. 123.dkr.ecr.ap-northeast-1.amazonaws.com/
 # If blank, docker.io will be used. If specified, should have a trailing slash.
@@ -504,7 +504,6 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
     RUN ls -l "/lib/$(uname -m)-linux-gnu/"
     RUN ls -l "/usr/lib/"
     RUN ls -l "/usr/lib/$(uname -m)-linux-gnu/"
-
 
 # Create base image for prod with everything but the code release
 FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base

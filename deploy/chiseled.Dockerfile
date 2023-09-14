@@ -21,8 +21,6 @@ ARG SNAPSHOT_VER=""
 ARG NODE_VER=16.14.1
 # ARG NODE_VER=lts
 
-ARG AWS_CLI_VER=2.0.61
-
 # Docker registry for internal images, e.g. 123.dkr.ecr.ap-northeast-1.amazonaws.com/
 # If blank, docker.io will be used. If specified, should have a trailing slash.
 ARG REGISTRY=""
@@ -406,7 +404,6 @@ FROM build-deps-get AS prod-release
 # Create staging image for files which are copied into final prod image
 FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
     ARG SNAPSHOT_VER
-    # ARG AWS_CLI_VER
 
     # Configure apt caching for use with BuildKit.
     # The default Debian Docker image has special config to clear caches.
@@ -485,16 +482,6 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
     # If LANG=C.UTF-8 is not enough, build full featured locale
     # RUN localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
     # ENV LANG en_US.utf8
-
-    # Install AWS CLI v2 from binary package
-    # https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html
-    # https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2-linux.html
-    # RUN set -ex && \
-    #     curl -sSfL "https://awscli.amazonaws.com/awscli-exe-linux-$(uname -m)-${AWS_CLI_VER}.zip" -o "awscliv2.zip" && \
-    #     unzip -q awscliv2.zip && \
-    #     ./aws/install && \
-    #     rm -rf ./aws && \
-    #     rm awscliv2.zip
 
 # Get chisel image
 FROM cogini/chisel AS chisel

@@ -6,8 +6,8 @@ ARG BASE_OS=debian
 # Specify versions of Erlang, Elixir, and base OS.
 # Choose a combination supported by https://hub.docker.com/r/hexpm/elixir/tags
 
-ARG ELIXIR_VER=1.14.3
-ARG OTP_VER=25.2.3
+ARG ELIXIR_VER=1.15.5
+ARG OTP_VER=26.0.2
 ARG BUILD_OS_VER=bullseye-20230202-slim
 
 # https://docker.debian.net/
@@ -16,12 +16,10 @@ ARG PROD_OS_VER=bullseye-slim
 
 # Use snapshot for consistent dependencies, see https://snapshot.debian.org/
 # Needs to be updated manually
-ARG SNAPSHOT_VER=20230202
+ARG SNAPSHOT_VER=20230612
 
-ARG NODE_VER=16.14.1
-# ARG NODE_VER=lts
-
-ARG AWS_CLI_VER=2.0.61
+# ARG NODE_VER=16.14.1
+ARG NODE_VER=lts
 
 # Docker registry for internal images, e.g. 123.dkr.ecr.ap-northeast-1.amazonaws.com/
 # If blank, docker.io will be used. If specified, should have a trailing slash.
@@ -412,7 +410,6 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
     ARG LANG
     ARG SNAPSHOT_VER
     ARG RUNTIME_PACKAGES
-    # ARG AWS_CLI_VER
 
     # Configure apt caching for use with BuildKit.
     # The default Debian Docker image has special config to clear caches.
@@ -492,16 +489,6 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
         # Clear logs of installed packages
         truncate -s 0 /var/log/apt/* && \
         truncate -s 0 /var/log/dpkg.log
-
-    # Install AWS CLI v2 from binary package
-    # https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html
-    # https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2-linux.html
-    # RUN set -ex && \
-    #     curl -sSfL "https://awscli.amazonaws.com/awscli-exe-linux-$(uname -m)-${AWS_CLI_VER}.zip" -o "awscliv2.zip" && \
-    #     unzip -q awscliv2.zip && \
-    #     ./aws/install && \
-    #     rm -rf ./aws && \
-    #     rm awscliv2.zip
 
 # Create base image for prod with everything but the code release
 FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
