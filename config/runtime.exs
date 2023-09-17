@@ -20,6 +20,7 @@ if System.get_env("PHX_SERVER") do
   config :phoenix_container_example, PhoenixContainerExampleWeb.Endpoint, server: true
 end
 
+# Allow log level to be set at runtime
 config :logger,
   level: String.to_existing_atom(System.get_env("LOG_LEVEL") || "info")
 
