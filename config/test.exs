@@ -25,7 +25,10 @@ config :phoenix_container_example, PhoenixContainerExample.Mailer, adapter: Swoo
 
 # Print only warnings and errors during test
 config :logger,
-  level: :warn,
+  level: :warn
+
+config :logger, :console,
+  format: "$time $metadata[$level] $message\n",
   metadata: [:file, :line]
 
 # Initialize plugs at runtime for faster test compilation
