@@ -3,11 +3,34 @@ defmodule PhoenixContainerExample.Application do
   # for more information on OTP Applications
   @moduledoc false
 
+  @mix_env Mix.env()
+
   use Application
+
+  require Logger
 
   @impl true
   def start(_type, _args) do
-    :logger.add_handlers(:phoenix_container_example)
+    # :logger.add_handlers(:phoenix_container_example)
+    # Logger.add_handlers(:phoenix_container_example)
+    if @mix_env == :prod do 
+      :logger.update_handler_config(
+         :default, :formatter, {:logger_formatter_json, %{
+                template: [
+                  :msg,
+                  :time,
+                  :level,
+                  :file,
+                  :line,
+                  # :mfa,
+                  :pid,
+                  :trace_id,
+                  :span_id
+                ]
+             }}
+      )
+    end
+
     OpentelemetryLoggerMetadata.setup()
     OpentelemetryPhoenix.setup()
 

@@ -2,18 +2,61 @@ import Config
 
 config :logger,
   level: :info,
-  metadata: :all
+  # metadata: :all,
+  utc_log: true
 
-config :logger, :console,
+# config :logger, :console,
+#   format: "$metadata[$level] $message\n",
+#   # metadata: [:file, :line, :request_id, :trace_id, :span_id]
+#   metadata: :all
+
+config :logger, :default_formatter,
   format: "$metadata[$level] $message\n",
-  metadata: [:mfa, :request_id, :trace_id, :span_id]
-  # metadata: :all
+  metadata: [:file, :line, :request_id, :trace_id, :span_id]
+
+# config :logger,
+#   handle_otp_reports: true,
+#   handle_sasl_reports: true
+
+# config :logger, :default_handler, false
+
+config :phoenix_container_example, :logger, [
+  {:handler, :default, :logger_std_h,
+   %{
+     formatter:
+       {:logger_formatter_json, %{
+          template: [
+            :msg,
+            :time,
+            :level,
+            :file,
+            :line,
+            :mfa,
+            :pid,
+            :trace_id,
+            :span_id
+          ]
+       }}
+   }}
+]
 
 # config :phoenix_container_example, :logger, [
 #   {:handler, :default, :logger_std_h,
 #    %{
 #      formatter:
-#        {:logger_formatter_json, %{}}
+#        {:logger_formatter_json, %{
+#           template: [
+#             :msg,
+#             :time,
+#             :level,
+#             :file,
+#             :line,
+#             :mfa,
+#             :pid,
+#             :trace_id,
+#             :span_id
+#           ]
+#        }}
 #    }}
 # ]
 
