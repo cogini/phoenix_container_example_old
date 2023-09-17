@@ -42,17 +42,21 @@ defmodule PhoenixContainerExampleWeb.HealthPlug do
 
   # Basic health check.
   def call(%Plug.Conn{request_path: "/healthz"} = conn, _opts) do
-    case Health.liveness() do
-      :ok ->
-        send_resp(conn, 200, "OK")
-        |> halt()
+    conn
+    |> send_resp(200, "OK")
+    |> halt()
 
-      {:error, reason} ->
-        Logger.error("#{inspect(reason)}")
-
-        send_resp(conn, 503, inspect(reason))
-        |> halt()
-    end
+    # case Health.liveness() do
+    #   :ok ->
+    #     send_resp(conn, 200, "OK")
+    #     |> halt()
+    #
+    #   {:error, reason} ->
+    #     Logger.error("#{inspect(reason)}")
+    #
+    #     send_resp(conn, 503, inspect(reason))
+    #     |> halt()
+    # end
   end
 
   # Return status for Kubernetes startupProbe.
