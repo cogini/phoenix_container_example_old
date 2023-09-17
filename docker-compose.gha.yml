@@ -54,12 +54,12 @@ services:
     #   interval: 1s
     #   timeout: 1s
     #   retries: 20
-    healthcheck:
-      test: ["CMD", "bin/prod", "eval", "PhoenixContainerExample.Health.basic()"]
-      start_period: 2s
-      interval: 1s
-      timeout: 1s
-      retries: 20
+    # healthcheck:
+    #   test: ["CMD", "bin/prod", "eval", "PhoenixContainerExample.Health.basic()"]
+    #   start_period: 2s
+    #   interval: 1s
+    #   timeout: 1s
+    #   retries: 20
     depends_on:
       postgres:
         condition: service_healthy
