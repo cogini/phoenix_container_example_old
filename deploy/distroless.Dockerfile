@@ -9,7 +9,7 @@ ARG BASE_OS=debian
 
 ARG ELIXIR_VER=1.15.5
 ARG OTP_VER=26.0.2
-ARG BUILD_OS_VER=bullseye-20230202-slim
+ARG BUILD_OS_VER=bullseye-20230612-slim
 
 # https://docker.debian.net/
 # https://hub.docker.com/_/debian
