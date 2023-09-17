@@ -95,4 +95,12 @@ defmodule PhoenixContainerExample.Health do
   def readiness do
     liveness()
   end
+
+  @spec basic ::
+          :ok
+          # | {:error, {status_code :: non_neg_integer(), reason :: binary()}}
+          # | {:error, reason :: binary()}
+  def basic do
+    :ok
+  end
 end
