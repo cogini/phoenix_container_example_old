@@ -3,7 +3,7 @@ defmodule PhoenixContainerExample.Application do
   # for more information on OTP Applications
   @moduledoc false
 
-  @mix_env Mix.env()
+  @app :phoenix_container_example
 
   use Application
 
@@ -13,7 +13,7 @@ defmodule PhoenixContainerExample.Application do
   def start(_type, _args) do
     # :logger.add_handlers(:phoenix_container_example)
     # Logger.add_handlers(:phoenix_container_example)
-    if @mix_env == :prod do
+    if Application.get_env(@app, :update_logger_formatter) do
       :logger.update_handler_config(
         :default,
         :formatter,

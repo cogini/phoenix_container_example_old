@@ -20,6 +20,8 @@ config :logger, :default_formatter,
 
 # config :logger, :default_handler, false
 
+config :phoenix_container_example, :update_logger_formatter, true
+
 config :phoenix_container_example, :logger, [
   {:handler, :default, :logger_std_h,
    %{
