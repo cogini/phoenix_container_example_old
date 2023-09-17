@@ -13,21 +13,24 @@ defmodule PhoenixContainerExample.Application do
   def start(_type, _args) do
     # :logger.add_handlers(:phoenix_container_example)
     # Logger.add_handlers(:phoenix_container_example)
-    if @mix_env == :prod do 
+    if @mix_env == :prod do
       :logger.update_handler_config(
-         :default, :formatter, {:logger_formatter_json, %{
-                template: [
-                  :msg,
-                  :time,
-                  :level,
-                  :file,
-                  :line,
-                  # :mfa,
-                  :pid,
-                  :trace_id,
-                  :span_id
-                ]
-             }}
+        :default,
+        :formatter,
+        {:logger_formatter_json,
+         %{
+           template: [
+             :msg,
+             :time,
+             :level,
+             :file,
+             :line,
+             # :mfa,
+             :pid,
+             :trace_id,
+             :span_id
+           ]
+         }}
       )
     end
 

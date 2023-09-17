@@ -24,7 +24,8 @@ config :phoenix_container_example, :logger, [
   {:handler, :default, :logger_std_h,
    %{
      formatter:
-       {:logger_formatter_json, %{
+       {:logger_formatter_json,
+        %{
           template: [
             :msg,
             :time,
@@ -36,7 +37,7 @@ config :phoenix_container_example, :logger, [
             :trace_id,
             :span_id
           ]
-       }}
+        }}
    }}
 ]
 
@@ -129,7 +130,7 @@ config :opentelemetry, :processors,
         protocol: :grpc,
         endpoints: [
           # gRPC
-          'http://localhost:4317'
+          ~c"http://localhost:4317"
           # HTTP
           # 'http://localhost:4318'
           # 'http://localhost:55681'

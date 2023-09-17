@@ -69,7 +69,8 @@ config :phoenix_container_example, PhoenixContainerExampleWeb.Endpoint,
 config :logger, :console,
   format: "$time $metadata[$level] $message\n",
   metadata: [:file, :line]
-  # metadata: [:mfa]
+
+# metadata: [:mfa]
 
 # config :logger, :default_formatter,
 #   format: "$time $metadata[$level] $message\n"
@@ -106,7 +107,7 @@ config :opentelemetry, :processors,
         protocol: :grpc,
         endpoints: [
           # gRPC
-          'http://localhost:4317'
+          ~c"http://localhost:4317"
           # HTTP
           # 'http://localhost:4318'
           # 'http://localhost:55681'
