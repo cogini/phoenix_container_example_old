@@ -587,6 +587,8 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
 
 # Create final prod image which gets deployed
 FROM prod-base AS prod
+    ARG LANG
+
     ARG APP_DIR
     ARG APP_NAME
     ARG APP_USER
@@ -599,6 +601,7 @@ FROM prod-base AS prod
     # Set environment vars that do not change. Secrets like SECRET_KEY_BASE and
     # environment-specific config such as DATABASE_URL should be set at runtime.
     ENV HOME=$APP_DIR \
+        LANG=$LANG \
         PORT=$APP_PORT \
         PHX_SERVER=true \
         RELEASE=$RELEASE \
