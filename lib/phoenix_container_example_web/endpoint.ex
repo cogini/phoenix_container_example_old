@@ -10,6 +10,8 @@ defmodule PhoenixContainerExampleWeb.Endpoint do
     signing_salt: "5e1HWf6D"
   ]
 
+  plug PhoenixContainerExampleWeb.HealthPlug
+
   socket "/live", Phoenix.LiveView.Socket, websocket: [connect_info: [session: @session_options]]
 
   # Serve at "/" the static files from "priv/static" directory.

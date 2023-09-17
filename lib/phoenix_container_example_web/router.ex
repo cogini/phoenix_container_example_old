@@ -14,12 +14,12 @@ defmodule PhoenixContainerExampleWeb.Router do
     plug :accepts, ["json"]
   end
 
-  scope "/healthz", PhoenixContainerExampleWeb do
-    get "/", HealthController, :index
-    get "/startup", HealthController, :startup
-    get "/liveness", HealthController, :liveness
-    get "/readiness", HealthController, :readiness
-  end
+  # scope "/healthz", PhoenixContainerExampleWeb do
+  #   get "/", HealthController, :index
+  #   get "/startup", HealthController, :startup
+  #   get "/liveness", HealthController, :liveness
+  #   get "/readiness", HealthController, :readiness
+  # end
 
   scope "/", PhoenixContainerExampleWeb do
     pipe_through :browser
