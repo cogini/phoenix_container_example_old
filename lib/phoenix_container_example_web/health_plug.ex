@@ -43,12 +43,15 @@ defmodule PhoenixContainerExampleWeb.HealthPlug do
   # Basic health check.
   def call(%Plug.Conn{request_path: "/healthz"} = conn, _opts) do
     conn
+    |> put_resp_content_type("text/plain")
     |> send_resp(200, "OK")
     |> halt()
 
     # case Health.liveness() do
     #   :ok ->
-    #     send_resp(conn, 200, "OK")
+    #     conn
+    #     |> put_resp_content_type("text/plain")
+    #     |> send_resp(200, "OK")
     #     |> halt()
     #
     #   {:error, reason} ->
@@ -63,7 +66,9 @@ defmodule PhoenixContainerExampleWeb.HealthPlug do
   def call(%Plug.Conn{request_path: "/healthz/startup"} = conn, _opts) do
     case Health.startup() do
       :ok ->
-        send_resp(conn, 200, "OK")
+        conn
+        |> put_resp_content_type("text/plain")
+        |> send_resp(200, "OK")
         |> halt()
 
       # {:error, {status_code, reason}} when is_integer(status_code) ->
@@ -83,7 +88,9 @@ defmodule PhoenixContainerExampleWeb.HealthPlug do
   def call(%Plug.Conn{request_path: "/healthz/liveness"} = conn, _opts) do
     case Health.liveness() do
       :ok ->
-        send_resp(conn, 200, "OK")
+        conn
+        |> put_resp_content_type("text/plain")
+        |> send_resp(200, "OK")
         |> halt()
 
       # {:error, {status_code, reason}} when is_integer(status_code) ->
@@ -103,7 +110,9 @@ defmodule PhoenixContainerExampleWeb.HealthPlug do
   def call(%Plug.Conn{request_path: "/healthz/readiness"} = conn, _opts) do
     case Health.readiness() do
       :ok ->
-        send_resp(conn, 200, "OK")
+        conn
+        |> put_resp_content_type("text/plain")
+        |> send_resp(200, "OK")
         |> halt()
 
       # {:error, {status_code, reason}} when is_integer(status_code) ->
