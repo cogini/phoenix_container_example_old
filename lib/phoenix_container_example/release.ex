@@ -28,6 +28,7 @@ defmodule PhoenixContainerExample.Release do
   end
 
   defp repos do
+    load_app()
     Application.fetch_env!(@app, :ecto_repos)
   end
 
