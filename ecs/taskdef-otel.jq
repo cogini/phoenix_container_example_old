@@ -30,7 +30,6 @@
                     "awslogs-region": env.AWSLOGS_REGION,
                     "awslogs-stream-prefix": env.AWSLOGS_STREAM_PREFIX
                 },
-                "secretOptions": []
             },
             "dependsOn": [
                 {
@@ -42,10 +41,9 @@
             "name": env.CONTAINER_NAME,
             "portMappings": [
                 {
-                    "appProtocol": "HTTP",
+                    "appProtocol": "http",
                     "containerPort": (env.PORT|tonumber),
                     "hostPort": (env.PORT|tonumber),
-                    "protocol": "tcp"
                 }
             ],
             "readonlyRootFilesystem": false,
@@ -85,45 +83,25 @@
         },
         {
             "name": "aws-otel-collector",
-            "image": "cogini/awscollector:v0.15.0",
+            "image": "public.ecr.aws/aws-observability/aws-otel-collector",
             "cpu": 0,
             "memoryReservation": 256,
-            "command":["--config=/etc/otel-config.yaml"],
-            "portMappings": [
-                {
-                    "hostPort": 4317,
-                    "containerPort": 4317
-                },
-                {
-                    "hostPort": 4318,
-                    "containerPort": 4318
-                },
-                {
-                    "hostPort": 8888,
-                    "containerPort": 8888
-                },
-                {
-                    "hostPort": 8889,
-                    "containerPort": 8889
-                },
-                {
-                    "hostPort": 13133,
-                    "containerPort": 13133
-                },
-                {
-                    "hostPort": 2000,
-                    "containerPort": 2000,
-                    "protocol": "udp"
-                }
-            ],
-            "essential": false,
+            "command":["--config=/etc/ecs/ecs-default-config.yaml"],
+            "essential": true,
+            "healthCheck": {
+                "command": [ "/healthcheck" ],
+                "interval": 5,
+                "timeout": 6,
+                "retries": 5,
+                "startPeriod": 1
+            },
             "logConfiguration": {
                 "logDriver": "awslogs",
                 "options": {
                     "awslogs-create-group": "true",
                     "awslogs-group": env.AWSLOGS_GROUP,
                     "awslogs-region": env.AWSLOGS_REGION,
-                    "awslogs-stream-prefix": env.AWSLOGS_STREAM_PREFIX
+                    "awslogs-stream-prefix": "foo-app"
                 },
                 "secretOptions": []
             },
