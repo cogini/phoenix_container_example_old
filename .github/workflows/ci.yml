@@ -474,24 +474,24 @@ jobs:
           #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
           #   "oban_license_key=${{ secrets.OBAN_LICENSE_KEY }}"
 
-      - name: Build prod image and push to Docker Hub
-        uses: docker/build-push-action@v3
-        with:
-          file: ${{ env.DOCKER_FILE }}
-          target: prod
-          context: .
-          builder: ${{ steps.buildx.outputs.name }}
-          push: true
-          cache-from: type=gha,scope=${{ github.workflow }}-${{ env.VAR }}
-          cache-to: type=gha,scope=${{ github.workflow }}-${{ env.VAR }},mode=max
-          # ssh: default
-          tags: |
-            docker.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.VAR }}${{ env.IMAGE_VER }}
-            docker.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.BRANCH }}-${{ env.GITHUB_SHA_SHORT }}
-          # secrets: |
-          #   "access_token=${{ secrets.DEVOPS_ACCESS_TOKEN }}"
-          #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
-          #   "oban_license_key=${{ secrets.OBAN_LICENSE_KEY }}"
+      # - name: Build prod image and push to Docker Hub
+      #   uses: docker/build-push-action@v3
+      #   with:
+      #     file: ${{ env.DOCKER_FILE }}
+      #     target: prod
+      #     context: .
+      #     builder: ${{ steps.buildx.outputs.name }}
+      #     push: true
+      #     cache-from: type=gha,scope=${{ github.workflow }}-${{ env.VAR }}
+      #     cache-to: type=gha,scope=${{ github.workflow }}-${{ env.VAR }},mode=max
+      #     # ssh: default
+      #     tags: |
+      #       docker.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.VAR }}${{ env.IMAGE_VER }}
+      #       docker.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.BRANCH }}-${{ env.GITHUB_SHA_SHORT }}
+      #     # secrets: |
+      #     #   "access_token=${{ secrets.DEVOPS_ACCESS_TOKEN }}"
+      #     #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
+      #     #   "oban_license_key=${{ secrets.OBAN_LICENSE_KEY }}"
 
       - name: Build prod image and push to AWS ECR
         uses: docker/build-push-action@v3
