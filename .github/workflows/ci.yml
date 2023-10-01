@@ -25,6 +25,7 @@ env:
   # Name of org in GHCR Docker repository
   IMAGE_OWNER: ${{ github.repository_owner }}
   # Name of org in external Docker repository
+  ECR_IMAGE_OWNER: bergey
   # Tag for release images
   # IMAGE_TAG: ${{ (github.ref == 'refs/heads/main' && 'staging') || (github.ref == 'refs/heads/qa' && 'qa') }}
   IMAGE_TAG: latest
@@ -59,7 +60,13 @@ env:
   COMPOSE_DOCKER_CLI_BUILD: '1'
   COMPOSE_FILE: docker-compose.gha.yml
   DOCKER_FILE: deploy/debian.Dockerfile
-  TASKDEF: ecs/taskdef-otel.json
+  ELIXIR_MODULE: PhoenixContainerExample
+  ECS_CLUSTER: foo
+  ECS_SERVICE: foo-app
+  ECS_CONTAINER: foo-app
+  CODEDEPLOY_APPLICATION: foo-app
+  CODEDEPLOY_DEPLOYMENT_GROUP: foo-app-ecs
+  TASKDEF: ecs/task-definition.json
 jobs:
   build-test:
     name: Build test image
