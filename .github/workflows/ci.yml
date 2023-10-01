@@ -22,8 +22,9 @@ on: push
 env:
   # Name of image
   IMAGE_NAME: foo-app
-  # Name of org in Docker repository
+  # Name of org in GHCR Docker repository
   IMAGE_OWNER: ${{ github.repository_owner }}
+  # Name of org in external Docker repository
   # Tag for release images
   # IMAGE_TAG: ${{ (github.ref == 'refs/heads/main' && 'staging') || (github.ref == 'refs/heads/qa' && 'qa') }}
   IMAGE_TAG: latest
