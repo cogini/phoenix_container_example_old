@@ -73,15 +73,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # Specify versions of Erlang, Elixir, and base OS
+        # Choose a combination supported by https://hub.docker.com/r/hexpm/elixir/tags
         os: [alpine, debian, ubuntu]
-        elixir: [1.14.3]
+        otp: [25.3.2.6]
+        elixir: [1.14.5]
         include:
           - os: alpine
-            otp: 24.3.4.6
-            build_os_ver: '3.15.6'
-            prod_os_ver: '3.15.6'
-          - os: alpine
-            otp: 25.2.3
+            otp: 25.3.2.6
             build_os_ver: '3.17.0'
             prod_os_ver: '3.17.0'
           - os: debian
@@ -112,11 +111,6 @@ jobs:
           - os: ubuntu
             build_os_ver: jammy-20221130
             prod_os_ver: jammy-20221130
-            otp: 24.3.4.9
-          - os: ubuntu
-            build_os_ver: jammy-20221130
-            prod_os_ver: jammy-20221130
-            otp: 25.2.3
     env:
       DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
       VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
