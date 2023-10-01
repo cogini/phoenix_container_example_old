@@ -101,6 +101,7 @@ defmodule PhoenixContainerExample.MixProject do
       {:postgrex, ">= 0.0.0"},
       {:sobelow, "~> 0.11", only: [:dev, :test], runtime: false},
       {:swoosh, "~> 1.3"},
+      {:tailwind, "~> 0.2.0", runtime: Mix.env() == :dev},
       {:telemetry_metrics, "~> 0.6"},
       {:telemetry_metrics_prometheus, "~> 1.1"},
       # {:telemetry_metrics_statsd, "~> 0.6.2"},
