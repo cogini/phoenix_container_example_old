@@ -1,6 +1,7 @@
 defmodule PhoenixContainerExample.Release do
   @moduledoc """
-  Execute release tasks when run in production without Mix installed.
+  Used for executing DB release tasks when run in production without Mix
+  installed.
   """
   @app :phoenix_container_example
 
