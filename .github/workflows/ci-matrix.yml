@@ -24,8 +24,10 @@ on: push
 env:
   # Name of image
   IMAGE_NAME: foo-app
-  # Name of org in Docker repository
+  # Name of org in GHCR Docker repository
   IMAGE_OWNER: ${{ github.repository_owner }}
+  # Name of org in external Docker repository
+  ECR_IMAGE_OWNER: bergey
   # Tag for release images
   # IMAGE_TAG: ${{ (github.ref == 'refs/heads/main' && 'staging') || (github.ref == 'refs/heads/qa' && 'qa') }}
   IMAGE_TAG: latest
@@ -60,11 +62,18 @@ env:
   COMPOSE_DOCKER_CLI_BUILD: '1'
   COMPOSE_FILE: docker-compose.gha.yml
   DOCKER_FILE: deploy/debian.Dockerfile
-  TASKDEF: ecs/taskdef-otel.json
+  ELIXIR_MODULE: PhoenixContainerExample
+  ECS_CLUSTER: foo
+  ECS_SERVICE: foo-app
+  ECS_CONTAINER: foo-app
+  CODEDEPLOY_APPLICATION: foo-app
+  CODEDEPLOY_DEPLOYMENT_GROUP: foo-app-ecs
+  TASKDEF: ecs/task-definition.json
 jobs:
   build-test:
     name: Build test image
     permissions:
+      contents: read
       # Push to ghcr.io repository
       packages: write
       # Cancel previous runs
@@ -347,6 +356,7 @@ jobs:
     name: Run dialyzer
     needs: [build-test]
     permissions:
+      contents: read
       # Read from ghcr.io repository
       packages: read
 
@@ -429,6 +439,7 @@ jobs:
     name: Security scan code
     needs: [build-test]
     permissions:
+      contents: read
       # Read from ghcr.io repository
       packages: read
 
@@ -670,29 +681,30 @@ jobs:
           #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
           #   "oban_license_key=${{ secrets.OBAN_LICENSE_KEY }}"
 
-      - name: Build prod image and push to Docker Hub
-        uses: docker/build-push-action@v3
-        with:
-          file: ${{ env.DOCKER_FILE }}
-          target: prod
-          context: .
-          builder: ${{ steps.buildx.outputs.name }}
-          push: true
-          cache-from: type=gha,scope=${{ github.workflow }}-${{ env.VAR }}
-          cache-to: type=gha,scope=${{ github.workflow }}-${{ env.VAR }},mode=max
-          # ssh: default
-          tags: |
-            docker.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.VAR }}${{ env.IMAGE_VER }}
-            docker.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.BRANCH }}-${{ env.GITHUB_SHA_SHORT }}
-          # secrets: |
-          #   "access_token=${{ secrets.DEVOPS_ACCESS_TOKEN }}"
-          #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
-          #   "oban_license_key=${{ secrets.OBAN_LICENSE_KEY }}"
+      # - name: Build prod image and push to Docker Hub
+      #   uses: docker/build-push-action@v3
+      #   with:
+      #     file: ${{ env.DOCKER_FILE }}
+      #     target: prod
+      #     context: .
+      #     builder: ${{ steps.buildx.outputs.name }}
+      #     push: true
+      #     cache-from: type=gha,scope=${{ github.workflow }}-${{ env.VAR }}
+      #     cache-to: type=gha,scope=${{ github.workflow }}-${{ env.VAR }},mode=max
+      #     # ssh: default
+      #     tags: |
+      #       docker.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.VAR }}${{ env.IMAGE_VER }}
+      #       docker.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.BRANCH }}-${{ env.GITHUB_SHA_SHORT }}
+      #     # secrets: |
+      #     #   "access_token=${{ secrets.DEVOPS_ACCESS_TOKEN }}"
+      #     #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
+      #     #   "oban_license_key=${{ secrets.OBAN_LICENSE_KEY }}"
 
       - name: Build prod image and push to AWS ECR
         uses: docker/build-push-action@v3
         env:
           REGISTRY: "${{ env.ECR_REGISTRY }}/"
+          IMAGE_OWNER: "${{ env.ECR_IMAGE_OWNER }}/"
         with:
           file: ${{ env.DOCKER_FILE }}
           target: prod
@@ -703,8 +715,8 @@ jobs:
           cache-to: type=gha,scope=${{ github.workflow }}-${{ env.VAR }},mode=max
           # ssh: default
           tags: |
-            ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.VAR }}${{ env.IMAGE_VER }}
-            ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.BRANCH }}-${{ env.GITHUB_SHA_SHORT }}
+            ${{ env.ECR_REGISTRY }}/${{ env.ECR_IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.VAR }}${{ env.IMAGE_VER }}
+            ${{ env.ECR_REGISTRY }}/${{ env.ECR_IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.BRANCH }}-${{ env.GITHUB_SHA_SHORT }}
           # secrets: |
           #   "access_token=${{ secrets.DEVOPS_ACCESS_TOKEN }}"
           #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
@@ -874,12 +886,12 @@ jobs:
 
       - name: Initialize database
         run: |
-          docker compose run prod eval 'PhoenixContainerExample.Release.create_repos()'
-          docker compose run prod eval 'PhoenixContainerExample.Release.migrate()'
-          docker compose run prod eval 'PhoenixContainerExample.Release.run_seeds()'
+          docker compose run prod eval '${{ env.ELIXIR_MODULE }}.Release.create_repos()'
+          docker compose run prod eval '${{ env.ELIXIR_MODULE }}.Release.migrate()'
+          docker compose run prod eval '${{ env.ELIXIR_MODULE }}.Release.run_seeds()'
 
       - name: Run health check
-        run: curl -v http://localhost:${{ env.APP_PORT }}/healthz
+        run: curl -v http://localhost:${{ env.APP_PORT }}/healthz/liveness
 
       # - name: Run API tests
       #   env:
@@ -1100,11 +1112,11 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Tag GHCR release as latest
-        run: |
-          docker buildx imagetools create \
-            --append ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{env.PROD_VAR}}${{env.IMAGE_VER}} \
-            --tag ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{env.IMAGE_TAG}}
+      # - name: Tag GHCR release as latest
+      #   run: |
+      #     docker buildx imagetools create \
+      #       --append ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{env.PROD_VAR}}${{env.IMAGE_VER}} \
+      #       --tag ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{env.IMAGE_TAG}}
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
@@ -1137,13 +1149,13 @@ jobs:
 
       # - name: Tag ECR release as latest
       #   run: |
-      #     export MANIFEST=$(aws ecr batch-get-image --repository-name ${{ env.IMAGE_NAME }} \
+      #     export MANIFEST=$(aws ecr batch-get-image --repository-name "${{env.ECR_IMAGE_OWNER}}/${{env.IMAGE_NAME}}" \
       #       --image-ids imageTag=${{ env.IMAGE_VER }} --output json | jq --raw-output --join-output '.images[0].imageManifest')
-      #     aws ecr put-image --repository-name ${{ env.IMAGE_NAME }} \
+      #     aws ecr put-image --repository-name "${{env.ECR_IMAGE_OWNER}}/${{env.IMAGE_NAME}}" \
       #       --image-tag ${{ env.IMAGE_TAG }} --image-manifest "$MANIFEST"
-      #     aws ecr describe-images --repository-name ${{ env.IMAGE_NAME }}
+      #     aws ecr describe-images --repository-name "${{env.ECR_IMAGE_OWNER}}/${{env.IMAGE_NAME}}"
 
-      - name: Build final prod image and push to Docker Hub as latest
+      - name: Build final prod image and push to Docker Hub
         uses: docker/build-push-action@v3
         with:
           file: ${{ env.DOCKER_FILE }}
@@ -1162,10 +1174,12 @@ jobs:
           #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
           #   "oban_license_key=${{ secrets.OBAN_LICENSE_KEY }}"
 
-      - name: Build final prod image and push to AWS ECR as latest
+      - name: Build final prod image and push to AWS ECR
         uses: docker/build-push-action@v3
         env:
           REGISTRY: "${{ env.ECR_REGISTRY }}/"
+          IMAGE_OWNER: "${{ env.ECR_IMAGE_OWNER }}/"
+          VAR: ${{ env.PROD_VAR }}
         with:
           file: ${{ env.DOCKER_FILE }}
           target: prod
@@ -1176,8 +1190,8 @@ jobs:
           cache-to: type=gha,scope=${{ github.workflow }}-${{ env.PROD_VAR }},mode=max
           # ssh: default
           tags: |
-            ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
-            ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_VER }}
+            ${{env.ECR_REGISTRY}}/${{env.ECR_IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{env.IMAGE_TAG}}
+            ${{env.ECR_REGISTRY}}/${{env.ECR_IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{env.IMAGE_VER}}
           # secrets: |
           #   "access_token=${{ secrets.DEVOPS_ACCESS_TOKEN }}"
           #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
@@ -1209,126 +1223,74 @@ jobs:
         uses: actions/checkout@v3
 
       # https://docs.aws.amazon.com/codedeploy/latest/userguide/reference-appspec-file-structure-resources.html
-      - name: Generate CodeDeploy appspec.yml
-        env:
-          CONTAINER_NAME: "foo-app"
-          PORT: "4000"
-        run: sed -i -e "s!<NAME>!${CONTAINER_NAME}!g" -e "s!<PORT>!${PORT}!g" ecs/appspec.yml
+      # - name: Generate CodeDeploy appspec.yml
+      #   env:
+      #     CONTAINER_NAME: "iot-app"
+      #     PORT: "4000"
+      #   run: sed -i -e "s!<NAME>!${CONTAINER_NAME}!g" -e "s!<PORT>!${PORT}!g" ecs/appspec.yml
 
       - name: Generate ECS task-defintion.json
         env:
-          AWSLOGS_GROUP: "/ecs/foo-app"
-          AWSLOGS_STREAM_PREFIX: "foo-app"
-          CONFIG_S3_BUCKET: "cogini-foo-dev-app-config"
-          CONFIG_S3_PREFIX: "app-ecs"
-          CONTAINER_NAME: "foo-app"
-          # FARGATE supported values
-          # CPU value       Memory value (MiB)
-          # 256 (.25 vCPU)  512 (0.5 GB), 1024 (1 GB), 2048 (2 GB)
-          # 512 (.5 vCPU)   1024 (1 GB), 2048 (2 GB), 3072 (3 GB), 4096 (4 GB)
-          # 1024 (1 vCPU)   2048 (2 GB), 3072 (3 GB), 4096 (4 GB), 5120 (5 GB), 6144 (6 GB), 7168 (7 GB), 8192 (8 GB)
-          # 2048 (2 vCPU)   Between 4096 (4 GB) and 16384 (16 GB) in increments of 1024 (1 GB)
-          # 4096 (4 vCPU)   Between 8192 (8 GB) and 30720 (30 GB) in increments of 1024 (1 GB)
-          CPU: 256
-          # CPU_ARCH: ARM64
-          CPU_ARCH: X86_64
-          EXECUTION_ROLE_ARN: "arn:aws:iam::770916339360:role/foo-ecs-task-execution-role"
-          MEMORY: 512
-          PORT: "4000"
-          TASK_ROLE_ARN: "arn:aws:iam::770916339360:role/foo-app-20200227055150076000000001"
-        # run: jq --null-input -f ecs/gha/taskdef.json.jq | tee ecs/taskdef.json
-        run: |
-          sed -i -e "s!<AWS_ACCOUNT_ID>!${AWS_ACCOUNT_ID}!g" $TASKDEF
-          sed -i -e "s!<AWS_REGION>!${AWS_REGION}!g" $TASKDEF
-          sed -i -e "s!<AWSLOGS_GROUP>!${AWSLOGS_GROUP}!g" $TASKDEF
-          sed -i -e "s!<AWSLOGS_REGION>!${AWS_REGION}!g" $TASKDEF
-          sed -i -e "s!<AWSLOGS_STREAM_PREFIX>!${AWSLOGS_STREAM_PREFIX}!g" $TASKDEF
-          sed -i -e "s!<NAME>!${CONTAINER_NAME}!g" -e "s!<PORT>!${PORT}!g" $TASKDEF
-          sed -i -e "s!<CPU>!${CPU}!g" -e "s!<MEMORY>!${MEMORY}!g" $TASKDEF
-          sed -i -e "s!<CPU_ARCH>!${CPU_ARCH}!g" $TASKDEF
-          sed -i -e "s!<TASK_ROLE_ARN>!${TASK_ROLE_ARN}!g" $TASKDEF
-          sed -i -e "s!<EXECUTION_ROLE_ARN>!${EXECUTION_ROLE_ARN}!g" $TASKDEF
-          sed -i -e "s!<CONFIG_S3_BUCKET>!${CONFIG_S3_BUCKET}!g" -e "s!<CONFIG_S3_PREFIX>!${CONFIG_S3_PREFIX}!g" $TASKDEF
-          cat $TASKDEF
+          AWSLOGS_REGION: ${{ env.AWS_REGION }}
+          TASK_ROLE_ARN: "arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/iot-app-20230922164312318900000004"
+          EXECUTION_ROLE_ARN: arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/iot-ecs-task-execution-role
+          HOST: rubegoldberg.io
+        run: jq --null-input -f ecs/task-definition.json.jq | tee ecs/task-definition.json
+
+      # - name: Generate ECS task-defintion.json
+      #   env:
+      #     AWSLOGS_GROUP: "/ecs/foo-app"
+      #     AWSLOGS_STREAM_PREFIX: "foo-app"
+      #     CONFIG_S3_BUCKET: "cogini-foo-dev-app-config"
+      #     CONFIG_S3_PREFIX: "app-ecs"
+      #     CONTAINER_NAME: "foo-app"
+      #     # FARGATE supported values
+      #     # CPU value       Memory value (MiB)
+      #     # 256 (.25 vCPU)  512 (0.5 GB), 1024 (1 GB), 2048 (2 GB)
+      #     # 512 (.5 vCPU)   1024 (1 GB), 2048 (2 GB), 3072 (3 GB), 4096 (4 GB)
+      #     # 1024 (1 vCPU)   2048 (2 GB), 3072 (3 GB), 4096 (4 GB), 5120 (5 GB), 6144 (6 GB), 7168 (7 GB), 8192 (8 GB)
+      #     # 2048 (2 vCPU)   Between 4096 (4 GB) and 16384 (16 GB) in increments of 1024 (1 GB)
+      #     # 4096 (4 vCPU)   Between 8192 (8 GB) and 30720 (30 GB) in increments of 1024 (1 GB)
+      #     CPU: 256
+      #     # CPU_ARCH: ARM64
+      #     CPU_ARCH: X86_64
+      #     EXECUTION_ROLE_ARN: "arn:aws:iam::770916339360:role/foo-ecs-task-execution-role"
+      #     MEMORY: 512
+      #     PORT: "4000"
+      #     TASK_ROLE_ARN: "arn:aws:iam::770916339360:role/foo-app-20200227055150076000000001"
+      #   # run: jq --null-input -f ecs/gha/taskdef.json.jq | tee ecs/taskdef.json
+      #   run: |
+      #     sed -i -e "s!<AWS_ACCOUNT_ID>!${AWS_ACCOUNT_ID}!g" $TASKDEF
+      #     sed -i -e "s!<AWS_REGION>!${AWS_REGION}!g" $TASKDEF
+      #     sed -i -e "s!<AWSLOGS_GROUP>!${AWSLOGS_GROUP}!g" $TASKDEF
+      #     sed -i -e "s!<AWSLOGS_REGION>!${AWS_REGION}!g" $TASKDEF
+      #     sed -i -e "s!<AWSLOGS_STREAM_PREFIX>!${AWSLOGS_STREAM_PREFIX}!g" $TASKDEF
+      #     sed -i -e "s!<NAME>!${CONTAINER_NAME}!g" -e "s!<PORT>!${PORT}!g" $TASKDEF
+      #     sed -i -e "s!<CPU>!${CPU}!g" -e "s!<MEMORY>!${MEMORY}!g" $TASKDEF
+      #     sed -i -e "s!<CPU_ARCH>!${CPU_ARCH}!g" $TASKDEF
+      #     sed -i -e "s!<TASK_ROLE_ARN>!${TASK_ROLE_ARN}!g" $TASKDEF
+      #     sed -i -e "s!<EXECUTION_ROLE_ARN>!${EXECUTION_ROLE_ARN}!g" $TASKDEF
+      #     sed -i -e "s!<CONFIG_S3_BUCKET>!${CONFIG_S3_BUCKET}!g" -e "s!<CONFIG_S3_PREFIX>!${CONFIG_S3_PREFIX}!g" $TASKDEF
+      #     cat $TASKDEF
 
       - name: Put new image ID in ECS task definition
         id: task-def
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition: ${{ env.TASKDEF }}
-          container-name: "foo-app"
-          image: ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.PROD_VAR }}${{ env.IMAGE_VER }}
+          container-name: ${{ env.ECS_CONTAINER }}
+          image: ${{env.ECR_REGISTRY}}/${{env.IMAGE_NAME}}:${{env.PROD_VAR}}${{env.IMAGE_VER}}
 
       - name: Deploy to Amazon ECS
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
-          cluster: foo
-          service: foo-app
+          cluster: ${{ var.ECS_CLUSTER }}
+          service: ${{ var.ECS_SERVICE }}
           wait-for-service-stability: true
           codedeploy-appspec: ecs/appspec.yml
-          codedeploy-application: foo-app-ecs
-          codedeploy-deployment-group: foo-app-ecs
+          codedeploy-application: ${{ var.CODEDEPLOY_APPLICATION }}
+          codedeploy-deployment-group: ${{ var.CODEDEPLOY_DEPLOYMENT_GROUP }}
 
-  #     - name: Register task definition
-  #       # env:
-  #       #   CONTAINER_NAME:
-  #       #   PORT:
-  #       #   CODEDEPLOY_APP_NAME:
-  #       #   CODEDEPLOY_APP_GROUP_NAME:
-  #       run: |
-  #         export TASKDEF_APP_ARN=$(aws ecs register-task-definition --cli-input-json file://ecs/taskdef.json --region $AWS_REGION --output text --query 'taskDefinition.taskDefinitionArn')
-  #         echo "$TASKDEF_APP_ARN"
-  #         jq --null-input -f ecs/gha/revision.json.jq | tee ecs/revision.json
-  #         aws deploy create-deployment \
-  #           --application-name $CODEDEPLOY_APP_NAME \
-  #           --deployment-config-name CodeDeployDefault.ECSAllAtOnce \
-  #           --deployment-group-name $CODEDEPLOY_APP_GROUP_NAME \
-  #           --description "ECS" \
-  #           --revision ecs/revision.json \
-  #           --output text \
-  #           --query '[deploymentId]'
-  #
-  # Deploy using `aws ecs update-service`
-  # https://github.com/aws/aws-sdk/issues/406
-  # ECR_IMAGE="${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.VAR }}${{ env.IMAGE_VER }}"
-  # Get current task definition
-  # TASK_DEFINITION=$(aws ecs describe-task-definition --task-definition "$TASK_FAMILY" --region "$AWS_DEFAULT_REGION")
-  # Add new ECR image address to old template and remove unneeded attributes
-  # NEW_TASK_DEFINTIION=$(echo $TASK_DEFINITION | jq --arg IMAGE "$ECR_IMAGE" '.taskDefinition | .containerDefinitions[0].image = $IMAGE | del(.taskDefinitionArn) | del(.revision) | del(.status) | del(.requiresAttributes) | del(.compatibilities)')
-  # Register new task definition
-  # NEW_TASK_INFO=$(aws ecs register-task-definition --region "$AWS_DEFAULT_REGION" --cli-input-json "$NEW_TASK_DEFINTIION")
-  # Get new revision
-  # NEW_REVISION=$(echo $NEW_TASK_INFO | jq '.taskDefinition.revision')
-  # aws ecs update-service --cluster ${ECS_CLUSTER} --service ${SERVICE_NAME} --task-definition ${TASK_FAMILY}:${NEW_REVISION}```
-
-  # container-test:
-  #   needs: [build-test]
-  #   permissions: write-all
-  #   runs-on: ubuntu-latest
-  #   container:
-  #     image: ghcr.io/cogini/foo-app:test
-  #     volumes:
-  #       - /junit-reports:/junit-reports
-  #     credentials:
-  #       username: ${{ github.actor }}
-  #       password: ${{ secrets.GITHUB_TOKEN }}
-  #   steps:
-  #     - name: Run pwd
-  #       run: pwd
-  #     - name: Run ls
-  #       run: ls
-  #     - name: Run mix test
-  #       run: mix do format --check-formatted, credo, deps.audit, sobelow
-
-  # https://docs.github.com/en/actions/using-jobs/running-jobs-in-a-container
-  # container-test-job:
-  #   needs: [build-scan]
-  #   runs-on: ubuntu-latest
-  #   container:
-  #     image: ghcr.io/${{ github.repository_owner }}/foo-app:scan
-  #     volumes:
-  #       - /sarif-reports:/sarif-reports
-  #   steps:
-  #     - name: Trivy scan fs
-  #       run: trivy fs --no-progress /
+       # https://github.com/marketplace/actions/slack-notify-build
+       # https://github.com/marketplace/actions/post-slack-message
