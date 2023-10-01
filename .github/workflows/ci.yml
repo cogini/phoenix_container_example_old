@@ -71,6 +71,7 @@ jobs:
   build-test:
     name: Build test image
     permissions:
+      contents: read
       # Push to ghcr.io repository
       packages: write
       # Cancel previous runs
@@ -257,6 +258,7 @@ jobs:
     name: Run dialyzer
     needs: [build-test]
     permissions:
+      contents: read
       # Read from ghcr.io repository
       packages: read
 
@@ -289,6 +291,7 @@ jobs:
     name: Security scan code
     needs: [build-test]
     permissions:
+      contents: read
       # Read from ghcr.io repository
       packages: read
 
