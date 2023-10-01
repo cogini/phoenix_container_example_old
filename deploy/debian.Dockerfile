@@ -299,7 +299,7 @@ FROM build-deps-get AS test-image
     COPY lib ./lib
     COPY priv ./priv
     COPY test ./test
-    COPY bin ./bin
+    # COPY bin ./bin
 
     # Umbrella
     # COPY apps ./apps
