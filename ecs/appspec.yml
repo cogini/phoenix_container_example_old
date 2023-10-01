@@ -6,6 +6,6 @@ Resources:
       Properties:
         TaskDefinition: "<TASK_DEFINITION>"
         LoadBalancerInfo:
-          ContainerName: "<NAME>"
-          ContainerPort: <PORT>
+          ContainerName: "foo-app"
+          ContainerPort: 4000
         PlatformVersion: "LATEST"
