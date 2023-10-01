@@ -24,8 +24,7 @@ config :phoenix_container_example, PhoenixContainerExampleWeb.Endpoint,
 config :phoenix_container_example, PhoenixContainerExample.Mailer, adapter: Swoosh.Adapters.Test
 
 # Print only warnings and errors during test
-config :logger,
-  level: :warn
+config :logger, level: :warn
 
 config :logger, :console,
   format: "$time $metadata[$level] $message\n",
