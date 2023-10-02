@@ -28,7 +28,7 @@ env:
 phases:
   install:
     # runtime-versions:
-    #   docker: 19
+    #   docker: latest
     commands:
       - apt-get install jq
 
