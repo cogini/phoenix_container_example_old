@@ -960,12 +960,12 @@ jobs:
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
-          cluster: ${{ var.ECS_CLUSTER }}
-          service: ${{ var.ECS_SERVICE }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          service: ${{ env.ECS_SERVICE }}
           wait-for-service-stability: true
           codedeploy-appspec: ecs/appspec.yml
-          codedeploy-application: ${{ var.CODEDEPLOY_APPLICATION }}
-          codedeploy-deployment-group: ${{ var.CODEDEPLOY_DEPLOYMENT_GROUP }}
+          codedeploy-application: ${{ env.CODEDEPLOY_APPLICATION }}
+          codedeploy-deployment-group: ${{ env.CODEDEPLOY_DEPLOYMENT_GROUP }}
 
        # https://github.com/marketplace/actions/slack-notify-build
        # https://github.com/marketplace/actions/post-slack-message
