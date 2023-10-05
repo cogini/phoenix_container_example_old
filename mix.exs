@@ -70,6 +70,7 @@ defmodule PhoenixContainerExample.MixProject do
 
   defp deps do
     [
+      {:aws_rds_castore, "~> 1.1"},
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.2", only: [:dev, :test], runtime: false},
       {:ecto_sql, "~> 3.6"},
