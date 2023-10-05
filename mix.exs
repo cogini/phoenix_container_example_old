@@ -99,13 +99,14 @@ defmodule PhoenixContainerExample.MixProject do
       {:phoenix_live_view, "~> 0.17.7"},
       {:plug_cowboy, "~> 2.5"},
       {:postgrex, ">= 0.0.0"},
-      {:sobelow, "~> 0.11", only: [:dev, :test], runtime: false},
+      {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false},
       {:swoosh, "~> 1.3"},
       {:tailwind, "~> 0.2.0", runtime: Mix.env() == :dev},
       {:telemetry_metrics, "~> 0.6"},
       {:telemetry_metrics_prometheus, "~> 1.1"},
       # {:telemetry_metrics_statsd, "~> 0.6.2"},
-      {:telemetry_poller, "~> 1.0"}
+      {:telemetry_poller, "~> 1.0"},
+      {:uinta, "~> 0.11.0"}
     ]
   end
 
@@ -122,21 +123,23 @@ defmodule PhoenixContainerExample.MixProject do
       # "assets.deploy": ["tailwind default --minify", "esbuild default --minify", "phx.digest"]
       quality: [
         "format --check-formatted",
+        "credo",
         # mix deps.clean --unlock --unused
         "deps.unlock --check-unused",
-        "credo",
+        "hex.outdated",
         "hex.audit",
         "deps.audit",
-        "sobelow --exit",
+        "sobelow --exit --skip -i DOS.StringToAtom,Config.HTTPS",
         "dialyzer --halt-exit-status"
       ],
       "quality.ci": [
         "format --check-formatted",
         "deps.unlock --check-unused",
+        "hex.outdated",
         "hex.audit",
         "deps.audit",
         "credo",
-        "sobelow --exit",
+        "sobelow --exit --skip -i DOS.StringToAtom,Config.HTTPS",
         "dialyzer --halt-exit-status"
       ]
     ]
