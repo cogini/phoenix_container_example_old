@@ -20,48 +20,51 @@ config :logger, :default_formatter,
 
 # config :logger, :default_handler, false
 
-config :phoenix_container_example, :update_logger_formatter, true
+# https://opentelemetry.io/docs/reference/specification/resource/semantic_conventions/
+# config :opentelemetry, :resource,
+#   [
+#     # In production service.name is set based on OS env vars from Erlang release
+#     {"service.name", to_string(Mix.Project.config[:app])},
+#     # {"service.namespace", "MyNamespace"},
+#     {"service.version", Mix.Project.config[:version]},
+#   ]
 
-config :phoenix_container_example, :logger, [
-  {:handler, :default, :logger_std_h,
-   %{
-     formatter:
-       {:logger_formatter_json,
-        %{
-          template: [
-            :msg,
-            :time,
-            :level,
-            :file,
-            :line,
-            :mfa,
-            :pid,
-            :trace_id,
-            :span_id
-          ]
-        }}
-   }}
-]
+# https://hexdocs.pm/opentelemetry_exporter/1.0.0/readme.html
+# Maybe OTEL_EXPORTER_OTLP_ENDPOINT=http://opentelemetry-collector:55680
+config :opentelemetry, :processors,
+  otel_batch_processor: %{
+    exporter: {
+      :opentelemetry_exporter,
+      %{
+        protocol: :grpc,
+        endpoints: [
+          # gRPC
+          ~c"http://localhost:4317"
+          # HTTP
+          # 'http://localhost:4318'
+          # 'http://localhost:55681'
+          # {:http, 'localhost', 4318, []}
+        ]
+        # headers: [{"x-honeycomb-dataset", "experiments"}]
+      }
+    }
+  }
 
-# config :phoenix_container_example, :logger, [
-#   {:handler, :default, :logger_std_h,
-#    %{
-#      formatter:
-#        {:logger_formatter_json, %{
-#           template: [
-#             :msg,
-#             :time,
-#             :level,
-#             :file,
-#             :line,
-#             :mfa,
-#             :pid,
-#             :trace_id,
-#             :span_id
-#           ]
-#        }}
-#    }}
-# ]
+config :phoenix_container_example, :logger_formatter_config, {:logger_formatter_json,
+ %{
+   template: [
+     :msg,
+     :time,
+     :level,
+     :file,
+     :line,
+     # :mfa,
+     :pid,
+     :request_id,
+     :trace_id,
+     :span_id
+   ]
+ }}
 
 # For production, don't forget to configure the url host
 # to something meaningful, Phoenix uses this information
@@ -113,32 +116,3 @@ config :phoenix_container_example, PhoenixContainerExampleWeb.Endpoint,
 # and configuration from environment variables.
 # import_config "prod.secret.exs"
 
-# https://opentelemetry.io/docs/reference/specification/resource/semantic_conventions/
-# config :opentelemetry, :resource,
-#   [
-#     # In production service.name is set based on OS env vars from Erlang release
-#     {"service.name", to_string(Mix.Project.config[:app])},
-#     # {"service.namespace", "MyNamespace"},
-#     {"service.version", Mix.Project.config[:version]},
-#   ]
-
-# https://hexdocs.pm/opentelemetry_exporter/1.0.0/readme.html
-# Maybe OTEL_EXPORTER_OTLP_ENDPOINT=http://opentelemetry-collector:55680
-config :opentelemetry, :processors,
-  otel_batch_processor: %{
-    exporter: {
-      :opentelemetry_exporter,
-      %{
-        protocol: :grpc,
-        endpoints: [
-          # gRPC
-          ~c"http://localhost:4317"
-          # HTTP
-          # 'http://localhost:4318'
-          # 'http://localhost:55681'
-          # {:http, 'localhost', 4318, []}
-        ]
-        # headers: [{"x-honeycomb-dataset", "experiments"}]
-      }
-    }
-  }
