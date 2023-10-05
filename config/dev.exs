@@ -73,13 +73,6 @@ config :logger, :console,
 # config :logger, :default_formatter,
 #   format: "$time $metadata[$level] $message\n"
 
-# Set a higher stacktrace during development. Avoid configuring such
-# in production as building large stacktraces may be expensive.
-config :phoenix, :stacktrace_depth, 20
-
-# Initialize plugs at runtime for faster development compilation
-config :phoenix, :plug_init_mode, :runtime
-
 # https://opentelemetry.io/docs/reference/specification/resource/semantic_conventions/
 config :opentelemetry, :resource, [
   # In production service.name is set based on OS env vars from Erlang release
@@ -113,3 +106,10 @@ config :opentelemetry, :processors,
       }
     }
   }
+
+# Set a higher stacktrace during development. Avoid configuring such
+# in production as building large stacktraces may be expensive.
+config :phoenix, :stacktrace_depth, 20
+
+# Initialize plugs at runtime for faster development compilation
+config :phoenix, :plug_init_mode, :runtime
