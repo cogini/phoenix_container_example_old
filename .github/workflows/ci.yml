@@ -67,6 +67,10 @@ env:
   CODEDEPLOY_APPLICATION: foo-app
   CODEDEPLOY_DEPLOYMENT_GROUP: foo-app-ecs
   TASKDEF: ecs/task-definition.json
+  # AWS SSM Parameter Store name prefix
+  AWS_PS_PREFIX: 'cogini/foo/dev'
+  # Name of environment for resources created by Terraform
+  TERRAFORM_ENV: 'dev'
 jobs:
   build-test:
     name: Build test image
