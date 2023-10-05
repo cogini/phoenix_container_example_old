@@ -916,42 +916,6 @@ jobs:
           HOST: rubegoldberg.io
         run: jq --null-input -f ecs/task-definition.json.jq | tee ecs/task-definition.json
 
-      # - name: Generate ECS task-defintion.json
-      #   env:
-      #     AWSLOGS_GROUP: "/ecs/foo-app"
-      #     AWSLOGS_STREAM_PREFIX: "foo-app"
-      #     CONFIG_S3_BUCKET: "cogini-foo-dev-app-config"
-      #     CONFIG_S3_PREFIX: "app-ecs"
-      #     CONTAINER_NAME: "foo-app"
-      #     # FARGATE supported values
-      #     # CPU value       Memory value (MiB)
-      #     # 256 (.25 vCPU)  512 (0.5 GB), 1024 (1 GB), 2048 (2 GB)
-      #     # 512 (.5 vCPU)   1024 (1 GB), 2048 (2 GB), 3072 (3 GB), 4096 (4 GB)
-      #     # 1024 (1 vCPU)   2048 (2 GB), 3072 (3 GB), 4096 (4 GB), 5120 (5 GB), 6144 (6 GB), 7168 (7 GB), 8192 (8 GB)
-      #     # 2048 (2 vCPU)   Between 4096 (4 GB) and 16384 (16 GB) in increments of 1024 (1 GB)
-      #     # 4096 (4 vCPU)   Between 8192 (8 GB) and 30720 (30 GB) in increments of 1024 (1 GB)
-      #     CPU: 256
-      #     # CPU_ARCH: ARM64
-      #     CPU_ARCH: X86_64
-      #     EXECUTION_ROLE_ARN: "arn:aws:iam::770916339360:role/foo-ecs-task-execution-role"
-      #     MEMORY: 512
-      #     PORT: "4000"
-      #     TASK_ROLE_ARN: "arn:aws:iam::770916339360:role/foo-app-20200227055150076000000001"
-      #   # run: jq --null-input -f ecs/gha/taskdef.json.jq | tee ecs/taskdef.json
-      #   run: |
-      #     sed -i -e "s!<AWS_ACCOUNT_ID>!${AWS_ACCOUNT_ID}!g" $TASKDEF
-      #     sed -i -e "s!<AWS_REGION>!${AWS_REGION}!g" $TASKDEF
-      #     sed -i -e "s!<AWSLOGS_GROUP>!${AWSLOGS_GROUP}!g" $TASKDEF
-      #     sed -i -e "s!<AWSLOGS_REGION>!${AWS_REGION}!g" $TASKDEF
-      #     sed -i -e "s!<AWSLOGS_STREAM_PREFIX>!${AWSLOGS_STREAM_PREFIX}!g" $TASKDEF
-      #     sed -i -e "s!<NAME>!${CONTAINER_NAME}!g" -e "s!<PORT>!${PORT}!g" $TASKDEF
-      #     sed -i -e "s!<CPU>!${CPU}!g" -e "s!<MEMORY>!${MEMORY}!g" $TASKDEF
-      #     sed -i -e "s!<CPU_ARCH>!${CPU_ARCH}!g" $TASKDEF
-      #     sed -i -e "s!<TASK_ROLE_ARN>!${TASK_ROLE_ARN}!g" $TASKDEF
-      #     sed -i -e "s!<EXECUTION_ROLE_ARN>!${EXECUTION_ROLE_ARN}!g" $TASKDEF
-      #     sed -i -e "s!<CONFIG_S3_BUCKET>!${CONFIG_S3_BUCKET}!g" -e "s!<CONFIG_S3_PREFIX>!${CONFIG_S3_PREFIX}!g" $TASKDEF
-      #     cat $TASKDEF
-
       - name: Put new image ID in ECS task definition
         id: task-def
         uses: aws-actions/amazon-ecs-render-task-definition@v1
