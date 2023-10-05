@@ -54,31 +54,31 @@
             "secrets": [
                 {
                     "name": "COOKIE",
-                    "valueFrom": "arn:aws:ssm:\(env.AWS_REGION):\(env.AWS_ACCOUNT_ID):parameter/cogini/foo/dev/app/erlang_cookie"
+                    "valueFrom": "arn:aws:ssm:\(env.AWS_REGION):\(env.AWS_ACCOUNT_ID):parameter/\(env.AWS_PS_PREFIX)/app/erlang_cookie"
                 },
                 {
                     "name": "DATABASE_URL",
-                    "valueFrom": "arn:aws:ssm:\(env.AWS_REGION):\(env.AWS_ACCOUNT_ID):parameter/cogini/foo/dev/app/db/url"
+                    "valueFrom": "arn:aws:ssm:\(env.AWS_REGION):\(env.AWS_ACCOUNT_ID):parameter/\(env.AWS_PS_PREFIX)/app/db/url"
                 },
                 {
                     "name": "SECRET_KEY_BASE",
-                    "valueFrom": "arn:aws:ssm:\(env.AWS_REGION):\(env.AWS_ACCOUNT_ID):parameter/cogini/foo/dev/app/endpoint/secret_key_base"
+                    "valueFrom": "arn:aws:ssm:\(env.AWS_REGION):\(env.AWS_ACCOUNT_ID):parameter/\(env.AWS_PS_PREFIX)/app/endpoint/secret_key_base"
                 },
                 {
                     "name": "SMTP_HOST",
-                    "valueFrom": "arn:aws:ssm:\(env.AWS_REGION):\(env.AWS_ACCOUNT_ID):parameter/cogini/foo/dev/app/smtp/host"
+                    "valueFrom": "arn:aws:ssm:\(env.AWS_REGION):\(env.AWS_ACCOUNT_ID):parameter/\(env.AWS_PS_PREFIX)/app/smtp/host"
                 },
                 {
                     "name": "SMTP_PORT",
-                    "valueFrom": "arn:aws:ssm:\(env.AWS_REGION):\(env.AWS_ACCOUNT_ID):parameter/cogini/foo/dev/app/smtp/port"
+                    "valueFrom": "arn:aws:ssm:\(env.AWS_REGION):\(env.AWS_ACCOUNT_ID):parameter/\(env.AWS_PS_PREFIX)/app/smtp/port"
                 },
                 {
                     "name": "SMTP_USER",
-                    "valueFrom": "arn:aws:ssm:\(env.AWS_REGION):\(env.AWS_ACCOUNT_ID):parameter/cogini/foo/dev/app/smtp/user"
+                    "valueFrom": "arn:aws:ssm:\(env.AWS_REGION):\(env.AWS_ACCOUNT_ID):parameter/\(env.AWS_PS_PREFIX)/app/smtp/user"
                 },
                 {
                     "name": "SMTP_PASS",
-                    "valueFrom": "arn:aws:ssm:\(env.AWS_REGION):\(env.AWS_ACCOUNT_ID):parameter/cogini/foo/dev/app/smtp/pass"
+                    "valueFrom": "arn:aws:ssm:\(env.AWS_REGION):\(env.AWS_ACCOUNT_ID):parameter/\(env.AWS_PS_PREFIX)/app/smtp/pass"
                 },
             ],
             "startTimeout": 30,
