@@ -1,5 +1,20 @@
 import Config
 
+config :phoenix_container_example, :logger_formatter_config, {:logger_formatter_json,
+ %{
+   template: [
+     :msg,
+     :time,
+     :level,
+     :file,
+     :line,
+     # :mfa,
+     :pid,
+     :request_id,
+     :trace_id,
+     :span_id
+   ]
+ }}
 config :logger,
   level: :info,
   # metadata: :all,
