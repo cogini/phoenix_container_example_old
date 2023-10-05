@@ -7,10 +7,6 @@
 # General application configuration
 import Config
 
-# Disable normal Phoenix.Logger, as we are using uinta
-# https://github.com/podium/uinta
-config :phoenix, logger: false
-
 config :phoenix_container_example,
   ecto_repos: [PhoenixContainerExample.Repo]
 
@@ -33,9 +29,6 @@ config :phoenix_container_example, PhoenixContainerExampleWeb.Endpoint,
 # For production it's recommended to configure a different adapter
 # at the `config/runtime.exs`.
 config :phoenix_container_example, PhoenixContainerExample.Mailer, adapter: Swoosh.Adapters.Local
-
-# Swoosh API client is needed for adapters other than SMTP.
-config :swoosh, :api_client, false
 
 # Configure esbuild (the version is required)
 config :esbuild,
@@ -72,6 +65,13 @@ config :logger,
 
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
+
+# Disable normal Phoenix.Logger, as we are using uinta
+# https://github.com/podium/uinta
+config :phoenix, logger: false
+
+# Swoosh API client is needed for adapters other than SMTP.
+config :swoosh, :api_client, false
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
