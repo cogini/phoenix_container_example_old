@@ -9,27 +9,10 @@ defmodule PhoenixContainerExample.Application do
 
   @impl true
   def start(_type, _args) do
-    # :logger.add_handlers(:phoenix_container_example)
-    # Logger.add_handlers(:phoenix_container_example)
-    if Application.get_env(@app, :update_logger_formatter) do
-      :logger.update_handler_config(
-        :default,
-        :formatter,
-        {:logger_formatter_json,
-         %{
-           template: [
-             :msg,
-             :time,
-             :level,
-             :file,
-             :line,
-             # :mfa,
-             :pid,
-             :trace_id,
-             :span_id
-           ]
-         }}
-      )
+    logger_formatter_config = Application.get_env(@app, :logger_formatter_config)
+
+    if logger_formatter_config do
+      :logger.update_handler_config(:default, :formatter, logger_formatter_config)
     end
 
     OpentelemetryLoggerMetadata.setup()
