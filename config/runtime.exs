@@ -24,30 +24,6 @@ end
 config :logger,
   level: String.to_existing_atom(System.get_env("LOG_LEVEL") || "info")
 
-# if System.get_env("RELEASE_MODE") do
-#   config :kernel, :logger, [
-#     {:handler, :default, :logger_std_h,
-#      %{
-#        formatter:
-#          {:logger_formatter_json,
-#           %{
-#             # names: :datadog
-#             template: [
-#               :msg,
-#               :time,
-#               :level,
-#               :file,
-#               :line,
-#               :mfa,
-#               :pid,
-#               :trace_id,
-#               :span_id
-#             ]
-#           }}
-#      }}
-#   ]
-# end
-
 if config_env() == :prod do
   database_url =
     System.get_env("DATABASE_URL") ||
