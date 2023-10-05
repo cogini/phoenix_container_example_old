@@ -7,6 +7,10 @@
 # General application configuration
 import Config
 
+# Disable normal Phoenix.Logger, as we are using uinta
+# https://github.com/podium/uinta
+config :phoenix, logger: false
+
 config :phoenix_container_example,
   ecto_repos: [PhoenixContainerExample.Repo]
 
