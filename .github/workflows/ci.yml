@@ -141,8 +141,8 @@ jobs:
       DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
       VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
     steps:
-      # - name: Dump event
-      #   run: cat "$GITHUB_EVENT_PATH"
+      - name: Dump event
+        run: cat "$GITHUB_EVENT_PATH"
 
       - name: Cancel previous runs in progress
         uses: styfle/cancel-workflow-action@0.11.0
@@ -151,7 +151,7 @@ jobs:
 
       - name: Debug environment
         run: |
-          echo "environment: ${{ event.deployment.environment }}"
+          echo "environment: ${{ github.event.deployment.environment }}"
 
       - name: Check out source
         uses: actions/checkout@v4
