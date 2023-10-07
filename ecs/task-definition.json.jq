@@ -79,7 +79,7 @@
                 {
                     "name": "SMTP_PASS",
                     "valueFrom": "arn:aws:ssm:\(env.AWS_REGION):\(env.AWS_ACCOUNT_ID):parameter/\(env.AWS_PS_PREFIX)/app/smtp/pass"
-                },
+                }
             ],
             "startTimeout": 30,
             "stopTimeout": 30
