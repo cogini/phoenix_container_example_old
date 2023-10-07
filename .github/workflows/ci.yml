@@ -147,7 +147,7 @@ jobs:
           access_token: ${{ github.token }}
 
       - name: Check out source
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set variables
         run: |
@@ -283,7 +283,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Check out source
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Pull repos
         run: |
@@ -389,7 +389,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Check out source
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Pull repos
         run: |
@@ -425,7 +425,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Checkout source
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Scan code with trivy
         uses: aquasecurity/trivy-action@master
@@ -533,7 +533,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Check out source
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set variables
         id: vars
@@ -672,7 +672,7 @@ jobs:
   #         access_token: ${{ github.token }}
   #
   #     - name: Check out source
-  #       uses: actions/checkout@v3
+  #       uses: actions/checkout@v4
   #
   #     - name: Log in to GHCR
   #       uses: docker/login-action@v2
@@ -755,7 +755,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Check out source
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Pull repos
         # run: echo "newman postgres router prod" | xargs -n 1 -P 8 docker compose pull --quiet
@@ -972,7 +972,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Check out source
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Docker buildx
         id: buildx
@@ -1097,7 +1097,7 @@ jobs:
         run: echo "ECR_REGISTRY=${{ steps.ecr-login.outputs.registry }}" >> $GITHUB_ENV
 
       - name: Check out source
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       # https://docs.aws.amazon.com/codedeploy/latest/userguide/reference-appspec-file-structure-resources.html
       # - name: Generate CodeDeploy appspec.yml
