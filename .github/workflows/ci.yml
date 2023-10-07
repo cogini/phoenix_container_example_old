@@ -49,7 +49,7 @@ env:
   # Registry for public images, default is docker.io
   PUBLIC_REGISTRY: ''
   # Give GitHub Actions access to AWS
-  AWS_ENABLED: ${{ true }}
+  AWS_ENABLED: 1
   AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
   # AWS_ROLE_TO_ASSUME: arn:aws:iam::XXX:role/cogini-foo-dev-app-github-action
   AWS_ROLE_TO_ASSUME: ${{ secrets.AWS_ROLE_TO_ASSUME }}
@@ -1028,7 +1028,7 @@ jobs:
           #   "oban_license_key=${{ secrets.OBAN_LICENSE_KEY }}"
 
       - name: Configure AWS credentials
-        if: env.AWS_ENABLED
+        if: ${{ env.AWS_ENABLED == 1 }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
