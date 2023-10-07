@@ -290,7 +290,9 @@ jobs:
 
       - name: Pull repos
         run: |
-          docker compose pull --quiet --include-deps test
+          echo "${REGISTRY}${IMAGE_OWNER}/${IMAGE_NAME}:test${VAR}${IMAGE_VER}"
+          # docker compose pull --quiet --include-deps test
+          docker compose pull --include-deps test
           docker images --no-trunc
 
       - name: Start services
