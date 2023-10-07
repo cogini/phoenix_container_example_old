@@ -1121,7 +1121,7 @@ jobs:
           TASK_ROLE_ARN: "arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/iot-app-20230922164312318900000004"
           EXECUTION_ROLE_ARN: arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/iot-ecs-task-execution-role
           HOST: rubegoldberg.io
-        run: jq --null-input -f ecs/task-definition.json.jq | tee ecs/task-definition.json
+        run: jq --null-input -f ecs/task-definition.json.jq | tee $TASKDEF
 
       - name: Put new image ID in ECS task definition
         id: task-def
