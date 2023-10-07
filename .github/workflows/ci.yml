@@ -101,10 +101,10 @@ jobs:
 
   build-test:
     name: Build test image
-    needs: [setup]
+    needs: setup
     environment:
       # name: ${{ github.ref_name }}
-      name: ${{ jobs.setup.outputs.env_name }}
+      name: ${{ needs.setup.outputs.env_name }}
     permissions:
       contents: read
       # Push to ghcr.io repository
@@ -474,10 +474,10 @@ jobs:
 
   build-prod:
     name: Build prod image
-    needs: [setup]
+    needs: setup
     environment:
       # name: ${{ github.ref_name }}
-      name: ${{ jobs.setup.outputs.env_name }}
+      name: ${{ needs.setup.outputs.env_name }}
     permissions:
       # Interact with GitHub OIDC Token endpoint for AWS
       id-token: write
