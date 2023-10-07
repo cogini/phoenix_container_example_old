@@ -81,10 +81,10 @@ env:
   DEPLOY_DOCKER_HUB: ${{ false }}
 jobs:
   setup:
-    name: Configure environment
+    name: Setup
     runs-on: ubuntu-latest
     steps:
-      - name: Configure environment
+      - name: Set environment
         id: branch_check
         run: |
           echo "Running on branch ${{ github.ref }}"
@@ -97,15 +97,18 @@ jobs:
           else
             echo "env_name=feature >> $GITHUB_OUTPUT
           fi
+      - name: Debug environment
+        run: |
+          echo "environment: ${{ steps.branch_check.outputs.env_name }}"
     outputs:
       env_name: ${{ steps.branch_check.outputs.env_name }}
 
   build-test:
     name: Build test image
     needs: setup
-    environment:
-      # name: ${{ github.ref_name }}
-      name: ${{ needs.setup.outputs.env_name }}
+    # environment:
+    #   # name: ${{ github.ref_name }}
+    #   name: ${{ needs.setup.outputs.env_name }}
     permissions:
       contents: read
       # Push to ghcr.io repository
@@ -474,9 +477,9 @@ jobs:
   build-prod:
     name: Build prod image
     needs: setup
-    environment:
-      # name: ${{ github.ref_name }}
-      name: ${{ needs.setup.outputs.env_name }}
+    # environment:
+    #   # name: ${{ github.ref_name }}
+    #   name: ${{ needs.setup.outputs.env_name }}
     permissions:
       # Interact with GitHub OIDC Token endpoint for AWS
       id-token: write
@@ -1074,9 +1077,9 @@ jobs:
     name: Deploy to ECS
     # if: ${{ env.AWS_ENABLED == 1 }}
     needs: [prod, setup]
-    environment:
-      # name: ${{ github.ref_name }}
-      name: ${{ needs.setup.outputs.env_name }}
+    # environment:
+    #   # name: ${{ github.ref_name }}
+    #   name: ${{ needs.setup.outputs.env_name }}
     permissions:
       # Interact with GitHub OIDC Token endpoint for AWS
       id-token: write
