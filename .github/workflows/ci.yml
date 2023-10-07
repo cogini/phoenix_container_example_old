@@ -82,6 +82,7 @@ env:
 jobs:
   setup:
     name: Configure environment
+    runs-on: ubuntu-latest
     steps:
       - name: Configure environment
         id: branch_check
