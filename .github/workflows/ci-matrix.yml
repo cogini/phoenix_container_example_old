@@ -7,6 +7,7 @@ name: CI Matrix
 # Run security scans on code and prod images
 # Run tasks in parallel
 # Use GHA caching
+# Use test matrix for multiple versions of Elixir and OTP
 # Use test matrix to build Alpine, Debian, and Distroless images
 # Use test matrix to run tests in parallel
 on: push
@@ -27,7 +28,7 @@ env:
   # Name of org in GHCR Docker repository
   IMAGE_OWNER: ${{ github.repository_owner }}
   # Name of org in external Docker repository
-  ECR_IMAGE_OWNER: bergey
+  ECR_IMAGE_OWNER: cogini
   # Tag for release images
   # IMAGE_TAG: ${{ (github.ref == 'refs/heads/main' && 'staging') || (github.ref == 'refs/heads/qa' && 'qa') }}
   IMAGE_TAG: latest
@@ -37,7 +38,7 @@ env:
   OTP_VER: 26.0.2
   BUILD_OS_VER: bullseye-20230612-slim
   PROD_OS_VER: bullseye-slim
-  BASE_OS: "debian"
+  BASE_OS: debian
   # Variant if test matrix is not used
   VAR: '1.15.5-erlang-26.0.2-debian-bullseye-20230612-slim'
   # Variant that is deployed
@@ -45,8 +46,9 @@ env:
   # Registry for test images
   REGISTRY: ghcr.io/
   # Registry for public images, default is docker.io
-  PUBLIC_REGISTRY: ""
+  PUBLIC_REGISTRY: ''
   # Give GitHub Actions access to AWS
+  AWS_ENABLED: ${{ true }}
   AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
   # AWS_ROLE_TO_ASSUME: arn:aws:iam::XXX:role/cogini-foo-dev-app-github-action
   AWS_ROLE_TO_ASSUME: ${{ secrets.AWS_ROLE_TO_ASSUME }}
@@ -69,6 +71,16 @@ env:
   CODEDEPLOY_APPLICATION: foo-app
   CODEDEPLOY_DEPLOYMENT_GROUP: foo-app-ecs
   TASKDEF: ecs/task-definition.json
+  # AWS SSM Parameter Store name prefix
+  AWS_PS_PREFIX: cogini/foo/dev
+  # Name of environment for resources created by Terraform
+  TERRAFORM_ENV: dev
+  # GitHub Advanced Security
+  # https://docs.github.com/en/get-started/learning-about-github/about-github-advanced-security
+  # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning
+  # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github
+  GITHUB_ADVANCED_SECURITY: ${{ true }}
+  DEPLOY_DOCKER_HUB: ${{ false }}
 jobs:
   build-test:
     name: Build test image
@@ -480,11 +492,8 @@ jobs:
         run: cat trivy-results.sarif | jq .
 
       - name: Upload trivy scan results to GitHub Security tab
+        if: ${{ env.GITHUB_ADVANCED_SECURITY: == 1 }}
         uses: github/codeql-action/upload-sarif@v2
-        # Requires GitHub Advanced Security
-        # https://docs.github.com/en/get-started/learning-about-github/about-github-advanced-security
-        # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning
-        # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github
         if: always()
         with:
           sarif_file: 'trivy-results.sarif'
@@ -505,6 +514,7 @@ jobs:
         run: cat ${{ steps.scan-grype.outputs.sarif }} | jq .
 
       - name: Upload grype scan results to GitHub Security tab
+        if: ${{ env.GITHUB_ADVANCED_SECURITY: == 1 }}
         uses: github/codeql-action/upload-sarif@v2
         if: always()
         with:
@@ -589,28 +599,6 @@ jobs:
         with:
           access_token: ${{ github.token }}
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        # https://github.com/aws-actions/configure-aws-credentials
-        # https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
-        with:
-          role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Log in to Amazon ECR
-        id: ecr-login
-        uses: aws-actions/amazon-ecr-login@v1
-
-      - name: Set vars
-        run: echo "ECR_REGISTRY=${{ steps.ecr-login.outputs.registry }}" >> $GITHUB_ENV
-
-      # - name: Log in to ECR
-      #   uses: docker/login-action@v2
-      #   with:
-      #     registry: ${{ env.ECR_REGISTRY }}
-      #     username: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      #     password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-
       - name: Log in to GHCR
         uses: docker/login-action@v2
         with:
@@ -681,26 +669,53 @@ jobs:
           #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
           #   "oban_license_key=${{ secrets.OBAN_LICENSE_KEY }}"
 
-      # - name: Build prod image and push to Docker Hub
-      #   uses: docker/build-push-action@v3
+      - name: Build prod image and push to Docker Hub
+        if: ${{ env.DEPLOY_DOCKER_HUB == 1 }}
+        uses: docker/build-push-action@v3
+        with:
+          file: ${{ env.DOCKER_FILE }}
+          target: prod
+          context: .
+          builder: ${{ steps.buildx.outputs.name }}
+          push: true
+          cache-from: type=gha,scope=${{ github.workflow }}-${{ env.VAR }}
+          cache-to: type=gha,scope=${{ github.workflow }}-${{ env.VAR }},mode=max
+          # ssh: default
+          tags: |
+            docker.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.VAR }}${{ env.IMAGE_VER }}
+            docker.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.BRANCH }}-${{ env.GITHUB_SHA_SHORT }}
+          # secrets: |
+          #   "access_token=${{ secrets.DEVOPS_ACCESS_TOKEN }}"
+          #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
+          #   "oban_license_key=${{ secrets.OBAN_LICENSE_KEY }}"
+
+      - name: Configure AWS credentials
+        if: ${{ env.AWS_ENABLED == 1 }}
+        uses: aws-actions/configure-aws-credentials@v4
+        # https://github.com/aws-actions/configure-aws-credentials
+        # https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Log in to Amazon ECR
+        if: ${{ env.AWS_ENABLED == 1 }}
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Set vars
+        if: ${{ env.AWS_ENABLED == 1 }}
+        run: echo "ECR_REGISTRY=${{ steps.ecr-login.outputs.registry }}" >> $GITHUB_ENV
+
+      # - name: Log in to ECR
+      #   uses: docker/login-action@v2
       #   with:
-      #     file: ${{ env.DOCKER_FILE }}
-      #     target: prod
-      #     context: .
-      #     builder: ${{ steps.buildx.outputs.name }}
-      #     push: true
-      #     cache-from: type=gha,scope=${{ github.workflow }}-${{ env.VAR }}
-      #     cache-to: type=gha,scope=${{ github.workflow }}-${{ env.VAR }},mode=max
-      #     # ssh: default
-      #     tags: |
-      #       docker.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.VAR }}${{ env.IMAGE_VER }}
-      #       docker.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.BRANCH }}-${{ env.GITHUB_SHA_SHORT }}
-      #     # secrets: |
-      #     #   "access_token=${{ secrets.DEVOPS_ACCESS_TOKEN }}"
-      #     #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
-      #     #   "oban_license_key=${{ secrets.OBAN_LICENSE_KEY }}"
+      #     registry: ${{ env.ECR_REGISTRY }}
+      #     username: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      #     password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
       - name: Build prod image and push to AWS ECR
+        if: ${{ env.AWS_ENABLED == 1 }}
         uses: docker/build-push-action@v3
         env:
           REGISTRY: "${{ env.ECR_REGISTRY }}/"
@@ -1023,6 +1038,7 @@ jobs:
         run: cat trivy.sarif | jq .
 
       - name: Upload Trivy scan results to GitHub Security tab
+        if: ${{ env.GITHUB_ADVANCED_SECURITY: == 1 }}
         uses: github/codeql-action/upload-sarif@v2
         # Requires GitHub Advanced Security
         # https://docs.github.com/en/get-started/learning-about-github/about-github-advanced-security
@@ -1048,6 +1064,7 @@ jobs:
         run: cat ${{ steps.scan-grype.outputs.sarif }} | jq .
 
       - name: Upload Grype scan results to GitHub Security tab
+        if: ${{ env.GITHUB_ADVANCED_SECURITY: == 1 }}
         uses: github/codeql-action/upload-sarif@v2
         if: always()
         with:
@@ -1085,26 +1102,6 @@ jobs:
       issues: read
     runs-on: ubuntu-latest
     steps:
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Log in to Amazon ECR
-        id: ecr-login
-        uses: aws-actions/amazon-ecr-login@v1
-
-      - name: Set vars
-        run: echo "ECR_REGISTRY=${{ steps.ecr-login.outputs.registry }}" >> $GITHUB_ENV
-
-      # - name: Log in to ECR
-      #   uses: docker/login-action@v2
-      #   with:
-      #     registry: ${{ env.ECR_REGISTRY }}
-      #     username: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      #     password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-
       - name: Log in to GHCR
         uses: docker/login-action@v2
         with:
@@ -1147,15 +1144,8 @@ jobs:
       #       ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{ env.IMAGE_VER }}
       #       ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{ env.IMAGE_TAG }}
 
-      # - name: Tag ECR release as latest
-      #   run: |
-      #     export MANIFEST=$(aws ecr batch-get-image --repository-name "${{env.ECR_IMAGE_OWNER}}/${{env.IMAGE_NAME}}" \
-      #       --image-ids imageTag=${{ env.IMAGE_VER }} --output json | jq --raw-output --join-output '.images[0].imageManifest')
-      #     aws ecr put-image --repository-name "${{env.ECR_IMAGE_OWNER}}/${{env.IMAGE_NAME}}" \
-      #       --image-tag ${{ env.IMAGE_TAG }} --image-manifest "$MANIFEST"
-      #     aws ecr describe-images --repository-name "${{env.ECR_IMAGE_OWNER}}/${{env.IMAGE_NAME}}"
-
       - name: Build final prod image and push to Docker Hub
+        if: ${{ env.DEPLOY_DOCKER_HUB == 1 }}
         uses: docker/build-push-action@v3
         with:
           file: ${{ env.DOCKER_FILE }}
@@ -1174,7 +1164,40 @@ jobs:
           #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
           #   "oban_license_key=${{ secrets.OBAN_LICENSE_KEY }}"
 
+      - name: Configure AWS credentials
+        if: env.AWS_ENABLED
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Log in to Amazon ECR
+        if: ${{ env.AWS_ENABLED == 1 }}
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Set vars
+        if: ${{ env.AWS_ENABLED == 1 }}
+        run: echo "ECR_REGISTRY=${{ steps.ecr-login.outputs.registry }}" >> $GITHUB_ENV
+
+      # - name: Log in to ECR
+      #   uses: docker/login-action@v2
+      #   with:
+      #     registry: ${{ env.ECR_REGISTRY }}
+      #     username: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      #     password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      # - name: Tag ECR release as latest
+      #   if: ${{ env.AWS_ENABLED == 1 }}
+      #   run: |
+      #     export MANIFEST=$(aws ecr batch-get-image --repository-name "${{env.ECR_IMAGE_OWNER}}/${{env.IMAGE_NAME}}" \
+      #       --image-ids imageTag=${{ env.IMAGE_VER }} --output json | jq --raw-output --join-output '.images[0].imageManifest')
+      #     aws ecr put-image --repository-name "${{env.ECR_IMAGE_OWNER}}/${{env.IMAGE_NAME}}" \
+      #       --image-tag ${{ env.IMAGE_TAG }} --image-manifest "$MANIFEST"
+      #     aws ecr describe-images --repository-name "${{env.ECR_IMAGE_OWNER}}/${{env.IMAGE_NAME}}"
+
       - name: Build final prod image and push to AWS ECR
+        if: ${{ env.AWS_ENABLED == 1 }}
         uses: docker/build-push-action@v3
         env:
           REGISTRY: "${{ env.ECR_REGISTRY }}/"
@@ -1199,6 +1222,7 @@ jobs:
 
   deploy:
     name: Deploy to ECS
+    if: ${{ env.AWS_ENABLED == 1 }}
     needs: [prod]
     permissions:
       # Interact with GitHub OIDC Token endpoint for AWS
@@ -1237,60 +1261,24 @@ jobs:
           HOST: rubegoldberg.io
         run: jq --null-input -f ecs/task-definition.json.jq | tee ecs/task-definition.json
 
-      # - name: Generate ECS task-defintion.json
-      #   env:
-      #     AWSLOGS_GROUP: "/ecs/foo-app"
-      #     AWSLOGS_STREAM_PREFIX: "foo-app"
-      #     CONFIG_S3_BUCKET: "cogini-foo-dev-app-config"
-      #     CONFIG_S3_PREFIX: "app-ecs"
-      #     CONTAINER_NAME: "foo-app"
-      #     # FARGATE supported values
-      #     # CPU value       Memory value (MiB)
-      #     # 256 (.25 vCPU)  512 (0.5 GB), 1024 (1 GB), 2048 (2 GB)
-      #     # 512 (.5 vCPU)   1024 (1 GB), 2048 (2 GB), 3072 (3 GB), 4096 (4 GB)
-      #     # 1024 (1 vCPU)   2048 (2 GB), 3072 (3 GB), 4096 (4 GB), 5120 (5 GB), 6144 (6 GB), 7168 (7 GB), 8192 (8 GB)
-      #     # 2048 (2 vCPU)   Between 4096 (4 GB) and 16384 (16 GB) in increments of 1024 (1 GB)
-      #     # 4096 (4 vCPU)   Between 8192 (8 GB) and 30720 (30 GB) in increments of 1024 (1 GB)
-      #     CPU: 256
-      #     # CPU_ARCH: ARM64
-      #     CPU_ARCH: X86_64
-      #     EXECUTION_ROLE_ARN: "arn:aws:iam::770916339360:role/foo-ecs-task-execution-role"
-      #     MEMORY: 512
-      #     PORT: "4000"
-      #     TASK_ROLE_ARN: "arn:aws:iam::770916339360:role/foo-app-20200227055150076000000001"
-      #   # run: jq --null-input -f ecs/gha/taskdef.json.jq | tee ecs/taskdef.json
-      #   run: |
-      #     sed -i -e "s!<AWS_ACCOUNT_ID>!${AWS_ACCOUNT_ID}!g" $TASKDEF
-      #     sed -i -e "s!<AWS_REGION>!${AWS_REGION}!g" $TASKDEF
-      #     sed -i -e "s!<AWSLOGS_GROUP>!${AWSLOGS_GROUP}!g" $TASKDEF
-      #     sed -i -e "s!<AWSLOGS_REGION>!${AWS_REGION}!g" $TASKDEF
-      #     sed -i -e "s!<AWSLOGS_STREAM_PREFIX>!${AWSLOGS_STREAM_PREFIX}!g" $TASKDEF
-      #     sed -i -e "s!<NAME>!${CONTAINER_NAME}!g" -e "s!<PORT>!${PORT}!g" $TASKDEF
-      #     sed -i -e "s!<CPU>!${CPU}!g" -e "s!<MEMORY>!${MEMORY}!g" $TASKDEF
-      #     sed -i -e "s!<CPU_ARCH>!${CPU_ARCH}!g" $TASKDEF
-      #     sed -i -e "s!<TASK_ROLE_ARN>!${TASK_ROLE_ARN}!g" $TASKDEF
-      #     sed -i -e "s!<EXECUTION_ROLE_ARN>!${EXECUTION_ROLE_ARN}!g" $TASKDEF
-      #     sed -i -e "s!<CONFIG_S3_BUCKET>!${CONFIG_S3_BUCKET}!g" -e "s!<CONFIG_S3_PREFIX>!${CONFIG_S3_PREFIX}!g" $TASKDEF
-      #     cat $TASKDEF
-
       - name: Put new image ID in ECS task definition
         id: task-def
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition: ${{ env.TASKDEF }}
           container-name: ${{ env.ECS_CONTAINER }}
-          image: ${{env.ECR_REGISTRY}}/${{env.IMAGE_NAME}}:${{env.PROD_VAR}}${{env.IMAGE_VER}}
+          image: ${{env.ECR_REGISTRY}}/${{ env.ECR_IMAGE_OWNER }}/${{env.IMAGE_NAME}}:${{env.PROD_VAR}}${{env.IMAGE_VER}}
 
       - name: Deploy to Amazon ECS
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
-          cluster: ${{ var.ECS_CLUSTER }}
-          service: ${{ var.ECS_SERVICE }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          service: ${{ env.ECS_SERVICE }}
           wait-for-service-stability: true
           codedeploy-appspec: ecs/appspec.yml
-          codedeploy-application: ${{ var.CODEDEPLOY_APPLICATION }}
-          codedeploy-deployment-group: ${{ var.CODEDEPLOY_DEPLOYMENT_GROUP }}
+          codedeploy-application: ${{ env.CODEDEPLOY_APPLICATION }}
+          codedeploy-deployment-group: ${{ env.CODEDEPLOY_DEPLOYMENT_GROUP }}
 
        # https://github.com/marketplace/actions/slack-notify-build
        # https://github.com/marketplace/actions/post-slack-message
