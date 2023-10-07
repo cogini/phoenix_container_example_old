@@ -1072,8 +1072,11 @@ jobs:
 
   deploy:
     name: Deploy to ECS
-    if: ${{ env.AWS_ENABLED == 1 }}
-    needs: [prod]
+    # if: ${{ env.AWS_ENABLED == 1 }}
+    needs: [prod, setup]
+    environment:
+      # name: ${{ github.ref_name }}
+      name: ${{ needs.setup.outputs.env_name }}
     permissions:
       # Interact with GitHub OIDC Token endpoint for AWS
       id-token: write
