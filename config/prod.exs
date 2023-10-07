@@ -15,6 +15,7 @@ config :phoenix_container_example, :logger_formatter_config, {:logger_formatter_
      :span_id
    ]
  }}
+
 config :logger,
   level: :info,
   # metadata: :all,
