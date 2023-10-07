@@ -7,7 +7,7 @@ name: CI
 # Run security scans on code and prod images
 # Run tasks in parallel
 # Use GHA caching
-# Use test matrix for multiple versions of Elixir, OTP, and OS
+# Use matrix for multiple versions of Elixir, OTP, and OS
 on: push
 # on:
 #   push:
@@ -80,8 +80,8 @@ env:
   # https://docs.github.com/en/get-started/learning-about-github/about-github-advanced-security
   # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning
   # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github
-  GITHUB_ADVANCED_SECURITY: ${{ true }}
-  DEPLOY_DOCKER_HUB: ${{ false }}
+  GITHUB_ADVANCED_SECURITY: 1
+  DEPLOY_DOCKER_HUB: 0
 jobs:
   setup:
     name: Setup
@@ -105,7 +105,7 @@ jobs:
 
   build-test:
     name: Build test image
-    needs: setup
+    # needs: setup
     environment:
       # name: ${{ github.ref_name }}
       name ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
@@ -145,8 +145,8 @@ jobs:
       DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
       VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
     steps:
-      - name: Dump event
-        run: cat "$GITHUB_EVENT_PATH"
+      # - name: Dump event
+      #   run: cat "$GITHUB_EVENT_PATH"
 
       - name: Cancel previous runs in progress
         uses: styfle/cancel-workflow-action@0.11.0
@@ -298,9 +298,7 @@ jobs:
 
       - name: Pull repos
         run: |
-          echo "${REGISTRY}${IMAGE_OWNER}/${IMAGE_NAME}:test${VAR}${IMAGE_VER}"
-          # docker compose pull --quiet --include-deps test
-          docker compose pull --include-deps test
+          docker compose pull --quiet --include-deps test
           docker images --no-trunc
 
       - name: Start services
@@ -486,10 +484,11 @@ jobs:
 
   build-prod:
     name: Build prod image
-    needs: setup
+    # needs: setup
     environment:
       # name: ${{ github.ref_name }}
-      name: ${{ needs.setup.outputs.env_name }}
+      name ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
+      # name: ${{ needs.setup.outputs.env_name }}
     permissions:
       # Interact with GitHub OIDC Token endpoint for AWS
       id-token: write
@@ -634,7 +633,7 @@ jobs:
       - name: Log in to Amazon ECR
         if: ${{ env.AWS_ENABLED == 1 }}
         id: ecr-login
-        uses: aws-actions/amazon-ecr-login@v1
+        uses: aws-actions/amazon-ecr-login@v2
 
       - name: Set vars
         if: ${{ env.AWS_ENABLED == 1 }}
@@ -1037,7 +1036,7 @@ jobs:
       - name: Log in to Amazon ECR
         if: ${{ env.AWS_ENABLED == 1 }}
         id: ecr-login
-        uses: aws-actions/amazon-ecr-login@v1
+        uses: aws-actions/amazon-ecr-login@v2
 
       - name: Set vars
         if: ${{ env.AWS_ENABLED == 1 }}
@@ -1084,12 +1083,13 @@ jobs:
           #   "oban_license_key=${{ secrets.OBAN_LICENSE_KEY }}"
 
   deploy:
-    name: Deploy to ECS
+    name: Deploy to AWS ECS
     # if: ${{ env.AWS_ENABLED == 1 }}
-    needs: [prod, setup]
-    # environment:
-    #   # name: ${{ github.ref_name }}
-    #   name: ${{ needs.setup.outputs.env_name }}
+    needs: [prod]
+    environment:
+      # name: ${{ github.ref_name }}
+      name ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
+      # name: ${{ needs.setup.outputs.env_name }}
     permissions:
       # Interact with GitHub OIDC Token endpoint for AWS
       id-token: write
@@ -1104,7 +1104,7 @@ jobs:
 
       - name: Log in to Amazon ECR
         id: ecr-login
-        uses: aws-actions/amazon-ecr-login@v1
+        uses: aws-actions/amazon-ecr-login@v2
 
       - name: Set vars
         run: echo "ECR_REGISTRY=${{ steps.ecr-login.outputs.registry }}" >> $GITHUB_ENV
@@ -1125,7 +1125,7 @@ jobs:
           TASK_ROLE_ARN: "arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/iot-app-20230922164312318900000004"
           EXECUTION_ROLE_ARN: arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/iot-ecs-task-execution-role
           HOST: rubegoldberg.io
-        run: jq --null-input -f ecs/task-definition.json.jq | tee $TASKDEF
+        run: jq --null-input -f ecs/task-definition.json.jq | tee "$TASKDEF"
 
       - name: Put new image ID in ECS task definition
         id: task-def
