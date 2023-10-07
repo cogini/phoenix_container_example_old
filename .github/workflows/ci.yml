@@ -97,18 +97,15 @@ jobs:
           else
             echo "env_name=feature >> $GITHUB_OUTPUT
           fi
-      - name: Debug environment
-        run: |
-          echo "environment: ${{ steps.branch_check.outputs.env_name }}"
     outputs:
       env_name: ${{ steps.branch_check.outputs.env_name }}
 
   build-test:
     name: Build test image
     needs: setup
-    # environment:
-    #   # name: ${{ github.ref_name }}
-    #   name: ${{ needs.setup.outputs.env_name }}
+    environment:
+      # name: ${{ github.ref_name }}
+      name: ${{ needs.setup.outputs.env_name }}
     permissions:
       contents: read
       # Push to ghcr.io repository
@@ -151,6 +148,10 @@ jobs:
         uses: styfle/cancel-workflow-action@0.11.0
         with:
           access_token: ${{ github.token }}
+
+      - name: Debug environment
+        run: |
+          echo "environment: ${{ event.deployment.environment }}"
 
       - name: Check out source
         uses: actions/checkout@v4
@@ -482,9 +483,9 @@ jobs:
   build-prod:
     name: Build prod image
     needs: setup
-    # environment:
-    #   # name: ${{ github.ref_name }}
-    #   name: ${{ needs.setup.outputs.env_name }}
+    environment:
+      # name: ${{ github.ref_name }}
+      name: ${{ needs.setup.outputs.env_name }}
     permissions:
       # Interact with GitHub OIDC Token endpoint for AWS
       id-token: write
