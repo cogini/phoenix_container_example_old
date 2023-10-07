@@ -96,8 +96,8 @@ jobs:
           else
             echo "env_name=feature >> $GITHUB_OUTPUT
           fi
-  outputs:
-    env_name: ${{ steps.branch_check.outputs.env_name }}
+    outputs:
+      env_name: ${{ steps.branch_check.outputs.env_name }}
 
   build-test:
     name: Build test image
