@@ -108,7 +108,7 @@ jobs:
     needs: setup
     environment:
       # name: ${{ github.ref_name }}
-      name ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production')
+      name ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
       # name: ${{ needs.setup.outputs.env_name }}
     permissions:
       contents: read
