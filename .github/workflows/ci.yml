@@ -41,9 +41,9 @@ env:
   PROD_OS_VER: bullseye-slim
   BASE_OS: debian
   # Variant if test matrix is not used
-  VAR: '1.15.5-erlang-26.0.2-debian-bullseye-20230612-slim'
+  VAR: '1.15.6-erlang-26.1.1-debian-bullseye-20230612-slim'
   # Variant that is deployed
-  PROD_VAR: '1.15.5-erlang-26.0.2-debian-bullseye-20230612-slim'
+  PROD_VAR: '1.15.6-erlang-26.1.1-debian-bullseye-20230612-slim'
   # Registry for test images
   REGISTRY: ghcr.io/
   # Registry for public images, default is docker.io
