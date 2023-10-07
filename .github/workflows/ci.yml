@@ -444,9 +444,8 @@ jobs:
         run: cat trivy-results.sarif | jq .
 
       - name: Upload trivy scan results to GitHub Security tab
-        if: ${{ env.GITHUB_ADVANCED_SECURITY == 1 }}
+        if: ${{ always() && env.GITHUB_ADVANCED_SECURITY == 1 }}
         uses: github/codeql-action/upload-sarif@v2
-        if: always()
         with:
           sarif_file: 'trivy-results.sarif'
           category: trivy
@@ -466,9 +465,8 @@ jobs:
         run: cat ${{ steps.scan-grype.outputs.sarif }} | jq .
 
       - name: Upload grype scan results to GitHub Security tab
-        if: ${{ env.GITHUB_ADVANCED_SECURITY == 1 }}
+        if: ${{ always() && env.GITHUB_ADVANCED_SECURITY == 1 }}
         uses: github/codeql-action/upload-sarif@v2
-        if: always()
         with:
           sarif_file: ${{ steps.scan-grype.outputs.sarif }}
           category: grype
