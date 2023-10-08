@@ -29,7 +29,8 @@ env:
   # Name of org in GHCR Docker repository
   IMAGE_OWNER: ${{ github.repository_owner }}
   # Name of org in external Docker repository
-  ECR_IMAGE_OWNER: cogini
+  # ECR_IMAGE_OWNER: cogini/
+  ECR_IMAGE_OWNER: ''
   # Tag for release images
   # IMAGE_TAG: ${{ (github.ref == 'refs/heads/main' && 'staging') || (github.ref == 'refs/heads/qa' && 'qa') }}
   IMAGE_TAG: latest
@@ -655,7 +656,7 @@ jobs:
         uses: docker/build-push-action@v5
         env:
           REGISTRY: "${{ env.ECR_REGISTRY }}/"
-          IMAGE_OWNER: "${{ env.ECR_IMAGE_OWNER }}/"
+          # IMAGE_OWNER: "${{ env.ECR_IMAGE_OWNER }}/"
         with:
           file: ${{ env.DOCKER_FILE }}
           target: prod
@@ -666,8 +667,8 @@ jobs:
           cache-to: type=gha,scope=${{ github.workflow }}-${{ env.VAR }},mode=max
           # ssh: default
           tags: |
-            ${{ env.ECR_REGISTRY }}/${{ env.ECR_IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.VAR }}${{ env.IMAGE_VER }}
-            ${{ env.ECR_REGISTRY }}/${{ env.ECR_IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.BRANCH }}-${{ env.GITHUB_SHA_SHORT }}
+            ${{ env.ECR_REGISTRY }}/${{ env.ECR_IMAGE_OWNER }}${{ env.IMAGE_NAME }}:${{ env.VAR }}${{ env.IMAGE_VER }}
+            ${{ env.ECR_REGISTRY }}/${{ env.ECR_IMAGE_OWNER }}${{ env.IMAGE_NAME }}:${{ env.BRANCH }}-${{ env.GITHUB_SHA_SHORT }}
           # secrets: |
           #   "access_token=${{ secrets.DEVOPS_ACCESS_TOKEN }}"
           #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
@@ -1067,8 +1068,8 @@ jobs:
         uses: docker/build-push-action@v5
         env:
           REGISTRY: "${{ env.ECR_REGISTRY }}/"
-          IMAGE_OWNER: "${{ env.ECR_IMAGE_OWNER }}/"
-          VAR: ${{ env.PROD_VAR }}
+          # IMAGE_OWNER: "${{ env.ECR_IMAGE_OWNER }}"
+          # VAR: ${{ env.PROD_VAR }}
         with:
           file: ${{ env.DOCKER_FILE }}
           target: prod
@@ -1079,8 +1080,8 @@ jobs:
           cache-to: type=gha,scope=${{ github.workflow }}-${{ env.PROD_VAR }},mode=max
           # ssh: default
           tags: |
-            ${{env.ECR_REGISTRY}}/${{env.ECR_IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{env.IMAGE_TAG}}
-            ${{env.ECR_REGISTRY}}/${{env.ECR_IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{env.IMAGE_VER}}
+            ${{env.ECR_REGISTRY}}/${{env.ECR_IMAGE_OWNER}}${{env.IMAGE_NAME}}:${{env.IMAGE_TAG}}
+            ${{env.ECR_REGISTRY}}/${{env.ECR_IMAGE_OWNER}}${{env.IMAGE_NAME}}:${{env.IMAGE_VER}}
           # secrets: |
           #   "access_token=${{ secrets.DEVOPS_ACCESS_TOKEN }}"
           #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
@@ -1137,7 +1138,7 @@ jobs:
         with:
           task-definition: ${{ env.TASKDEF }}
           container-name: ${{ env.ECS_CONTAINER }}
-          image: ${{env.ECR_REGISTRY}}/${{ env.ECR_IMAGE_OWNER }}/${{env.IMAGE_NAME}}:${{env.PROD_VAR}}${{env.IMAGE_VER}}
+          image: ${{env.ECR_REGISTRY}}/${{ env.ECR_IMAGE_OWNER }}${{env.IMAGE_NAME}}:${{env.PROD_VAR}}${{env.IMAGE_VER}}
 
       - name: Deploy to Amazon ECS
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
