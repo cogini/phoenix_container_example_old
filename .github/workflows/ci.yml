@@ -523,6 +523,9 @@ jobs:
       DOCKER_FILE: deploy/${{ matrix.os }}.Dockerfile
       VAR: ${{ matrix.elixir }}-erlang-${{ matrix.otp }}-${{ matrix.os }}-${{ matrix.build_os_ver }}
     steps:
+      - name: Dump event
+        run: cat "$GITHUB_EVENT_PATH"
+
       - name: Cancel previous runs in progress
         uses: styfle/cancel-workflow-action@0.11.0
         with:
@@ -530,6 +533,7 @@ jobs:
 
       - name: Debug environment
         run: |
+          echo "ref_name: ${{ github.ref_name }}"
           echo "environment: ${{ github.event.deployment.environment }}"
 
       - name: Log in to GHCR
