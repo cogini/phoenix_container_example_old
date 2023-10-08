@@ -36,13 +36,13 @@
                 "logDriver": "awslogs",
                 "options": {
                     "awslogs-create-group": "true",
-                    "awslogs-group": "/ecs/iot-app",
+                    "awslogs-group": "/ecs/foo-app",
                     "awslogs-region": env.AWSLOGS_REGION,
-                    "awslogs-stream-prefix": "iot-app"
+                    "awslogs-stream-prefix": "foo-app"
                 }
             },
             "mountPoints": [],
-            "name": "iot-app",
+            "name": "foo-app",
             "portMappings": [
                 {
                     "appProtocol": "http",
