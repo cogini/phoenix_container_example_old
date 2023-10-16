@@ -46,6 +46,8 @@ services:
       - DATABASE_URL=${DATABASE_URL:-ecto://postgres:postgres@postgres:5432/postgres}
       - PORT=4000
       - SECRET_KEY_BASE=${SECRET_KEY_BASE:-0cSFk8v5IsZIIGCjY+X66l5xULUl/2mczI4Eqf7slpyns5nBkhegDn6YH9th+5D2}
+      - OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://otel-collector:4317
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
     ports:
       - '4000:4000'
     # healthcheck:
@@ -54,15 +56,61 @@ services:
     #   interval: 1s
     #   timeout: 1s
     #   retries: 20
-    # healthcheck:
-    #   test: ["CMD", "bin/prod", "eval", "PhoenixContainerExample.Health.basic()"]
-    #   start_period: 2s
-    #   interval: 1s
-    #   timeout: 1s
-    #   retries: 20
+    healthcheck:
+      test: ["CMD", "/app/bin/prod", "eval", "PhoenixContainerExample.Health.basic()"]
+      start_period: 2s
+      interval: 1s
+      timeout: 2s
+      retries: 20
     depends_on:
       postgres:
         condition: service_healthy
+      otel-collector:
+        condition: service_started
+      # aws-otel-collector:
+      #   condition: service_healthy
+
+  # https://github.com/aws-observability/aws-otel-collector/blob/main/docs/developers/docker-demo.md
+  aws-otel-collector:
+    image: public.ecr.aws/aws-observability/aws-otel-collector:latest
+    ports:
+      - "4317:4317"     # OTLP over gRPC
+      - "4318:4318"     # OTLP over HTTP
+      - "55680:55680"   # OTLP over gRPC (legacy)
+      - "55681:55681"   # OTLP over HTTP (legacy)
+      - "8888:8888"     # Prometheus metrics exposed by the collector
+      - "8889:8889"     # Prometheus exporter metrics
+      - "13133:13133"   # health_check extension
+      - "55679:55679"   # zpages extension
+    # command: ["--config=/etc/otel-collector-config.yml"]
+    healthcheck:
+      test: ["CMD", "/healthcheck"]
+      start_period: 1s
+      interval: 5s
+      timeout: 6s
+      retries: 5
+    # volumes:
+    #   - ./aws-collector-config.yml:/etc/otel-collector-config.yml
+    #   - ./extraconfig.txt:/opt/aws/aws-otel-collector/etc/extracfg.txt
+
+  # https://opentelemetry.io/docs/collector/getting-started/#docker-compose
+  otel-collector:
+    image: "${PUBLIC_REGISTRY:-docker.io/}otel/opentelemetry-collector-contrib:latest"
+    # command: ["--config=/etc/otel-collector-config.yml"]
+    # volumes:
+    #   - ./otel-collector-config.yml:/etc/otel-collector-config.yml
+    #   # - ${PWD}/otel-collector-config.yml:/etc/otel-collector-config.yml
+    ports:
+      - "4317:4317"     # OTLP over gRPC
+      - "4318:4318"     # OTLP over HTTP
+      # - "55680:55680"   # OTLP over gRPC (legacy)
+      - "55681:55681"   # OTLP over HTTP (legacy)
+      # - "9411:9411"   # Zipkin/HTTP
+      - "1888:1888"   # pprof extension
+      - "8888:8888"   # Prometheus metrics exposed by the collector
+      - "8889:8889"   # Prometheus exporter metrics
+      - "13133:13133" # health_check extension
+      - "55679:55679" # zpages extension
 
   # https://docs.datadoghq.com/getting_started/agent/
   # https://github.com/DataDog/datadog-agent/blob/main/pkg/config/config_template.yaml
