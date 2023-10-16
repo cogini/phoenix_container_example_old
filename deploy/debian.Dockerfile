@@ -374,12 +374,13 @@ FROM build-deps-get AS prod-release
     COPY priv ./priv
 
     # Install JavaScript deps using npm
-    WORKDIR "${APP_DIR}/assets"
-    COPY assets/package.jso[n] ./
-    COPY assets/package-lock.jso[n] ./
-    COPY assets/tailwind.config.j[s] ./
+    COPY assets/package.jso[n] ./assets
+    COPY assets/package-lock.jso[n] ./assets
+    COPY assets/tailwind.config.j[s] ./assets
 
-    RUN npm install
+    RUN cd assets && npm install
+
+    # WORKDIR "${APP_DIR}/assets"
 
     WORKDIR $APP_DIR
 
