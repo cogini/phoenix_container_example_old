@@ -377,7 +377,7 @@ FROM build-deps-get AS prod-release
     WORKDIR "${APP_DIR}/assets"
     COPY assets/package.jso[n] ./
     COPY assets/package-lock.jso[n] ./
-    COPY assets/tailwind.config.js ./
+    COPY assets/tailwind.config.j[s] ./
 
     RUN npm install
 
