@@ -34,15 +34,15 @@ env:
   IMAGE_TAG: latest
   IMAGE_VER: ${{ github.sha }}
   # Docker build args
-  ELIXIR_VER: 1.15.5
-  OTP_VER: 26.0.2
+  ELIXIR_VER: 1.15.7
+  OTP_VER: 26.1.2
   BUILD_OS_VER: bullseye-20230612-slim
   PROD_OS_VER: bullseye-slim
   BASE_OS: debian
   # Variant if test matrix is not used
-  VAR: '1.15.6-erlang-26.1.1-debian-bullseye-20230612-slim'
+  VAR: '1.15.7-erlang-26.1.2-debian-bullseye-20230612-slim'
   # Variant that is deployed
-  PROD_VAR: '1.15.6-erlang-26.1.1-debian-bullseye-20230612-slim'
+  PROD_VAR: '1.15.7-erlang-26.1.2-debian-bullseye-20230612-slim'
   # Registry for test images
   REGISTRY: ghcr.io/
   # Registry for public images, default is docker.io
@@ -75,7 +75,7 @@ env:
   AWS_PS_PREFIX: cogini/foo/dev
   # Name of environment for resources created by Terraform
   TERRAFORM_ENV: dev
-  # GitHub Advanced Security
+  # GitHub Advanced Security, free for open source, otherwise a paid feature
   # https://docs.github.com/en/get-started/learning-about-github/about-github-advanced-security
   # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning
   # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github
@@ -122,8 +122,8 @@ jobs:
         # Specify versions of Erlang, Elixir, and base OS
         # Choose a combination supported by https://hub.docker.com/r/hexpm/elixir/tags
         include:
-          - elixir: 1.15.6
-            otp: 26.1.1
+          - elixir: 1.15.7
+            otp: 26.1.2
             build_os_ver: bullseye-20230612-slim
             prod_os_ver: bullseye-slim
             snapshot_ver: 20230612
@@ -257,8 +257,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - elixir: 1.15.6
-            otp: 26.1.1
+          - elixir: 1.15.7
+            otp: 26.1.2
             build_os_ver: bullseye-20230612-slim
             prod_os_ver: bullseye-slim
             snapshot_ver: 20230612
@@ -365,8 +365,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - elixir: 1.15.6
-            otp: 26.1.1
+          - elixir: 1.15.7
+            otp: 26.1.2
             build_os_ver: bullseye-20230612-slim
             prod_os_ver: bullseye-slim
             snapshot_ver: 20230612
@@ -499,8 +499,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - elixir: 1.15.6
-            otp: 26.1.1
+          - elixir: 1.15.7
+            otp: 26.1.2
             build_os_ver: bullseye-20230612-slim
             prod_os_ver: bullseye-slim
             snapshot_ver: 20230612
@@ -744,8 +744,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - elixir: 1.15.6
-            otp: 26.1.1
+          - elixir: 1.15.7
+            otp: 26.1.2
             build_os_ver: bullseye-20230612-slim
             prod_os_ver: bullseye-slim
             snapshot_ver: 20230612
@@ -784,17 +784,20 @@ jobs:
           docker compose pull --quiet --include-deps prod
 
       - name: Start services
-        run: docker compose up --wait --detach prod
+        run: docker compose up --wait prod
 
       - name: Display logs
         if: failure()
         run: |
-          docker compose logs --timestamps prod
+          echo postgres logs
           docker compose logs --timestamps postgres
-          echo prod
-          docker inspect --format "{{json .State.Health }}" $(docker compose ps -q prod) | jq
-          echo postgres
+          echo postgres health
           docker inspect --format "{{json .State.Health }}" $(docker compose ps -q postgres) | jq
+          echo prod health
+          docker inspect --format "{{json .State.Health }}" $(docker compose ps -q prod) | jq
+          echo prod logs
+          docker compose logs --timestamps prod
+          echo ps
           docker compose ps --format json | jq .
 
       # - name: Debug env
@@ -806,12 +809,26 @@ jobs:
 
       - name: Initialize database
         run: |
-          docker compose run prod eval '${{ env.ELIXIR_MODULE }}.Release.create_repos()'
-          docker compose run prod eval '${{ env.ELIXIR_MODULE }}.Release.migrate()'
+          # docker compose run prod eval '${{ env.ELIXIR_MODULE }}.Release.create_repos()'
+          # docker compose run prod eval '${{ env.ELIXIR_MODULE }}.Release.migrate()'
           docker compose run prod eval '${{ env.ELIXIR_MODULE }}.Release.run_seeds()'
 
       - name: Run health check
         run: curl -v http://localhost:${{ env.APP_PORT }}/healthz/liveness
+
+      - name: Display logs
+        if: failure()
+        run: |
+          echo postgres logs
+          docker compose logs --timestamps postgres
+          echo postgres health
+          docker inspect --format "{{json .State.Health }}" $(docker compose ps -q postgres) | jq
+          echo prod logs
+          docker compose logs --timestamps prod
+          echo prod health
+          docker inspect --format "{{json .State.Health }}" $(docker compose ps -q prod) | jq
+          echo ps
+          docker compose ps --format json | jq .
 
       # - name: Run API tests
       #   env:
@@ -819,12 +836,6 @@ jobs:
       #     # NEWMAN_ARGS: "--verbose -r cli,junit --reporter-junit-export /junit-reports/newman.xml -e ci.json"
       #   # https://hub.docker.com/r/postman/newman/
       #   run: docker compose run newman run ${{env.NEWMAN_ARGS}} Queries.postman_collection.json
-
-      - name: Display logs
-        if: failure()
-        run: |
-          docker compose logs --timestamps prod
-          # docker compose logs --timestamps newman
 
       - name: Publish unit test results to GitHub
         uses: EnricoMi/publish-unit-test-result-action@v2
@@ -859,8 +870,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - elixir: 1.15.6
-            otp: 26.1.1
+          - elixir: 1.15.7
+            otp: 26.1.2
             build_os_ver: bullseye-20230612-slim
             prod_os_ver: bullseye-slim
             snapshot_ver: 20230612
@@ -1132,7 +1143,7 @@ jobs:
           TASK_ROLE_ARN: "arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/iot-app-20230922164312318900000004"
           EXECUTION_ROLE_ARN: arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/iot-ecs-task-execution-role
           HOST: rubegoldberg.io
-        run: jq --null-input -f ecs/task-definition.json.jq | tee "$TASKDEF"
+        run: jq --null-input -f "${TASKDEF}.jq" | tee "$TASKDEF"
 
       - name: Put new image ID in ECS task definition
         id: task-def
