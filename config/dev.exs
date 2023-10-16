@@ -64,7 +64,9 @@ config :phoenix_container_example, PhoenixContainerExampleWeb.Endpoint,
     ]
   ]
 
-# Do not include metadata nor timestamps in development logs
+# Enable dev routes for dashboard and mailbox
+config :phoenix_container_example, dev_routes: true
+
 config :logger, :console,
   format: "$time $metadata[$level] $message\n",
   metadata: [:file, :line]
@@ -87,24 +89,24 @@ config :opentelemetry, :resource, [
 
 # https://hexdocs.pm/opentelemetry_exporter/1.0.0/readme.html
 # Maybe OTEL_EXPORTER_OTLP_ENDPOINT=http://opentelemetry-collector:55680
-config :opentelemetry, :processors,
-  otel_batch_processor: %{
-    exporter: {
-      :opentelemetry_exporter,
-      %{
-        protocol: :grpc,
-        endpoints: [
-          # gRPC
-          ~c"http://localhost:4317"
-          # HTTP
-          # 'http://localhost:4318'
-          # 'http://localhost:55681'
-          # {:http, 'localhost', 4318, []}
-        ]
-        # headers: [{"x-honeycomb-dataset", "experiments"}]
-      }
-    }
-  }
+# config :opentelemetry, :processors,
+#   otel_batch_processor: %{
+#     exporter: {
+#       :opentelemetry_exporter,
+#       %{
+#         protocol: :grpc,
+#         endpoints: [
+#           # gRPC
+#           ~c"http://localhost:4317"
+#           # HTTP
+#           # 'http://localhost:4318'
+#           # 'http://localhost:55681'
+#           # {:http, 'localhost', 4318, []}
+#         ]
+#         # headers: [{"x-honeycomb-dataset", "experiments"}]
+#       }
+#     }
+#   }
 
 # Set a higher stacktrace during development. Avoid configuring such
 # in production as building large stacktraces may be expensive.
@@ -112,3 +114,9 @@ config :phoenix, :stacktrace_depth, 20
 
 # Initialize plugs at runtime for faster development compilation
 config :phoenix, :plug_init_mode, :runtime
+
+# Include HEEx debug annotations as HTML comments in rendered markup
+config :phoenix_live_view, :debug_heex_annotations, true
+
+# Disable swoosh api client as it is only required for production adapters.
+config :swoosh, :api_client, false

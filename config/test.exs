@@ -23,8 +23,11 @@ config :phoenix_container_example, PhoenixContainerExampleWeb.Endpoint,
 # In test we don't send emails.
 config :phoenix_container_example, PhoenixContainerExample.Mailer, adapter: Swoosh.Adapters.Test
 
+# Disable swoosh api client as it is only required for production adapters.
+config :swoosh, :api_client, false
+
 # Print only warnings and errors during test
-config :logger, level: :warn
+config :logger, level: :warning
 
 config :logger, :console,
   format: "$time $metadata[$level] $message\n",
