@@ -6,8 +6,8 @@ ARG BASE_OS=debian
 # Specify versions of Erlang, Elixir, and base OS.
 # Choose a combination supported by https://hub.docker.com/r/hexpm/elixir/tags
 
-ARG ELIXIR_VER=1.15.5
-ARG OTP_VER=26.0.2
+ARG ELIXIR_VER=1.15.7
+ARG OTP_VER=26.1.2
 ARG BUILD_OS_VER=bullseye-20230612-slim
 
 # https://docker.debian.net/
@@ -16,10 +16,12 @@ ARG PROD_OS_VER=bullseye-slim
 
 # Use snapshot for consistent dependencies, see https://snapshot.debian.org/
 # Needs to be updated manually
-ARG SNAPSHOT_VER=20230612
+# ARG SNAPSHOT_VER=20230612
+ARG SNAPSHOT_VER=""
 
 # ARG NODE_VER=16.14.1
 ARG NODE_VER=lts
+ARG NODE_MAJOR=20
 
 # Docker registry for internal images, e.g. 123.dkr.ecr.ap-northeast-1.amazonaws.com/
 # If blank, docker.io will be used. If specified, should have a trailing slash.
@@ -78,6 +80,7 @@ ARG DEV_PACKAGES=""
 FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
     ARG SNAPSHOT_VER
     ARG RUNTIME_PACKAGES
+    ARG NODE_MAJOR
 
     ARG APP_DIR
     ARG APP_GROUP
@@ -140,7 +143,7 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
             # Support ssl in container, as opposed to load balancer
             openssl \
             # Install default nodejs
-            nodejs \
+            # nodejs \
             # Install default Postgres
             # libpq-dev \
             # postgresql-client \
@@ -148,20 +151,9 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         && \
         locale-gen && \
         mkdir -p /etc/apt/keyrings && \
-        # Install yarn
-        curl -sL --ciphers ECDHE-RSA-AES128-GCM-SHA256 https://dl.yarnpkg.com/debian/pubkey.gpg -o /etc/apt/trusted.gpg.d/yarn.asc && \
-        echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list && \
-        printf "Package: *\nPin: release o=dl.yarnpkg.com\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/yarn.pref && \
-        # Install Trivy
-        # curl -sL https://aquasecurity.github.io/trivy-repo/deb/public.key -o /etc/apt/trusted.gpg.d/trivy.asc && \
-        # printf "deb https://aquasecurity.github.io/trivy-repo/deb %s main" "$(lsb_release -sc)" | tee -a /etc/apt/sources.list.d/trivy.list && \
-        # Install node from nodesource.com package
-        # curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && \
-        # echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_18.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list && \
-        apt-get update -qq && \
-        apt-get -y install -y -qq --no-install-recommends yarn && \
-        # apt-get -y install -y -qq --no-install-recommends trivy && \
-        # curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin && \
+        # Install nodejs from nodesource.com
+        curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && \
+        echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_${NODE_MAJOR}.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list && \
         # Install node using n
         # curl -L https://raw.githubusercontent.com/tj/n/master/bin/n -o /usr/local/bin/n && \
         # chmod +x /usr/local/bin/n && \
@@ -171,11 +163,19 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         # n "$NODE_VER" && \
         # rm /usr/local/bin/n && \
         # Install yarn from repo
-        # curl -sL https://dl.yarnpkg.com/debian/pubkey.gpg -o /etc/apt/trusted.gpg.d/yarn.asc && \
-        # echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list && \
-        # echo "Package: *\nPin: release o=dl.yarnpkg.com\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/yarn.pref && \
-        # apt-get update -qq && \
-        # apt-get -y install -y -qq --no-install-recommends yarn && \
+        curl -sL --ciphers ECDHE-RSA-AES128-GCM-SHA256 https://dl.yarnpkg.com/debian/pubkey.gpg -o /etc/apt/trusted.gpg.d/yarn.asc && \
+        echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list && \
+        printf "Package: *\nPin: release o=dl.yarnpkg.com\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/yarn.pref && \
+        # Install Trivy
+        # curl -sL https://aquasecurity.github.io/trivy-repo/deb/public.key -o /etc/apt/trusted.gpg.d/trivy.asc && \
+        # printf "deb https://aquasecurity.github.io/trivy-repo/deb %s main" "$(lsb_release -sc)" | tee -a /etc/apt/sources.list.d/trivy.list && \
+        apt-get update -qq && \
+        DEBIAN_FRONTEND=noninteractive \
+        apt-get -y install -y -qq --no-install-recommends \
+            nodejs \
+            # trivy \
+            yarn \
+        && \
         # Install latest Postgres from postgres.org repo
         # curl -sL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /etc/apt/trusted.gpg.d/postgresql-ACCC4CF8.asc && \
         # echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -sc)-pgdg main" | tee /etc/apt/sources.list.d/pgdg.list && \
@@ -364,22 +364,24 @@ FROM build-deps-get AS prod-release
 
     # Install JavaScript deps using yarn
     # COPY assets/package.json assets/package.json
-    # COPY assets/yarn.lock assets/yarn.lock
+    # COPY assets/package-lock.jso[n] assets/package-lock.json
+    # COPY assets/yarn.loc[k] assets/yarn.lock
     # RUN yarn --cwd ./assets install --prod
+    # RUN cd assets && yarn install --prod
 
     # Compile assets with esbuild
     COPY assets ./assets
     COPY priv ./priv
 
     # Install JavaScript deps using npm
-    # WORKDIR "${APP_DIR}/assets"
-    # COPY assets/package.json ./
-    # COPY assets/package-lock.json ./
-    # # COPY assets/tailwind.config.js ./
-    #
-    # RUN npm install
-    #
-    # WORKDIR $APP_DIR
+    WORKDIR "${APP_DIR}/assets"
+    COPY assets/package.jso[n] ./
+    COPY assets/package-lock.jso[n] ./
+    COPY assets/tailwind.config.js ./
+
+    RUN npm install
+
+    WORKDIR $APP_DIR
 
     RUN mix assets.deploy
     # RUN esbuild default --minify
@@ -647,17 +649,17 @@ FROM prod-base AS prod
 
     # "bin" is the directory under the unpacked release, and "prod" is the name
     # of the release top level script, which should match the RELEASE var.
-    ENTRYPOINT ["bin/prod"]
+    # ENTRYPOINT ["bin/prod"]
 
     # Run under init to avoid zombie processes
     # https://github.com/krallin/tini
     # ENTRYPOINT ["/sbin/tini", "--", "bin/prod"]
 
     # Wrapper script which runs e.g. migrations before starting
-    # ENTRYPOINT ["bin/start-docker"]
+    ENTRYPOINT ["bin/start-docker"]
 
     # Run app in foreground
-    CMD ["start"]
+    # CMD ["start"]
 
 # Dev image which mounts code from local filesystem
 FROM build-os-deps AS dev
