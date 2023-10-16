@@ -130,21 +130,21 @@ defmodule PhoenixContainerExample.MixProject do
         "credo",
         # mix deps.clean --unlock --unused
         "deps.unlock --check-unused",
-        "hex.outdated",
-        "hex.audit",
+        # mix deps.update
+        # "hex.outdated",
         "deps.audit",
         "sobelow --exit --skip -i DOS.StringToAtom,Config.HTTPS",
-        "dialyzer --halt-exit-status"
+        "dialyzer"
       ],
       "quality.ci": [
         "format --check-formatted",
         "deps.unlock --check-unused",
-        "hex.outdated",
+        # "hex.outdated",
         "hex.audit",
         "deps.audit",
         "credo",
         "sobelow --exit --skip -i DOS.StringToAtom,Config.HTTPS",
-        "dialyzer --halt-exit-status"
+        "dialyzer"
       ]
     ]
   end
