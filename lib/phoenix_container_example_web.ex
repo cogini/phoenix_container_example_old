@@ -21,8 +21,9 @@ defmodule PhoenixContainerExampleWeb do
     quote do
       use Phoenix.Controller, namespace: PhoenixContainerExampleWeb
 
-      import Plug.Conn
       import PhoenixContainerExampleWeb.Gettext
+      import Plug.Conn
+
       alias PhoenixContainerExampleWeb.Router.Helpers, as: Routes
     end
   end
@@ -71,15 +72,16 @@ defmodule PhoenixContainerExampleWeb do
     quote do
       use Phoenix.Router
 
-      import Plug.Conn
       import Phoenix.Controller
       import Phoenix.LiveView.Router
+      import Plug.Conn
     end
   end
 
   def channel do
     quote do
       use Phoenix.Channel
+
       import PhoenixContainerExampleWeb.Gettext
     end
   end
@@ -94,9 +96,9 @@ defmodule PhoenixContainerExampleWeb do
 
       # Import basic rendering functionality (render, render_layout, etc)
       import Phoenix.View
-
       import PhoenixContainerExampleWeb.ErrorHelpers
       import PhoenixContainerExampleWeb.Gettext
+
       alias PhoenixContainerExampleWeb.Router.Helpers, as: Routes
     end
   end

@@ -3,9 +3,9 @@ defmodule PhoenixContainerExample.Application do
   # for more information on OTP Applications
   @moduledoc false
 
-  @app :phoenix_container_example
-
   use Application
+
+  @app :phoenix_container_example
 
   @impl true
   def start(_type, _args) do

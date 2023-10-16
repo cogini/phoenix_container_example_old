@@ -3,11 +3,11 @@ defmodule PhoenixContainerExample.Release do
   Used for executing DB release tasks when run in production without Mix
   installed.
   """
-  @app :phoenix_container_example
-
   alias PhoenixContainerExample.Health
 
   require Logger
+
+  @app :phoenix_container_example
 
   @doc """
   Run database migrations.
@@ -113,7 +113,7 @@ defmodule PhoenixContainerExample.Release do
   @doc """
   Run liveness health check.
   """
-  def liveness() do
+  def liveness do
     load_app()
 
     Application.ensure_all_started(@app)

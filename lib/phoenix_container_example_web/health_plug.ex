@@ -79,7 +79,8 @@ defmodule PhoenixContainerExampleWeb.HealthPlug do
       {:error, reason} ->
         Logger.error("#{inspect(reason)}")
 
-        send_resp(conn, 503, inspect(reason))
+        conn
+        |> send_resp(503, inspect(reason))
         |> halt()
     end
   end
@@ -101,7 +102,8 @@ defmodule PhoenixContainerExampleWeb.HealthPlug do
       {:error, reason} ->
         Logger.error("#{inspect(reason)}")
 
-        send_resp(conn, 503, inspect(reason))
+        conn
+        |> send_resp(503, inspect(reason))
         |> halt()
     end
   end
@@ -123,7 +125,8 @@ defmodule PhoenixContainerExampleWeb.HealthPlug do
       {:error, reason} ->
         Logger.error("#{inspect(reason)}")
 
-        send_resp(conn, 503, inspect(reason))
+        conn
+        |> send_resp(503, inspect(reason))
         |> halt()
     end
   end

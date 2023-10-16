@@ -20,9 +20,9 @@ defmodule PhoenixContainerExampleWeb.ConnCase do
   using do
     quote do
       # Import conveniences for testing with connections
-      import Plug.Conn
       import Phoenix.ConnTest
       import PhoenixContainerExampleWeb.ConnCase
+      import Plug.Conn
 
       alias PhoenixContainerExampleWeb.Router.Helpers, as: Routes
 

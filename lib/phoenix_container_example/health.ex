@@ -2,10 +2,10 @@ defmodule PhoenixContainerExample.Health do
   @moduledoc """
   Collect app status for Kubernetes health checks.
   """
+  alias PhoenixContainerExample.Repo
+
   @app :phoenix_container_example
   @repos Application.compile_env(@app, :ecto_repos) || []
-
-  alias PhoenixContainerExample.Repo
 
   @doc """
   Check if the app has finished booting up.
