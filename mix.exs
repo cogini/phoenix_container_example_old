@@ -70,14 +70,17 @@ defmodule PhoenixContainerExample.MixProject do
 
   defp deps do
     [
+      {:ex_aws, "~> 2.5"},
       {:aws_rds_castore, "~> 1.1"},
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.2", only: [:dev, :test], runtime: false},
+      {:dns_cluster, "~> 0.1.1"},
       {:ecto_sql, "~> 3.6"},
       {:esbuild, "~> 0.7", runtime: Mix.env() == :dev},
       {:excoveralls, "~> 0.14", only: [:dev, :test], runtime: false},
       {:flatlog, "~> 0.1.2"},
       {:floki, ">= 0.30.0", only: :test},
+      {:gen_smtp, "~> 1.0"},
       {:gettext, "~> 0.20"},
       {:jason, "~> 1.2"},
       {:junit_formatter, "~> 3.3", only: [:dev, :test], runtime: false},
