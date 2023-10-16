@@ -51,6 +51,7 @@
                 }
             ],
             "readonlyRootFilesystem": false,
+            "entryPoint": ["bin/start-docker"],
             "secrets": [
                 {
                     "name": "COOKIE",
