@@ -5,8 +5,6 @@ name: CI
 # Build prod image and push to AWS ECR
 # Run tests and quality checks on test image
 # Run security scans on code and prod images
-# Run tasks in parallel
-# Use GHA caching
 # Use matrix for multiple versions of Elixir, OTP, and OS
 on: push
 # on:
@@ -28,7 +26,7 @@ env:
   IMAGE_NAME: foo-app
   # Name of org in GHCR Docker repository
   IMAGE_OWNER: ${{ github.repository_owner }}
-  # Name of org in external Docker repository
+  # ECR Docker repository org name
   # ECR_IMAGE_OWNER: cogini/
   ECR_IMAGE_OWNER: ''
   # Tag for release images
