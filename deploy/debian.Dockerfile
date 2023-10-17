@@ -343,6 +343,19 @@ FROM build-deps-get AS prod-release
 
     RUN mix esbuild.install --if-missing
 
+    # Install JavaScript deps using yarn
+    COPY assets/package.jso[n] assets/package.json
+    COPY assets/package-lock.jso[n] assets/package-lock.json
+    COPY assets/yarn.loc[k] assets/yarn.lock
+    RUN yarn --cwd ./assets install --prod
+    # RUN cd assets && yarn install --prod
+
+    # Install JavaScript deps using npm
+    # WORKDIR "${APP_DIR}/assets"
+    # COPY assets/package.jso[n] ./assets
+    # COPY assets/package-lock.jso[n] ./assets
+    # RUN npm install
+
     # Compile assets the old way
     # WORKDIR "${APP_DIR}/assets"
     #
@@ -362,19 +375,7 @@ FROM build-deps-get AS prod-release
     #     npm install && \
     #     node node_modules/webpack/bin/webpack.js --mode production
 
-    # Install JavaScript deps using yarn
-    COPY assets/package.jso[n] assets/package.json
-    COPY assets/package-lock.jso[n] assets/package-lock.json
-    COPY assets/yarn.loc[k] assets/yarn.lock
-    RUN yarn --cwd ./assets install --prod
-    # RUN cd assets && yarn install --prod
-
-    # Install JavaScript deps using npm
-    # COPY assets/package.jso[n] ./assets
-    # COPY assets/package-lock.jso[n] ./assets
-    # COPY assets/tailwind.config.j[s] ./assets
-
-    # RUN cd assets && npm install
+    WORKDIR $APP_DIR
 
     # Compile assets with esbuild
     COPY assets ./assets
@@ -385,9 +386,6 @@ FROM build-deps-get AS prod-release
 
     # Umbrella
     # COPY apps ./apps
-
-    # WORKDIR "${APP_DIR}/assets"
-    WORKDIR $APP_DIR
 
     RUN mix assets.deploy
     # RUN esbuild default --minify
