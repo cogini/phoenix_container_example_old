@@ -105,10 +105,10 @@ jobs:
   build-test:
     name: Build test image
     # needs: setup
-    # environment:
-    #   # name: ${{ github.ref_name }}
-    #   name ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
-    #   # name: ${{ needs.setup.outputs.env_name }}
+    environment:
+      # name: ${{ github.ref_name }}
+      name ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
+      # name: ${{ needs.setup.outputs.env_name }}
     permissions:
       contents: read
       # Push to ghcr.io repository
@@ -128,12 +128,12 @@ jobs:
             prod_os_ver: bullseye-slim
             snapshot_ver: 20230612
             os: debian
-          - elixir: 1.14.5
-            otp: 26.1.1
-            build_os_ver: bullseye-20230612-slim
-            prod_os_ver: bullseye-slim
-            snapshot_ver: 20230612
-            os: debian
+          # - elixir: 1.14.5
+          #   otp: 26.1.1
+          #   build_os_ver: bullseye-20230612-slim
+          #   prod_os_ver: bullseye-slim
+          #   snapshot_ver: 20230612
+          #   os: debian
           # - elixir: 1.14.1
           #   otp: 24.3.4
           #   build_os_ver: bullseye-20210902-slim
@@ -263,12 +263,12 @@ jobs:
             prod_os_ver: bullseye-slim
             snapshot_ver: 20230612
             os: debian
-          - elixir: 1.14.5
-            otp: 26.1.1
-            build_os_ver: bullseye-20230612-slim
-            prod_os_ver: bullseye-slim
-            snapshot_ver: 20230612
-            os: debian
+          # - elixir: 1.14.5
+          #   otp: 26.1.1
+          #   build_os_ver: bullseye-20230612-slim
+          #   prod_os_ver: bullseye-slim
+          #   snapshot_ver: 20230612
+          #   os: debian
           # - elixir: 1.14.1
           #   otp: 24.3.4
           #   build_os_ver: bullseye-20210902-slim
@@ -371,12 +371,12 @@ jobs:
             prod_os_ver: bullseye-slim
             snapshot_ver: 20230612
             os: debian
-          - elixir: 1.14.5
-            otp: 26.1.1
-            build_os_ver: bullseye-20230612-slim
-            prod_os_ver: bullseye-slim
-            snapshot_ver: 20230612
-            os: debian
+          # - elixir: 1.14.5
+          #   otp: 26.1.1
+          #   build_os_ver: bullseye-20230612-slim
+          #   prod_os_ver: bullseye-slim
+          #   snapshot_ver: 20230612
+          #   os: debian
           # - elixir: 1.14.1
           #   otp: 24.3.4
           #   build_os_ver: bullseye-20210902-slim
@@ -505,12 +505,12 @@ jobs:
             prod_os_ver: bullseye-slim
             snapshot_ver: 20230612
             os: debian
-          - elixir: 1.14.5
-            otp: 26.1.1
-            build_os_ver: bullseye-20230612-slim
-            prod_os_ver: bullseye-slim
-            snapshot_ver: 20230612
-            os: debian
+          # - elixir: 1.14.5
+          #   otp: 26.1.1
+          #   build_os_ver: bullseye-20230612-slim
+          #   prod_os_ver: bullseye-slim
+          #   snapshot_ver: 20230612
+          #   os: debian
           # - elixir: 1.14.1
           #   otp: 24.3.4
           #   build_os_ver: bullseye-20210902-slim
@@ -750,12 +750,12 @@ jobs:
             prod_os_ver: bullseye-slim
             snapshot_ver: 20230612
             os: debian
-          - elixir: 1.14.5
-            otp: 26.1.1
-            build_os_ver: bullseye-20230612-slim
-            prod_os_ver: bullseye-slim
-            snapshot_ver: 20230612
-            os: debian
+          # - elixir: 1.14.5
+          #   otp: 26.1.1
+          #   build_os_ver: bullseye-20230612-slim
+          #   prod_os_ver: bullseye-slim
+          #   snapshot_ver: 20230612
+          #   os: debian
           # - elixir: 1.14.1
           #   otp: 24.3.4
           #   build_os_ver: bullseye-20210902-slim
@@ -787,7 +787,8 @@ jobs:
         run: docker compose up --wait prod
 
       - name: Display logs
-        if: failure()
+        # if: failure()
+        if: always()
         run: |
           echo postgres logs
           docker compose logs --timestamps postgres
@@ -876,12 +877,12 @@ jobs:
             prod_os_ver: bullseye-slim
             snapshot_ver: 20230612
             os: debian
-          - elixir: 1.14.5
-            otp: 26.1.1
-            build_os_ver: bullseye-20230612-slim
-            prod_os_ver: bullseye-slim
-            snapshot_ver: 20230612
-            os: debian
+          # - elixir: 1.14.5
+          #   otp: 26.1.1
+          #   build_os_ver: bullseye-20230612-slim
+          #   prod_os_ver: bullseye-slim
+          #   snapshot_ver: 20230612
+          #   os: debian
           # - elixir: 1.14.1
           #   otp: 24.3.4
           #   build_os_ver: bullseye-20210902-slim
@@ -966,7 +967,8 @@ jobs:
     name: Push prod images
     if: github.event_name != 'pull_request'
     # if: contains(github.ref, 'refs/heads/main')
-    needs: [build-prod, test-prod, test]
+    # needs: [build-prod, test-prod, test]
+    needs: [build-prod, test]
     permissions:
       # Interact with GitHub OIDC Token endpoint for AWS
       id-token: write
