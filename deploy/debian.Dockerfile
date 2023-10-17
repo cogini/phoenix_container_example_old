@@ -352,8 +352,8 @@ FROM build-deps-get AS prod-release
 
     # Install JavaScript deps using npm
     # WORKDIR "${APP_DIR}/assets"
-    # COPY assets/package.jso[n] ./assets
-    # COPY assets/package-lock.jso[n] ./assets
+    # COPY assets/package.jso[n] ./
+    # COPY assets/package-lock.jso[n] ./
     # RUN npm install
 
     # Compile assets the old way
