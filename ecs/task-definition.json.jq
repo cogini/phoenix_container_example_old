@@ -31,7 +31,7 @@
                 },
                 {
                     "name": "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT",
-                    "value: "http://localhost:4317"
+                    "value": "http://localhost:4317"
                 },
                 {
                     "name": "OTEL_EXPORTER_OTLP_PROTOCOL",
