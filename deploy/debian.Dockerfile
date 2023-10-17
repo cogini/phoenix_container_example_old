@@ -380,19 +380,18 @@ FROM build-deps-get AS prod-release
     COPY assets ./assets
     COPY priv ./priv
 
-    # WORKDIR "${APP_DIR}/assets"
-
-    WORKDIR $APP_DIR
-
-    RUN mix assets.deploy
-    # RUN esbuild default --minify
-    # RUN mix phx.digest
-
     # Non-umbrella
     COPY lib ./lib
 
     # Umbrella
     # COPY apps ./apps
+
+    # WORKDIR "${APP_DIR}/assets"
+    WORKDIR $APP_DIR
+
+    RUN mix assets.deploy
+    # RUN esbuild default --minify
+    # RUN mix phx.digest
 
     # For umbrella, using `mix cmd` ensures each app is compiled in
     # isolation https://github.com/elixir-lang/elixir/issues/9407
