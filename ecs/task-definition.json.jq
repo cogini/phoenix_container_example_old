@@ -28,6 +28,14 @@
                 {
                     "name": "CONFIG_S3_BUCKET",
                     "value": "cogini-foo-dev-app-config"
+                },
+                {
+                    "name": "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT",
+                    "value: "http://localhost:4317"
+                },
+                {
+                    "name": "OTEL_EXPORTER_OTLP_PROTOCOL",
+                    "value": "grpc"
                 }
             ],
             "essential": true,
