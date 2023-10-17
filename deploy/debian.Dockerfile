@@ -363,22 +363,22 @@ FROM build-deps-get AS prod-release
     #     node node_modules/webpack/bin/webpack.js --mode production
 
     # Install JavaScript deps using yarn
-    # COPY assets/package.json assets/package.json
-    # COPY assets/package-lock.jso[n] assets/package-lock.json
-    # COPY assets/yarn.loc[k] assets/yarn.lock
-    # RUN yarn --cwd ./assets install --prod
+    COPY assets/package.jso[n] assets/package.json
+    COPY assets/package-lock.jso[n] assets/package-lock.json
+    COPY assets/yarn.loc[k] assets/yarn.lock
+    RUN yarn --cwd ./assets install --prod
     # RUN cd assets && yarn install --prod
+
+    # Install JavaScript deps using npm
+    # COPY assets/package.jso[n] ./assets
+    # COPY assets/package-lock.jso[n] ./assets
+    # COPY assets/tailwind.config.j[s] ./assets
+
+    # RUN cd assets && npm install
 
     # Compile assets with esbuild
     COPY assets ./assets
     COPY priv ./priv
-
-    # Install JavaScript deps using npm
-    COPY assets/package.jso[n] ./assets
-    COPY assets/package-lock.jso[n] ./assets
-    COPY assets/tailwind.config.j[s] ./assets
-
-    RUN cd assets && npm install
 
     # WORKDIR "${APP_DIR}/assets"
 
