@@ -63,6 +63,10 @@ config :logger,
 #   format: "$time $metadata[$level] $message\n",
 #   # metadata: [:file, :line, :request_id, :trace_id, :span_id]
 
+config :opentelemetry,
+  id_generator: :opentelemetry_xray_id_generator,
+  propagators: [:opentelemetry_xray_propagator, :baggage]
+
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 

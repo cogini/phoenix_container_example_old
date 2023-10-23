@@ -44,17 +44,12 @@ config :logger, :default_formatter,
 
 # config :logger, :default_handler, false
 
-# https://opentelemetry.io/docs/reference/specification/resource/semantic_conventions/
-# config :opentelemetry, :resource,
-#   [
-#     # In production service.name is set based on OS env vars from Erlang release
-#     {"service.name", to_string(Mix.Project.config[:app])},
-#     # {"service.namespace", "MyNamespace"},
-#     {"service.version", Mix.Project.config[:version]},
-#   ]
+# Configure opentelemetry_exporter via environment vars because server name
+# is different in docker compose vs ECS.
+#   OTEL_EXPORTER_OTLP_ENDPOINT="http://localhost:4317"
+#   OTEL_EXPORTER_OTLP_PROTOCOL="grpc"
 
-# https://hexdocs.pm/opentelemetry_exporter/1.0.0/readme.html
-# Maybe OTEL_EXPORTER_OTLP_ENDPOINT=http://opentelemetry-collector:55680
+# https://hexdocs.pm/opentelemetry_exporter/readme.html
 # config :opentelemetry, :processors,
 #   otel_batch_processor: %{
 #     exporter: {
@@ -74,7 +69,7 @@ config :logger, :default_formatter,
 #     }
 #   }
 
-# Configure Swoosh API Client
+# Configures Swoosh API Client
 config :swoosh, api_client: Swoosh.ApiClient.Finch, finch_name: IotServer.Finch
 
 # Disable Swoosh Local Memory Storage

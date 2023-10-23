@@ -82,31 +82,14 @@ config :opentelemetry, :resource, [
   {"service.version", Mix.Project.config()[:version]}
 ]
 
-# config :opentelemetry, :processors,
-#   otel_batch_processor: %{
-#     exporter: {:otel_exporter_stdout, []}
-#   }
-
-# https://hexdocs.pm/opentelemetry_exporter/1.0.0/readme.html
-# Maybe OTEL_EXPORTER_OTLP_ENDPOINT=http://opentelemetry-collector:55680
-# config :opentelemetry, :processors,
-#   otel_batch_processor: %{
-#     exporter: {
-#       :opentelemetry_exporter,
-#       %{
-#         protocol: :grpc,
-#         endpoints: [
-#           # gRPC
-#           ~c"http://localhost:4317"
-#           # HTTP
-#           # 'http://localhost:4318'
-#           # 'http://localhost:55681'
-#           # {:http, 'localhost', 4318, []}
-#         ]
-#         # headers: [{"x-honeycomb-dataset", "experiments"}]
-#       }
-#     }
-#   }
+if System.get_env("DEBUG_OTEL") == "true" do
+  config :opentelemetry, :processors,
+    otel_batch_processor: %{
+      exporter: {:otel_exporter_stdout, []}
+    }
+else
+  config :opentelemetry, traces_exporter: :none
+end
 
 # Set a higher stacktrace during development. Avoid configuring such
 # in production as building large stacktraces may be expensive.

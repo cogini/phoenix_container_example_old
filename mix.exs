@@ -43,7 +43,7 @@ defmodule PhoenixContainerExample.MixProject do
     [
       mod: {PhoenixContainerExample.Application, []},
       extra_applications:
-        [:logger, :runtime_tools, :gproc, :tls_certificate_check, :ssl, :eex] ++
+        [:logger, :runtime_tools, :inets, :gproc, :ssl, :eex] ++
           extra_applications(Mix.env())
     ]
   end
@@ -64,6 +64,7 @@ defmodule PhoenixContainerExample.MixProject do
         include_executables_for: [:unix]
         # Don't need to tar if we are just going to copy it
         # steps: [:assemble, :tar]
+        applications: [opentelemetry_exporter: :permanent, opentelemetry: :temporary]
       ]
     ]
   end
@@ -89,14 +90,18 @@ defmodule PhoenixContainerExample.MixProject do
       {:logger_formatter_json, "~> 0.7.0"},
       {:mix_audit, "~> 2.0", only: [:dev, :test], runtime: false},
       {:observer_cli, "~> 1.7"},
-      # opentelemetry_exporter needs to be before the other
-      # opentelemetry modules so it will be started first.
+      # opentelemetry_exporter and tls_certificate_check are before the opentelemetry
+      # modules so they will be started first.
+      {:tls_certificate_check, "~> 1.13"},
       {:opentelemetry_exporter, "~> 1.1"},
       {:opentelemetry, "~> 1.1"},
       {:opentelemetry_api, "~> 1.1"},
       {:opentelemetry_ecto, "~> 1.0"},
       {:opentelemetry_logger_metadata, "~> 0.1.0"},
+      {:opentelemetry_cowboy, "~> 0.2.1"},
+      {:opentelemetry_liveview, "~> 1.0.0-rc.4"},
       {:opentelemetry_phoenix, "~> 1.0"},
+      {:opentelemetry_xray, github: "cogini/opentelemetry_xray"},
       {:phoenix, "~> 1.6.11"},
       {:phoenix_ecto, "~> 4.4"},
       {:phoenix_html, "~> 3.0"},
@@ -137,8 +142,8 @@ defmodule PhoenixContainerExample.MixProject do
         # mix deps.update
         # "hex.outdated",
         "deps.audit",
-        "sobelow --exit --skip -i DOS.StringToAtom,Config.HTTPS",
-        "dialyzer"
+        "sobelow --exit --quiet --skip -i DOS.StringToAtom,Config.HTTPS",
+        "dialyzer --quiet-with-result"
       ],
       "quality.ci": [
         "format --check-formatted",
@@ -147,8 +152,8 @@ defmodule PhoenixContainerExample.MixProject do
         "hex.audit",
         "deps.audit",
         "credo",
-        "sobelow --exit --skip -i DOS.StringToAtom,Config.HTTPS",
-        "dialyzer"
+        "sobelow --exit --quiet --skip -i DOS.StringToAtom,Config.HTTPS",
+        "dialyzer --quiet-with-result"
       ]
     ]
   end
