@@ -51,23 +51,23 @@ config :logger, :default_formatter,
 
 # https://hexdocs.pm/opentelemetry_exporter/readme.html
 # config :opentelemetry, :processors,
-#   otel_batch_processor: %{
-#     exporter: {
-#       :opentelemetry_exporter,
-#       %{
-#         protocol: :grpc,
-#         endpoints: [
-#           # gRPC
-#           ~c"http://localhost:4317"
-#           # HTTP
-#           # 'http://localhost:4318'
-#           # 'http://localhost:55681'
-#           # {:http, 'localhost', 4318, []}
-#         ]
-#         # headers: [{"x-honeycomb-dataset", "experiments"}]
-#       }
+# otel_batch_processor: %{
+#   exporter: {
+#     :opentelemetry_exporter,
+#     %{
+#       protocol: :grpc,
+#       endpoints: [
+#         # gRPC
+#         ~c"http://localhost:4317"
+#         # HTTP
+#         # 'http://localhost:4318'
+#         # 'http://localhost:55681'
+#         # {:http, 'localhost', 4318, []}
+#       ]
+#       # headers: [{"x-honeycomb-dataset", "experiments"}]
 #     }
 #   }
+# }
 
 # Configures Swoosh API Client
 config :swoosh, api_client: Swoosh.ApiClient.Finch, finch_name: IotServer.Finch
