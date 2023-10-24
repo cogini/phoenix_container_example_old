@@ -10,6 +10,8 @@ defmodule PhoenixContainerExampleWeb.Endpoint do
     signing_salt: "5e1HWf6D"
   ]
 
+  @app :phoenix_container_example
+
   plug PhoenixContainerExampleWeb.HealthPlug
 
   socket "/live", Phoenix.LiveView.Socket, websocket: [connect_info: [session: @session_options]]
@@ -37,14 +39,7 @@ defmodule PhoenixContainerExampleWeb.Endpoint do
     param_key: "request_logger",
     cookie_key: "request_logger"
 
-  plug(Uinta.Plug)
-  #   json: true,
-  #   Include GraphQL variables in log line
-  #   include_variables: true,
-  #   ignored_paths: [],
-  #   filter_variables: [],
-  #   success_log_sampling_ratio: 1.0,
-  #   include_datadog_fields: false
+  plug Uinta.Plug, Application.compile_env(@app, :uinta_plug, [])
 
   plug Plug.RequestId
   plug Plug.Telemetry, event_prefix: [:phoenix, :endpoint]
