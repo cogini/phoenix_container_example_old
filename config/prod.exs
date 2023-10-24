@@ -69,6 +69,15 @@ config :logger, :default_formatter,
 #   }
 # }
 
+config :iot_server, :uinta_plug,
+  json: true
+  # Include GraphQL variables in log line
+  # include_variables: true,
+  # ignored_paths: [],
+  # filter_variables: [],
+  # success_log_sampling_ratio: 1.0,
+  # include_datadog_fields: false
+
 # Configures Swoosh API Client
 config :swoosh, api_client: Swoosh.ApiClient.Finch, finch_name: IotServer.Finch
 
