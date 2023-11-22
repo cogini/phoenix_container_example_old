@@ -24,25 +24,25 @@ on: push
 env:
   # Name of image
   IMAGE_NAME: foo-app
-  # Name of org in GHCR Docker repository
+  # Name of org in GHCR Docker repository (must be lowercase)
   IMAGE_OWNER: ${{ github.repository_owner }}
-  # ECR Docker repository org name
+  # ECR Docker repository org name, may be blank
   # ECR_IMAGE_OWNER: cogini/
   ECR_IMAGE_OWNER: ''
   # Tag for release images
   # IMAGE_TAG: ${{ (github.ref == 'refs/heads/main' && 'staging') || (github.ref == 'refs/heads/qa' && 'qa') }}
   IMAGE_TAG: latest
   IMAGE_VER: ${{ github.sha }}
-  # Docker build args
-  ELIXIR_VER: 1.15.7
-  OTP_VER: 26.1.2
-  BUILD_OS_VER: bullseye-20230612-slim
-  PROD_OS_VER: bullseye-slim
-  BASE_OS: debian
   # Variant if test matrix is not used
   VAR: '1.15.7-erlang-26.1.2-debian-bullseye-20230612-slim'
   # Variant that is deployed
   PROD_VAR: '1.15.7-erlang-26.1.2-debian-bullseye-20230612-slim'
+  RELEASE_ELIXIR: 1.15.7
+  RELEASE_OTP: 26.1.2
+  RELEASE_BUILD_OS_VER: bullseye-20230612-slim
+  RELEASE_PROD_OS_VER: bullseye-slim
+  RELEASE_SNAPSHOT_VER: ""
+  RELEASE_OS: debian
   # Registry for test images
   REGISTRY: ghcr.io/
   # Registry for public images, default is docker.io
@@ -51,19 +51,15 @@ env:
   AWS_ENABLED: 1
   AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
   # AWS_ROLE_TO_ASSUME: arn:aws:iam::XXX:role/cogini-foo-dev-app-github-action
-  AWS_ROLE_TO_ASSUME: ${{ secrets.AWS_ROLE_TO_ASSUME }}
   AWS_REGION: ap-northeast-1
+  # S3_BUCKET_ASSETS: foo-app-dev-app-assets
+  # CLOUDFRONT_CDN_DISTRIBUTION_ID: XXXX
   # Health check port for app
   APP_PORT: 4000
   # Datadog
   # DD_API_KEY: ${{ secrets.ACTIONS_DD_API_KEY }}
   # DD_ENV: ci
   # DD_TAGS: "environment:ci"
-  # Docker
-  DOCKER_BUILDKIT: '1'
-  COMPOSE_DOCKER_CLI_BUILD: '1'
-  COMPOSE_FILE: docker-compose.gha.yml
-  DOCKER_FILE: deploy/debian.Dockerfile
   ELIXIR_MODULE: PhoenixContainerExample
   ECS_CLUSTER: foo
   ECS_SERVICE: foo-app
@@ -71,44 +67,47 @@ env:
   CODEDEPLOY_APPLICATION: foo-app
   CODEDEPLOY_DEPLOYMENT_GROUP: foo-app-ecs
   TASKDEF: ecs/task-definition.json
+  APPSPEC: ecs/appspec.yml
   # AWS SSM Parameter Store name prefix
   AWS_PS_PREFIX: cogini/foo/dev
   # Name of environment for resources created by Terraform
   TERRAFORM_ENV: dev
+  HOST: rubegoldberg.io
   # GitHub Advanced Security, free for open source, otherwise a paid feature
   # https://docs.github.com/en/get-started/learning-about-github/about-github-advanced-security
   # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning
   # https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github
   GITHUB_ADVANCED_SECURITY: 1
   DEPLOY_DOCKER_HUB: 0
+  # Docker
+  DOCKER_BUILDKIT: '1'
+  COMPOSE_DOCKER_CLI_BUILD: '1'
+  COMPOSE_FILE: docker-compose.gha.yml
+  DOCKER_FILE: deploy/debian.Dockerfile
 jobs:
-  setup:
-    name: Setup
-    runs-on: ubuntu-latest
-    steps:
-      - name: Set environment
-        id: branch_check
-        run: |
-          echo "Running on branch ${{ github.ref }}"
-          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
-            echo "env_name=staging >> $GITHUB_OUTPUT
-          elif [ "${{ github.ref }}" = "refs/heads/qa" ]; then
-            echo "env_name=qa >> $GITHUB_OUTPUT
-          elif [ "${{ github.ref }}" = "refs/heads/prod" ]; then
-            echo "env_name=production >> $GITHUB_OUTPUT
-          else
-            echo "env_name=feature >> $GITHUB_OUTPUT
-          fi
-    outputs:
-      env_name: ${{ steps.branch_check.outputs.env_name }}
+  # setup:
+  #   name: Setup
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Set environment
+  #       id: branch_check
+  #       run: |
+  #         echo "Running on branch ${{ github.ref }}"
+  #         if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+  #           echo "env_name=staging >> $GITHUB_OUTPUT
+  #         elif [ "${{ github.ref }}" = "refs/heads/qa" ]; then
+  #           echo "env_name=qa >> $GITHUB_OUTPUT
+  #         elif [ "${{ github.ref }}" = "refs/heads/prod" ]; then
+  #           echo "env_name=production >> $GITHUB_OUTPUT
+  #         else
+  #           echo "env_name=feature >> $GITHUB_OUTPUT
+  #         fi
+  #   outputs:
+  #     env_name: ${{ steps.branch_check.outputs.env_name }}
 
   build-test:
     name: Build test image
     # needs: setup
-    environment:
-      # name: ${{ github.ref_name }}
-      name ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
-      # name: ${{ needs.setup.outputs.env_name }}
     permissions:
       contents: read
       # Push to ghcr.io repository
@@ -116,6 +115,7 @@ jobs:
       # Cancel previous runs
       actions: write
     runs-on: ubuntu-latest
+    environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
     strategy:
       fail-fast: false
       matrix:
@@ -214,7 +214,7 @@ jobs:
           driver-opts: network=host
 
       - name: Build test image and push to GHCR
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v5
         # https://github.com/docker/build-push-action
         with:
           file: ${{ env.DOCKER_FILE }}
@@ -480,10 +480,6 @@ jobs:
   build-prod:
     name: Build prod image
     # needs: setup
-    environment:
-      # name: ${{ github.ref_name }}
-      name ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
-      # name: ${{ needs.setup.outputs.env_name }}
     permissions:
       # Interact with GitHub OIDC Token endpoint for AWS
       id-token: write
@@ -495,6 +491,7 @@ jobs:
       # Cancel previous runs
       actions: write
     runs-on: ubuntu-latest
+    environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
     strategy:
       fail-fast: false
       matrix:
@@ -547,6 +544,31 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Configure AWS credentials
+        if: ${{ env.AWS_ENABLED == 1 }}
+        uses: aws-actions/configure-aws-credentials@v4
+        # https://github.com/aws-actions/configure-aws-credentials
+        # https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Log in to Amazon ECR
+        if: ${{ env.AWS_ENABLED == 1 }}
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set vars
+        if: ${{ env.AWS_ENABLED == 1 }}
+        run: echo "ECR_REGISTRY=${{ steps.ecr-login.outputs.registry }}" >> $GITHUB_ENV
+
+      # - name: Log in to ECR
+      #   uses: docker/login-action@v3
+      #   with:
+      #     registry: ${{ env.ECR_REGISTRY }}
+      #     username: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      #     password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
       - name: Check out source
         uses: actions/checkout@v4
 
@@ -580,16 +602,16 @@ jobs:
         with:
           driver-opts: network=host
 
-      - name: Build prod image and push to GHCR
+      - name: Build prod image and push
         uses: docker/build-push-action@v5
         with:
           file: ${{ env.DOCKER_FILE }}
           target: prod
           build-args: |
-            ELIXIR_VER=${{ matrix.elixir }}
-            OTP_VER=${{ matrix.otp }}
-            BUILD_OS_VER=${{ matrix.build_os_ver }}
-            PROD_OS_VER=${{ matrix.prod_os_ver }}
+            ELIXIR_VER=${{ env.RELEASE_ELIXIR }}
+            OTP_VER=${{ env.RELEASE_OTP }}
+            BUILD_OS_VER=${{ env.RELEASE_BUILD_OS_VER }}
+            PROD_OS_VER=${{ env.RELEASE_PROD_OS_VER }}
           context: .
           builder: ${{ steps.buildx.outputs.name }}
           push: true
@@ -599,78 +621,11 @@ jobs:
           tags: |
             ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.VAR }}${{ env.IMAGE_VER }}
             ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.BRANCH }}-${{ env.GITHUB_SHA_SHORT }}
-          # secrets: |
-          #   "access_token=${{ secrets.DEVOPS_ACCESS_TOKEN }}"
-          #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
-          #   "oban_license_key=${{ secrets.OBAN_LICENSE_KEY }}"
-
-      - name: Build prod image and push to Docker Hub
-        if: ${{ env.DEPLOY_DOCKER_HUB == 1 }}
-        uses: docker/build-push-action@v5
-        with:
-          file: ${{ env.DOCKER_FILE }}
-          target: prod
-          context: .
-          builder: ${{ steps.buildx.outputs.name }}
-          push: true
-          cache-from: type=gha,scope=${{ github.workflow }}-${{ env.VAR }}
-          cache-to: type=gha,scope=${{ github.workflow }}-${{ env.VAR }},mode=max
-          # ssh: default
-          tags: |
-            docker.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.VAR }}${{ env.IMAGE_VER }}
-            docker.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.BRANCH }}-${{ env.GITHUB_SHA_SHORT }}
-          # secrets: |
-          #   "access_token=${{ secrets.DEVOPS_ACCESS_TOKEN }}"
-          #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
-          #   "oban_license_key=${{ secrets.OBAN_LICENSE_KEY }}"
-
-      - name: Configure AWS credentials
-        if: ${{ env.AWS_ENABLED == 1 }}
-        uses: aws-actions/configure-aws-credentials@v4
-        # https://github.com/aws-actions/configure-aws-credentials
-        # https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
-        with:
-          role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Log in to Amazon ECR
-        if: ${{ env.AWS_ENABLED == 1 }}
-        id: ecr-login
-        uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Set vars
-        if: ${{ env.AWS_ENABLED == 1 }}
-        run: echo "ECR_REGISTRY=${{ steps.ecr-login.outputs.registry }}" >> $GITHUB_ENV
-
-      - name: Debug REGISTRY
-        if: ${{ env.AWS_ENABLED == 1 }}
-        run: echo "ECR_REGISTRY=${{ env.ECR_REGISTRY }}"
-
-      # - name: Log in to ECR
-      #   uses: docker/login-action@v3
-      #   with:
-      #     registry: ${{ env.ECR_REGISTRY }}
-      #     username: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      #     password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-
-      - name: Build prod image and push to AWS ECR
-        if: ${{ env.AWS_ENABLED == 1 }}
-        uses: docker/build-push-action@v5
-        env:
-          REGISTRY: "${{ env.ECR_REGISTRY }}/"
-          # IMAGE_OWNER: "${{ env.ECR_IMAGE_OWNER }}/"
-        with:
-          file: ${{ env.DOCKER_FILE }}
-          target: prod
-          context: .
-          builder: ${{ steps.buildx.outputs.name }}
-          push: true
-          cache-from: type=gha,scope=${{ github.workflow }}-${{ env.VAR }}
-          cache-to: type=gha,scope=${{ github.workflow }}-${{ env.VAR }},mode=max
-          # ssh: default
-          tags: |
             ${{ env.ECR_REGISTRY }}/${{ env.ECR_IMAGE_OWNER }}${{ env.IMAGE_NAME }}:${{ env.VAR }}${{ env.IMAGE_VER }}
             ${{ env.ECR_REGISTRY }}/${{ env.ECR_IMAGE_OWNER }}${{ env.IMAGE_NAME }}:${{ env.BRANCH }}-${{ env.GITHUB_SHA_SHORT }}
+
+          # docker.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.VAR }}${{ env.IMAGE_VER }}
+          # docker.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.BRANCH }}-${{ env.GITHUB_SHA_SHORT }}
           # secrets: |
           #   "access_token=${{ secrets.DEVOPS_ACCESS_TOKEN }}"
           #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
@@ -694,6 +649,7 @@ jobs:
       pull-requests: write
       issues: read
     runs-on: ubuntu-latest
+    environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
     steps:
       - name: Cancel previous runs
         uses: styfle/cancel-workflow-action@0.11.0
@@ -704,7 +660,7 @@ jobs:
         if: ${{ env.AWS_ENABLED == 1 }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Log in to Amazon ECR
@@ -857,18 +813,17 @@ jobs:
         run: docker compose up --wait prod
 
       - name: Display logs
-        # if: failure()
-        if: always()
+        if: failure()
         run: |
-          echo postgres logs
+          echo "postgres logs"
           docker compose logs --timestamps postgres
-          echo postgres health
+          echo "postgres health"
           docker inspect --format "{{json .State.Health }}" $(docker compose ps -q postgres) | jq
-          echo prod health
+          echo "prod health"
           docker inspect --format "{{json .State.Health }}" $(docker compose ps -q prod) | jq
-          echo prod logs
+          echo "prod logs"
           docker compose logs --timestamps prod
-          echo ps
+          echo "ps"
           docker compose ps --format json | jq .
 
       # - name: Debug env
@@ -885,20 +840,21 @@ jobs:
       #     docker compose run prod eval '${{ env.ELIXIR_MODULE }}.Release.run_seeds()'
 
       - name: Run health check
-        run: curl -v http://localhost:${{ env.APP_PORT }}/healthz/liveness
+        # run: curl -v http://localhost:${{ env.APP_PORT }}/healthz
+        run: for i in 1 2 3 4 5; do curl -v http://localhost:${{ env.APP_PORT }}/healthz && break || sleep 1; done
 
       - name: Display logs
         if: failure()
         run: |
-          echo postgres logs
+          echo "postgres logs"
           docker compose logs --timestamps postgres
-          echo postgres health
+          echo "postgres health"
           docker inspect --format "{{json .State.Health }}" $(docker compose ps -q postgres) | jq
-          echo prod logs
+          echo "prod logs"
           docker compose logs --timestamps prod
-          echo prod health
+          echo "prod health"
           docker inspect --format "{{json .State.Health }}" $(docker compose ps -q prod) | jq
-          echo ps
+          echo "ps"
           docker compose ps --format json | jq .
 
       # - name: Run API tests
@@ -1033,12 +989,13 @@ jobs:
       #     image: ghcr.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.VAR }}${{ env.IMAGE_VER }}
       #     args: --file=${{ env.DOCKER_FILE }} --project-name=api
 
-  prod:
-    name: Push prod images
+  upload-assets:
+    name: Upload assets to CDN
     if: github.event_name != 'pull_request'
     # if: contains(github.ref, 'refs/heads/main')
     # needs: [build-prod, test-prod, test]
-    needs: [build-prod, test]
+    # needs: [test-prod, test, test-dialyzer]
+    needs: [build-prod]
     permissions:
       # Interact with GitHub OIDC Token endpoint for AWS
       id-token: write
@@ -1053,7 +1010,23 @@ jobs:
       pull-requests: write
       issues: read
     runs-on: ubuntu-latest
+    environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - elixir: 1.15.7
+            otp: 26.1.2
+            build_os_ver: bullseye-20230612-slim
+            prod_os_ver: bullseye-slim
+            snapshot_ver: 20230612
+            os: debian
     steps:
+      - name: Debug environment
+        run: |
+          echo "ref_name: ${{ github.ref_name }}"
+          echo "environment: ${{ github.event.deployment.environment }}"
+
       - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
@@ -1061,17 +1034,12 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # - name: Tag GHCR release as latest
-      #   run: |
-      #     docker buildx imagetools create \
-      #       --append ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{env.PROD_VAR}}${{env.IMAGE_VER}} \
-      #       --tag ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{env.IMAGE_TAG}}
-
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
+      - name: Configure AWS credentials
+        if: ${{ env.AWS_ENABLED == 1 }}
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Check out source
         uses: actions/checkout@v4
@@ -1082,114 +1050,47 @@ jobs:
         with:
           driver-opts: network=host
 
-      # - name: Build final prod image and push to GHCR as latest
-      #   uses: docker/build-push-action@v5
-      #   with:
-      #     file: ${{ env.DOCKER_FILE }}
-      #     target: prod
-      #     context: .
-      #     builder: ${{ steps.buildx.outputs.name }}
-      #     push: true
-      #     cache-from: type=gha,scope=${{ github.workflow }}-${{ env.PROD_VAR }}
-      #     cache-to: type=gha,scope=${{ github.workflow }}-${{ env.PROD_VAR }},mode=max
-      #     tags: |
-      #       ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{ env.IMAGE_VER }}
-      #       ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{ env.IMAGE_TAG }}
-
-      - name: Build final prod image and push to Docker Hub
-        if: ${{ env.DEPLOY_DOCKER_HUB == 1 }}
+      - name: Get build artifacts on host
         uses: docker/build-push-action@v5
         with:
           file: ${{ env.DOCKER_FILE }}
-          target: prod
+          target: artifacts
+          build-args: |
+            ELIXIR_VER=${{ matrix.elixir }}
+            OTP_VER=${{ matrix.otp }}
+            BUILD_OS_VER=${{ matrix.build_os_ver }}
+            PROD_OS_VER=${{ matrix.prod_os_ver }}
           context: .
           builder: ${{ steps.buildx.outputs.name }}
-          push: true
+          push: false
           cache-from: type=gha,scope=${{ github.workflow }}-${{ env.PROD_VAR }}
-          cache-to: type=gha,scope=${{ github.workflow }}-${{ env.PROD_VAR }},mode=max
-          # ssh: default
-          tags: |
-            docker.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
-            docker.io/${{ env.IMAGE_OWNER }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_VER }}
-          # secrets: |
-          #   "access_token=${{ secrets.DEVOPS_ACCESS_TOKEN }}"
-          #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
-          #   "oban_license_key=${{ secrets.OBAN_LICENSE_KEY }}"
+          outputs: type=local,dest=output
 
-      - name: Configure AWS credentials
-        if: ${{ env.AWS_ENABLED == 1 }}
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
-          aws-region: ${{ env.AWS_REGION }}
+      - name: List output dir
+        run: find output/static -print
 
-      - name: Log in to Amazon ECR
-        if: ${{ env.AWS_ENABLED == 1 }}
-        id: ecr-login
-        uses: aws-actions/amazon-ecr-login@v2
+      - name: Sync to S3
+        run: aws s3 sync output/static/ s3://${{ vars.S3_BUCKET_ASSETS }}
 
-      - name: Set vars
-        if: ${{ env.AWS_ENABLED == 1 }}
-        run: echo "ECR_REGISTRY=${{ steps.ecr-login.outputs.registry }}" >> $GITHUB_ENV
-
-      # - name: Log in to ECR
-      #   uses: docker/login-action@v3
-      #   with:
-      #     registry: ${{ env.ECR_REGISTRY }}
-      #     username: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      #     password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-
-      # - name: Tag ECR release as latest
-      #   if: ${{ env.AWS_ENABLED == 1 }}
-      #   run: |
-      #     export MANIFEST=$(aws ecr batch-get-image --repository-name "${{env.ECR_IMAGE_OWNER}}/${{env.IMAGE_NAME}}" \
-      #       --image-ids imageTag=${{ env.IMAGE_VER }} --output json | jq --raw-output --join-output '.images[0].imageManifest')
-      #     aws ecr put-image --repository-name "${{env.ECR_IMAGE_OWNER}}/${{env.IMAGE_NAME}}" \
-      #       --image-tag ${{ env.IMAGE_TAG }} --image-manifest "$MANIFEST"
-      #     aws ecr describe-images --repository-name "${{env.ECR_IMAGE_OWNER}}/${{env.IMAGE_NAME}}"
-
-      - name: Build final prod image and push to AWS ECR
-        if: ${{ env.AWS_ENABLED == 1 }}
-        uses: docker/build-push-action@v5
-        env:
-          REGISTRY: "${{ env.ECR_REGISTRY }}/"
-          # IMAGE_OWNER: "${{ env.ECR_IMAGE_OWNER }}"
-          # VAR: ${{ env.PROD_VAR }}
-        with:
-          file: ${{ env.DOCKER_FILE }}
-          target: prod
-          context: .
-          builder: ${{ steps.buildx.outputs.name }}
-          push: true
-          cache-from: type=gha,scope=${{ github.workflow }}-${{ env.PROD_VAR }}
-          cache-to: type=gha,scope=${{ github.workflow }}-${{ env.PROD_VAR }},mode=max
-          # ssh: default
-          tags: |
-            ${{env.ECR_REGISTRY}}/${{env.ECR_IMAGE_OWNER}}${{env.IMAGE_NAME}}:${{env.IMAGE_TAG}}
-            ${{env.ECR_REGISTRY}}/${{env.ECR_IMAGE_OWNER}}${{env.IMAGE_NAME}}:${{env.IMAGE_VER}}
-          # secrets: |
-          #   "access_token=${{ secrets.DEVOPS_ACCESS_TOKEN }}"
-          #   "oban_key_fingerprint=${{ secrets.OBAN_KEY_FINGERPRINT }}"
-          #   "oban_license_key=${{ secrets.OBAN_LICENSE_KEY }}"
+      - name: Create CloudFront invalidation
+        run: aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_CDN_DISTRIBUTION_ID }} --paths "/*"
 
   deploy:
     name: Deploy to AWS ECS
     # if: ${{ env.AWS_ENABLED == 1 }}
-    needs: [prod]
-    environment:
-      # name: ${{ github.ref_name }}
-      name ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
-      # name: ${{ needs.setup.outputs.env_name }}
+    needs: [test-prod, test, test-dialyzer]
+    # needs: [upload-assets]
     permissions:
       # Interact with GitHub OIDC Token endpoint for AWS
       id-token: write
       contents: read
     runs-on: ubuntu-latest
+    environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
     steps:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Log in to Amazon ECR
@@ -1212,9 +1113,9 @@ jobs:
       - name: Generate ECS task-defintion.json
         env:
           AWSLOGS_REGION: ${{ env.AWS_REGION }}
-          TASK_ROLE_ARN: "arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/iot-app-20230922164312318900000004"
-          EXECUTION_ROLE_ARN: arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/iot-ecs-task-execution-role
-          HOST: rubegoldberg.io
+          HOST: ${{ vars.HOST }}
+          TASK_ROLE_ARN: ${{ secrets.TASK_ROLE_ARN }}
+          EXECUTION_ROLE_ARN: ${{ secrets.EXECUTION_ROLE_ARN}}
         run: jq --null-input -f "${TASKDEF}.jq" | tee "$TASKDEF"
 
       - name: Put new image ID in ECS task definition
@@ -1231,10 +1132,110 @@ jobs:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
           cluster: ${{ env.ECS_CLUSTER }}
           service: ${{ env.ECS_SERVICE }}
-          wait-for-service-stability: true
-          codedeploy-appspec: ecs/appspec.yml
-          codedeploy-application: ${{ env.CODEDEPLOY_APPLICATION }}
-          codedeploy-deployment-group: ${{ env.CODEDEPLOY_DEPLOYMENT_GROUP }}
+          # wait-for-service-stability: true
+          # codedeploy-appspec: ${{ env.APPSPEC }}
+          # codedeploy-application: ${{ env.CODEDEPLOY_APPLICATION }}
+          # codedeploy-deployment-group: ${{ env.CODEDEPLOY_DEPLOYMENT_GROUP }}
+          # codedeploy-description: "${{ env.GITHUB_REF }} ${{ env.GITHUB_SHA }}"
 
-       # https://github.com/marketplace/actions/slack-notify-build
-       # https://github.com/marketplace/actions/post-slack-message
+      # - name: Run CodeBuild
+      #   uses: aws-actions/aws-codebuild-run-build@v1
+      #   with:
+      #     project-name: "foo-app"
+      #     # buildspec-override: ecs/buildspec-docker.yml
+      #     env-vars-for-codebuild: |
+      #       custom,
+      #       requester,
+      #       event-name
+      #   env:
+      #     custom: my environment variable
+      #     requester: ${{ github.actor }}
+      #     event-name: ${{ github.event_name }}
+
+      # https://github.com/marketplace/actions/slack-notify-build
+      # https://github.com/marketplace/actions/post-slack-message
+
+  tag:
+    name: Tag prod images as latest
+    if: github.event_name != 'pull_request'
+    # if: contains(github.ref, 'refs/heads/main')
+    needs: [deploy]
+    # needs: [test-prod, test, test-dialyzer]
+    permissions:
+      # Interact with GitHub OIDC Token endpoint for AWS
+      id-token: write
+      contents: read
+
+      # Push to ghcr.io repository
+      packages: write
+
+      # Upload JUnit report files
+      # https://github.com/EnricoMi/publish-unit-test-result-action#permissions
+      checks: write
+      pull-requests: write
+      issues: read
+    runs-on: ubuntu-latest
+    environment: ${{ (github.ref_name == 'main' && 'staging') || (github.ref_name == 'qa' && 'qa') || (github.ref_name == 'prod' && 'production') }}
+    strategy:
+      fail-fast: false
+    steps:
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # This requires pulling the image
+      # - name: Tag GHCR release as latest
+      #   run: |
+      #     docker buildx imagetools create \
+      #       --append ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{env.PROD_VAR}}${{env.IMAGE_VER}} \
+      #       --tag ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{env.IMAGE_TAG}}
+
+      # - name: Log in to Docker Hub
+      #   uses: docker/login-action@v3
+      #   with:
+      #     username: ${{ secrets.DOCKERHUB_USERNAME }}
+      #     password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Configure AWS credentials
+        if: ${{ env.AWS_ENABLED == 1 }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Log in to Amazon ECR
+        if: ${{ env.AWS_ENABLED == 1 }}
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set vars
+        if: ${{ env.AWS_ENABLED == 1 }}
+        run: echo "ECR_REGISTRY=${{ steps.ecr-login.outputs.registry }}" >> $GITHUB_ENV
+
+      # - name: Check out source
+      #   uses: actions/checkout@v4
+
+      - name: Tag ECR release as latest
+        if: ${{ env.AWS_ENABLED == 1 }}
+        run: |
+          export MANIFEST=$(aws ecr batch-get-image --repository-name "${{env.ECR_IMAGE_OWNER}}${{env.IMAGE_NAME}}" \
+            --image-ids imageTag=${{ env.VAR }}${{ env.IMAGE_VER }} \
+            --output json | jq --raw-output --join-output '.images[0].imageManifest')
+          aws ecr put-image --repository-name "${{env.ECR_IMAGE_OWNER}}${{env.IMAGE_NAME}}" \
+            --image-tag ${{ env.IMAGE_TAG }} --image-manifest "$MANIFEST"
+          # Requires higher permissions
+          # aws ecr describe-images --repository-name "${{env.ECR_IMAGE_OWNER}}${{env.IMAGE_NAME}}"
+
+      - name: Tag GHCR release as latest
+        run: |
+          skopeo copy \
+            docker://ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{env.PROD_VAR}}${{env.IMAGE_VER}} \
+            docker://ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{env.IMAGE_TAG}}
+          # skopeo copy --multi-arch=index-only \
+          #        docker://ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{env.PROD_VAR}}${{env.IMAGE_VER}} \
+          #        docker://ghcr.io/${{env.IMAGE_OWNER}}/${{env.IMAGE_NAME}}:${{env.IMAGE_TAG}}
+
+      # To see debug logs, create a secret named ACTIONS_STEP_DEBUG with value 'true'
