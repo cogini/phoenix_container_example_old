@@ -6,20 +6,20 @@ ARG BASE_OS=ubuntu
 # Specify versions of Erlang, Elixir, and base OS.
 # Choose a combination supported by https://hub.docker.com/r/hexpm/elixir/tags
 
-ARG ELIXIR_VER=1.15.5
-ARG OTP_VER=26.0.2
-ARG BUILD_OS_VER=jammy-20230126
-
+ARG ELIXIR_VER=1.15.7
+ARG OTP_VER=26.1.2
 
 # https://hub.docker.com/_/ubuntu
-ARG PROD_OS_VER=jammy-20230126
+# Specify snapshot explicitly to get repeatable builds, see https://snapshot.debian.org/
+# The tag without a snapshot (e.g., bullseye-slim) includes the latest snapshot.
+ARG BUILD_OS_VER=jammy-20231004
+ARG PROD_OS_VER=jammy-20231004
 
-# Use snapshot for consistent dependencies, see https://snapshot.debian.org/
-# Needs to be updated manually
 ARG SNAPSHOT_VER=""
 
 # ARG NODE_VER=16.14.1
 ARG NODE_VER=lts
+ARG NODE_MAJOR=20
 
 # Docker registry for internal images, e.g. 123.dkr.ecr.ap-northeast-1.amazonaws.com/
 # If blank, docker.io will be used. If specified, should have a trailing slash.
@@ -78,6 +78,7 @@ ARG DEV_PACKAGES=""
 FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
     ARG SNAPSHOT_VER
     ARG RUNTIME_PACKAGES
+    ARG NODE_MAJOR
 
     ARG APP_DIR
     ARG APP_GROUP
@@ -103,12 +104,13 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
     RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
         --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
-        set -exu && \
-        apt-get update -qq && \
-        DEBIAN_FRONTEND=noninteractive \
-        apt-get -y install -y -qq --no-install-recommends ca-certificates
-
-    RUN if test -n "$SNAPSHOT_VER" ; then \
+        if test -n "$SNAPSHOT_VER" ; then \
+            set -exu && \
+            apt-get update -qq && \
+            DEBIAN_FRONTEND=noninteractive \
+            apt-get -y install -y -qq --no-install-recommends \
+                ca-certificates \
+            && \
             echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_VER} bullseye main" > /etc/apt/sources.list && \
             echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/${SNAPSHOT_VER} bullseye-security main" >> /etc/apt/sources.list && \
             echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_VER} bullseye-updates main" >> /etc/apt/sources.list; \
@@ -126,7 +128,7 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
             # Enable installation of packages over https
             apt-transport-https \
             build-essential \
-            # Enable app to make outbound SSL calls.
+            # Enable app to make outbound SSL calls
             ca-certificates \
             curl \
             git \
@@ -140,7 +142,7 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
             # Support ssl in container, as opposed to load balancer
             openssl \
             # Install default nodejs
-            nodejs \
+            # nodejs \
             # Install default Postgres
             # libpq-dev \
             # postgresql-client \
@@ -148,20 +150,9 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         && \
         locale-gen && \
         mkdir -p /etc/apt/keyrings && \
-        # Install yarn
-        curl -sL --ciphers ECDHE-RSA-AES128-GCM-SHA256 https://dl.yarnpkg.com/debian/pubkey.gpg -o /etc/apt/trusted.gpg.d/yarn.asc && \
-        echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list && \
-        printf "Package: *\nPin: release o=dl.yarnpkg.com\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/yarn.pref && \
-        # Install Trivy
-        # curl -sL https://aquasecurity.github.io/trivy-repo/deb/public.key -o /etc/apt/trusted.gpg.d/trivy.asc && \
-        # printf "deb https://aquasecurity.github.io/trivy-repo/deb %s main" "$(lsb_release -sc)" | tee -a /etc/apt/sources.list.d/trivy.list && \
-        # Install node from nodesource.com package
-        # curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && \
-        # echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_18.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list && \
-        apt-get update -qq && \
-        apt-get -y install -y -qq --no-install-recommends yarn && \
-        # apt-get -y install -y -qq --no-install-recommends trivy && \
-        # curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin && \
+        # Install nodejs from nodesource.com
+        curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && \
+        echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_${NODE_MAJOR}.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list && \
         # Install node using n
         # curl -L https://raw.githubusercontent.com/tj/n/master/bin/n -o /usr/local/bin/n && \
         # chmod +x /usr/local/bin/n && \
@@ -171,11 +162,19 @@ FROM ${BUILD_BASE_IMAGE_NAME}:${BUILD_BASE_IMAGE_TAG} AS build-os-deps
         # n "$NODE_VER" && \
         # rm /usr/local/bin/n && \
         # Install yarn from repo
-        # curl -sL https://dl.yarnpkg.com/debian/pubkey.gpg -o /etc/apt/trusted.gpg.d/yarn.asc && \
-        # echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list && \
-        # echo "Package: *\nPin: release o=dl.yarnpkg.com\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/yarn.pref && \
-        # apt-get update -qq && \
-        # apt-get -y install -y -qq --no-install-recommends yarn && \
+        curl -sL --ciphers ECDHE-RSA-AES128-GCM-SHA256 https://dl.yarnpkg.com/debian/pubkey.gpg -o /etc/apt/trusted.gpg.d/yarn.asc && \
+        echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list && \
+        printf "Package: *\nPin: release o=dl.yarnpkg.com\nPin-Priority: 500\n" | tee /etc/apt/preferences.d/yarn.pref && \
+        # Install Trivy
+        # curl -sL https://aquasecurity.github.io/trivy-repo/deb/public.key -o /etc/apt/trusted.gpg.d/trivy.asc && \
+        # printf "deb https://aquasecurity.github.io/trivy-repo/deb %s main" "$(lsb_release -sc)" | tee -a /etc/apt/sources.list.d/trivy.list && \
+        apt-get update -qq && \
+        DEBIAN_FRONTEND=noninteractive \
+        apt-get -y install -y -qq --no-install-recommends \
+            nodejs \
+            # trivy \
+            yarn \
+        && \
         # Install latest Postgres from postgres.org repo
         # curl -sL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /etc/apt/trusted.gpg.d/postgresql-ACCC4CF8.asc && \
         # echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -sc)-pgdg main" | tee /etc/apt/sources.list.d/pgdg.list && \
@@ -239,11 +238,11 @@ FROM build-os-deps AS build-deps-get
     WORKDIR $APP_DIR
 
     # Copy only the minimum files needed for deps, improving caching
-    COPY config ./config
-    COPY mix.exs .
-    COPY mix.lock .
+    COPY --link config ./config
+    COPY --link mix.exs .
+    COPY --link mix.lock .
 
-    # COPY .env.default ./
+    # COPY --link .env.default ./
 
     RUN mix 'do' local.rebar --force, local.hex --force
 
@@ -282,7 +281,7 @@ FROM build-deps-get AS test-image
 
     WORKDIR $APP_DIR
 
-    # COPY .env.test ./
+    # COPY --link .env.test ./
 
     # Compile deps separately from app, improving Docker caching
     RUN mix deps.compile
@@ -293,17 +292,17 @@ FROM build-deps-get AS test-image
 
     # Use glob pattern to deal with files which may not exist
     # Must have at least one existing file
-    COPY .formatter.exs coveralls.jso[n] .credo.ex[s] dialyzer-ignor[e] trivy.yam[l] ./
+    COPY --link .formatter.exs coveralls.jso[n] .credo.ex[s] dialyzer-ignor[e] trivy.yam[l] ./
 
     # Non-umbrella
-    COPY lib ./lib
-    COPY priv ./priv
-    COPY test ./test
-    COPY bin ./bin
+    COPY --link lib ./lib
+    COPY --link priv ./priv
+    COPY --link test ./test
+    # COPY --link bin ./bin
 
     # Umbrella
-    # COPY apps ./apps
-    # COPY priv ./priv
+    # COPY --link apps ./apps
+    # COPY --link priv ./priv
 
     # RUN set -a && . ./.env.test && set +a && \
     #     env && \
@@ -319,7 +318,7 @@ FROM build-deps-get AS test-image
     # RUN yarn global add newman
     # RUN yarn global add newman-reporter-junitfull
 
-    # COPY Postman ./Postman
+    # COPY --link Postman ./Postman
 
 # Create Elixir release
 FROM build-deps-get AS prod-release
@@ -329,7 +328,7 @@ FROM build-deps-get AS prod-release
 
     WORKDIR $APP_DIR
 
-    # COPY .env.prod .
+    # COPY --link .env.prod .
 
     # Compile deps separately from application for better caching.
     # Doing "mix 'do' compile, assets.deploy" in a single stage is worse
@@ -343,16 +342,29 @@ FROM build-deps-get AS prod-release
 
     RUN mix esbuild.install --if-missing
 
+    # Install JavaScript deps using yarn
+    COPY --link assets/package.jso[n] assets/package.json
+    COPY --link assets/package-lock.jso[n] assets/package-lock.json
+    COPY --link assets/yarn.loc[k] assets/yarn.lock
+    RUN yarn --cwd ./assets install --prod
+    # RUN cd assets && yarn install --prod
+
+    # Install JavaScript deps using npm
+    # WORKDIR "${APP_DIR}/assets"
+    # COPY --link assets/package.jso[n] ./
+    # COPY --link assets/package-lock.jso[n] ./
+    # RUN npm install
+
     # Compile assets the old way
     # WORKDIR "${APP_DIR}/assets"
     #
-    # COPY assets/package.json ./
-    # COPY assets/package-lock.json ./
+    # COPY --link assets/package.json ./
+    # COPY --link assets/package-lock.json ./
     #
     # RUN --mount=type=cache,target=~/.npm,sharing=locked \
     #     npm --prefer-offline --no-audit --progress=false --loglevel=error ci
     #
-    # COPY assets ./
+    # COPY --link assets ./
     #
     # RUN --mount=type=cache,target=~/.npm,sharing=locked \
     #     npm run deploy
@@ -362,34 +374,21 @@ FROM build-deps-get AS prod-release
     #     npm install && \
     #     node node_modules/webpack/bin/webpack.js --mode production
 
-    # Install JavaScript deps using yarn
-    # COPY assets/package.json assets/package.json
-    # COPY assets/yarn.lock assets/yarn.lock
-    # RUN yarn --cwd ./assets install --prod
+    WORKDIR $APP_DIR
 
     # Compile assets with esbuild
-    COPY assets ./assets
-    COPY priv ./priv
+    COPY --link assets ./assets
+    COPY --link priv ./priv
 
-    # Install JavaScript deps using npm
-    # WORKDIR "${APP_DIR}/assets"
-    # COPY assets/package.json ./
-    # COPY assets/package-lock.json ./
-    # # COPY assets/tailwind.config.js ./
-    #
-    # RUN npm install
-    #
-    # WORKDIR $APP_DIR
+    # Non-umbrella
+    COPY --link lib ./lib
+
+    # Umbrella
+    # COPY --link apps ./apps
 
     RUN mix assets.deploy
     # RUN esbuild default --minify
     # RUN mix phx.digest
-
-    # Non-umbrella
-    COPY lib ./lib
-
-    # Umbrella
-    # COPY apps ./apps
 
     # For umbrella, using `mix cmd` ensures each app is compiled in
     # isolation https://github.com/elixir-lang/elixir/issues/9407
@@ -402,7 +401,7 @@ FROM build-deps-get AS prod-release
     RUN mix compile --warnings-as-errors
 
     # Build release
-    COPY rel ./rel
+    COPY --link rel ./rel
     RUN mix release "$RELEASE"
 
 # Create staging image for files which are copied into final prod image
@@ -422,12 +421,13 @@ FROM ${INSTALL_BASE_IMAGE_NAME}:${INSTALL_BASE_IMAGE_TAG} AS prod-install
     RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
         --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
-        set -exu && \
-        apt-get update -qq && \
-        DEBIAN_FRONTEND=noninteractive \
-        apt-get -y install -y -qq --no-install-recommends ca-certificates
-
-    RUN if test -n "$SNAPSHOT_VER" ; then \
+        if test -n "$SNAPSHOT_VER" ; then \
+            set -exu && \
+            apt-get update -qq && \
+            DEBIAN_FRONTEND=noninteractive \
+            apt-get -y install -y -qq --no-install-recommends \
+                ca-certificates \
+            && \
             echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_VER} bullseye main" > /etc/apt/sources.list && \
             echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/${SNAPSHOT_VER} bullseye-security main" >> /etc/apt/sources.list && \
             echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_VER} bullseye-updates main" >> /etc/apt/sources.list; \
@@ -500,6 +500,7 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
     ARG APP_DIR
     ARG APP_GROUP
     ARG APP_GROUP_ID
+    ARG APP_NAME
     ARG APP_USER
     ARG APP_USER_ID
 
@@ -520,19 +521,20 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
     RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
         --mount=type=cache,id=debconf,target=/var/cache/debconf,sharing=locked \
-        set -exu && \
-        apt-get update -qq && \
-        DEBIAN_FRONTEND=noninteractive \
-        apt-get -y install -y -qq --no-install-recommends ca-certificates
-
-    RUN if test -n "$SNAPSHOT_VER" ; then \
+        if test -n "$SNAPSHOT_VER" ; then \
+            set -exu && \
+            apt-get update -qq && \
+            DEBIAN_FRONTEND=noninteractive \
+            apt-get -y install -y -qq --no-install-recommends \
+                ca-certificates \
+            && \
             echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_VER} bullseye main" > /etc/apt/sources.list && \
             echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/${SNAPSHOT_VER} bullseye-security main" >> /etc/apt/sources.list && \
             echo "deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/${SNAPSHOT_VER} bullseye-updates main" >> /etc/apt/sources.list; \
         fi
 
     # Copy just the locale file used
-    # COPY --from=prod-install /usr/lib/locale/${LANG} /usr/lib/locale/
+    # COPY --link --from=prod-install /usr/lib/locale/${LANG} /usr/lib/locale/
 
     RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
@@ -586,6 +588,8 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
 
 # Create final prod image which gets deployed
 FROM prod-base AS prod
+    ARG LANG
+
     ARG APP_DIR
     ARG APP_NAME
     ARG APP_USER
@@ -598,6 +602,7 @@ FROM prod-base AS prod
     # Set environment vars that do not change. Secrets like SECRET_KEY_BASE and
     # environment-specific config such as DATABASE_URL should be set at runtime.
     ENV HOME=$APP_DIR \
+        LANG=$LANG \
         PORT=$APP_PORT \
         PHX_SERVER=true \
         RELEASE=$RELEASE \
@@ -623,9 +628,9 @@ FROM prod-base AS prod
     WORKDIR $APP_DIR
 
     # When using a startup script, copy to /app/bin
-    # COPY bin ./bin
+    # COPY --link bin ./bin
 
-    USER $APP_USER
+    USER $APP_USER:$APP_GROUP
 
     # Chown files while copying. Running "RUN chown -R app:app /app"
     # adds an extra layer which is about 10Mb, a huge difference if the
@@ -643,17 +648,17 @@ FROM prod-base AS prod
 
     # "bin" is the directory under the unpacked release, and "prod" is the name
     # of the release top level script, which should match the RELEASE var.
-    ENTRYPOINT ["bin/prod"]
+    # ENTRYPOINT ["bin/prod"]
 
     # Run under init to avoid zombie processes
     # https://github.com/krallin/tini
     # ENTRYPOINT ["/sbin/tini", "--", "bin/prod"]
 
     # Wrapper script which runs e.g. migrations before starting
-    # ENTRYPOINT ["bin/start-docker"]
+    ENTRYPOINT ["bin/start-docker"]
 
     # Run app in foreground
-    CMD ["start"]
+    # CMD ["start"]
 
 # Dev image which mounts code from local filesystem
 FROM build-os-deps AS dev
@@ -734,7 +739,7 @@ FROM scratch AS artifacts
     ARG MIX_ENV
     ARG RELEASE
 
-    COPY --from=prod-release "/app/_build/${MIX_ENV}/rel/${RELEASE}" /release
+    # COPY --from=prod-release "/app/_build/${MIX_ENV}/rel/${RELEASE}" /release
     COPY --from=prod-release /app/priv/static /static
 
 # Default target
