@@ -18,6 +18,14 @@
             ],
             "environment": [
                 {
+                    "name": "GITHUB_SHA",
+                    "value": env.GITHUB_SHA
+                },
+                {
+                    "name": "GITHUB_HEAD_REF",
+                    "value": env.GITHUB_HEAD_REF
+                },
+                {
                     "name": "PHX_HOST",
                     "value": env.HOST
                 },
