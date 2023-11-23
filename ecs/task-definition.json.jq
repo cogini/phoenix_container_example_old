@@ -38,12 +38,16 @@
                     "value": "cogini-foo-dev-app-config"
                 },
                 {
-                    "name": "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT",
+                    "name": "OTEL_EXPORTER_OTLP_ENDPOINT",
                     "value": "http://localhost:4317"
                 },
                 {
                     "name": "OTEL_EXPORTER_OTLP_PROTOCOL",
                     "value": "grpc"
+                },
+                {
+                    "name": "OTEL_SERVICE_NAME",
+                    "value": "foo-app"
                 }
             ],
             "essential": true,
@@ -103,10 +107,14 @@
         },
         {
             "name": "aws-otel-collector",
-            "image": "public.ecr.aws/aws-observability/aws-otel-collector",
+            "image": "\(env.ECR_REGISTRY)/\(env.ECR_IMAGE_OWNER)aws-otel-collector",
             "cpu": 0,
-            "memoryReservation": 256,
-            "command":["--config=/etc/ecs/ecs-default-config.yaml"],
+            "environment": [
+                {
+                    "name": "AWS_REGION",
+                    "value": env.AWSLOGS_REGION
+                }
+            ],
             "essential": true,
             "healthCheck": {
                 "command": [ "/healthcheck" ],
