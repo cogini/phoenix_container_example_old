@@ -27,7 +27,9 @@ config :phoenix_container_example, PhoenixContainerExample.Mailer, adapter: Swoo
 config :swoosh, :api_client, false
 
 # Print only warnings and errors during test
-config :logger, level: :warning
+config :logger,
+  level: :warning,
+  always_evaluate_messages: true
 
 config :logger, :console,
   format: "$time $metadata[$level] $message\n",
