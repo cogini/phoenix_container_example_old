@@ -56,7 +56,8 @@ config :logger,
   level: :info
 
 # config :logger, :default_formatter,
-#   format: "$time $metadata[$level] $message\n"
+#   format: "$time $metadata[$level] $message\n",
+#   metadata: [:request_id]
 
 # Configures Elixir's Logger
 # config :logger, :console,
@@ -74,6 +75,15 @@ config :opentelemetry, :resource, [
   # {"service.namespace", "MyNamespace"},
   {"service.version", Mix.Project.config()[:version]}
 ]
+
+if System.get_env("OTEL_DEBUG") == "true" do
+  config :opentelemetry, :processors,
+    otel_batch_processor: %{
+      exporter: {:otel_exporter_stdout, []}
+    }
+else
+  config :opentelemetry, traces_exporter: :none
+end
 
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
