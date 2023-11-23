@@ -67,6 +67,14 @@ config :opentelemetry,
   id_generator: :opentelemetry_xray_id_generator,
   propagators: [:opentelemetry_xray_propagator, :baggage]
 
+# https://opentelemetry.io/docs/reference/specification/resource/semantic_conventions/
+config :opentelemetry, :resource, [
+  # In production, set from OTEL_SERVICE_NAME or Erlang release name OS env var
+  {"service.name", to_string(Mix.Project.config()[:app])},
+  # {"service.namespace", "MyNamespace"},
+  {"service.version", Mix.Project.config()[:version]}
+]
+
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 

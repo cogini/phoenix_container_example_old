@@ -74,15 +74,7 @@ config :logger, :console,
 # config :logger, :default_formatter,
 #   format: "$time $metadata[$level] $message\n"
 
-# https://opentelemetry.io/docs/reference/specification/resource/semantic_conventions/
-config :opentelemetry, :resource, [
-  # In production service.name is set based on OS env vars from Erlang release
-  {"service.name", to_string(Mix.Project.config()[:app])},
-  # {"service.namespace", "MyNamespace"},
-  {"service.version", Mix.Project.config()[:version]}
-]
-
-if System.get_env("DEBUG_OTEL") == "true" do
+if System.get_env("OTEL_DEBUG") == "true" do
   config :opentelemetry, :processors,
     otel_batch_processor: %{
       exporter: {:otel_exporter_stdout, []}

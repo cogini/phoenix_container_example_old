@@ -44,12 +44,11 @@ config :logger, :default_formatter,
 
 # config :logger, :default_handler, false
 
-# Configure opentelemetry_exporter via environment vars because server name
-# is different in docker compose vs ECS.
+# https://hexdocs.pm/opentelemetry_exporter/readme.html
+# Set via environment vars because server name is different in docker compose vs ECS:
 #   OTEL_EXPORTER_OTLP_ENDPOINT="http://localhost:4317"
 #   OTEL_EXPORTER_OTLP_PROTOCOL="grpc"
-
-# https://hexdocs.pm/opentelemetry_exporter/readme.html
+#
 # config :opentelemetry, :processors,
 # otel_batch_processor: %{
 #   exporter: {
