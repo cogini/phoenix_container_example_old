@@ -10,7 +10,7 @@ ARG ELIXIR_VER=1.15.7
 ARG OTP_VER=26.1.2
 
 # https://hub.docker.com/_/alpine
-ARG PROD_OS_VER=3.17.5
+ARG BUILD_OS_VER=3.17.5
 ARG PROD_OS_VER=3.17.5
 
 # By default, packages come from the APK index for the base Alpine image.
