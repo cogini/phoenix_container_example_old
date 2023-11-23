@@ -39,7 +39,7 @@ defmodule PhoenixContainerExampleWeb.Endpoint do
     param_key: "request_logger",
     cookie_key: "request_logger"
 
-  plug Uinta.Plug, Application.compile_env(@app, :uinta_plug, [])
+  plug Uinta.Plug, Application.compile_env(@app, Uinta.Plug, [])
 
   plug Plug.RequestId
   plug Plug.Telemetry, event_prefix: [:phoenix, :endpoint]
