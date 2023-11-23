@@ -74,15 +74,6 @@ config :logger, :console,
 # config :logger, :default_formatter,
 #   format: "$time $metadata[$level] $message\n"
 
-if System.get_env("OTEL_DEBUG") == "true" do
-  config :opentelemetry, :processors,
-    otel_batch_processor: %{
-      exporter: {:otel_exporter_stdout, []}
-    }
-else
-  config :opentelemetry, traces_exporter: :none
-end
-
 # Set a higher stacktrace during development. Avoid configuring such
 # in production as building large stacktraces may be expensive.
 config :phoenix, :stacktrace_depth, 20
