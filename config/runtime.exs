@@ -21,8 +21,13 @@ if System.get_env("PHX_SERVER") do
 end
 
 # Allow log level to be set at runtime
-config :logger,
-  level: String.to_existing_atom(System.get_env("LOG_LEVEL") || "info")
+if config_env() == :test do
+  config :logger,
+    level: String.to_existing_atom(System.get_env("LOG_LEVEL") || "warning")
+else
+  config :logger,
+    level: String.to_existing_atom(System.get_env("LOG_LEVEL") || "info")
+end
 
 if config_env() == :prod do
   database_url =
