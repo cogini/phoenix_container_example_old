@@ -10,6 +10,7 @@
 !priv
 !rel
 !test
+!otel
 
 # Build files
 !mix.exs
