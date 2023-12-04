@@ -1,5 +1,5 @@
 ---
-name: CI Matrix
+name: CI OS Matrix
 # Build and run tests in containers
 # Store test and prod images to GitHub Container Registry (GHCR)
 # Build prod image and push to AWS ECR
