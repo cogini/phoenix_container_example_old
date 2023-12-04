@@ -502,7 +502,6 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
     ARG APP_DIR
     ARG APP_GROUP
     ARG APP_GROUP_ID
-    ARG APP_NAME
     ARG APP_USER
     ARG APP_USER_ID
 
@@ -536,7 +535,7 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
         fi
 
     # Copy just the locale file used
-    # COPY --link --from=prod-install /usr/lib/locale/${LANG} /usr/lib/locale/${LANG}
+    COPY --link --from=prod-install /usr/lib/locale/${LANG} /usr/lib/locale/${LANG}
 
     RUN --mount=type=cache,id=apt-cache,target=/var/cache/apt,sharing=locked \
         --mount=type=cache,id=apt-lib,target=/var/lib/apt,sharing=locked \
@@ -549,8 +548,9 @@ FROM ${PROD_BASE_IMAGE_NAME}:${PROD_BASE_IMAGE_TAG} AS prod-base
             # apt-transport-https \
             # Enable the app to make outbound SSL calls.
             ca-certificates \
-            # Run health checks
+            # Run health checks and get ECS metadata
             curl \
+            jq \
             # tini is a minimal init which will reap zombie processes
             # https://github.com/krallin/tini
             # tini \
@@ -647,6 +647,15 @@ FROM prod-base AS prod
     COPY --from=prod-release --chown="$APP_USER:$APP_GROUP" "/app/_build/${MIX_ENV}/rel/${RELEASE}" ./
 
     EXPOSE $APP_PORT
+
+    # Erlang EPMD port
+    EXPOSE 4369
+
+    # Intra-Erlang communication ports
+    EXPOSE 9000-9010
+
+    # :erpc default port
+    EXPOSE 9090
 
     # "bin" is the directory under the unpacked release, and "prod" is the name
     # of the release top level script, which should match the RELEASE var.
