@@ -9,3 +9,5 @@
 
 # -kernel logger '[{handler, default, logger_std_h, #{formatter => {logger_formatter_json, #{template => [msg, time, level, file, line, mfa, pid, trace_id, span_id]}}}}]'
 -kernel logger '[{handler, default, logger_std_h, #{formatter => {logger_formatter_json, #{}}}}]'
+
+# -epmd_module Elixir.Cluster.EPMD
